@@ -1,0 +1,17 @@
+# Dart / Flutter
+.dart_tool/
+.packages
+pubspec.lock
+build/
+
+# IDE
+.vscode/
+.idea/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker volumes
+postgres_data/
