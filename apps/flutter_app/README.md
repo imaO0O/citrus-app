@@ -1,17 +1,17 @@
-# Flutter Client
+# flutter_app
 
-Мобильное приложение «Цитрус» для iOS и Android, написанное на Flutter.
+A new Flutter project.
 
-## Назначение
-- Интерфейс для быстрых отметок настроения («дольки»)
-- Календарь с детальными записями и событиями
-- Чат-бот (поддержка ИИ)
-- Дофаминовая галерея (фото памятных моментов)
-- Медиа-раздел (видео, аудио, аффирмации)
-- Успокаивающая игрушка
-- Дневник состояния с возможностью отправки на анализ
-- Трекер сна
-- Тесты и настройки
-- «Красная кнопка» экстренной помощи
+## Getting Started
 
-## Структура (будет добавлена позже)
+This project is a starting point for a Flutter application.
+
+A few resources to get you started if this is your first Flutter project:
+
+- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
+- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
+- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+
+For help getting started with Flutter development, view the
+[online documentation](https://docs.flutter.dev/), which offers tutorials,
+samples, guidance on mobile development, and a full API reference.
