@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:intl/intl.dart';
 import '../bloc/calendar_bloc.dart';
+import '../../auth/bloc/auth_bloc.dart';
 import '../../../models/calendar_event.dart';
 import 'calendar_detail_page.dart';
 
@@ -23,72 +24,101 @@ class _CalendarPageState extends State<CalendarPage> {
     super.initState();
     _focusedDay = DateTime.now();
     _selectedDay = DateTime.now();
-    context.read<CalendarBloc>().add(LoadCalendar(month: _focusedDay));
+    // Загружаем календарь после проверки авторизации
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final authState = context.read<AuthBloc>().state;
+      if (authState is AuthAuthenticated) {
+        print('CalendarPage: инициализация для авторизованного пользователя');
+        print('  - userId: ${authState.user.id}');
+        print('  - token: "${authState.user.token}"');
+        print('  - token isEmpty: ${authState.user.token.isEmpty}');
+        context.read<CalendarBloc>().updateUserId(authState.user.id, token: authState.user.token);
+      } else {
+        print('CalendarPage: инициализация для неавторизованного пользователя');
+        context.read<CalendarBloc>().add(LoadCalendar(month: _focusedDay));
+      }
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Календарь'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.today),
-            onPressed: () {
-              setState(() {
-                _focusedDay = DateTime.now();
-                _selectedDay = DateTime.now();
-              });
-              context.read<CalendarBloc>().add(SelectDay(DateTime.now()));
-            },
-            tooltip: 'Сегодня',
-          ),
-        ],
-      ),
-      body: BlocBuilder<CalendarBloc, CalendarState>(
-        builder: (context, state) {
-          if (state is CalendarLoading) {
-            return const Center(child: CircularProgressIndicator());
-          }
+    return BlocListener<AuthBloc, AuthState>(
+      listener: (context, state) {
+        // При входе или выходе обновляем userId в календаре
+        if (state is AuthAuthenticated) {
+          print('CalendarPage: пользователь вошёл');
+          print('  - userId: ${state.user.id}');
+          print('  - email: ${state.user.email}');
+          print('  - token: ${state.user.token}');
+          print('  - token length: ${state.user.token.length}');
+          context.read<CalendarBloc>().updateUserId(state.user.id, token: state.user.token);
+        } else if (state is AuthUnauthenticated) {
+          print('CalendarPage: пользователь вышел');
+          context.read<CalendarBloc>().updateUserId('unknown', token: null);
+        }
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Календарь'),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.today),
+              onPressed: () {
+                setState(() {
+                  _focusedDay = DateTime.now();
+                  _selectedDay = DateTime.now();
+                });
+                context.read<CalendarBloc>().add(SelectDay(DateTime.now()));
+              },
+              tooltip: 'Сегодня',
+            ),
+          ],
+        ),
+        body: BlocBuilder<CalendarBloc, CalendarState>(
+          builder: (context, state) {
+            if (state is CalendarLoading) {
+              return const Center(child: CircularProgressIndicator());
+            }
 
-          if (state is CalendarError) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+            if (state is CalendarError) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                    const SizedBox(height: 16),
+                    Text(state.message, textAlign: TextAlign.center),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: () {
+                        context.read<CalendarBloc>().add(LoadCalendar(month: _focusedDay));
+                      },
+                      child: const Text('Повторить'),
+                    ),
+                  ],
+                ),
+              );
+            }
+
+            if (state is CalendarLoaded) {
+              return Column(
                 children: [
-                  const Icon(Icons.error_outline, size: 48, color: Colors.red),
-                  const SizedBox(height: 16),
-                  Text(state.message, textAlign: TextAlign.center),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: () {
-                      context.read<CalendarBloc>().add(LoadCalendar(month: _focusedDay));
-                    },
-                    child: const Text('Повторить'),
-                  ),
+                  _buildCalendar(state),
+                  const Divider(height: 1),
+                  _buildEventsList(state),
                 ],
-              ),
-            );
-          }
+              );
+            }
 
-          if (state is CalendarLoaded) {
-            return Column(
-              children: [
-                _buildCalendar(state),
-                const Divider(height: 1),
-                _buildEventsList(state),
-              ],
+            return const Center(
+              child: Text('Нажмите "Загрузить" для отображения календаря'),
             );
-          }
-
-          return const Center(
-            child: Text('Нажмите "Загрузить" для отображения календаря'),
-          );
-        },
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _showAddEventDialog(context),
-        child: const Icon(Icons.add),
+          },
+        ),
+        floatingActionButton: FloatingActionButton(
+          onPressed: () => _showAddEventDialog(context),
+          child: const Icon(Icons.add),
+        ),
       ),
     );
   }
@@ -230,16 +260,15 @@ class _CalendarPageState extends State<CalendarPage> {
   }
 
   Future<void> _showEventDetails(BuildContext context, CalendarEventModel event) async {
-    final result = await Navigator.push(
+    // Просто открываем детали - BLoC сам обновит состояние при удалении
+    await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => CalendarDetailPage(event: event),
       ),
     );
-    
-    // Если событие было удалено, обновляем календарь
-    if (result == true && mounted) {
-      // BLoC уже обновил состояние, просто показываем сообщение
+    // Обновляем UI после возврата
+    if (mounted) {
       setState(() {});
     }
   }
@@ -344,17 +373,25 @@ class _CalendarPageState extends State<CalendarPage> {
                       return;
                     }
 
+                    final authState = context.read<AuthBloc>().state;
+                    final userId = authState is AuthAuthenticated
+                        ? authState.user.id
+                        : 'unknown';
+                    final token = authState is AuthAuthenticated
+                        ? authState.user.token
+                        : null;
+
                     final event = CalendarEventModel(
                       id: DateTime.now().millisecondsSinceEpoch.toString(),
-                      userId: 'user1',
+                      userId: userId,
                       title: titleController.text.trim(),
                       description: descriptionController.text.trim().isEmpty
                           ? null
                           : descriptionController.text.trim(),
                       eventDate: DateTime(
-                        DateTime.now().year,
-                        DateTime.now().month,
-                        DateTime.now().day,
+                        _selectedDay.year,
+                        _selectedDay.month,
+                        _selectedDay.day,
                         selectedTime?.hour ?? 12,
                         selectedTime?.minute ?? 0,
                       ),
@@ -365,7 +402,11 @@ class _CalendarPageState extends State<CalendarPage> {
                       notificationEnabled: notificationEnabled,
                     );
 
-                    context.read<CalendarBloc>().add(AddEvent(event));
+                    // Создаем репозиторий с токеном если его нет
+                    final calendarBloc = context.read<CalendarBloc>();
+                    // Передаём токен в репозиторий
+                    calendarBloc.updateUserId(userId, token: token);
+                    calendarBloc.add(AddEvent(event));
                     Navigator.pop(context);
 
                     ScaffoldMessenger.of(context).showSnackBar(

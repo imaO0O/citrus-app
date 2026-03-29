@@ -1,5 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../models/calendar_event.dart';
+import '../../../core/repository/calendar_event_repository.dart';
 
 // События
 abstract class CalendarEvent {
@@ -68,10 +69,11 @@ class CalendarError extends CalendarState {
 
 // BLoC
 class CalendarBloc extends Bloc<CalendarEvent, CalendarState> {
-  // Временное хранилище событий (в памяти)
-  final Map<DateTime, List<CalendarEventModel>> _events = {};
+  final CalendarEventRepository _repository;
 
-  CalendarBloc() : super(const CalendarInitial()) {
+  CalendarBloc({required CalendarEventRepository repository})
+      : _repository = repository,
+        super(const CalendarInitial()) {
     on<LoadCalendar>(_onLoadCalendar);
     on<AddEvent>(_onAddEvent);
     on<UpdateEvent>(_onUpdateEvent);
@@ -79,62 +81,44 @@ class CalendarBloc extends Bloc<CalendarEvent, CalendarState> {
     on<SelectDay>(_onSelectDay);
   }
 
+  /// Обновить userId и перезагрузить календарь
+  void updateUserId(String newUserId, {String? token}) {
+    print('CalendarBloc: обновление userId на $newUserId');
+    print('  - получен token: ${token != null ? "length=${token.length}" : "null"}');
+    _repository.setUserId(newUserId, token: token);
+    // Очищаем состояние
+    emit(const CalendarInitial());
+    // Загружаем события для нового пользователя
+    add(LoadCalendar(month: DateTime.now()));
+  }
+
   Future<void> _onLoadCalendar(
     LoadCalendar event,
     Emitter<CalendarState> emit,
   ) async {
+    print('CalendarBloc: загрузка календаря для userId=${_repository.userId}, месяц=${event.month}');
     emit(const CalendarLoading());
-    
+
     try {
-      // TODO: Загрузка событий из API
-      // Пока используем тестовые данные
-      await Future.delayed(const Duration(milliseconds: 300));
-      
-      final now = DateTime.now();
-      final testEvents = [
-        CalendarEventModel(
-          id: '1',
-          userId: 'user1',
-          title: 'Прием у терапевта',
-          description: 'Плановый осмотр',
-          eventDate: DateTime(now.year, now.month, now.day, 10, 0),
-          startTime: '10:00:00',
-          endTime: '11:00:00',
-          notificationEnabled: true,
-        ),
-        CalendarEventModel(
-          id: '2',
-          userId: 'user1',
-          title: 'Йога',
-          description: 'Групповое занятие',
-          eventDate: DateTime(now.year, now.month, now.day + 2, 18, 0),
-          startTime: '18:00:00',
-          endTime: '19:30:00',
-          notificationEnabled: true,
-        ),
-        CalendarEventModel(
-          id: '3',
-          userId: 'user1',
-          title: 'День рождения',
-          description: 'Праздник с друзьями',
-          eventDate: DateTime(now.year, now.month, now.day + 5, 19, 0),
-          startTime: '19:00:00',
-          endTime: '23:00:00',
-          notificationEnabled: true,
-        ),
-      ];
+      final events = await _repository.getEventsForMonth(event.month);
+      print('CalendarBloc: загружено ${events.length} событий');
 
-      for (final event in testEvents) {
+      // Группируем события по дням
+      final Map<DateTime, List<CalendarEventModel>> eventsByDay = {};
+      for (final event in events) {
         final day = DateTime(event.eventDate.year, event.eventDate.month, event.eventDate.day);
-        _events.putIfAbsent(day, () => []).add(event);
+        eventsByDay.putIfAbsent(day, () => []).add(event);
       }
+      print('CalendarBloc: сгруппировано по ${eventsByDay.length} дням');
 
+      final now = DateTime.now();
       emit(CalendarLoaded(
-        events: Map.from(_events),
+        events: eventsByDay,
         selectedDay: now,
         focusedDay: now,
       ));
     } catch (e) {
+      print('CalendarBloc: ошибка загрузки: $e');
       emit(CalendarError('Ошибка загрузки календаря: $e'));
     }
   }
@@ -144,22 +128,25 @@ class CalendarBloc extends Bloc<CalendarEvent, CalendarState> {
     Emitter<CalendarState> emit,
   ) async {
     try {
-      final day = DateTime(
-        event.event.eventDate.year,
-        event.event.eventDate.month,
-        event.event.eventDate.day,
-      );
-      _events.putIfAbsent(day, () => []).add(event.event);
-      
+      final createdEvent = await _repository.createEvent(event.event);
+
       if (state is CalendarLoaded) {
         final loadedState = state as CalendarLoaded;
+        final day = DateTime(
+          event.event.eventDate.year,
+          event.event.eventDate.month,
+          event.event.eventDate.day,
+        );
+        
+        final updatedEvents = Map<DateTime, List<CalendarEventModel>>.from(loadedState.events);
+        updatedEvents.putIfAbsent(day, () => []).add(createdEvent);
+
         emit(CalendarLoaded(
-          events: Map.from(_events),
+          events: updatedEvents,
           selectedDay: loadedState.selectedDay,
           focusedDay: loadedState.focusedDay,
         ));
       }
-      // TODO: Сохранение в API
     } catch (e) {
       emit(CalendarError('Ошибка добавления события: $e'));
     }
@@ -170,26 +157,28 @@ class CalendarBloc extends Bloc<CalendarEvent, CalendarState> {
     Emitter<CalendarState> emit,
   ) async {
     try {
-      final day = DateTime(
-        event.event.eventDate.year,
-        event.event.eventDate.month,
-        event.event.eventDate.day,
-      );
-      
-      // Удаляем старое событие
-      _events[day]?.removeWhere((e) => e.id == event.event.id);
-      // Добавляем обновленное
-      _events.putIfAbsent(day, () => []).add(event.event);
-      
+      final updatedEvent = await _repository.updateEvent(event.event);
+
       if (state is CalendarLoaded) {
         final loadedState = state as CalendarLoaded;
+        final day = DateTime(
+          event.event.eventDate.year,
+          event.event.eventDate.month,
+          event.event.eventDate.day,
+        );
+
+        final updatedEvents = Map<DateTime, List<CalendarEventModel>>.from(loadedState.events);
+        // Удаляем старое событие
+        updatedEvents[day]?.removeWhere((e) => e.id == event.event.id);
+        // Добавляем обновленное
+        updatedEvents.putIfAbsent(day, () => []).add(updatedEvent);
+
         emit(CalendarLoaded(
-          events: Map.from(_events),
+          events: updatedEvents,
           selectedDay: loadedState.selectedDay,
           focusedDay: loadedState.focusedDay,
         ));
       }
-      // TODO: Сохранение в API
     } catch (e) {
       emit(CalendarError('Ошибка обновления события: $e'));
     }
@@ -200,27 +189,25 @@ class CalendarBloc extends Bloc<CalendarEvent, CalendarState> {
     Emitter<CalendarState> emit,
   ) async {
     try {
-      // Удаляем событие из всех дней
-      for (final day in _events.keys) {
-        _events[day]?.removeWhere((e) => e.id == event.eventId);
-      }
+      await _repository.deleteEvent(event.eventId);
 
-      // Очищаем пустые списки
-      _events.removeWhere((day, events) => events.isEmpty);
+      if (state is CalendarLoaded) {
+        final loadedState = state as CalendarLoaded;
+        final updatedEvents = Map<DateTime, List<CalendarEventModel>>.from(loadedState.events);
+        
+        // Удаляем событие из всех дней
+        for (final day in updatedEvents.keys) {
+          updatedEvents[day]?.removeWhere((e) => e.id == event.eventId);
+        }
+        // Очищаем пустые списки
+        updatedEvents.removeWhere((day, events) => events.isEmpty);
 
-      // Всегда эмитим новое состояние
-      final currentState = state;
-      if (currentState is CalendarLoaded) {
         emit(CalendarLoaded(
-          events: Map.from(_events),
-          selectedDay: currentState.selectedDay,
-          focusedDay: currentState.focusedDay,
+          events: updatedEvents,
+          selectedDay: loadedState.selectedDay,
+          focusedDay: loadedState.focusedDay,
         ));
-      } else {
-        // Если состояние не загружено, загружаем календарь заново
-        await _onLoadCalendar(LoadCalendar(month: DateTime.now()), emit);
       }
-      // TODO: Удаление из API
     } catch (e) {
       emit(CalendarError('Ошибка удаления события: $e'));
     }

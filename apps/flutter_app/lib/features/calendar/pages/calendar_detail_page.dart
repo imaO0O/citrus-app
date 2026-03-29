@@ -500,6 +500,7 @@ class _CalendarDetailPageState extends State<CalendarDetailPage> {
   void _confirmDelete(BuildContext context, CalendarEventModel event) {
     showDialog(
       context: context,
+      barrierDismissible: false,
       builder: (context) => AlertDialog(
         title: const Text('Удаление события'),
         content: Text('Вы уверены, что хотите удалить событие "${event.title}"?'),
@@ -509,21 +510,47 @@ class _CalendarDetailPageState extends State<CalendarDetailPage> {
             child: const Text('Отмена'),
           ),
           ElevatedButton(
-            onPressed: () {
-              context.read<CalendarBloc>().add(DeleteEvent(event.id));
-              
-              // Закрываем диалог
+            onPressed: () async {
+              // Закрываем диалог подтверждения
               Navigator.of(context).pop();
               
-              // Возвращаемся назад с результатом
-              Navigator.of(context).pop(true);
-
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Событие удалено'),
-                  backgroundColor: Colors.green,
-                ),
+              // Показывем индикатор загрузки
+              showDialog(
+                context: context,
+                barrierDismissible: false,
+                builder: (context) => const Center(child: CircularProgressIndicator()),
               );
+              
+              try {
+                // Удаляем событие
+                context.read<CalendarBloc>().add(DeleteEvent(event.id));
+                
+                // Закрываем индикатор и CalendarDetailPage
+                if (context.mounted) {
+                  Navigator.of(context).pop(); // Закрыть индикатор
+                  Navigator.of(context).pop(); // Закрыть CalendarDetailPage
+                }
+                
+                // Показываем сообщение
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Событие удалено'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  Navigator.of(context).pop(); // Закрыть индикатор
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Ошибка: $e'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              }
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.red,
