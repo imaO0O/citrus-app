@@ -1,4 +1,4 @@
-class CalendarEvent {
+class CalendarEventModel {
   final String id;
   final String userId;
   final String title;
@@ -8,7 +8,7 @@ class CalendarEvent {
   final String? endTime;     // формат "HH:mm:ss"
   final bool notificationEnabled;
 
-  CalendarEvent({
+  CalendarEventModel({
     required this.id,
     required this.userId,
     required this.title,
@@ -19,7 +19,7 @@ class CalendarEvent {
     required this.notificationEnabled,
   });
 
-  factory CalendarEvent.fromJson(Map<String, dynamic> json) => CalendarEvent(
+  factory CalendarEventModel.fromJson(Map<String, dynamic> json) => CalendarEventModel(
         id: json['id'],
         userId: json['user_id'],
         title: json['title'],
