@@ -60,6 +60,27 @@ class CalendarLoaded extends CalendarState {
     final normalizedDay = DateTime(day.year, day.month, day.day);
     return events[normalizedDay] ?? [];
   }
+
+  /// Получить события месяца
+  List<CalendarEventModel> getEventsForMonth(DateTime month) {
+    final allEvents = events.values.expand((e) => e).toList();
+    final monthStart = DateTime(month.year, month.month, 1);
+    final monthEnd = DateTime(month.year, month.month + 1, 0, 23, 59, 59, 999);
+    
+    return allEvents.where((event) {
+      final eventDate = event.eventDate;
+      final eventDay = DateTime(eventDate.year, eventDate.month, eventDate.day);
+      return (eventDay.isAtSameMomentAs(monthStart) || eventDay.isAfter(monthStart)) &&
+             (eventDay.isAtSameMomentAs(monthEnd) || eventDay.isBefore(monthEnd));
+    }).toList();
+  }
+
+  /// Получить все события (отсортированные по дате)
+  List<CalendarEventModel> getAllEvents() {
+    final allEvents = events.values.expand((e) => e).toList();
+    allEvents.sort((a, b) => b.eventDate.compareTo(a.eventDate));
+    return allEvents;
+  }
 }
 
 class CalendarError extends CalendarState {

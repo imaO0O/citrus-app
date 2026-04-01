@@ -1,15 +1,16 @@
--- Таблица профилей пользователей
-CREATE TABLE IF NOT EXISTS profiles (
+-- Таблица пользователей
+CREATE TABLE IF NOT EXISTS users (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    name TEXT,
     email TEXT UNIQUE NOT NULL,
+    password_hash TEXT NOT NULL,
+    name TEXT,
     created_at TIMESTAMP DEFAULT NOW()
 );
 
 -- Отметки настроения ("дольки")
 CREATE TABLE IF NOT EXISTS mood_entries (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
     mood_value INTEGER CHECK (mood_value BETWEEN 1 AND 5),
     recorded_at TIMESTAMP DEFAULT NOW(),
     date DATE DEFAULT CURRENT_DATE,
@@ -19,7 +20,7 @@ CREATE TABLE IF NOT EXISTS mood_entries (
 -- Записи дневника
 CREATE TABLE IF NOT EXISTS diary_entries (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
     content TEXT,
     mood_value INTEGER,
     entry_date DATE DEFAULT CURRENT_DATE,
@@ -29,7 +30,7 @@ CREATE TABLE IF NOT EXISTS diary_entries (
 -- События календаря
 CREATE TABLE IF NOT EXISTS calendar_events (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
     title TEXT,
     description TEXT,
     event_date DATE,
@@ -41,7 +42,7 @@ CREATE TABLE IF NOT EXISTS calendar_events (
 -- Статьи (системные и пользовательские)
 CREATE TABLE IF NOT EXISTS articles (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,  -- NULL для системных
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,  -- NULL для системных
     title TEXT,
     content TEXT,
     category TEXT,
@@ -52,7 +53,7 @@ CREATE TABLE IF NOT EXISTS articles (
 -- Фото дофаминовой галереи
 CREATE TABLE IF NOT EXISTS memory_photos (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
     image_url TEXT,
     caption TEXT,
     photo_date DATE,
@@ -62,7 +63,7 @@ CREATE TABLE IF NOT EXISTS memory_photos (
 -- Записи трекера сна
 CREATE TABLE IF NOT EXISTS sleep_records (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
     sleep_date DATE,
     bed_time TIME,
     wake_time TIME,
@@ -71,7 +72,7 @@ CREATE TABLE IF NOT EXISTS sleep_records (
 
 -- Настройки пользователя (JSON)
 CREATE TABLE IF NOT EXISTS user_preferences (
-    user_id UUID PRIMARY KEY REFERENCES profiles(id) ON DELETE CASCADE,
+    user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
     preferences JSONB,
     updated_at TIMESTAMP DEFAULT NOW()
 );

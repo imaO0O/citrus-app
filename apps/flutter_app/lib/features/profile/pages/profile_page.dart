@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../core/repository/auth_repository.dart';
 import '../../../core/utils/theme_service.dart';
 import '../../auth/bloc/auth_bloc.dart';
+import '../bloc/profile_bloc.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({Key? key}) : super(key: key);
@@ -12,69 +14,80 @@ class ProfilePage extends StatefulWidget {
 
 class _ProfilePageState extends State<ProfilePage> {
   @override
+  void initState() {
+    super.initState();
+    context.read<ProfileBloc>().add(LoadProfile());
+  }
+
+  @override
   Widget build(BuildContext context) {
     final themeService = ThemeService();
-    final authBloc = context.read<AuthBloc>();
-    final user = authBloc.state is AuthAuthenticated
-        ? (authBloc.state as AuthAuthenticated).user
-        : null;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Профиль'),
-        actions: [
-          IconButton(
-            icon: Icon(themeService.isDarkMode ? Icons.dark_mode : Icons.light_mode),
-            onPressed: () {
-              themeService.toggleTheme(!themeService.isDarkMode);
-            },
-            tooltip: themeService.isDarkMode ? 'Светлая тема' : 'Тёмная тема',
+    return BlocBuilder<ProfileBloc, ProfileState>(
+      builder: (context, state) {
+        User? user;
+        if (state is ProfileLoaded) {
+          user = state.user;
+        }
+
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text('Профиль'),
+            actions: [
+              IconButton(
+                icon: Icon(themeService.isDarkMode ? Icons.dark_mode : Icons.light_mode),
+                onPressed: () {
+                  themeService.toggleTheme(!themeService.isDarkMode);
+                },
+                tooltip: themeService.isDarkMode ? 'Светлая тема' : 'Тёмная тема',
+              ),
+            ],
           ),
-        ],
-      ),
-      body: ListView(
-        children: [
-          _buildUserInfoCard(user),
-          _buildThemeCard(context, themeService),
-          const Divider(height: 1),
-          ListTile(
-            leading: const Icon(Icons.article_outlined),
-            title: const Text('Настройка предпочтений по статьям'),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () {},
+          body: ListView(
+            children: [
+              _buildUserInfoCard(user),
+              _buildThemeCard(context, themeService),
+              const Divider(height: 1),
+              ListTile(
+                leading: const Icon(Icons.article_outlined),
+                title: const Text('Настройка предпочтений по статьям'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () {},
+              ),
+              ListTile(
+                leading: const Icon(Icons.notifications_outlined),
+                title: const Text('Настройка уведомлений'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () {},
+              ),
+              ListTile(
+                leading: const Icon(Icons.download_outlined),
+                title: const Text('Выгрузка аналитики'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () {},
+              ),
+              ListTile(
+                leading: const Icon(Icons.bedtime_outlined),
+                title: const Text('Трекер сна'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () {},
+              ),
+              ListTile(
+                leading: const Icon(Icons.psychology_outlined),
+                title: const Text('Тесты (подходящий отдых)'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () {},
+              ),
+              ListTile(
+                leading: const Icon(Icons.add_circle_outline),
+                title: const Text('Создать кастомную статью'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () {},
+              ),
+            ],
           ),
-          ListTile(
-            leading: const Icon(Icons.notifications_outlined),
-            title: const Text('Настройка уведомлений'),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () {},
-          ),
-          ListTile(
-            leading: const Icon(Icons.download_outlined),
-            title: const Text('Выгрузка аналитики'),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () {},
-          ),
-          ListTile(
-            leading: const Icon(Icons.bedtime_outlined),
-            title: const Text('Трекер сна'),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () {},
-          ),
-          ListTile(
-            leading: const Icon(Icons.psychology_outlined),
-            title: const Text('Тесты (подходящий отдых)'),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () {},
-          ),
-          ListTile(
-            leading: const Icon(Icons.add_circle_outline),
-            title: const Text('Создать кастомную статью'),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () {},
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 

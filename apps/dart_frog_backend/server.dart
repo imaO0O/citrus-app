@@ -52,13 +52,16 @@ Future<Response> _handleRequest(RequestContext context) async {
   if (path.startsWith('/calendar/')) {
     final token = _extractToken(context);
     if (token == null) {
+      print('Calendar endpoint: токен не найден');
       return Response(statusCode: 401, body: 'Unauthorized');
     }
-    
+
     try {
       final jwt = JWT.verify(token, SecretKey(_jwtSecret));
       authContext.userId = jwt.payload['user_id'] as String;
+      print('Calendar endpoint: токен проверен, user_id=${authContext.userId}');
     } catch (e) {
+      print('Calendar endpoint: ошибка проверки токена: $e');
       return Response(statusCode: 401, body: 'Invalid token');
     }
   }
@@ -197,22 +200,26 @@ Future<Response> _login(RequestContext context) async {
 
 Future<Response> _getEvents(RequestContext context, _AuthContext auth) async {
   final userId = auth.userId;
-  final startDate = context.request.uri.queryParameters['start_date'] ?? '1900-01-01';
-  final endDate = context.request.uri.queryParameters['end_date'] ?? '2100-12-31';
+
+  print('_getEvents: запрос для userId=$userId');
 
   if (userId == null) {
+    print('_getEvents: userId is null, возвращаем 401');
     return Response(statusCode: 401, body: 'Unauthorized');
   }
 
   try {
     final results = await _db!.query(
-      "SELECT id, user_id, title, description, event_date, start_time, end_time, notification_enabled "
+      "SELECT id, user_id, title, description, event_date, "
+      "start_time::text as start_time, "
+      "end_time::text as end_time, "
+      "notification_enabled "
       "FROM calendar_events "
       "WHERE user_id = '$userId' "
-      "AND event_date >= '$startDate' "
-      "AND event_date <= '$endDate' "
-      "ORDER BY event_date, start_time",
+      "ORDER BY event_date DESC, start_time",
     );
+
+    print('_getEvents: найдено ${results.length} событий');
 
     final events = results.map((row) {
       // UUID из PostgreSQL возвращается как байты - нужно конвертировать
@@ -225,14 +232,25 @@ Future<Response> _getEvents(RequestContext context, _AuthContext auth) async {
       final endTime = row[6];
       final notificationEnabled = row[7];
 
+      // Преобразуем startTime и endTime в строку
+      String? startTimeStr;
+      if (startTime != null) {
+        startTimeStr = startTime is String ? startTime : startTime.toString();
+      }
+      
+      String? endTimeStr;
+      if (endTime != null) {
+        endTimeStr = endTime is String ? endTime : endTime.toString();
+      }
+
       return {
         'id': id is String ? id : Uuid.unparse(id as Uint8List),
         'user_id': userId is String ? userId : Uuid.unparse(userId as Uint8List),
         'title': title is String ? title : '',
         'description': description is String ? description : null,
         'event_date': (eventDate as DateTime).toIso8601String(),
-        'start_time': startTime is String ? startTime : null,
-        'end_time': endTime is String ? endTime : null,
+        'start_time': startTimeStr,
+        'end_time': endTimeStr,
         'notification_enabled': notificationEnabled as bool,
       };
     }).toList();

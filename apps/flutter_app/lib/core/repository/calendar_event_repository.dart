@@ -29,6 +29,8 @@ class CalendarEventRepository {
       // Обновляем токен в API сервисе
       _apiService = CalendarEventApiService(token: token);
       print('  - _apiService пересоздан с новым токеном');
+    } else {
+      print('  - token is null, _apiService не обновляется с токеном');
     }
     // Очищаем кэш при смене пользователя — будем загружать из БД
     _cache = {};

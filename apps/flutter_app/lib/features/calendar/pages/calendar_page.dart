@@ -42,22 +42,31 @@ class _CalendarPageState extends State<CalendarPage> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<AuthBloc, AuthState>(
+    return BlocListener<CalendarBloc, CalendarState>(
       listener: (context, state) {
-        // При входе или выходе обновляем userId в календаре
-        if (state is AuthAuthenticated) {
-          print('CalendarPage: пользователь вошёл');
-          print('  - userId: ${state.user.id}');
-          print('  - email: ${state.user.email}');
-          print('  - token: ${state.user.token}');
-          print('  - token length: ${state.user.token.length}');
-          context.read<CalendarBloc>().updateUserId(state.user.id, token: state.user.token);
-        } else if (state is AuthUnauthenticated) {
-          print('CalendarPage: пользователь вышел');
-          context.read<CalendarBloc>().updateUserId('unknown', token: null);
+        // Показываем сообщение после удаления события
+        if (state is CalendarLoaded) {
+          // Проверяем, было ли только что удалено событие (через флаг в state)
+          // Для простоты - показываем сообщение при каждом обновлении
+          // В реальном приложении лучше использовать отдельный флаг
         }
       },
-      child: Scaffold(
+      child: BlocListener<AuthBloc, AuthState>(
+        listener: (context, state) {
+          // При входе или выходе обновляем userId в календаре
+          if (state is AuthAuthenticated) {
+            print('CalendarPage: пользователь вошёл');
+            print('  - userId: ${state.user.id}');
+            print('  - email: ${state.user.email}');
+            print('  - token: ${state.user.token}');
+            print('  - token length: ${state.user.token.length}');
+            context.read<CalendarBloc>().updateUserId(state.user.id, token: state.user.token);
+          } else if (state is AuthUnauthenticated) {
+            print('CalendarPage: пользователь вышел');
+            context.read<CalendarBloc>().updateUserId('unknown', token: null);
+          }
+        },
+        child: Scaffold(
         appBar: AppBar(
           title: const Text('Календарь'),
           actions: [
@@ -120,6 +129,7 @@ class _CalendarPageState extends State<CalendarPage> {
           child: const Icon(Icons.add),
         ),
       ),
+    ),
     );
   }
 
@@ -173,13 +183,37 @@ class _CalendarPageState extends State<CalendarPage> {
         });
       },
       onPageChanged: (focusedDay) {
-        _focusedDay = focusedDay;
+        final now = DateTime.now();
+        final focusedMonth = DateTime(focusedDay.year, focusedDay.month, 1);
+        final nowMonth = DateTime(now.year, now.month, 1);
+        
+        setState(() {
+          _focusedDay = focusedDay;
+          // Если месяц в прошлом — выбираем последний день месяца
+          if (focusedMonth.isBefore(nowMonth)) {
+            _selectedDay = DateTime(focusedDay.year, focusedDay.month + 1, 0);
+          }
+          // Если месяц в будущем — выбираем 1 число
+          else if (focusedMonth.isAfter(nowMonth)) {
+            _selectedDay = DateTime(focusedDay.year, focusedDay.month, 1);
+          }
+          // Если текущий месяц — оставляем сегодня
+          else {
+            _selectedDay = now;
+          }
+        });
       },
     );
   }
 
   Widget _buildEventsList(CalendarLoaded state) {
-    final events = state.getEventsForDay(_selectedDay);
+    // Показываем события текущего месяца (_focusedDay из виджета)
+    final events = state.getEventsForMonth(_focusedDay);
+    print('_buildEventsList: всего событий в state: ${state.events.values.expand((e) => e).length}');
+    print('_buildEventsList: событий текущего месяца (_focusedDay=$_focusedDay): ${events.length}');
+    for (final event in events) {
+      print('_buildEventsList: событие: ${event.title} на ${event.eventDate}');
+    }
 
     return Expanded(
       child: events.isEmpty
@@ -194,7 +228,7 @@ class _CalendarPageState extends State<CalendarPage> {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'Нет событий на ${DateFormat('dd MMMM yyyy').format(_selectedDay)}',
+                    'Нет событий на ${DateFormat('MMMM yyyy').format(_focusedDay)}',
                     style: TextStyle(
                       fontSize: 16,
                       color: Colors.grey[600],

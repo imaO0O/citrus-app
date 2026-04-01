@@ -7,6 +7,7 @@ import 'core/utils/theme_service.dart';
 import 'core/repository/calendar_event_repository.dart';
 import 'core/repository/auth_repository.dart';
 import 'features/auth/bloc/auth_bloc.dart';
+import 'features/auth/bloc/auth_bloc.dart' as auth_bloc;
 import 'features/dashboard/bloc/dashboard_bloc.dart';
 import 'features/calendar/bloc/calendar_bloc.dart';
 import 'features/chatbot/bloc/chatbot_bloc.dart';
@@ -15,10 +16,10 @@ import 'features/profile/bloc/profile_bloc.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // Инициализация сервиса тем
   await ThemeService().init();
-  
+
   runApp(const MyApp());
 }
 
@@ -29,8 +30,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     // Создаем репозитории
     final authRepository = AuthRepository();
-    // CalendarRepository будет создан после входа с реальным userId
-    CalendarEventRepository? calendarRepository;
+    final calendarRepository = CalendarEventRepository(userId: 'unknown');
 
     return ListenableBuilder(
       listenable: ThemeService(),
@@ -38,26 +38,37 @@ class MyApp extends StatelessWidget {
         return MultiRepositoryProvider(
           providers: [
             RepositoryProvider.value(value: authRepository),
-            RepositoryProvider<CalendarEventRepository?>(
-              create: (_) => null, // Будет создан после входа
+            RepositoryProvider<CalendarEventRepository>(
+              create: (_) => calendarRepository,
             ),
           ],
           child: MultiBlocProvider(
             providers: [
-              BlocProvider(create: (_) => AuthBloc(repository: authRepository)..add(const AuthInit())),
-              BlocProvider(create: (_) => DashboardBloc()),
               BlocProvider(
                 create: (_) {
-                  final user = authRepository.currentUser;
-                  if (user != null) {
-                    calendarRepository = CalendarEventRepository(userId: user.id);
-                  }
-                  return CalendarBloc(repository: calendarRepository ?? CalendarEventRepository(userId: 'unknown'));
+                  final authBloc = AuthBloc(repository: authRepository)..add(const AuthInit());
+                  // Слушаем изменения состояния авторизации
+                  authBloc.stream.listen((state) {
+                    if (state is auth_bloc.AuthAuthenticated) {
+                      // Пользователь вошёл — обновляем userId и токен в календаре
+                      calendarRepository.setUserId(state.user.id, token: state.user.token);
+                    } else if (state is auth_bloc.AuthUnauthenticated) {
+                      // Пользователь вышел — сбрасываем
+                      calendarRepository.setUserId('unknown', token: null);
+                    }
+                  });
+                  return authBloc;
                 },
+              ),
+              BlocProvider(create: (_) => DashboardBloc()),
+              BlocProvider(
+                create: (_) => CalendarBloc(repository: calendarRepository),
               ),
               BlocProvider(create: (_) => ChatbotBloc()),
               BlocProvider(create: (_) => MediaBloc()),
-              BlocProvider(create: (_) => ProfileBloc()),
+              BlocProvider(
+                create: (_) => ProfileBloc(authRepository: authRepository),
+              ),
             ],
             child: MaterialApp.router(
               title: 'Citrus',
