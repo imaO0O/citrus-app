@@ -26,27 +26,40 @@ class _CalendarDetailPageState extends State<CalendarDetailPage> {
         ? widget.event!.title
         : 'События на ${DateFormat('dd MMMM yyyy').format(displayDate)}';
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(title),
-        actions: widget.event != null
-            ? [
-                IconButton(
-                  icon: const Icon(Icons.edit),
-                  onPressed: () => _showEditEventDialog(context, widget.event!),
-                  tooltip: 'Редактировать',
-                ),
-                IconButton(
-                  icon: const Icon(Icons.delete),
-                  onPressed: () => _confirmDelete(context, widget.event!),
-                  tooltip: 'Удалить',
-                ),
-              ]
-            : null,
+    return BlocListener<CalendarBloc, CalendarState>(
+      listener: (context, state) {
+        // После удаления события — закрываем страницу
+        if (state is CalendarLoaded && widget.event != null) {
+          final eventsForDay = state.getEventsForDay(widget.event!.eventDate);
+          final exists = eventsForDay.any((e) => e.id == widget.event!.id);
+          if (!exists && mounted) {
+            // Событие удалено — закрываем страницу
+            Navigator.of(context).pop();
+          }
+        }
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(title),
+          actions: widget.event != null
+              ? [
+                  IconButton(
+                    icon: const Icon(Icons.edit),
+                    onPressed: () => _showEditEventDialog(context, widget.event!),
+                    tooltip: 'Редактировать',
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.delete),
+                    onPressed: () => _confirmDelete(context, widget.event!),
+                    tooltip: 'Удалить',
+                  ),
+                ]
+              : null,
+        ),
+        body: widget.event != null
+            ? _buildEventDetails(context, widget.event!)
+            : _buildDayEvents(context, displayDate),
       ),
-      body: widget.event != null
-          ? _buildEventDetails(context, widget.event!)
-          : _buildDayEvents(context, displayDate),
     );
   }
 
@@ -133,6 +146,9 @@ class _CalendarDetailPageState extends State<CalendarDetailPage> {
   Widget _buildTimeSection(CalendarEventModel event) {
     final hasStartTime = event.startTime != null;
     final hasEndTime = event.endTime != null;
+    
+    print('_buildTimeSection: startTime=${event.startTime}, endTime=${event.endTime}');
+    print('_buildTimeSection: eventDate=${event.eventDate}');
 
     if (!hasStartTime && !hasEndTime) {
       return const SizedBox.shrink();
@@ -346,12 +362,22 @@ class _CalendarDetailPageState extends State<CalendarDetailPage> {
   void _showEditEventDialog(BuildContext context, CalendarEventModel event) {
     final titleController = TextEditingController(text: event.title);
     final descriptionController = TextEditingController(text: event.description ?? '');
-    TimeOfDay? selectedTime = event.startTime != null
-        ? TimeOfDay(
-            hour: int.parse(event.startTime!.substring(0, 2)),
-            minute: int.parse(event.startTime!.substring(3, 5)),
-          )
-        : null;
+    TimeOfDay? selectedTime;
+    
+    // Парсим startTime если есть
+    if (event.startTime != null && event.startTime!.isNotEmpty) {
+      try {
+        selectedTime = TimeOfDay(
+          hour: int.parse(event.startTime!.substring(0, 2)),
+          minute: int.parse(event.startTime!.substring(3, 5)),
+        );
+      } catch (e) {
+        print('_showEditEventDialog: ошибка парсинга startTime: $e');
+      }
+    }
+    
+    print('_showEditEventDialog: исходное startTime=${event.startTime}, parsed=$selectedTime');
+    
     bool notificationEnabled = event.notificationEnabled;
 
     showModalBottomSheet(
@@ -465,13 +491,18 @@ class _CalendarDetailPageState extends State<CalendarDetailPage> {
                         ),
                         startTime: selectedTime != null
                             ? '${selectedTime!.hour.toString().padLeft(2, '0')}:${selectedTime!.minute.toString().padLeft(2, '0')}:00'
-                            : event.startTime,
-                        endTime: event.endTime,
+                            : null,
+                        endTime: null,
                         notificationEnabled: notificationEnabled,
                       );
 
+                      print('_showEditEventDialog: сохраняем startTime=${updatedEvent.startTime}');
+
                       context.read<CalendarBloc>().add(UpdateEvent(updatedEvent));
+                      
+                      // Закрываем модалку и возвращаемся с обновлённым событием
                       Navigator.pop(context);
+                      Navigator.pop(context, updatedEvent);
 
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
@@ -510,47 +541,11 @@ class _CalendarDetailPageState extends State<CalendarDetailPage> {
             child: const Text('Отмена'),
           ),
           ElevatedButton(
-            onPressed: () async {
+            onPressed: () {
               // Закрываем диалог подтверждения
               Navigator.of(context).pop();
-              
-              // Показывем индикатор загрузки
-              showDialog(
-                context: context,
-                barrierDismissible: false,
-                builder: (context) => const Center(child: CircularProgressIndicator()),
-              );
-              
-              try {
-                // Удаляем событие
-                context.read<CalendarBloc>().add(DeleteEvent(event.id));
-                
-                // Закрываем индикатор и CalendarDetailPage
-                if (context.mounted) {
-                  Navigator.of(context).pop(); // Закрыть индикатор
-                  Navigator.of(context).pop(); // Закрыть CalendarDetailPage
-                }
-                
-                // Показываем сообщение
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Событие удалено'),
-                      backgroundColor: Colors.green,
-                    ),
-                  );
-                }
-              } catch (e) {
-                if (context.mounted) {
-                  Navigator.of(context).pop(); // Закрыть индикатор
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Ошибка: $e'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                }
-              }
+              // BLoC сам закроет страницу после удаления через BlocListener
+              context.read<CalendarBloc>().add(DeleteEvent(event.id));
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.red,

@@ -9,7 +9,7 @@ class CalendarEventApiService {
   final String? _token;
 
   CalendarEventApiService({
-    this.baseUrl = 'http://192.168.0.102:8081',
+    this.baseUrl = 'http://192.168.0.100:8081',
     http.Client? client,
     String? token,
   })  : _client = client ?? http.Client(),
@@ -34,16 +34,11 @@ class CalendarEventApiService {
     required String userId,
     required DateTime month,
   }) async {
-    final startOfMonth = DateTime(month.year, month.month, 1);
-    final endOfMonth = DateTime(month.year, month.month + 1, 0);
-
-    print('CalendarEventApiService: запрос событий для userId=$userId, ${_formatDate(startOfMonth)} - ${_formatDate(endOfMonth)}');
+    print('CalendarEventApiService: запрос событий для userId=$userId');
 
     final response = await _client.get(
       Uri.parse('$baseUrl/calendar/events').replace(queryParameters: {
         'user_id': userId,
-        'start_date': _formatDate(startOfMonth),
-        'end_date': _formatDate(endOfMonth),
       }),
       headers: _headers,
     );
@@ -63,11 +58,14 @@ class CalendarEventApiService {
 
   /// Создать событие
   Future<CalendarEventModel> createEvent(CalendarEventModel event) async {
+    print('CalendarEventApiService: создание события: title=${event.title}, startTime=${event.startTime}');
     final response = await _client.post(
       Uri.parse('$baseUrl/calendar/events'),
       headers: _headers,
       body: jsonEncode(event.toJson()),
     );
+
+    print('CalendarEventApiService: статус создания ${response.statusCode}, тело: ${response.body}');
 
     if (response.statusCode == 201) {
       return CalendarEventModel.fromJson(jsonDecode(response.body));
@@ -101,10 +99,6 @@ class CalendarEventApiService {
     if (response.statusCode != 204 && response.statusCode != 200) {
       throw Exception('Ошибка удаления события: ${response.statusCode}');
     }
-  }
-
-  String _formatDate(DateTime date) {
-    return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
   }
 
   void dispose() {

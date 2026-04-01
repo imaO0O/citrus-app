@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../features/dashboard/pages/dashboard_page.dart';
+import '../features/sleep/pages/sleep_page.dart';
 import '../features/calendar/pages/calendar_page.dart';
 import '../features/chatbot/pages/chatbot_page.dart';
 import '../features/media/pages/media_page.dart';
@@ -74,6 +75,15 @@ class AppRouter {
                 path: '/',
                 name: 'dashboard',
                 builder: (context, state) => const DashboardPage(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/sleep',
+                name: 'sleep',
+                builder: (context, state) => const SleepPage(),
               ),
             ],
           ),
