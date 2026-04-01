@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../core/repository/auth_repository.dart' as auth_repo;
 import '../../../core/repository/auth_repository.dart';
 import '../../../core/utils/theme_service.dart';
 import '../../auth/bloc/auth_bloc.dart';
@@ -13,10 +14,26 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
+  List<auth_repo.Theme> _themes = [];
+  auth_repo.Theme? _currentTheme;
+
   @override
   void initState() {
     super.initState();
     context.read<ProfileBloc>().add(LoadProfile());
+    _loadThemes();
+  }
+
+  Future<void> _loadThemes() async {
+    try {
+      final authRepository = context.read<AuthRepository>();
+      final themes = await authRepository.apiService.getThemes();
+      setState(() {
+        _themes = themes;
+      });
+    } catch (e) {
+      print('Ошибка загрузки тем: $e');
+    }
   }
 
   @override
@@ -25,28 +42,26 @@ class _ProfilePageState extends State<ProfilePage> {
 
     return BlocBuilder<ProfileBloc, ProfileState>(
       builder: (context, state) {
-        User? user;
+        auth_repo.User? user;
         if (state is ProfileLoaded) {
           user = state.user;
+          // Находим текущую тему пользователя
+          if (user?.themeId != null && _themes.isNotEmpty) {
+            _currentTheme = _themes.firstWhere(
+              (t) => t.id == user!.themeId,
+              orElse: () => _themes.first,
+            );
+          }
         }
 
         return Scaffold(
           appBar: AppBar(
             title: const Text('Профиль'),
-            actions: [
-              IconButton(
-                icon: Icon(themeService.isDarkMode ? Icons.dark_mode : Icons.light_mode),
-                onPressed: () {
-                  themeService.toggleTheme(!themeService.isDarkMode);
-                },
-                tooltip: themeService.isDarkMode ? 'Светлая тема' : 'Тёмная тема',
-              ),
-            ],
           ),
           body: ListView(
             children: [
               _buildUserInfoCard(user),
-              _buildThemeCard(context, themeService),
+              _buildThemeCard(context),
               const Divider(height: 1),
               ListTile(
                 leading: const Icon(Icons.article_outlined),
@@ -63,12 +78,6 @@ class _ProfilePageState extends State<ProfilePage> {
               ListTile(
                 leading: const Icon(Icons.download_outlined),
                 title: const Text('Выгрузка аналитики'),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () {},
-              ),
-              ListTile(
-                leading: const Icon(Icons.bedtime_outlined),
-                title: const Text('Трекер сна'),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () {},
               ),
@@ -91,7 +100,14 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Widget _buildThemeCard(BuildContext context, ThemeService themeService) {
+  Widget _buildThemeCard(BuildContext context) {
+    final authRepository = context.read<AuthRepository>();
+    final authBloc = context.read<AuthBloc>();
+    final user = authBloc.state is AuthAuthenticated
+        ? (authBloc.state as AuthAuthenticated).user
+        : null;
+    final themeService = ThemeService();
+
     return Card(
       margin: const EdgeInsets.all(16),
       child: Padding(
@@ -102,9 +118,11 @@ class _ProfilePageState extends State<ProfilePage> {
             Row(
               children: [
                 Icon(
-                  themeService.isDarkMode ? Icons.dark_mode : Icons.light_mode,
+                  _currentTheme?.isDark ?? false ? Icons.dark_mode : Icons.light_mode,
                   size: 32,
-                  color: themeService.isDarkMode ? Colors.amber : Colors.orange,
+                  color: _currentTheme != null
+                      ? Color(int.parse(_currentTheme!.primaryColor.replaceFirst('#', '0xFF')))
+                      : Colors.blue,
                 ),
                 const SizedBox(width: 12),
                 const Text(
@@ -117,23 +135,75 @@ class _ProfilePageState extends State<ProfilePage> {
               ],
             ),
             const SizedBox(height: 16),
-            SwitchListTile(
-              title: const Text('Тёмная тема'),
-              subtitle: Text(
-                themeService.isDarkMode ? 'Включена' : 'Выключена',
+            DropdownButtonFormField<String>(
+              value: _currentTheme?.id,
+              decoration: const InputDecoration(
+                border: OutlineInputBorder(),
+                labelText: 'Выберите тему',
               ),
-              value: themeService.isDarkMode,
-              onChanged: (value) {
-                themeService.toggleTheme(value);
-              },
-              secondary: Icon(
-                themeService.isDarkMode ? Icons.check_circle : Icons.circle_outlined,
-                color: themeService.isDarkMode ? Colors.green : Colors.grey,
-              ),
+              items: _themes.map((theme) {
+                return DropdownMenuItem<String>(
+                  value: theme.id,
+                  child: Row(
+                    children: [
+                      Icon(
+                        theme.isDark ? Icons.dark_mode : Icons.light_mode,
+                        color: Color(int.parse(theme.primaryColor.replaceFirst('#', '0xFF'))),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(theme.name),
+                    ],
+                  ),
+                );
+              }).cast<DropdownMenuItem<String>>().toList(),
+              onChanged: user != null ? (String? newThemeId) async {
+                if (newThemeId == null) return;
+
+                try {
+                  await authRepository.apiService.updateTheme(user.token, newThemeId);
+
+                  // Применяем тему
+                  final selectedTheme = _themes.firstWhere((t) => t.id == newThemeId);
+                  themeService.toggleTheme(selectedTheme.isDark);
+
+                  // Обновляем тему пользователя в BLoC
+                  final updatedUser = User(
+                    id: user.id,
+                    email: user.email,
+                    name: user.name,
+                    themeId: newThemeId,
+                    token: user.token,
+                  );
+                  context.read<AuthBloc>().add(AuthThemeChanged(updatedUser));
+
+                  // Обновляем локальное состояние
+                  if (mounted) {
+                    setState(() {
+                      _currentTheme = selectedTheme;
+                    });
+
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Тема применена'),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                  }
+                } catch (e) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Ошибка: $e'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                }
+              } : null,
             ),
             const SizedBox(height: 8),
             Text(
-              'Выберите удобный режим отображения приложения',
+              'Выберите удобный стиль отображения приложения',
               style: TextStyle(
                 fontSize: 12,
                 color: Colors.grey[600],

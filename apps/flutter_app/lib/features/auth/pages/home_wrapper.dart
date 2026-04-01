@@ -32,6 +32,11 @@ class _HomeWrapperState extends State<HomeWrapper> {
               label: 'Дневник',
             ),
             BottomNavigationBarItem(
+              icon: Icon(Icons.bedtime_outlined),
+              activeIcon: Icon(Icons.bedtime),
+              label: 'Сон',
+            ),
+            BottomNavigationBarItem(
               icon: Icon(Icons.calendar_today_outlined),
               activeIcon: Icon(Icons.calendar_today),
               label: 'Календарь',
@@ -58,15 +63,18 @@ class _HomeWrapperState extends State<HomeWrapper> {
                 context.go('/');
                 break;
               case 1:
-                context.go('/calendar');
+                context.go('/sleep');
                 break;
               case 2:
-                context.go('/chatbot');
+                context.go('/calendar');
                 break;
               case 3:
-                context.go('/media');
+                context.go('/chatbot');
                 break;
               case 4:
+                context.go('/media');
+                break;
+              case 5:
                 context.go('/profile');
                 break;
             }
@@ -79,10 +87,11 @@ class _HomeWrapperState extends State<HomeWrapper> {
 
   int _calculateSelectedIndex(BuildContext context) {
     final location = GoRouterState.of(context).uri.path;
-    if (location.startsWith('/calendar')) return 1;
-    if (location.startsWith('/chatbot')) return 2;
-    if (location.startsWith('/media')) return 3;
-    if (location.startsWith('/profile')) return 4;
+    if (location.startsWith('/sleep')) return 1;
+    if (location.startsWith('/calendar')) return 2;
+    if (location.startsWith('/chatbot')) return 3;
+    if (location.startsWith('/media')) return 4;
+    if (location.startsWith('/profile')) return 5;
     return 0;
   }
 }
