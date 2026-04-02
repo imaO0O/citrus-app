@@ -1,3 +1,13 @@
+-- Таблица тем оформления (создаётся первой, т.к. users ссылается на неё)
+CREATE TABLE IF NOT EXISTS themes (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name TEXT UNIQUE NOT NULL,
+    is_dark BOOLEAN DEFAULT FALSE,
+    primary_color TEXT DEFAULT '#2196F3',
+    accent_color TEXT DEFAULT '#FF9800',
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
 -- Таблица пользователей
 CREATE TABLE IF NOT EXISTS users (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -9,22 +19,10 @@ CREATE TABLE IF NOT EXISTS users (
     FOREIGN KEY (theme_id) REFERENCES themes(id) ON DELETE SET DEFAULT
 );
 
--- Таблица тем оформления
-CREATE TABLE IF NOT EXISTS themes (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    name TEXT UNIQUE NOT NULL,
-    is_dark BOOLEAN DEFAULT FALSE,
-    primary_color TEXT DEFAULT '#2196F3',
-    accent_color TEXT DEFAULT '#FF9800',
-    created_at TIMESTAMP DEFAULT NOW()
-);
-
 -- Добавляем стандартные темы
-INSERT INTO themes (id, name, is_dark, primary_color, accent_color) VALUES 
+INSERT INTO themes (id, name, is_dark, primary_color, accent_color) VALUES
     ('00000000-0000-0000-0000-000000000001', 'Светлая', FALSE, '#2196F3', '#FF9800'),
-    ('00000000-0000-0000-0000-000000000002', 'Тёмная', TRUE, '#90CAF9', '#FFB74D'),
-    ('00000000-0000-0000-0000-000000000003', 'Оранжевая', FALSE, '#FF9800', '#FF5722'),
-    ('00000000-0000-0000-0000-000000000004', 'Зелёная', FALSE, '#4CAF50', '#8BC34A')
+    ('00000000-0000-0000-0000-000000000002', 'Тёмная', TRUE, '#90CAF9', '#FFB74D')
 ON CONFLICT (id) DO NOTHING;
 
 -- Отметки настроения ("дольки")

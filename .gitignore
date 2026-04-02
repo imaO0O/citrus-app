@@ -3,6 +3,7 @@
 .packages
 pubspec.lock
 build/
+$null
 
 # IDE
 .vscode/
@@ -16,4 +17,8 @@ Thumbs.db
 
 # Docker volumes
 postgres_data/
-$null
+
+# Database backups (except migrations)
+*.sql
+!db/migrations/*.sql
+backup/
