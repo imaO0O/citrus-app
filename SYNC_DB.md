@@ -72,15 +72,29 @@ powershell -Command ".\\sync-db.ps1 -Mode export -BackupFile db/backups/backup-$
 ## Docker команды вручную
 
 ```bash
-# Экспорт
-docker exec citrus_postgres pg_dump -U citrus -d citrus > backup.sql
+# Экспорт (с сохранением внутри контейнера)
+docker exec citrus_postgres pg_dump -U citrus -d citrus -f /tmp/backup.sql
+docker cp citrus_postgres:/tmp/backup.sql backup.sql
+docker exec citrus_postgres rm /tmp/backup.sql
 
 # Импорт
-docker exec -i citrus_postgres psql -U citrus -d citrus < backup.sql
+docker cp backup.sql citrus_postgres:/tmp/restore.sql
+docker exec citrus_postgres psql -U citrus -d citrus -f /tmp/restore.sql
+docker exec citrus_postgres rm /tmp/restore.sql
 
 # Только структура
-docker exec citrus_postgres pg_dump -U citrus -d citrus --schema-only > structure.sql
+docker exec citrus_postgres pg_dump -U citrus -d citrus --schema-only -f /tmp/structure.sql
+docker cp citrus_postgres:/tmp/structure.sql structure.sql
+docker exec citrus_postgres rm /tmp/structure.sql
 
 # Только данные
-docker exec citrus_postgres pg_dump -U citrus -d citrus --data-only > data.sql
+docker exec citrus_postgres pg_dump -U citrus -d citrus --data-only -f /tmp/data.sql
+docker cp citrus_postgres:/tmp/data.sql data.sql
+docker exec citrus_postgres rm /tmp/data.sql
 ```
+
+## Кодировка
+
+Скрипт использует **UTF-8** для корректного отображения русских символов:
+- `PGCLIENTENCODING=UTF8` — переменная окружения для pg_dump/psql внутри контейнера
+- Файлы сохраняются через `docker cp`, что сохраняет исходную кодировку PostgreSQL

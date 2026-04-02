@@ -19,7 +19,9 @@ function Write-Color($text, $color) {
 
 if ($Mode -eq "export") {
     Write-Color "Экспорт полной БД в $BackupFile..." "Cyan"
-    docker exec $containerName pg_dump -U $user -d $db > $BackupFile
+    docker exec -e PGCLIENTENCODING=UTF8 $containerName pg_dump -U $user -d $db -f /tmp/backup.sql
+    docker cp "${containerName}:/tmp/backup.sql" $BackupFile
+    docker exec $containerName rm /tmp/backup.sql
     Write-Color "✓ Экспорт завершён" "Green"
 }
 elseif ($Mode -eq "import") {
@@ -28,7 +30,9 @@ elseif ($Mode -eq "import") {
         exit 1
     }
     Write-Color "Импорт БД из $BackupFile..." "Cyan"
-    docker exec -i $containerName psql -U $user -d $db < $BackupFile
+    docker cp $BackupFile "${containerName}:/tmp/restore.sql"
+    docker exec -e PGCLIENTENCODING=UTF8 $containerName psql -U $user -d $db -f /tmp/restore.sql
+    docker exec $containerName rm /tmp/restore.sql
     Write-Color "✓ Импорт завершён" "Green"
 }
 elseif ($Mode -eq "migrate") {
@@ -36,18 +40,24 @@ elseif ($Mode -eq "migrate") {
     $files = Get-ChildItem -Path $migrationsPath -Filter "*.sql" | Sort-Object Name
     foreach ($file in $files) {
         Write-Host "  Applying $($file.Name)..."
-        docker exec -i $containerName psql -U $user -d $db < $file.FullName
+        docker cp $file.FullName "${containerName}:/tmp/migration.sql"
+        docker exec -e PGCLIENTENCODING=UTF8 $containerName psql -U $user -d $db -f /tmp/migration.sql
+        docker exec $containerName rm /tmp/migration.sql
     }
     Write-Color "✓ Миграции применены" "Green"
 }
 elseif ($Mode -eq "dump-data") {
     Write-Color "Экспорт только данных (без структуры)..." "Cyan"
-    docker exec $containerName pg_dump -U $user -d $db --data-only > $BackupFile
+    docker exec -e PGCLIENTENCODING=UTF8 $containerName pg_dump -U $user -d $db --data-only -f /tmp/data.sql
+    docker cp "${containerName}:/tmp/data.sql" $BackupFile
+    docker exec $containerName rm /tmp/data.sql
     Write-Color "✓ Экспорт данных завершён" "Green"
 }
 elseif ($Mode -eq "dump-structure") {
     Write-Color "Экспорт только структуры БД..." "Cyan"
-    docker exec $containerName pg_dump -U $user -d $db --schema-only > $BackupFile
+    docker exec -e PGCLIENTENCODING=UTF8 $containerName pg_dump -U $user -d $db --schema-only -f /tmp/structure.sql
+    docker cp "${containerName}:/tmp/structure.sql" $BackupFile
+    docker exec $containerName rm /tmp/structure.sql
     Write-Color "✓ Экспорт структуры завершён" "Green"
 }
 else {
