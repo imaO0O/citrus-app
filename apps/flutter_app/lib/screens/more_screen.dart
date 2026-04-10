@@ -85,7 +85,7 @@ class MoreScreen extends StatelessWidget {
                           ),
                         ),
                       ),
-                      const _FeatureGrid(onTap: _openFeature),
+                      _FeatureGrid(onTap: _openFeature),
                     ],
                   ),
                 ),
