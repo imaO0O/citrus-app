@@ -167,7 +167,17 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
     emit(current.copyWith(selectedMoodId: event.moodId));
 
     try {
+      debugPrint('DashboardBloc: сохраняем настроение moodId=${event.moodId}, userId=${_moodRepository.userId}');
+
+      if (_moodRepository.userId == 'unknown') {
+        debugPrint('DashboardBloc: пользователь не авторизован, настроение не сохранено');
+        emit(current.copyWith(selectedMoodId: null));
+        return;
+      }
+
       await _moodRepository.createRecord(event.moodId, timestamp: event.timestamp);
+      debugPrint('DashboardBloc: настроение сохранено');
+
       await Future.delayed(const Duration(milliseconds: 1500));
 
       final streak = await _moodRepository.getStreak();

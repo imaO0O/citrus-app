@@ -775,21 +775,29 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
                 const SizedBox(height: 10),
                 const Text('Качество:', style: TextStyle(color: AppColors.mutedForeground, fontSize: 13)),
                 const SizedBox(height: 6),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                Wrap(
+                  alignment: WrapAlignment.center,
+                  spacing: 6,
+                  runSpacing: 6,
                   children: [1, 2, 3, 4, 5].map((q) {
                     final isSelected = quality == q;
                     return GestureDetector(
                       onTap: () => setModalState(() => quality = q),
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                         decoration: BoxDecoration(
                           color: isSelected ? AppColors.citrusPurple.withValues(alpha: 0.2) : AppColors.surface2,
                           borderRadius: BorderRadius.circular(10),
                           border: Border.all(color: isSelected ? AppColors.citrusPurple : Colors.transparent),
                         ),
-                        child: Text(_getQualityLabel(q), style: TextStyle(
-                          color: isSelected ? AppColors.citrusPurple : AppColors.mutedForeground, fontSize: 11)),
+                        child: Text(
+                          _getQualityLabel(q),
+                          style: TextStyle(
+                            color: isSelected ? AppColors.citrusPurple : AppColors.mutedForeground,
+                            fontSize: 12,
+                            fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                          ),
+                        ),
                       ),
                     );
                   }).toList(),

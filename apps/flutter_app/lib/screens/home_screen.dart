@@ -358,7 +358,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         },
         child: _selected != null
             ? Container(
-                key: const ValueKey('selected'),
+                key: ValueKey('hs_selected'),
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                 decoration: BoxDecoration(
                   color: Colors.white.withOpacity(0.06),
@@ -374,7 +374,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 ),
               )
             : Container(
-                key: const ValueKey('hint'),
+                key: const ValueKey('hs_hint'),
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                 child: const Text(
                   '6 уровней настроения · нажми на дольку',

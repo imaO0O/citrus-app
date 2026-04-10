@@ -66,7 +66,7 @@ class MoodRepository {
 
   void setUserId(String userId, {String? token}) {
     _userId = userId;
-    if (token != null) {
+    if (token != null && token.isNotEmpty) {
       _token = token;
       _apiService = MoodApiService(token: token);
     }
