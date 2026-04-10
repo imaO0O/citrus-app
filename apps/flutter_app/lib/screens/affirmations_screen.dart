@@ -349,6 +349,7 @@ class _AffirmationsScreenState extends State<AffirmationsScreen> {
             child: Icon(Icons.share_rounded, color: AppColors.mutedForeground, size: 20),
           ),
         ),
+        const SizedBox(height: 80),
       ],
     );
   }

@@ -51,7 +51,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                         _buildActivitySection(),
                         const SizedBox(height: 20),
                         _buildExportButtons(),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 80),
                       ],
                     ),
                   ),

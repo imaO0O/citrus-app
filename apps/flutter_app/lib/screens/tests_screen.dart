@@ -123,7 +123,7 @@ class _TestsScreenState extends State<TestsScreen> {
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 480),
             child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 80),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [

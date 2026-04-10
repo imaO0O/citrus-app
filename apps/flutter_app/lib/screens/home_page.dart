@@ -13,12 +13,14 @@ import 'widgets/daily_quote.dart';
 class HomePage extends StatefulWidget {
   final VoidCallback? onNavigateToExercises;
   final VoidCallback? onNavigateToChat;
+  final VoidCallback? onNavigateToDiary;
   final VoidCallback? onNavigateToSleep;
 
   const HomePage({
     super.key,
     this.onNavigateToExercises,
     this.onNavigateToChat,
+    this.onNavigateToDiary,
     this.onNavigateToSleep,
   });
 
@@ -76,6 +78,7 @@ class _HomePageState extends State<HomePage> {
               color: const Color(0xFFFF8C42),
               child: SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.only(bottom: 80),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -182,7 +185,7 @@ class _HomePageState extends State<HomePage> {
                     QuickLinks(
                       onExerciseTap: widget.onNavigateToExercises,
                       onChatTap: widget.onNavigateToChat,
-                      onDiaryTap: null,
+                      onDiaryTap: widget.onNavigateToDiary,
                       onSleepTap: widget.onNavigateToSleep,
                     ),
 

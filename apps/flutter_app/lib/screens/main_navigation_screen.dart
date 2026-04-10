@@ -44,6 +44,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       HomePage(                 // 0 — homepage из test_fornt
         onNavigateToExercises: () => _setIndex(10),
         onNavigateToChat: () => _setIndex(2),
+        onNavigateToDiary: () => _setIndex(3),
         onNavigateToSleep: () => _setIndex(8),
       ),
       CalendarScreen(),            // 1

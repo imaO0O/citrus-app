@@ -76,7 +76,7 @@ class _MediaScreenState extends State<MediaScreen> with SingleTickerProviderStat
                 _buildCategoryChips(),
                 Expanded(
                   child: SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 80),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [

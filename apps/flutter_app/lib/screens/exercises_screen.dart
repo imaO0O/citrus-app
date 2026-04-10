@@ -198,7 +198,7 @@ class _ExercisesScreenState extends State<ExercisesScreen> {
                 const SizedBox(height: 16),
                 Expanded(
                   child: ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    padding: const EdgeInsets.symmetric(horizontal: 20).copyWith(bottom: 80),
                     itemCount: _filteredExercises.length,
                     itemBuilder: (context, index) => Padding(
                       padding: const EdgeInsets.only(bottom: 12),

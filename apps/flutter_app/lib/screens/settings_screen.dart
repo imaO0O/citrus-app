@@ -25,7 +25,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 480),
             child: SingleChildScrollView(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 80),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [

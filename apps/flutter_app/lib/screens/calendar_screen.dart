@@ -114,7 +114,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
             final eventsByDay = state is CalendarLoaded ? state.events : <DateTime, List<CalendarEventModel>>{};
 
             return SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 480),
                 child: Column(
