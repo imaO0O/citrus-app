@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'dart:ui';
+import 'package:go_router/go_router.dart';
 import '../core/theme/app_colors.dart';
+import '../core/utils/theme_service.dart';
 import '../screens/home_page.dart';
 import '../screens/calendar_screen.dart';
 import '../screens/chat_screen.dart';
@@ -15,6 +18,10 @@ import '../screens/exercises_screen.dart';
 import '../screens/analytics_screen.dart';
 import '../screens/settings_screen.dart';
 import '../screens/emergency_modal.dart';
+import '../features/auth/bloc/auth_bloc.dart';
+import '../bloc/dashboard_bloc.dart';
+import '../core/repository/sleep_repository.dart';
+import '../features/diary/bloc/diary_bloc.dart';
 
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
@@ -37,7 +44,12 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   void initState() {
     super.initState();
     _screens.addAll([
-      const HomePage(),            // 0 — homepage из test_fornt
+      HomePage(                 // 0 — homepage из test_fornt
+        onNavigateToExercises: () => _setIndex(10),
+        onNavigateToChat: () => _setIndex(2),
+        onNavigateToDiary: () => _setIndex(3),
+        onNavigateToSleep: () => _setIndex(8),
+      ),
       CalendarScreen(),            // 1
       ChatScreen(),                // 2
       DiaryScreen(),               // 3
@@ -51,6 +63,21 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       AnalyticsScreen(),           // 11
       SettingsScreen(),            // 12
     ]);
+
+    // Инициализация BLoC при старте
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      try {
+        final authBloc = context.read<AuthBloc>();
+        final authState = authBloc.state;
+        if (authState is AuthAuthenticated) {
+          debugPrint('MainNav: init — пользователь уже авторизован, userId=${authState.user.id}');
+          context.read<DashboardBloc>().updateUserId(authState.user.id, token: authState.user.token);
+          context.read<DiaryBloc>().updateUserId(authState.user.id, token: authState.user.token);
+        }
+      } catch (e) {
+        debugPrint('MainNav: ошибка init BLoC: $e');
+      }
+    });
   }
 
   final List<Map<String, String>> _allFeatures = const [
@@ -81,26 +108,56 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Stack(
-        children: [
-          Column(
-            children: [
-              _buildHeader(),
-              Expanded(
-                child: IndexedStack(
-                  index: _currentIndex,
-                  children: _screens,
-                ),
+    return ListenableBuilder(
+      listenable: ThemeService(),
+      builder: (context, _) {
+        return BlocListener<AuthBloc, AuthState>(
+          listener: (context, state) {
+            if (state is AuthAuthenticated) {
+              debugPrint('MainNav: AuthAuthenticated, userId=${state.user.id}');
+              Future.microtask(() {
+                if (mounted) {
+                  try {
+                    context.read<DashboardBloc>().updateUserId(state.user.id, token: state.user.token);
+                  } catch (e) {}
+                  try {
+                    context.read<DiaryBloc>().updateUserId(state.user.id, token: state.user.token);
+                  } catch (e) {}
+                }
+              });
+            } else if (state is AuthUnauthenticated) {
+              Future.microtask(() {
+                if (mounted) {
+                  context.go('/auth');
+                }
+              });
+            }
+          },
+          child: SafeArea(
+            child: Scaffold(
+              body: Stack(
+                children: [
+                  Column(
+                    children: [
+                      _buildHeader(),
+                      Expanded(
+                        child: IndexedStack(
+                          index: _currentIndex,
+                          children: _screens,
+                        ),
+                      ),
+                      _buildBottomNav(),
+                    ],
+                  ),
+                  if (_showMenu) _buildMenuOverlay(),
+                  if (_showEmergency)
+                    EmergencyModal(onClose: () => setState(() => _showEmergency = false)),
+                ],
               ),
-              _buildBottomNav(),
-            ],
+            ),
           ),
-          if (_showMenu) _buildMenuOverlay(),
-          if (_showEmergency)
-            EmergencyModal(onClose: () => setState(() => _showEmergency = false)),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -349,7 +406,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             child: GestureDetector(
               onTap: () {},
               child: Container(
-                constraints: const BoxConstraints(maxWidth: 500),
+                constraints: BoxConstraints(
+                  maxWidth: 500,
+                  maxHeight: MediaQuery.of(context).size.height * 0.8,
+                ),
                 decoration: BoxDecoration(
                   color: AppColors.surface2,
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
@@ -358,10 +418,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                   ),
                 ),
                 padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Row(
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Column(
@@ -405,7 +466,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                       physics: const NeverScrollableScrollPhysics(),
                       mainAxisSpacing: 12,
                       crossAxisSpacing: 12,
-                      childAspectRatio: 0.95,
+                      childAspectRatio: 0.85,
                       children: _allFeatures.map((feature) {
                         final featureIndex = int.parse(feature['path']!);
                         final isActive = _currentIndex == featureIndex;
@@ -417,7 +478,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                             });
                           },
                           child: Container(
-                            padding: const EdgeInsets.all(12),
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
                             decoration: BoxDecoration(
                               color: isActive
                                   ? AppColors.citrusOrange.withOpacity(0.15)
@@ -433,26 +494,30 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Text(feature['icon'] as String,
-                                    style: const TextStyle(fontSize: 24)),
-                                const SizedBox(height: 6),
+                                    style: const TextStyle(fontSize: 22)),
+                                const SizedBox(height: 4),
                                 Text(
                                   feature['label'] as String,
                                   style: TextStyle(
-                                    fontSize: 12,
+                                    fontSize: 11,
                                     fontWeight: FontWeight.w500,
                                     color: isActive
                                         ? AppColors.citrusOrange
                                         : AppColors.foreground,
                                   ),
                                   textAlign: TextAlign.center,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
-                                const SizedBox(height: 2),
+                                const SizedBox(height: 1),
                                 Text(
                                   feature['desc'] as String,
                                   style: const TextStyle(
-                                      fontSize: 10,
+                                      fontSize: 9,
                                       color: AppColors.dimForeground),
                                   textAlign: TextAlign.center,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ],
                             ),
@@ -480,7 +545,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                         ],
                       ),
                     ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),

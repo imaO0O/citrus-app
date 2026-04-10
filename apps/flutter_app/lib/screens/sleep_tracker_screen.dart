@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../core/theme/app_colors.dart';
+import '../features/sleep/bloc/sleep_bloc.dart';
+import '../features/auth/bloc/auth_bloc.dart';
+import '../models/sleep_record.dart';
 
 class SleepTrackerScreen extends StatefulWidget {
   const SleepTrackerScreen({super.key});
@@ -9,70 +13,182 @@ class SleepTrackerScreen extends StatefulWidget {
 }
 
 class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
-  final List<String> _days = ['\u041F\u043D', '\u0412\u0442', '\u0421\u0440', '\u0427\u0442', '\u041F\u0442', '\u0421\u0431', '\u0412\u0441'];
-  final List<double> _sleepHours = [7.0, 8.5, 6.0, 7.5, 8.0, 9.0, 7.5];
-  final List<int> _sleepQuality = [2, 3, 1, 2, 3, 3, 2];
-
-  final List<Map<String, dynamic>> _sleepHistory = [
-    {'date': '\u0421\u0435\u0433\u043E\u0434\u043D\u044F', 'bedtime': '23:15', 'wakeup': '06:45', 'hours': 7.5, 'quality': 2},
-    {'date': '\u0412\u0447\u0435\u0440\u0430', 'bedtime': '22:30', 'wakeup': '07:00', 'hours': 8.5, 'quality': 3},
-    {'date': '2 \u0434\u043D\u044F \u043D\u0430\u0437\u0430\u0434', 'bedtime': '00:30', 'wakeup': '06:30', 'hours': 6.0, 'quality': 1},
-    {'date': '3 \u0434\u043D\u044F \u043D\u0430\u0437\u0430\u0434', 'bedtime': '23:00', 'wakeup': '06:30', 'hours': 7.5, 'quality': 2},
-    {'date': '4 \u0434\u043D\u044F \u043D\u0430\u0437\u0430\u0434', 'bedtime': '22:00', 'wakeup': '06:00', 'hours': 8.0, 'quality': 3},
-    {'date': '5 \u0434\u043D\u0435\u0439 \u043D\u0430\u0437\u0430\u0434', 'bedtime': '23:45', 'wakeup': '08:45', 'hours': 9.0, 'quality': 3},
-  ];
+  final List<String> _days = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
 
   final List<String> _sleepTips = [
-    '\u041B\u043E\u0436\u0438\u0442\u0435\u0441\u044C \u0438 \u0432\u0441\u0442\u0430\u0432\u0430\u0439\u0442\u0435 \u0432 \u043E\u0434\u043D\u043E \u0438 \u0442\u043E \u0436\u0435 \u0432\u0440\u0435\u043C\u044F \u043A\u0430\u0436\u0434\u044B\u0439 \u0434\u0435\u043D\u044C.',
-    '\u041E\u0442\u043A\u0430\u0436\u0438\u0442\u0435\u0441\u044C \u043E\u0442 \u044D\u043A\u0440\u0430\u043D\u043E\u0432 \u0437\u0430 30 \u043C\u0438\u043D\u0443\u0442 \u0434\u043E \u0441\u043D\u0430.',
-    '\u041E\u043F\u0442\u0438\u043C\u0430\u043B\u044C\u043D\u0430\u044F \u0442\u0435\u043C\u043F\u0435\u0440\u0430\u0442\u0443\u0440\u0430 \u0432 \u0441\u043F\u0430\u043B\u044C\u043D\u0435 18-20\u00B0C.',
-    '\u0418\u0437\u0431\u0435\u0433\u0430\u0439\u0442\u0435 \u043A\u043E\u0444\u0435 \u0438 \u044D\u043D\u0435\u0440\u0433\u0435\u0442\u0438\u043A\u043E\u0432 \u043F\u043E\u0441\u043B\u0435 14:00.',
-    '\u0421\u043E\u0437\u0434\u0430\u0439\u0442\u0435 \u0440\u0438\u0442\u0443\u0430\u043B \u043F\u0435\u0440\u0435\u0434 \u0441\u043D\u043E\u043C: \u0447\u0442\u0435\u043D\u0438\u0435, \u043C\u0435\u0434\u0438\u0442\u0430\u0446\u0438\u044F.',
-    '\u041D\u0435 \u0435\u0448\u044C\u0442\u0435 \u0442\u044F\u0436\u0451\u043B\u0443\u044E \u043F\u0438\u0449\u0443 \u0437\u0430 2-3 \u0447\u0430\u0441\u0430 \u0434\u043E \u0441\u043D\u0430.',
+    'Ложитесь и вставайте в одно и то же время каждый день.',
+    'Откажитесь от экранов за 30 минут до сна.',
+    'Оптимальная температура в спальне 18-20°C.',
+    'Избегайте кофе и энергетиков после 14:00.',
+    'Создайте ритуал перед сном: чтение, медитация.',
+    'Не ешьте тяжёлую пищу за 2-3 часа до сна.',
   ];
 
-  Color _getQualityColor(int quality) {
+  @override
+  void initState() {
+    super.initState();
+    _loadSleepData();
+  }
+
+  void _loadSleepData() {
+    final now = DateTime.now();
+    final startDate = DateTime(now.year - 1, 1, 1);
+    final endDate = DateTime(now.year + 1, 12, 31);
+    context.read<SleepBloc>().add(LoadSleepRecords(startDate: startDate, endDate: endDate));
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Перезагружаем при изменении AuthState
+    final authState = context.read<AuthBloc>().state;
+    if (authState is AuthAuthenticated) {
+      _loadSleepData();
+    }
+  }
+
+  String _getQualityLabel(int? quality) {
     return switch (quality) {
-      3 => AppColors.moodExcellent,
-      2 => AppColors.moodGood,
-      1 => AppColors.moodAnxious,
-      _ => AppColors.moodVeryBad,
+      5 => 'Отлично',
+      4 => 'Хорошо',
+      3 => 'Нормально',
+      2 => 'Плохо',
+      1 => 'Очень плохо',
+      _ => '—',
     };
   }
 
-  String _getQualityLabel(int quality) {
-    return switch (quality) {
-      3 => '\u041E\u0442\u043B\u0438\u0447\u043D\u043E',
-      2 => '\u0425\u043E\u0440\u043E\u0448\u043E',
-      1 => '\u0421\u0440\u0435\u0434\u043D\u0435',
-      _ => '\u041F\u043B\u043E\u0445\u043E',
-    };
+  double _calculateSleepDuration(String? bedTime, String? wakeTime) {
+    if (bedTime == null || wakeTime == null) return 0;
+    final bed = _parseTime(bedTime);
+    final wake = _parseTime(wakeTime);
+    if (bed == null || wake == null) return 0;
+    double hours = wake - bed;
+    if (hours < 0) hours += 24;
+    return hours;
   }
 
-  int _getGoodNightsCount() => _sleepQuality.where((q) => q >= 2).length;
-  double _getAverageSleep() => _sleepHours.reduce((a, b) => a + b) / _sleepHours.length;
+  double? _parseTime(String timeStr) {
+    if (!timeStr.contains(':')) return null;
+    try {
+      final parts = timeStr.split(':');
+      final hour = int.parse(parts[0]);
+      final minute = int.parse(parts[1]);
+      return hour + minute / 60.0;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  String _formatSleepDuration(double hours) {
+    final h = hours.floor();
+    final m = ((hours - h) * 60).round();
+    return '${h}ч ${m}м';
+  }
+
+  String _getDayLabel(DateTime date) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final day = DateTime(date.year, date.month, date.day);
+    final diff = today.difference(day).inDays;
+    return switch (diff) {
+      0 => 'Сегодня',
+      1 => 'Вчера',
+      _ => '${diff} дн. назад',
+    };
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
+        child: BlocBuilder<SleepBloc, SleepState>(
+          builder: (context, state) {
+            if (state is SleepLoading) {
+              return const Center(child: CircularProgressIndicator(color: AppColors.citrusOrange));
+            }
+
+            if (state is SleepError) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.error_outline, size: 48, color: AppColors.destructive),
+                    const SizedBox(height: 16),
+                    Text(state.message, style: const TextStyle(color: AppColors.mutedForeground)),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: _loadSleepData,
+                      child: const Text('Повторить'),
+                    ),
+                  ],
+                ),
+              );
+            }
+
+            if (state is SleepLoaded) {
+              final records = state.records;
+              records.sort((a, b) => b.sleepDate.compareTo(a.sleepDate));
+              return _buildContent(records, state);
+            }
+
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.bedtime, size: 64, color: AppColors.dimForeground),
+                  const SizedBox(height: 16),
+                  const Text('Нет данных о сне', style: TextStyle(color: AppColors.mutedForeground, fontSize: 16)),
+                  const SizedBox(height: 16),
+                  ElevatedButton.icon(
+                    onPressed: () => _showAddSleepDialog(context, null),
+                    icon: const Icon(Icons.add),
+                    label: const Text('Добавить запись'),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+      ),
+      floatingActionButton: BlocBuilder<SleepBloc, SleepState>(
+        builder: (context, state) {
+          if (state is SleepLoaded) {
+            return FloatingActionButton(
+              onPressed: () => _showAddSleepDialog(context, state.records),
+              backgroundColor: AppColors.citrusPurple,
+              child: const Icon(Icons.add),
+            );
+          }
+          return const SizedBox.shrink();
+        },
+      ),
+    );
+  }
+
+  Widget _buildContent(List<SleepRecord> records, SleepLoaded state) {
+    final last7Days = _getLast7Days(records);
+
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 480),
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 80),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildHeader(),
               const SizedBox(height: 20),
-              _buildSummaryCards(),
+              _buildSummaryCards(records, state),
               const SizedBox(height: 24),
-              _buildSleepChart(),
+              _buildSleepChart(last7Days),
               const SizedBox(height: 24),
               _buildLogSleepButton(),
               const SizedBox(height: 24),
               _buildSleepHistoryHeader(),
               const SizedBox(height: 12),
-              _buildSleepHistoryList(),
+              _buildSleepHistoryList(records),
               const SizedBox(height: 24),
               _buildSleepTipsHeader(),
               const SizedBox(height: 12),
@@ -85,39 +201,68 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
     );
   }
 
+  List<SleepRecord> _getLast7Days(List<SleepRecord> records) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final last7 = <SleepRecord>[];
+
+    for (int i = 0; i < 7; i++) {
+      final day = today.subtract(Duration(days: i));
+      final record = records.where((r) {
+        final rd = DateTime(r.sleepDate.year, r.sleepDate.month, r.sleepDate.day);
+        return rd.isAtSameMomentAs(day);
+      }).firstOrNull;
+      if (record != null) {
+        last7.add(record);
+      }
+    }
+
+    return last7.reversed.toList();
+  }
+
   Widget _buildHeader() {
     return const Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          '\u0422\u0440\u0435\u043A\u0435\u0440 \u0441\u043D\u0430',
+          'Трекер сна',
           style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700, color: AppColors.foreground),
         ),
         SizedBox(height: 4),
         Text(
-          '\u041E\u0442\u0441\u043B\u0435\u0436\u0438\u0432\u0430\u0439\u0442\u0435 \u043A\u0430\u0447\u0435\u0441\u0442\u0432\u043E \u0441\u043D\u0430',
+          'Отслеживайте качество сна',
           style: TextStyle(fontSize: 13, color: AppColors.mutedForeground),
         ),
       ],
     );
   }
 
-  Widget _buildSummaryCards() {
-    final avgSleep = _getAverageSleep();
-    final goodNights = _getGoodNightsCount();
+  Widget _buildSummaryCards(List<SleepRecord> records, SleepLoaded state) {
+    final avgDuration = state.averageSleepDuration;
+    final avgQuality = state.averageQuality;
+    final goodNights = records.where((r) => (r.quality ?? 0) >= 2).length;
 
     return Row(
       children: [
         Expanded(
-          child: _buildSummaryCard(value: '${avgSleep.toStringAsFixed(1)}\u0447', label: '\u0421\u0440\u0435\u0434\u043D\u0438\u0439 \u0441\u043E\u043D'),
+          child: _buildSummaryCard(
+            value: avgDuration != null ? _formatSleepDuration(avgDuration) : '—',
+            label: 'Средний сон',
+          ),
         ),
         const SizedBox(width: 10),
         Expanded(
-          child: _buildSummaryCard(value: '23:30', label: '\u0421\u0440\u0435\u0434\u043D\u0438\u0439 \u043E\u0442\u0431\u043E\u0439'),
+          child: _buildSummaryCard(
+            value: avgQuality != null ? '${avgQuality.toStringAsFixed(1)} / 5' : '—',
+            label: 'Качество',
+          ),
         ),
         const SizedBox(width: 10),
         Expanded(
-          child: _buildSummaryCard(value: '$goodNights/7', label: '\u0425\u043E\u0440\u043E\u0448\u0438\u0435 \u043D\u043E\u0447\u0438'),
+          child: _buildSummaryCard(
+            value: '$goodNights/${records.length}',
+            label: 'Хорошие ночи',
+          ),
         ),
       ],
     );
@@ -145,7 +290,7 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
     );
   }
 
-  Widget _buildSleepChart() {
+  Widget _buildSleepChart(List<SleepRecord> last7Days) {
     final maxHours = 10.0;
 
     return Container(
@@ -159,7 +304,7 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            '\u0421\u043E\u043D \u0437\u0430 \u043D\u0435\u0434\u0435\u043B\u044E',
+            'Сон за неделю',
             style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.foreground),
           ),
           const SizedBox(height: 20),
@@ -167,66 +312,61 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
             height: 160,
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.end,
-              children: List.generate(_sleepHours.length, (index) {
-                final hours = _sleepHours[index];
-                final quality = _sleepQuality[index];
-                final barHeight = (hours / maxHours) * 120;
+              children: List.generate(7, (index) {
+                if (index < last7Days.length) {
+                  final record = last7Days[index];
+                  final hours = _calculateSleepDuration(record.bedTime, record.wakeTime);
+                  final barHeight = hours > 0 ? (hours / maxHours) * 120 : 0.0;
+                  final dayOfWeek = (record.sleepDate.weekday - 1) % 7;
 
-                return Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 3),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        Container(
-                          height: barHeight,
-                          decoration: BoxDecoration(
-                            color: _getQualityColor(quality),
-                            borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
+                  return Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 3),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          if (hours > 0)
+                            Container(
+                              height: barHeight,
+                              decoration: BoxDecoration(
+                                color: AppColors.citrusPurple,
+                                borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
+                              ),
+                            ),
+                          const SizedBox(height: 8),
+                          Text(
+                            _days[dayOfWeek],
+                            style: const TextStyle(fontSize: 10, color: AppColors.dimForeground),
                           ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          _days[index],
-                          style: const TextStyle(fontSize: 10, color: AppColors.dimForeground),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                );
+                  );
+                } else {
+                  return Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 3),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          Container(height: 0),
+                          const SizedBox(height: 8),
+                          const Text('', style: TextStyle(fontSize: 10)),
+                        ],
+                      ),
+                    ),
+                  );
+                }
               }),
             ),
           ),
           const SizedBox(height: 16),
-          Row(
-            children: [
-              _qualityLegend(3, '\u041E\u0442\u043B\u0438\u0447\u043D\u043E'),
-              const SizedBox(width: 12),
-              _qualityLegend(2, '\u0425\u043E\u0440\u043E\u0448\u043E'),
-              const SizedBox(width: 12),
-              _qualityLegend(1, '\u0421\u0440\u0435\u0434\u043D\u0435'),
-            ],
+          const Text(
+            'Фиолетовые столбцы — длительность сна',
+            style: TextStyle(fontSize: 10, color: AppColors.mutedForeground),
           ),
         ],
       ),
-    );
-  }
-
-  Widget _qualityLegend(int level, String label) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 8,
-          height: 8,
-          decoration: BoxDecoration(
-            color: _getQualityColor(level),
-            shape: BoxShape.circle,
-          ),
-        ),
-        const SizedBox(width: 4),
-        Text(label, style: const TextStyle(fontSize: 10, color: AppColors.mutedForeground)),
-      ],
     );
   }
 
@@ -244,7 +384,11 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: _showAddSleepDialog,
+          onTap: () {
+            final state = context.read<SleepBloc>().state;
+            final records = state is SleepLoaded ? state.records : <SleepRecord>[];
+            _showAddSleepDialog(context, records);
+          },
           borderRadius: BorderRadius.circular(14),
           child: const Padding(
             padding: EdgeInsets.symmetric(vertical: 14),
@@ -254,7 +398,7 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
                 Icon(Icons.nights_stay, color: AppColors.citrusPurple, size: 20),
                 SizedBox(width: 8),
                 Text(
-                  '\u0417\u0430\u043F\u0438\u0441\u0430\u0442\u044C \u0441\u043E\u043D',
+                  'Записать сон',
                   style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.foreground),
                 ),
               ],
@@ -267,31 +411,42 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
 
   Widget _buildSleepHistoryHeader() {
     return const Text(
-      '\u0418\u0441\u0442\u043E\u0440\u0438\u044F \u0441\u043D\u0430',
+      'История сна',
       style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: AppColors.foreground),
     );
   }
 
-  Widget _buildSleepHistoryList() {
+  Widget _buildSleepHistoryList(List<SleepRecord> records) {
+    if (records.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            children: [
+              Icon(Icons.bedtime, size: 48, color: AppColors.dimForeground),
+              const SizedBox(height: 8),
+              const Text(
+                'Нет записей о сне',
+                style: TextStyle(color: AppColors.mutedForeground),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return Column(
-      children: _sleepHistory.map((entry) {
-        final quality = entry['quality'] as int;
-        final qColor = _getQualityColor(quality);
-        final hours = entry['hours'] as double;
-        final maxH = 10.0;
+      children: records.take(10).map((record) {
+        final hours = _calculateSleepDuration(record.bedTime, record.wakeTime);
+        final quality = record.quality;
 
         return Container(
           margin: const EdgeInsets.only(bottom: 8),
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.03),
+            color: AppColors.surface1,
             borderRadius: BorderRadius.circular(14),
-            border: Border(
-              left: BorderSide(color: qColor, width: 3),
-              top: BorderSide(color: AppColors.subtleBorder),
-              right: BorderSide(color: AppColors.subtleBorder),
-              bottom: BorderSide(color: AppColors.subtleBorder),
-            ),
+            border: Border.all(color: AppColors.subtleBorder),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -299,39 +454,45 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    entry['date'] as String,
-                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.foreground),
+                  Expanded(
+                    child: Text(
+                      _getDayLabel(record.sleepDate),
+                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.foreground),
+                    ),
                   ),
-                  Text(
-                    '${hours}\u0447',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: qColor),
+                  IconButton(
+                    icon: const Icon(Icons.edit, size: 18),
+                    color: AppColors.citrusOrange,
+                    onPressed: () => _showEditSleepDialog(context, record),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.delete, size: 18),
+                    color: AppColors.destructive,
+                    onPressed: () => _confirmDeleteSleep(context, record),
                   ),
                 ],
               ),
-              const SizedBox(height: 4),
-              Text(
-                '${entry['bedtime']} - ${entry['wakeup']}',
-                style: const TextStyle(fontSize: 12, color: AppColors.mutedForeground),
-              ),
-              const SizedBox(height: 8),
-              Container(
-                height: 6,
-                decoration: BoxDecoration(
-                  color: AppColors.surface3,
-                  borderRadius: BorderRadius.circular(3),
-                ),
-                child: FractionallySizedBox(
-                  alignment: Alignment.centerLeft,
-                  widthFactor: (hours / maxH).clamp(0.0, 1.0),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: qColor,
-                      borderRadius: BorderRadius.circular(3),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  if (record.bedTime != null && record.wakeTime != null)
+                    Text(
+                      '${record.bedTime!.substring(0, 5)} - ${record.wakeTime!.substring(0, 5)}',
+                      style: const TextStyle(fontSize: 12, color: AppColors.mutedForeground),
                     ),
+                  Text(
+                    hours > 0 ? _formatSleepDuration(hours) : '—',
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.foreground),
                   ),
-                ),
+                ],
               ),
+              if (quality != null) ...[
+                const SizedBox(height: 4),
+                Text(
+                  _getQualityLabel(quality),
+                  style: const TextStyle(fontSize: 12, color: AppColors.mutedForeground),
+                ),
+              ],
             ],
           ),
         );
@@ -341,7 +502,7 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
 
   Widget _buildSleepTipsHeader() {
     return const Text(
-      '\u0421\u043E\u0432\u0435\u0442\u044B \u0434\u043B\u044F \u0437\u0434\u043E\u0440\u043E\u0432\u043E\u0433\u043E \u0441\u043D\u0430',
+      'Советы для здорового сна',
       style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.foreground),
     );
   }
@@ -360,7 +521,7 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
           return Padding(
             padding: const EdgeInsets.only(bottom: 6),
             child: Text(
-              '\u2022 $tip',
+              '• $tip',
               style: const TextStyle(fontSize: 12, color: AppColors.mutedForeground, height: 1.5),
             ),
           );
@@ -369,10 +530,11 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
     );
   }
 
-  void _showAddSleepDialog() {
+  void _showAddSleepDialog(BuildContext context, List<SleepRecord>? records) {
     String bedtime = '23:00';
     String wakeup = '07:00';
-    int quality = 2;
+    int quality = 3;
+    DateTime selectedDate = DateTime.now();
 
     showDialog(
       context: context,
@@ -384,83 +546,118 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
             side: BorderSide(color: AppColors.citrusPurple.withOpacity(0.2)),
           ),
           title: const Text(
-            '\u0414\u043E\u0431\u0430\u0432\u0438\u0442\u044C \u0437\u0430\u043F\u0438\u0441\u044C \u043E \u0441\u043D\u0435',
+            'Добавить запись о сне',
             style: TextStyle(color: AppColors.foreground, fontWeight: FontWeight.w600),
           ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Row(
-                children: [
-                  const Text('\u041E\u0442\u0431\u043E\u0439:', style: TextStyle(color: AppColors.mutedForeground, fontSize: 13)),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: TextField(
-                      style: const TextStyle(color: AppColors.foreground, fontSize: 13),
-                      controller: TextEditingController(text: bedtime),
-                      decoration: InputDecoration(
-                        filled: true,
-                        fillColor: AppColors.surface2,
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                        isDense: true,
-                      ),
-                      onChanged: (v) => bedtime = v,
-                    ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.calendar_today, color: AppColors.mutedForeground, size: 20),
+                  title: const Text('Дата', style: TextStyle(color: AppColors.mutedForeground, fontSize: 13)),
+                  subtitle: Text(
+                    '${selectedDate.day}.${selectedDate.month}.${selectedDate.year}',
+                    style: const TextStyle(color: AppColors.foreground, fontSize: 14),
                   ),
-                ],
-              ),
-              const SizedBox(height: 10),
-              Row(
-                children: [
-                  const Text('\u041F\u043E\u0434\u044A\u0451\u043C:', style: TextStyle(color: AppColors.mutedForeground, fontSize: 13)),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: TextField(
-                      style: const TextStyle(color: AppColors.foreground, fontSize: 13),
-                      controller: TextEditingController(text: wakeup),
-                      decoration: InputDecoration(
-                        filled: true,
-                        fillColor: AppColors.surface2,
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                        isDense: true,
-                      ),
-                      onChanged: (v) => wakeup = v,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
-              const Text('\u041A\u0430\u0447\u0435\u0441\u0442\u0432\u043E:', style: TextStyle(color: AppColors.mutedForeground, fontSize: 13)),
-              const SizedBox(height: 6),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [1, 2, 3].map((q) {
-                  final isSelected = quality == q;
-                  return GestureDetector(
-                    onTap: () => setModalState(() => quality = q),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: isSelected ? _getQualityColor(q).withOpacity(0.2) : AppColors.surface2,
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: isSelected ? _getQualityColor(q) : Colors.transparent),
-                      ),
-                      child: Text(
-                        _getQualityLabel(q),
-                        style: TextStyle(color: isSelected ? _getQualityColor(q) : AppColors.mutedForeground, fontSize: 12),
+                  onTap: () async {
+                    final date = await showDatePicker(
+                      context: context,
+                      initialDate: selectedDate,
+                      firstDate: DateTime(2020),
+                      lastDate: DateTime.now(),
+                    );
+                    if (date != null) {
+                      setModalState(() => selectedDate = date);
+                    }
+                  },
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    const Text('Отбой:', style: TextStyle(color: AppColors.mutedForeground, fontSize: 13)),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: TextField(
+                        style: const TextStyle(color: AppColors.foreground, fontSize: 13),
+                        controller: TextEditingController(text: bedtime),
+                        decoration: InputDecoration(
+                          filled: true,
+                          fillColor: AppColors.surface2,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide.none,
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          isDense: true,
+                        ),
+                        onChanged: (v) => bedtime = v,
                       ),
                     ),
-                  );
-                }).toList(),
-              ),
-            ],
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    const Text('Подъём:', style: TextStyle(color: AppColors.mutedForeground, fontSize: 13)),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: TextField(
+                        style: const TextStyle(color: AppColors.foreground, fontSize: 13),
+                        controller: TextEditingController(text: wakeup),
+                        decoration: InputDecoration(
+                          filled: true,
+                          fillColor: AppColors.surface2,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide.none,
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          isDense: true,
+                        ),
+                        onChanged: (v) => wakeup = v,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                const Text('Качество:', style: TextStyle(color: AppColors.mutedForeground, fontSize: 13)),
+                const SizedBox(height: 6),
+                Wrap(
+                  alignment: WrapAlignment.center,
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: [1, 2, 3, 4, 5].map((q) {
+                    final isSelected = quality == q;
+                    return GestureDetector(
+                      onTap: () => setModalState(() => quality = q),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: isSelected ? AppColors.citrusPurple.withValues(alpha: 0.2) : AppColors.surface2,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: isSelected ? AppColors.citrusPurple : Colors.transparent),
+                        ),
+                        child: Text(
+                          _getQualityLabel(q),
+                          style: TextStyle(
+                            color: isSelected ? AppColors.citrusPurple : AppColors.mutedForeground,
+                            fontSize: 12,
+                            fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                          ),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ],
+            ),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('\u041E\u0442\u043C\u0435\u043D\u0430', style: TextStyle(color: AppColors.mutedForeground)),
+              child: const Text('Отмена', style: TextStyle(color: AppColors.mutedForeground)),
             ),
             FilledButton(
               onPressed: () {
@@ -470,19 +667,200 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
                 final btM = int.tryParse(btParts[1]) ?? 0;
                 final wuH = int.tryParse(wuParts[0]) ?? 0;
                 final wuM = int.tryParse(wuParts[1]) ?? 0;
-                double hours = (wuH + wuM / 60 - btH - btM / 60);
-                if (hours < 0) hours += 24;
 
-                setState(() {
-                  _sleepHistory.insert(0, {'date': '\u0421\u0435\u0433\u043E\u0434\u043D\u044F', 'bedtime': bedtime, 'wakeup': wakeup, 'hours': double.parse(hours.toStringAsFixed(1)), 'quality': quality});
-                });
+                final record = SleepRecord(
+                  id: DateTime.now().millisecondsSinceEpoch.toString(),
+                  userId: 'unknown',
+                  sleepDate: selectedDate,
+                  bedTime: '${btH.toString().padLeft(2, '0')}:${btM.toString().padLeft(2, '0')}:00',
+                  wakeTime: '${wuH.toString().padLeft(2, '0')}:${wuM.toString().padLeft(2, '0')}:00',
+                  quality: quality,
+                );
+
+                context.read<SleepBloc>().add(AddSleepRecord(record));
                 Navigator.pop(context);
+
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Запись о сне добавлена'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
               },
               style: FilledButton.styleFrom(backgroundColor: AppColors.citrusPurple),
-              child: const Text('\u0421\u043E\u0445\u0440\u0430\u043D\u0438\u0442\u044C'),
+              child: const Text('Сохранить'),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showEditSleepDialog(BuildContext context, SleepRecord record) {
+    String bedtime = record.bedTime?.substring(0, 5) ?? '23:00';
+    String wakeup = record.wakeTime?.substring(0, 5) ?? '07:00';
+    int quality = record.quality ?? 3;
+    DateTime selectedDate = record.sleepDate;
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) => AlertDialog(
+          backgroundColor: AppColors.surface1,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(color: AppColors.citrusPurple.withOpacity(0.2)),
+          ),
+          title: const Text(
+            'Редактировать запись',
+            style: TextStyle(color: AppColors.foreground, fontWeight: FontWeight.w600),
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.calendar_today, color: AppColors.mutedForeground, size: 20),
+                  title: const Text('Дата', style: TextStyle(color: AppColors.mutedForeground, fontSize: 13)),
+                  subtitle: Text(
+                    '${selectedDate.day}.${selectedDate.month}.${selectedDate.year}',
+                    style: const TextStyle(color: AppColors.foreground),
+                  ),
+                  onTap: () async {
+                    final date = await showDatePicker(
+                      context: context,
+                      initialDate: selectedDate,
+                      firstDate: DateTime(2020),
+                      lastDate: DateTime.now(),
+                    );
+                    if (date != null) setModalState(() => selectedDate = date);
+                  },
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    const Text('Отбой:', style: TextStyle(color: AppColors.mutedForeground, fontSize: 13)),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: TextField(
+                        style: const TextStyle(color: AppColors.foreground, fontSize: 13),
+                        controller: TextEditingController(text: bedtime),
+                        decoration: InputDecoration(
+                          filled: true, fillColor: AppColors.surface2,
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6), isDense: true,
+                        ),
+                        onChanged: (v) => bedtime = v,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    const Text('Подъём:', style: TextStyle(color: AppColors.mutedForeground, fontSize: 13)),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: TextField(
+                        style: const TextStyle(color: AppColors.foreground, fontSize: 13),
+                        controller: TextEditingController(text: wakeup),
+                        decoration: InputDecoration(
+                          filled: true, fillColor: AppColors.surface2,
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6), isDense: true,
+                        ),
+                        onChanged: (v) => wakeup = v,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                const Text('Качество:', style: TextStyle(color: AppColors.mutedForeground, fontSize: 13)),
+                const SizedBox(height: 6),
+                Wrap(
+                  alignment: WrapAlignment.center,
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: [1, 2, 3, 4, 5].map((q) {
+                    final isSelected = quality == q;
+                    return GestureDetector(
+                      onTap: () => setModalState(() => quality = q),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: isSelected ? AppColors.citrusPurple.withValues(alpha: 0.2) : AppColors.surface2,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: isSelected ? AppColors.citrusPurple : Colors.transparent),
+                        ),
+                        child: Text(
+                          _getQualityLabel(q),
+                          style: TextStyle(
+                            color: isSelected ? AppColors.citrusPurple : AppColors.mutedForeground,
+                            fontSize: 12,
+                            fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                          ),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Отмена', style: TextStyle(color: AppColors.mutedForeground))),
+            FilledButton(
+              onPressed: () {
+                final btParts = bedtime.split(':');
+                final wuParts = wakeup.split(':');
+                final btH = int.tryParse(btParts[0]) ?? 0;
+                final btM = int.tryParse(btParts[1]) ?? 0;
+                final wuH = int.tryParse(wuParts[0]) ?? 0;
+                final wuM = int.tryParse(wuParts[1]) ?? 0;
+
+                final updatedRecord = SleepRecord(
+                  id: record.id,
+                  userId: record.userId,
+                  sleepDate: selectedDate,
+                  bedTime: '${btH.toString().padLeft(2, '0')}:${btM.toString().padLeft(2, '0')}:00',
+                  wakeTime: '${wuH.toString().padLeft(2, '0')}:${wuM.toString().padLeft(2, '0')}:00',
+                  quality: quality,
+                );
+
+                context.read<SleepBloc>().add(UpdateSleepRecord(updatedRecord));
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Запись обновлена'), backgroundColor: Colors.green));
+              },
+              style: FilledButton.styleFrom(backgroundColor: AppColors.citrusPurple),
+              child: const Text('Сохранить'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _confirmDeleteSleep(BuildContext context, SleepRecord record) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.surface1,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide(color: AppColors.destructive.withOpacity(0.3))),
+        title: const Text('Удалить запись?', style: TextStyle(color: AppColors.foreground)),
+        content: const Text('Запись о сне будет удалена навсегда.', style: TextStyle(color: AppColors.mutedForeground)),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Отмена', style: TextStyle(color: AppColors.mutedForeground))),
+          FilledButton(
+            onPressed: () {
+              context.read<SleepBloc>().add(DeleteSleepRecord(record.id));
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Запись удалена'), backgroundColor: Colors.orange));
+            },
+            style: FilledButton.styleFrom(backgroundColor: AppColors.destructive),
+            child: const Text('Удалить'),
+          ),
+        ],
       ),
     );
   }

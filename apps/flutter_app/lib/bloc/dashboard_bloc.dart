@@ -1,8 +1,9 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../core/repository/mood_repository.dart';
+import '../core/repository/sleep_repository.dart';
 import '../screens/models/mood.dart';
 
-// ─── Events ───────────────────────────────────────────────
 abstract class DashboardEvent {}
 
 class DashboardLoad extends DashboardEvent {}
@@ -17,7 +18,6 @@ class MoodSelected extends DashboardEvent {
 
 class MoodLogRefresh extends DashboardEvent {}
 
-// ─── States ────────────────────────────────────────────────
 abstract class DashboardState {}
 
 class DashboardInitial extends DashboardState {}
@@ -30,7 +30,7 @@ class DashboardLoaded extends DashboardState {
   final String sleepHours;
   final List<MoodLogEntry> todayLog;
   final int? selectedMoodId;
-  final MoodLogEntry? lastEntry;
+  final MoodRecord? lastEntry;
   final double averageMood;
 
   DashboardLoaded({
@@ -49,7 +49,7 @@ class DashboardLoaded extends DashboardState {
     String? sleepHours,
     List<MoodLogEntry>? todayLog,
     int? selectedMoodId,
-    MoodLogEntry? lastEntry,
+    MoodRecord? lastEntry,
     double? averageMood,
   }) {
     return DashboardLoaded(
@@ -64,31 +64,97 @@ class DashboardLoaded extends DashboardState {
   }
 }
 
-// ─── BLoC ──────────────────────────────────────────────────
 class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
+  final MoodRepository _moodRepository = MoodRepository(userId: 'unknown', token: null);
+  SleepRepository? _sleepRepository;
+
   DashboardBloc() : super(DashboardInitial()) {
     on<DashboardLoad>(_onLoad);
     on<MoodSelected>(_onMoodSelected);
     on<MoodLogRefresh>(_onRefresh);
   }
 
+  void updateUserId(String userId, {String? token}) {
+    debugPrint('DashboardBloc: updateUserId userId=$userId, token=${token == null ? "null" : token.isEmpty ? "empty" : "length=${token.length}"}');
+    _moodRepository.setUserId(userId, token: token);
+    add(DashboardLoad());
+  }
+
+  void setSleepRepository(SleepRepository repository) {
+    _sleepRepository = repository;
+  }
+
+  Future<String> _getSleepHours() async {
+    if (_sleepRepository == null || _sleepRepository!.userId == 'unknown') {
+      return '—';
+    }
+
+    try {
+      final now = DateTime.now();
+      final yesterday = DateTime(now.year, now.month, now.day - 1);
+      final tomorrow = DateTime(now.year, now.month, now.day);
+
+      final records = await _sleepRepository!.getSleepRecords(
+        startDate: yesterday,
+        endDate: tomorrow,
+      );
+
+      // Находим запись за вчера
+      for (final record in records) {
+        final rd = DateTime(record.sleepDate.year, record.sleepDate.month, record.sleepDate.day);
+        if (rd.isAtSameMomentAs(yesterday) && record.bedTime != null && record.wakeTime != null) {
+          final bedParts = record.bedTime!.split(':');
+          final wakeParts = record.wakeTime!.split(':');
+          final bedHour = int.tryParse(bedParts[0]) ?? 0;
+          final bedMin = int.tryParse(bedParts[1]) ?? 0;
+          final wakeHour = int.tryParse(wakeParts[0]) ?? 0;
+          final wakeMin = int.tryParse(wakeParts[1]) ?? 0;
+
+          double hours = (wakeHour + wakeMin / 60) - (bedHour + bedMin / 60);
+          if (hours < 0) hours += 24;
+
+          final h = hours.floor();
+          final m = ((hours - h) * 60).round();
+          return '${h}ч ${m}м';
+        }
+      }
+    } catch (e) {
+      // ignore
+    }
+
+    return '—';
+  }
+
   Future<void> _onLoad(DashboardLoad event, Emitter<DashboardState> emit) async {
     emit(DashboardLoading());
 
-    final streak = await MoodRepository.getStreak();
-    final goodDays = await MoodRepository.getGoodDaysPercentage();
-    final todayLog = await MoodRepository.getTodayEntries();
-    final lastEntry = await MoodRepository.getLastEntry();
-    final avgMood = await MoodRepository.getAverageMood();
+    try {
+      final streak = await _moodRepository.getStreak();
+      final goodDays = await _moodRepository.getGoodDaysPercentage();
+      final todayRecords = await _moodRepository.getTodayRecords();
+      final lastRecord = await _moodRepository.getLastRecord();
+      final avgMood = await _moodRepository.getAverageMood();
+      final sleepHours = await _getSleepHours();
 
-    emit(DashboardLoaded(
-      streakDays: streak,
-      goodDaysPercent: '${goodDays.round()}%',
-      sleepHours: '7.2ч',
-      todayLog: todayLog.take(4).toList(),
-      lastEntry: lastEntry,
-      averageMood: avgMood,
-    ));
+      final todayLog = todayRecords
+          .map((r) => MoodLogEntry(
+                timestamp: r.moodDate,
+                moodId: r.moodId,
+              ))
+          .take(4)
+          .toList();
+
+      emit(DashboardLoaded(
+        streakDays: streak,
+        goodDaysPercent: '${goodDays.round()}%',
+        sleepHours: sleepHours,
+        todayLog: todayLog,
+        lastEntry: lastRecord,
+        averageMood: avgMood,
+      ));
+    } catch (e) {
+      emit(DashboardLoaded());
+    }
   }
 
   Future<void> _onMoodSelected(
@@ -98,32 +164,48 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
     if (state is! DashboardLoaded) return;
 
     final current = state as DashboardLoaded;
-
-    // Временно показываем selected
     emit(current.copyWith(selectedMoodId: event.moodId));
 
-    // Сохраняем
-    final entry = MoodLogEntry(
-      timestamp: event.timestamp,
-      moodId: event.moodId,
-    );
-    await MoodRepository.addEntry(entry);
+    try {
+      debugPrint('DashboardBloc: сохраняем настроение moodId=${event.moodId}, userId=${_moodRepository.userId}');
 
-    // Обновляем данные через 1.5 сек
-    await Future.delayed(const Duration(milliseconds: 1500));
+      if (_moodRepository.userId == 'unknown') {
+        debugPrint('DashboardBloc: пользователь не авторизован, настроение не сохранено');
+        emit(current.copyWith(selectedMoodId: null));
+        return;
+      }
 
-    final streak = await MoodRepository.getStreak();
-    final goodDays = await MoodRepository.getGoodDaysPercentage();
-    final todayLog = await MoodRepository.getTodayEntries();
-    final lastEntry = await MoodRepository.getLastEntry();
+      await _moodRepository.createRecord(event.moodId, timestamp: event.timestamp);
+      debugPrint('DashboardBloc: настроение сохранено');
 
-    emit(current.copyWith(
-      streakDays: streak,
-      goodDaysPercent: '${goodDays.round()}%',
-      todayLog: todayLog.take(4).toList(),
-      lastEntry: lastEntry,
-      selectedMoodId: null,
-    ));
+      await Future.delayed(const Duration(milliseconds: 1500));
+
+      final streak = await _moodRepository.getStreak();
+      final goodDays = await _moodRepository.getGoodDaysPercentage();
+      final todayRecords = await _moodRepository.getTodayRecords();
+      final lastRecord = await _moodRepository.getLastRecord();
+      final sleepHours = await _getSleepHours();
+
+      final todayLog = todayRecords
+          .map((r) => MoodLogEntry(
+                timestamp: r.moodDate,
+                moodId: r.moodId,
+              ))
+          .take(4)
+          .toList();
+
+      emit(current.copyWith(
+        streakDays: streak,
+        goodDaysPercent: '${goodDays.round()}%',
+        todayLog: todayLog,
+        lastEntry: lastRecord,
+        selectedMoodId: null,
+        sleepHours: sleepHours,
+      ));
+    } catch (e) {
+      debugPrint('DashboardBloc: ошибка сохранения настроения: $e');
+      emit(current.copyWith(selectedMoodId: null));
+    }
   }
 
   Future<void> _onRefresh(
@@ -133,16 +215,31 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
     if (state is! DashboardLoaded) return;
 
     final current = state as DashboardLoaded;
-    final streak = await MoodRepository.getStreak();
-    final goodDays = await MoodRepository.getGoodDaysPercentage();
-    final todayLog = await MoodRepository.getTodayEntries();
-    final lastEntry = await MoodRepository.getLastEntry();
 
-    emit(current.copyWith(
-      streakDays: streak,
-      goodDaysPercent: '${goodDays.round()}%',
-      todayLog: todayLog.take(4).toList(),
-      lastEntry: lastEntry,
-    ));
+    try {
+      final streak = await _moodRepository.getStreak();
+      final goodDays = await _moodRepository.getGoodDaysPercentage();
+      final todayRecords = await _moodRepository.getTodayRecords();
+      final lastRecord = await _moodRepository.getLastRecord();
+      final sleepHours = await _getSleepHours();
+
+      final todayLog = todayRecords
+          .map((r) => MoodLogEntry(
+                timestamp: r.moodDate,
+                moodId: r.moodId,
+              ))
+          .take(4)
+          .toList();
+
+      emit(current.copyWith(
+        streakDays: streak,
+        goodDaysPercent: '${goodDays.round()}%',
+        todayLog: todayLog,
+        lastEntry: lastRecord,
+        sleepHours: sleepHours,
+      ));
+    } catch (e) {
+      // ignore
+    }
   }
 }

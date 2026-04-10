@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../bloc/dashboard_bloc.dart';
 import 'models/mood.dart';
@@ -12,7 +11,18 @@ import 'widgets/mood_log.dart';
 import 'widgets/daily_quote.dart';
 
 class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+  final VoidCallback? onNavigateToExercises;
+  final VoidCallback? onNavigateToChat;
+  final VoidCallback? onNavigateToDiary;
+  final VoidCallback? onNavigateToSleep;
+
+  const HomePage({
+    super.key,
+    this.onNavigateToExercises,
+    this.onNavigateToChat,
+    this.onNavigateToDiary,
+    this.onNavigateToSleep,
+  });
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -46,9 +56,8 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(
-        child: BlocBuilder<DashboardBloc, DashboardState>(
-          builder: (context, state) {
+      body: BlocBuilder<DashboardBloc, DashboardState>(
+        builder: (context, state) {
             if (state is DashboardLoading) {
               return const Center(
                 child: CircularProgressIndicator(
@@ -68,6 +77,7 @@ class _HomePageState extends State<HomePage> {
               color: const Color(0xFFFF8C42),
               child: SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.only(bottom: 80),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -122,7 +132,7 @@ class _HomePageState extends State<HomePage> {
                         duration: const Duration(milliseconds: 300),
                         child: state.selectedMoodId != null
                             ? Container(
-                                key: const ValueKey('selected'),
+                                key: ValueKey('mood_${state.selectedMoodId}'),
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 12,
                                   vertical: 4,
@@ -143,7 +153,7 @@ class _HomePageState extends State<HomePage> {
                                 ),
                               )
                             : Container(
-                                key: const ValueKey('hint'),
+                                key: const ValueKey('mood_hint'),
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 12,
                                   vertical: 4,
@@ -172,10 +182,10 @@ class _HomePageState extends State<HomePage> {
 
                     // ─── Quick Links ───
                     QuickLinks(
-                      onExerciseTap: () => context.push('/exercises'),
-                      onChatTap: () => context.go('/chatbot'),
-                      onDiaryTap: () => context.go('/'),
-                      onSleepTap: () => context.go('/sleep'),
+                      onExerciseTap: widget.onNavigateToExercises,
+                      onChatTap: widget.onNavigateToChat,
+                      onDiaryTap: widget.onNavigateToDiary,
+                      onSleepTap: widget.onNavigateToSleep,
                     ),
 
                     const SizedBox(height: 16),
@@ -184,17 +194,13 @@ class _HomePageState extends State<HomePage> {
                     MoodLog(entries: state.todayLog),
 
                     // ─── Daily Quote ───
-                    GestureDetector(
-                      onTap: () => context.push('/affirmations'),
-                      child: const DailyQuote(),
-                    ),
+                    const DailyQuote(),
                   ],
                 ),
               ),
             );
           },
         ),
-      ),
     );
   }
 }

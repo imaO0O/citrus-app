@@ -138,6 +138,80 @@ Future<Response> _handleRequest(RequestContext context) async {
     return _deleteEvent(context, authContext, id);
   }
 
+  // Mood endpoints (требуют авторизации)
+  if (path.startsWith('/mood/')) {
+    final token = _extractToken(context);
+    if (token == null) {
+      return Response(statusCode: 401, body: 'Unauthorized');
+    }
+
+    try {
+      final jwt = JWT.verify(token, SecretKey(_jwtSecret));
+      authContext.userId = jwt.payload['user_id'] as String;
+    } catch (e) {
+      return Response(statusCode: 401, body: 'Invalid token');
+    }
+  }
+
+  // GET /mood/records
+  if (path == '/mood/records' && method == HttpMethod.get) {
+    return _getMoodRecords(context, authContext);
+  }
+
+  // POST /mood/records
+  if (path == '/mood/records' && method == HttpMethod.post) {
+    return _createMoodRecord(context, authContext);
+  }
+
+  // PUT /mood/records/{id}
+  if (path.startsWith('/mood/records/') && method == HttpMethod.put) {
+    final id = path.substring('/mood/records/'.length);
+    return _updateMoodRecord(context, authContext, id);
+  }
+
+  // DELETE /mood/records/{id}
+  if (path.startsWith('/mood/records/') && method == HttpMethod.delete) {
+    final id = path.substring('/mood/records/'.length);
+    return _deleteMoodRecord(context, authContext, id);
+  }
+
+  // Diary endpoints (требуют авторизации)
+  if (path.startsWith('/diary/')) {
+    final token = _extractToken(context);
+    if (token == null) {
+      return Response(statusCode: 401, body: 'Unauthorized');
+    }
+
+    try {
+      final jwt = JWT.verify(token, SecretKey(_jwtSecret));
+      authContext.userId = jwt.payload['user_id'] as String;
+    } catch (e) {
+      return Response(statusCode: 401, body: 'Invalid token');
+    }
+  }
+
+  // GET /diary/entries
+  if (path == '/diary/entries' && method == HttpMethod.get) {
+    return _getDiaryEntries(context, authContext);
+  }
+
+  // POST /diary/entries
+  if (path == '/diary/entries' && method == HttpMethod.post) {
+    return _createDiaryEntry(context, authContext);
+  }
+
+  // PUT /diary/entries/{id}
+  if (path.startsWith('/diary/entries/') && method == HttpMethod.put) {
+    final id = path.substring('/diary/entries/'.length);
+    return _updateDiaryEntry(context, authContext, id);
+  }
+
+  // DELETE /diary/entries/{id}
+  if (path.startsWith('/diary/entries/') && method == HttpMethod.delete) {
+    final id = path.substring('/diary/entries/'.length);
+    return _deleteDiaryEntry(context, authContext, id);
+  }
+
   return Response.json(body: {'message': 'Citrus API'});
 }
 
@@ -703,6 +777,247 @@ Future<Response> _deleteSleepRecord(RequestContext context, _AuthContext auth, S
       return Response(statusCode: 404, body: 'Record not found');
     }
 
+    return Response(statusCode: 204);
+  } catch (e) {
+    return Response(statusCode: 500, body: 'Error: $e');
+  }
+}
+
+// ==================== MOOD ENDPOINTS ====================
+
+Future<Response> _getMoodRecords(RequestContext context, _AuthContext auth) async {
+  final userId = auth.userId;
+  if (userId == null) return Response(statusCode: 401, body: 'Unauthorized');
+
+  try {
+    final query = context.request.uri.queryParameters;
+    final startDate = query['start_date'];
+    final endDate = query['end_date'];
+
+    String whereClause = "WHERE user_id = '$userId'";
+    if (startDate != null) whereClause += " AND date >= '$startDate'";
+    if (endDate != null) whereClause += " AND date <= '$endDate'";
+
+    final results = await _db!.query(
+      "SELECT id, user_id, mood_value, date::text, recorded_at::text "
+      "FROM mood_entries $whereClause ORDER BY recorded_at DESC",
+    );
+
+    final records = results.map((row) => {
+      'id': row[0] is String ? row[0] : Uuid.unparse(row[0] as Uint8List),
+      'user_id': row[1] is String ? row[1] : Uuid.unparse(row[1] as Uint8List),
+      'mood_id': row[2] as int,
+      'mood_date': row[3],
+      'note': null,
+      'created_at': row[4],
+    }).toList();
+
+    return Response.json(body: records);
+  } catch (e) {
+    return Response(statusCode: 500, body: 'Error: $e');
+  }
+}
+
+Future<Response> _createMoodRecord(RequestContext context, _AuthContext auth) async {
+  final userId = auth.userId;
+  if (userId == null) return Response(statusCode: 401, body: 'Unauthorized');
+
+  try {
+    final body = await context.request.json();
+    final moodId = body['mood_id'] as int?;
+    final moodDate = body['mood_date'] as String?;
+    final note = body['note'] as String?;
+
+    if (moodId == null) {
+      return Response(statusCode: 400, body: 'mood_id is required');
+    }
+
+    final recordId = const Uuid().v4();
+    final dateStr = moodDate != null ? moodDate.split('T').first : 'CURRENT_DATE';
+    final timeOfDay = moodDate != null ? _getTimeOfDay(moodDate) : null;
+    final timeOfDaySql = timeOfDay != null ? "'$timeOfDay'" : 'NULL';
+
+    final sql = moodDate != null
+        ? "INSERT INTO mood_entries (id, user_id, mood_value, date, time_of_day, recorded_at) "
+          "VALUES ('$recordId', '$userId', $moodId, '$dateStr', $timeOfDaySql, '$moodDate')"
+        : "INSERT INTO mood_entries (id, user_id, mood_value, date, time_of_day) "
+          "VALUES ('$recordId', '$userId', $moodId, CURRENT_DATE, $timeOfDaySql)";
+
+    print('mood create SQL: $sql');
+
+    if (moodDate != null) {
+      await _db!.query(sql);
+    } else {
+      await _db!.query(sql);
+    }
+
+    return Response.json(statusCode: 201, body: {
+      'id': recordId,
+      'user_id': userId,
+      'mood_id': moodId,
+      'mood_date': dateStr == 'CURRENT_DATE' ? DateTime.now().toIso8601String() : dateStr,
+      'note': note,
+    });
+  } catch (e, stackTrace) {
+    print('mood create error: $e');
+    print('stackTrace: $stackTrace');
+    return Response(statusCode: 500, body: 'Error: $e');
+  }
+}
+
+Future<Response> _updateMoodRecord(RequestContext context, _AuthContext auth, String id) async {
+  final userId = auth.userId;
+  if (userId == null) return Response(statusCode: 401, body: 'Unauthorized');
+
+  try {
+    final body = await context.request.json();
+    final moodId = body['mood_id'] as int?;
+
+    if (moodId == null) {
+      return Response(statusCode: 400, body: 'mood_id is required');
+    }
+
+    await _db!.query(
+      "UPDATE mood_entries SET mood_value = $moodId "
+      "WHERE id = '$id' AND user_id = '$userId'",
+    );
+
+    return Response.json(body: {'id': id, 'mood_id': moodId});
+  } catch (e) {
+    return Response(statusCode: 500, body: 'Error: $e');
+  }
+}
+
+Future<Response> _deleteMoodRecord(RequestContext context, _AuthContext auth, String id) async {
+  final userId = auth.userId;
+  if (userId == null) return Response(statusCode: 401, body: 'Unauthorized');
+
+  try {
+    await _db!.query("DELETE FROM mood_entries WHERE id = '$id' AND user_id = '$userId'");
+    return Response(statusCode: 204);
+  } catch (e) {
+    return Response(statusCode: 500, body: 'Error: $e');
+  }
+}
+
+String _getTimeOfDay(String isoDate) {
+  final dt = DateTime.parse(isoDate);
+  if (dt.hour < 12) return 'morning';
+  if (dt.hour < 18) return 'afternoon';
+  return 'evening';
+}
+
+// ==================== DIARY ENDPOINTS ====================
+
+Future<Response> _getDiaryEntries(RequestContext context, _AuthContext auth) async {
+  final userId = auth.userId;
+  if (userId == null) return Response(statusCode: 401, body: 'Unauthorized');
+
+  try {
+    final query = context.request.uri.queryParameters;
+    final startDate = query['start_date'];
+    final endDate = query['end_date'];
+    final search = query['search'];
+
+    String whereClause = "WHERE user_id = '$userId'";
+    if (startDate != null) whereClause += " AND entry_date >= '$startDate'";
+    if (endDate != null) whereClause += " AND entry_date <= '$endDate'";
+    if (search != null && search.isNotEmpty) {
+      whereClause += " AND (content ILIKE '%$search%' OR title ILIKE '%$search%')";
+    }
+
+    final results = await _db!.query(
+      "SELECT id, user_id, content, mood_value, entry_date::text, created_at::text "
+      "FROM diary_entries $whereClause ORDER BY entry_date DESC, created_at DESC",
+    );
+
+    final entries = results.map((row) => {
+      'id': row[0] is String ? row[0] : Uuid.unparse(row[0] as Uint8List),
+      'user_id': row[1] is String ? row[1] : Uuid.unparse(row[1] as Uint8List),
+      'content': row[2] as String?,
+      'mood_value': row[3] as int?,
+      'entry_date': row[4],
+      'created_at': row[5],
+      'title': (row[2] as String?)?.substring(0, row[2].toString().length > 50 ? 50 : null) ?? 'Без заголовка',
+    }).toList();
+
+    return Response.json(body: entries);
+  } catch (e) {
+    return Response(statusCode: 500, body: 'Error: $e');
+  }
+}
+
+Future<Response> _createDiaryEntry(RequestContext context, _AuthContext auth) async {
+  final userId = auth.userId;
+  if (userId == null) return Response(statusCode: 401, body: 'Unauthorized');
+
+  try {
+    final body = await context.request.json();
+    final content = body['content'] as String?;
+    final moodValue = body['mood_value'] as int?;
+    final entryDate = body['entry_date'] as String?;
+
+    if (content == null || content.isEmpty) {
+      return Response(statusCode: 400, body: 'content is required');
+    }
+
+    final recordId = const Uuid().v4();
+    final dateStr = entryDate != null ? entryDate.split('T').first : 'CURRENT_DATE';
+    final contentSql = "'${content.replaceAll("'", "''")}'";
+    final moodSql = moodValue != null ? moodValue.toString() : 'NULL';
+
+    await _db!.query(
+      "INSERT INTO diary_entries (id, user_id, content, mood_value, entry_date) "
+      "VALUES ('$recordId', '$userId', $contentSql, $moodSql, '$dateStr')",
+    );
+
+    return Response.json(statusCode: 201, body: {
+      'id': recordId,
+      'user_id': userId,
+      'content': content,
+      'mood_value': moodValue,
+      'entry_date': dateStr == 'CURRENT_DATE' ? DateTime.now().toIso8601String().split('T').first : dateStr,
+    });
+  } catch (e, stackTrace) {
+    print('diary create error: $e');
+    print('stackTrace: $stackTrace');
+    return Response(statusCode: 500, body: 'Error: $e');
+  }
+}
+
+Future<Response> _updateDiaryEntry(RequestContext context, _AuthContext auth, String id) async {
+  final userId = auth.userId;
+  if (userId == null) return Response(statusCode: 401, body: 'Unauthorized');
+
+  try {
+    final body = await context.request.json();
+    final content = body['content'] as String?;
+    final moodValue = body['mood_value'] as int?;
+
+    if (content == null) {
+      return Response(statusCode: 400, body: 'content is required');
+    }
+
+    final contentSql = "'${content.replaceAll("'", "''")}'";
+    final moodSql = moodValue != null ? moodValue.toString() : 'NULL';
+
+    await _db!.query(
+      "UPDATE diary_entries SET content = $contentSql, mood_value = $moodSql "
+      "WHERE id = '$id' AND user_id = '$userId'",
+    );
+
+    return Response.json(body: {'id': id, 'content': content, 'mood_value': moodValue});
+  } catch (e) {
+    return Response(statusCode: 500, body: 'Error: $e');
+  }
+}
+
+Future<Response> _deleteDiaryEntry(RequestContext context, _AuthContext auth, String id) async {
+  final userId = auth.userId;
+  if (userId == null) return Response(statusCode: 401, body: 'Unauthorized');
+
+  try {
+    await _db!.query("DELETE FROM diary_entries WHERE id = '$id' AND user_id = '$userId'");
     return Response(statusCode: 204);
   } catch (e) {
     return Response(statusCode: 500, body: 'Error: $e');

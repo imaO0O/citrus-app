@@ -178,27 +178,11 @@ class CalendarBloc extends Bloc<CalendarEvent, CalendarState> {
     Emitter<CalendarState> emit,
   ) async {
     try {
-      final updatedEvent = await _repository.updateEvent(event.event);
-
+      await _repository.updateEvent(event.event);
+      // Перезагружаем события из БД после обновления
       if (state is CalendarLoaded) {
         final loadedState = state as CalendarLoaded;
-        final day = DateTime(
-          event.event.eventDate.year,
-          event.event.eventDate.month,
-          event.event.eventDate.day,
-        );
-
-        final updatedEvents = Map<DateTime, List<CalendarEventModel>>.from(loadedState.events);
-        // Удаляем старое событие
-        updatedEvents[day]?.removeWhere((e) => e.id == event.event.id);
-        // Добавляем обновленное
-        updatedEvents.putIfAbsent(day, () => []).add(updatedEvent);
-
-        emit(CalendarLoaded(
-          events: updatedEvents,
-          selectedDay: loadedState.selectedDay,
-          focusedDay: loadedState.focusedDay,
-        ));
+        add(LoadCalendar(month: loadedState.focusedDay));
       }
     } catch (e) {
       emit(CalendarError('Ошибка обновления события: $e'));

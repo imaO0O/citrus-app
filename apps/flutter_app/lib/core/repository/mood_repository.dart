@@ -1,93 +1,138 @@
-import 'dart:convert';
-import 'dart:io';
-import 'package:path_provider/path_provider.dart';
-import '../../screens/models/mood.dart';
+import 'package:intl/intl.dart';
+import '../../../core/api/mood_api_service.dart';
 
-/// Хранилище настроений — сохраняет записи в JSON-файл
+class MoodRecord {
+  final String id;
+  final String userId;
+  final int moodId;
+  final DateTime moodDate;
+  final String? note;
+
+  MoodRecord({
+    required this.id,
+    required this.userId,
+    required this.moodId,
+    required this.moodDate,
+    this.note,
+  });
+
+  factory MoodRecord.fromJson(Map<String, dynamic> json) {
+    // Поддерживаем оба варианта имени поля
+    final moodId = json['mood_id'] ?? json['mood_value'];
+    final moodDateStr = json['mood_date'] as String?;
+    DateTime moodDate;
+    if (moodDateStr != null) {
+      try {
+        moodDate = DateTime.parse(moodDateStr);
+      } catch (_) {
+        moodDate = DateTime.now();
+      }
+    } else {
+      moodDate = DateTime.now();
+    }
+
+    return MoodRecord(
+      id: json['id'] as String,
+      userId: json['user_id'] as String,
+      moodId: moodId as int,
+      moodDate: moodDate,
+      note: json['note'] as String?,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'user_id': userId,
+      'mood_id': moodId,
+      'mood_date': moodDate.toIso8601String(),
+      'note': note,
+    };
+  }
+}
+
 class MoodRepository {
-  static const String _fileName = 'mood_data.json';
+  MoodApiService _apiService;
+  String _userId;
+  String? _token;
 
-  MoodRepository._();
+  MoodRepository({
+    required String userId,
+    String? token,
+    MoodApiService? apiService,
+  })  : _userId = userId,
+        _token = token,
+        _apiService = apiService ?? MoodApiService(token: token);
 
-  static Future<File> _getFile() async {
-    final dir = await getApplicationDocumentsDirectory();
-    return File('${dir.path}/$_fileName');
-  }
-
-  static Future<_MoodData> _load() async {
-    try {
-      final file = await _getFile();
-      if (!await file.exists()) return _MoodData.empty();
-      final content = await file.readAsString();
-      final json = jsonDecode(content) as Map<String, dynamic>;
-      return _MoodData.fromJson(json);
-    } catch (_) {
-      return _MoodData.empty();
+  void setUserId(String userId, {String? token}) {
+    _userId = userId;
+    if (token != null && token.isNotEmpty) {
+      _token = token;
+      _apiService = MoodApiService(token: token);
     }
   }
 
-  static Future<void> _save(_MoodData data) async {
-    final file = await _getFile();
-    await file.writeAsString(jsonEncode(data.toJson()));
+  String get userId => _userId;
+
+  Future<List<MoodRecord>> getRecords({DateTime? startDate, DateTime? endDate}) async {
+    final data = await _apiService.getMoodRecords(
+      startDate: startDate != null ? DateFormat('yyyy-MM-dd').format(startDate) : null,
+      endDate: endDate != null ? DateFormat('yyyy-MM-dd').format(endDate) : null,
+    );
+    return data.map((e) => MoodRecord.fromJson(e)).toList();
   }
 
-  /// Получить все записи
-  static Future<List<MoodLogEntry>> getEntries() async {
-    final data = await _load();
-    return data.entries
-      ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
+  Future<MoodRecord> createRecord(int moodId, {DateTime? timestamp, String? note}) async {
+    final data = await _apiService.createMoodRecord(
+      moodId: moodId,
+      moodDate: timestamp?.toIso8601String(),
+      note: note,
+    );
+    return MoodRecord.fromJson(data);
   }
 
-  /// Добавить запись
-  static Future<void> addEntry(MoodLogEntry entry) async {
-    final data = await _load();
-    data.entries.add(entry);
-
-    if (data.entries.length > 500) {
-      data.entries.sort((a, b) => b.timestamp.compareTo(a.timestamp));
-      data.entries.length = 500;
-    }
-
-    await _updateStreak(data, entry.timestamp);
-    await _save(data);
+  Future<MoodRecord> updateRecord({required String id, required int moodId, String? note}) async {
+    final data = await _apiService.updateMoodRecord(id: id, moodId: moodId, note: note);
+    return MoodRecord.fromJson(data);
   }
 
-  /// Получить записи за конкретный день
-  static Future<List<MoodLogEntry>> getEntriesForDay(DateTime date) async {
-    final entries = await getEntries();
-    return entries.where((e) =>
-      e.timestamp.year == date.year &&
-      e.timestamp.month == date.month &&
-      e.timestamp.day == date.day
-    ).toList();
+  Future<void> deleteRecord(String id) async {
+    await _apiService.deleteMoodRecord(id);
   }
 
-  /// Получить записи за последние 7 дней
-  static Future<List<MoodLogEntry>> getEntriesLastDays(int days) async {
+  Future<int> getStreak() async {
     final now = DateTime.now();
-    final cutoff = now.subtract(Duration(days: days));
-    final entries = await getEntries();
-    return entries.where((e) => e.timestamp.isAfter(cutoff)).toList();
+    final records = await getRecords(startDate: now.subtract(const Duration(days: 365)));
+
+    int streak = 0;
+    var checkDate = DateTime(now.year, now.month, now.day);
+
+    while (true) {
+      final dayRecords = records.where((r) {
+        final rd = DateTime(r.moodDate.year, r.moodDate.month, r.moodDate.day);
+        return rd.isAtSameMomentAs(checkDate);
+      });
+      if (dayRecords.isEmpty) break;
+      streak++;
+      checkDate = checkDate.subtract(const Duration(days: 1));
+    }
+
+    return streak;
   }
 
-  /// Текущая серия дней подряд
-  static Future<int> getStreak() async {
-    final data = await _load();
-    return data.streak;
-  }
+  Future<double> getGoodDaysPercentage() async {
+    final now = DateTime.now();
+    final records = await getRecords(startDate: now.subtract(const Duration(days: 7)));
 
-  /// Процент "хороших" дней (настроение <= 1) за последние 7 дней
-  static Future<double> getGoodDaysPercentage() async {
-    final entries = await getEntriesLastDays(7);
-    if (entries.isEmpty) return 0;
+    if (records.isEmpty) return 0;
 
     final uniqueDays = <String>{};
     final goodDays = <String>{};
 
-    for (final entry in entries) {
-      final dayKey = '${entry.timestamp.year}-${entry.timestamp.month}-${entry.timestamp.day}';
+    for (final record in records) {
+      final dayKey = '${record.moodDate.year}-${record.moodDate.month}-${record.moodDate.day}';
       uniqueDays.add(dayKey);
-      if (entry.moodId <= 1) {
+      if (record.moodId <= 1) {
         goodDays.add(dayKey);
       }
     }
@@ -96,90 +141,22 @@ class MoodRepository {
     return (goodDays.length / uniqueDays.length) * 100;
   }
 
-  /// Среднее настроение за последние 7 дней
-  static Future<double> getAverageMood() async {
-    final entries = await getEntriesLastDays(7);
-    if (entries.isEmpty) return 0;
-    return entries.map((e) => e.moodId).reduce((a, b) => a + b) / entries.length;
-  }
-
-  /// Настроение сегодня
-  static Future<List<MoodLogEntry>> getTodayEntries() async {
-    return getEntriesForDay(DateTime.now());
-  }
-
-  /// Последнее записанное настроение
-  static Future<MoodLogEntry?> getLastEntry() async {
-    final entries = await getEntries();
-    return entries.isEmpty ? null : entries.first;
-  }
-
-  /// Обновить streak
-  static Future<void> _updateStreak(_MoodData data, DateTime entryTime) async {
+  Future<double> getAverageMood() async {
     final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-
-    int streak = data.streak;
-
-    if (data.lastDate == null) {
-      streak = 1;
-    } else {
-      final lastDay = DateTime(
-        data.lastDate!.year,
-        data.lastDate!.month,
-        data.lastDate!.day,
-      );
-
-      final diff = today.difference(lastDay).inDays;
-
-      if (diff == 0) {
-        // Тот же день
-      } else if (diff == 1) {
-        streak++;
-      } else {
-        streak = 1;
-      }
-    }
-
-    data.streak = streak;
-    data.lastDate = entryTime;
+    final records = await getRecords(startDate: now.subtract(const Duration(days: 7)));
+    if (records.isEmpty) return 0;
+    return records.map((e) => e.moodId).reduce((a, b) => a + b) / records.length;
   }
 
-  /// Очистить все данные
-  static Future<void> clear() async {
-    try {
-      final file = await _getFile();
-      if (await file.exists()) await file.delete();
-    } catch (_) {}
+  Future<List<MoodRecord>> getTodayRecords() async {
+    final now = DateTime.now();
+    final records = await getRecords(startDate: now, endDate: now.add(const Duration(days: 1)));
+    return records..sort((a, b) => a.moodDate.compareTo(b.moodDate));
   }
-}
 
-class _MoodData {
-  List<MoodLogEntry> entries;
-  int streak;
-  DateTime? lastDate;
-
-  _MoodData({
-    required this.entries,
-    required this.streak,
-    this.lastDate,
-  });
-
-  factory _MoodData.empty() => _MoodData(entries: [], streak: 0);
-
-  Map<String, dynamic> toJson() => {
-    'entries': entries.map((e) => e.toJson()).toList(),
-    'streak': streak,
-    'lastDate': lastDate?.toIso8601String(),
-  };
-
-  factory _MoodData.fromJson(Map<String, dynamic> json) => _MoodData(
-    entries: (json['entries'] as List<dynamic>)
-        .map((e) => MoodLogEntry.fromJson(e as Map<String, dynamic>))
-        .toList(),
-    streak: json['streak'] as int? ?? 0,
-    lastDate: json['lastDate'] != null
-        ? DateTime.parse(json['lastDate'] as String)
-        : null,
-  );
+  Future<MoodRecord?> getLastRecord() async {
+    final now = DateTime.now();
+    final records = await getRecords(startDate: now.subtract(const Duration(days: 30)));
+    return records.isEmpty ? null : records.first;
+  }
 }

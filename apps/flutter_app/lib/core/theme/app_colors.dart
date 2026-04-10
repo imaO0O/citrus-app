@@ -59,20 +59,20 @@ class AppColors {
 
   // === Chart colors ===
   static const List<Color> chartColors = [
-    Color(0xFFFF8C42), // orange
-    Color(0xFFFFAD1F), // amber
-    Color(0xFFFFD93D), // yellow
-    Color(0xFF8BC34A), // green
-    Color(0xFFE63946), // red
+    Color(0xFFFF8C42),
+    Color(0xFFFFAD1F),
+    Color(0xFFFFD93D),
+    Color(0xFF8BC34A),
+    Color(0xFFE63946),
   ];
 
   // === Mood colors ===
-  static const Color moodExcellent = Color(0xFF8BC34A);   // 😄
-  static const Color moodGood = Color(0xFFFFD93D);        // 🙂
-  static const Color moodOkay = Color(0xFFFF8C42);        // 😐
-  static const Color moodAnxious = Color(0xFFFFA726);     // 😟
-  static const Color moodBad = Color(0xFFFF5B5B);         // 😢
-  static const Color moodVeryBad = Color(0xFFE63946);     // 😞
+  static const Color moodExcellent = Color(0xFF8BC34A);
+  static const Color moodGood = Color(0xFFFFD93D);
+  static const Color moodOkay = Color(0xFFFF8C42);
+  static const Color moodAnxious = Color(0xFFFFA726);
+  static const Color moodBad = Color(0xFFFF5B5B);
+  static const Color moodVeryBad = Color(0xFFE63946);
 
   // === Sidebar ===
   static const Color sidebar = Color(0xFF0F0F1C);
@@ -85,21 +85,17 @@ class AppColors {
   static const Color sidebarRing = Color(0xFFFF8C42);
 
   // === Border radius ===
-  static const double radiusSm = 10.0;  // calc(14 - 4)
-  static const double radiusMd = 12.0;  // calc(14 - 2)
-  static const double radius = 14.0;    // 0.875rem
+  static const double radiusSm = 10.0;
+  static const double radiusMd = 12.0;
+  static const double radius = 14.0;
   static const double radiusLg = 14.0;
-  static const double radiusXl = 18.0;  // calc(14 + 4)
+  static const double radiusXl = 18.0;
   static const double borderRadius = 14.0;
 
-  // === Common helper: input field style ===
-  static Color get inputFieldBackground => const Color(0xFFFFFFFF).withOpacity(0.06); // rgba(255,255,255,0.06)
+  // === Common helper ===
+  static Color get inputFieldBackground => const Color(0xFFFFFFFF).withOpacity(0.06);
   static const Color subtleBg = Color.fromRGBO(255, 255, 255, 0.04);
   static const Color subtleBorder = Color.fromRGBO(255, 255, 255, 0.06);
-
-  // Dim foreground for hints
   static const Color dimForeground = Color(0xFF5A5468);
-
-  // Warm text
   static const Color warmText = Color(0xFFC8B89A);
 }

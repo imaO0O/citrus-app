@@ -306,173 +306,177 @@ class _PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    '\u0413\u0430\u043B\u0435\u0440\u0435\u044F \u043C\u043E\u043C\u0435\u043D\u0442\u043E\u0432',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: AppColors.foreground),
-                  ),
-                  GestureDetector(
-                    onTap: _openAddMomentModal,
-                    child: Container(
-                      width: 32,
-                      height: 32,
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(colors: [AppColors.citrusOrange, AppColors.citrusAmber]),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Icon(Icons.add, color: Colors.white, size: 18),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 480),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      '\u0413\u0430\u043B\u0435\u0440\u0435\u044F \u043C\u043E\u043C\u0435\u043D\u0442\u043E\u0432',
+                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: AppColors.foreground),
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              // Dopamine card
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [AppColors.citrusRed.withOpacity(0.12), AppColors.citrusOrange.withOpacity(0.08)],
-                  ),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppColors.citrusRed.withOpacity(0.2)),
-                ),
-                child: const Text(
-                  '\u0414\u043E\u0444\u0430\u043C\u0438\u043D\n\u041A\u0430\u0436\u0434\u044B\u0439 \u0441\u0447\u0430\u0441\u0442\u043B\u0438\u0432\u044B\u0439 \u043C\u043E\u043C\u0435\u043D\u0442 \u0437\u0430\u0441\u043B\u0443\u0436\u0438\u0432\u0430\u0435\u0442 \u0431\u044B\u0442\u044C \u0441\u043E\u0445\u0440\u0430\u043D\u0451\u043D\u043D\u044B\u043C.',
-                  style: TextStyle(color: AppColors.foreground, fontSize: 14, fontWeight: FontWeight.w500),
-                ),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  const Icon(Icons.favorite, color: AppColors.citrusRed, size: 16),
-                  const SizedBox(width: 4),
-                  Text('$likedCount \u043B\u044E\u0431\u0438\u043C\u044B\u0445 \u043C\u043E\u043C\u0435\u043D\u0442\u043E\u0432', style: const TextStyle(color: AppColors.mutedForeground, fontSize: 13)),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Expanded(
-                child: GridView.builder(
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    crossAxisSpacing: 12,
-                    mainAxisSpacing: 12,
-                    childAspectRatio: 0.85,
-                  ),
-                  itemCount: _photos.length,
-                  itemBuilder: (context, index) {
-                    final photo = _photos[index];
-                    return GestureDetector(
-                      onTap: () => _openPhotoDetail(index),
+                    GestureDetector(
+                      onTap: _openAddMomentModal,
                       child: Container(
+                        width: 32,
+                        height: 32,
                         decoration: BoxDecoration(
-                          color: AppColors.surface1,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: AppColors.subtleBorder),
+                          gradient: const LinearGradient(colors: [AppColors.citrusOrange, AppColors.citrusAmber]),
+                          borderRadius: BorderRadius.circular(10),
                         ),
-                        child: Column(
-                          children: [
-                            Expanded(
-                              child: Stack(
-                                children: [
-                                  Container(
-                                    width: double.infinity,
-                                    decoration: BoxDecoration(
-                                      gradient: LinearGradient(
-                                        begin: Alignment.topLeft,
-                                        end: Alignment.bottomRight,
-                                        colors: photo.gradientColors,
-                                      ),
-                                      borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                                    ),
-                                    child: Center(child: Text(photo.emoji, style: const TextStyle(fontSize: 48))),
-                                  ),
-                                  Positioned(
-                                    top: 8,
-                                    right: 8,
-                                    child: GestureDetector(
-                                      onTap: () => _toggleLike(index),
-                                      child: Container(
-                                        width: 28,
-                                        height: 28,
-                                        decoration: BoxDecoration(
-                                          color: Colors.black.withOpacity(0.4),
-                                          borderRadius: BorderRadius.circular(8),
-                                        ),
-                                        child: Icon(
-                                          photo.isLiked ? Icons.favorite : Icons.favorite_border,
-                                          color: photo.isLiked ? AppColors.citrusRed : AppColors.foreground,
-                                          size: 14,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            Container(
-                              width: double.infinity,
-                              height: 4,
-                              decoration: BoxDecoration(
-                                color: photo.color,
-                                borderRadius: const BorderRadius.vertical(bottom: Radius.circular(16)),
-                              ),
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.all(8),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    photo.title,
-                                    style: const TextStyle(color: AppColors.foreground, fontSize: 13, fontWeight: FontWeight.w500),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(photo.date, style: const TextStyle(color: AppColors.mutedForeground, fontSize: 11)),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
+                        child: const Icon(Icons.add, color: Colors.white, size: 18),
                       ),
-                    );
-                  },
+                    ),
+                  ],
                 ),
-              ),
-              const SizedBox(height: 12),
-              SizedBox(
-                width: double.infinity,
-                child: Container(
+                const SizedBox(height: 16),
+                // Dopamine card
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(colors: [AppColors.citrusOrange, AppColors.citrusAmber]),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: ElevatedButton(
-                    onPressed: _openAddMomentModal,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.transparent,
-                      shadowColor: Colors.transparent,
-                      foregroundColor: AppColors.background,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [AppColors.citrusRed.withOpacity(0.12), AppColors.citrusOrange.withOpacity(0.08)],
                     ),
-                    child: const Text(
-                      '\u0414\u043E\u0431\u0430\u0432\u0438\u0442\u044C \u043C\u043E\u043C\u0435\u043D\u0442',
-                      style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: AppColors.citrusRed.withOpacity(0.2)),
+                  ),
+                  child: const Text(
+                    '\u0414\u043E\u0444\u0430\u043C\u0438\u043D\n\u041A\u0430\u0436\u0434\u044B\u0439 \u0441\u0447\u0430\u0441\u0442\u043B\u0438\u0432\u044B\u0439 \u043C\u043E\u043C\u0435\u043D\u0442 \u0437\u0430\u0441\u043B\u0443\u0436\u0438\u0432\u0430\u0435\u0442 \u0431\u044B\u0442\u044C \u0441\u043E\u0445\u0440\u0430\u043D\u0451\u043D\u043D\u044B\u043C.',
+                    style: TextStyle(color: AppColors.foreground, fontSize: 14, fontWeight: FontWeight.w500),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    const Icon(Icons.favorite, color: AppColors.citrusRed, size: 16),
+                    const SizedBox(width: 4),
+                    Text('$likedCount \u043B\u044E\u0431\u0438\u043C\u044B\u0445 \u043C\u043E\u043C\u0435\u043D\u0442\u043E\u0432', style: const TextStyle(color: AppColors.mutedForeground, fontSize: 13)),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Expanded(
+                  child: GridView.builder(
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      crossAxisSpacing: 12,
+                      mainAxisSpacing: 12,
+                      childAspectRatio: 0.85,
+                    ),
+                    itemCount: _photos.length,
+                    itemBuilder: (context, index) {
+                      final photo = _photos[index];
+                      return GestureDetector(
+                        onTap: () => _openPhotoDetail(index),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: AppColors.surface1,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: AppColors.subtleBorder),
+                          ),
+                          child: Column(
+                            children: [
+                              Expanded(
+                                child: Stack(
+                                  children: [
+                                    Container(
+                                      width: double.infinity,
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(
+                                          begin: Alignment.topLeft,
+                                          end: Alignment.bottomRight,
+                                          colors: photo.gradientColors,
+                                        ),
+                                        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                                      ),
+                                      child: Center(child: Text(photo.emoji, style: const TextStyle(fontSize: 48))),
+                                    ),
+                                    Positioned(
+                                      top: 8,
+                                      right: 8,
+                                      child: GestureDetector(
+                                        onTap: () => _toggleLike(index),
+                                        child: Container(
+                                          width: 28,
+                                          height: 28,
+                                          decoration: BoxDecoration(
+                                            color: Colors.black.withOpacity(0.4),
+                                            borderRadius: BorderRadius.circular(8),
+                                          ),
+                                          child: Icon(
+                                            photo.isLiked ? Icons.favorite : Icons.favorite_border,
+                                            color: photo.isLiked ? AppColors.citrusRed : AppColors.foreground,
+                                            size: 14,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Container(
+                                width: double.infinity,
+                                height: 4,
+                                decoration: BoxDecoration(
+                                  color: photo.color,
+                                  borderRadius: const BorderRadius.vertical(bottom: Radius.circular(16)),
+                                ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.all(8),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      photo.title,
+                                      style: const TextStyle(color: AppColors.foreground, fontSize: 13, fontWeight: FontWeight.w500),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(photo.date, style: const TextStyle(color: AppColors.mutedForeground, fontSize: 11)),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(colors: [AppColors.citrusOrange, AppColors.citrusAmber]),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: ElevatedButton(
+                      onPressed: _openAddMomentModal,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.transparent,
+                        shadowColor: Colors.transparent,
+                        foregroundColor: AppColors.background,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: const Text(
+                        '\u0414\u043E\u0431\u0430\u0432\u0438\u0442\u044C \u043C\u043E\u043C\u0435\u043D\u0442',
+                        style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ],
+                const SizedBox(height: 80),
+              ],
+            ),
           ),
         ),
       ),
