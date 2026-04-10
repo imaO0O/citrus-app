@@ -113,13 +113,22 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           listener: (context, state) {
             if (state is AuthAuthenticated) {
               debugPrint('MainNav: AuthAuthenticated, userId=${state.user.id}');
-              try {
-                context.read<DashboardBloc>().updateUserId(state.user.id, token: state.user.token);
-              } catch (e) {
-                debugPrint('MainNav: ошибка обновления DashboardBloc: $e');
-              }
+              // Используем Future.microtask чтобы избежать проблем с деревом виджетов
+              Future.microtask(() {
+                if (mounted) {
+                  try {
+                    context.read<DashboardBloc>().updateUserId(state.user.id, token: state.user.token);
+                  } catch (e) {
+                    debugPrint('MainNav: ошибка обновления DashboardBloc: $e');
+                  }
+                }
+              });
             } else if (state is AuthUnauthenticated) {
-              context.go('/auth');
+              Future.microtask(() {
+                if (mounted) {
+                  context.go('/auth');
+                }
+              });
             }
           },
           child: Scaffold(

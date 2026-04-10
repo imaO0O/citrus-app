@@ -800,16 +800,18 @@ Future<Response> _createMoodRecord(RequestContext context, _AuthContext auth) as
     final timeOfDay = moodDate != null ? _getTimeOfDay(moodDate) : null;
     final timeOfDaySql = timeOfDay != null ? "'$timeOfDay'" : 'NULL';
 
+    final sql = moodDate != null
+        ? "INSERT INTO mood_entries (id, user_id, mood_value, date, time_of_day, recorded_at) "
+          "VALUES ('$recordId', '$userId', $moodId, '$dateStr', $timeOfDaySql, '$moodDate')"
+        : "INSERT INTO mood_entries (id, user_id, mood_value, date, time_of_day) "
+          "VALUES ('$recordId', '$userId', $moodId, CURRENT_DATE, $timeOfDaySql)";
+
+    print('mood create SQL: $sql');
+
     if (moodDate != null) {
-      await _db!.query(
-        "INSERT INTO mood_entries (id, user_id, mood_value, date, time_of_day, recorded_at) "
-        "VALUES ('$recordId', '$userId', $moodId, '$dateStr', $timeOfDaySql, '$moodDate')",
-      );
+      await _db!.query(sql);
     } else {
-      await _db!.query(
-        "INSERT INTO mood_entries (id, user_id, mood_value, date, time_of_day) "
-        "VALUES ('$recordId', '$userId', $moodId, CURRENT_DATE, $timeOfDaySql)",
-      );
+      await _db!.query(sql);
     }
 
     return Response.json(statusCode: 201, body: {
@@ -819,7 +821,9 @@ Future<Response> _createMoodRecord(RequestContext context, _AuthContext auth) as
       'mood_date': dateStr == 'CURRENT_DATE' ? DateTime.now().toIso8601String() : dateStr,
       'note': note,
     });
-  } catch (e) {
+  } catch (e, stackTrace) {
+    print('mood create error: $e');
+    print('stackTrace: $stackTrace');
     return Response(statusCode: 500, body: 'Error: $e');
   }
 }
