@@ -66,10 +66,6 @@ class _TestsListScreenState extends State<TestsListScreen> {
             fontWeight: FontWeight.w700,
           ),
         ),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFFEDE8E0)),
-          onPressed: () => Navigator.pop(context),
-        ),
       ),
       body: _isLoading
           ? const Center(

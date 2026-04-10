@@ -1204,13 +1204,20 @@ Future<Response> _submitTest(
     final scoresJson = jsonEncode(scores);
     final interpretationsJson = body['interpretations'] != null
         ? jsonEncode(body['interpretations'])
-        : 'null';
-    final completedAtSql =
-        completedAt != null ? "'$completedAt'" : 'NOW()';
+        : null;
+    final completedAtValue = completedAt ?? DateTime.now().toIso8601String();
 
     await _db!.query(
       "INSERT INTO psychological_test_results (id, user_id, test_id, scores, interpretations, completed_at) "
-      "VALUES ('$recordId', '$userId', '$testId', '$scoresJson', $interpretationsJson, $completedAtSql)",
+      r"VALUES (@id, @userId, @testId, @scores, @interpretations, @completedAt)",
+      substitutionValues: {
+        'id': recordId,
+        'userId': userId,
+        'testId': testId,
+        'scores': scoresJson,
+        'interpretations': interpretationsJson,
+        'completedAt': DateTime.parse(completedAtValue),
+      },
     );
 
     return Response.json(statusCode: 201, body: {
