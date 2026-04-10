@@ -758,12 +758,12 @@ Future<Response> _getMoodRecords(RequestContext context, _AuthContext auth) asyn
     final endDate = query['end_date'];
 
     String whereClause = "WHERE user_id = '$userId'";
-    if (startDate != null) whereClause += " AND mood_date >= '$startDate'";
-    if (endDate != null) whereClause += " AND mood_date <= '$endDate'";
+    if (startDate != null) whereClause += " AND date >= '$startDate'";
+    if (endDate != null) whereClause += " AND date <= '$endDate'";
 
     final results = await _db!.query(
-      "SELECT id, user_id, mood_id, mood_date::text, note, created_at::text "
-      "FROM mood_records $whereClause ORDER BY mood_date DESC, created_at DESC",
+      "SELECT id, user_id, mood_value, date::text, recorded_at::text "
+      "FROM mood_entries $whereClause ORDER BY recorded_at DESC",
     );
 
     final records = results.map((row) => {
@@ -771,8 +771,8 @@ Future<Response> _getMoodRecords(RequestContext context, _AuthContext auth) asyn
       'user_id': row[1] is String ? row[1] : Uuid.unparse(row[1] as Uint8List),
       'mood_id': row[2] as int,
       'mood_date': row[3],
-      'note': row[4] as String?,
-      'created_at': row[5],
+      'note': null,
+      'created_at': row[4],
     }).toList();
 
     return Response.json(body: records);
@@ -788,7 +788,7 @@ Future<Response> _createMoodRecord(RequestContext context, _AuthContext auth) as
   try {
     final body = await context.request.json();
     final moodId = body['mood_id'] as int?;
-    final moodDate = body['mood_date'] as String? ?? DateTime.now().toIso8601String();
+    final moodDate = body['mood_date'] as String?;
     final note = body['note'] as String?;
 
     if (moodId == null) {
@@ -796,16 +796,27 @@ Future<Response> _createMoodRecord(RequestContext context, _AuthContext auth) as
     }
 
     final recordId = const Uuid().v4();
-    await _db!.query(
-      "INSERT INTO mood_records (id, user_id, mood_id, mood_date, note) "
-      "VALUES ('$recordId', '$userId', $moodId, '$moodDate', ${note != null ? "'${note.replaceAll("'", "''")}'" : 'NULL'})",
-    );
+    final dateStr = moodDate != null ? moodDate.split('T').first : 'CURRENT_DATE';
+    final timeOfDay = moodDate != null ? _getTimeOfDay(moodDate) : null;
+    final timeOfDaySql = timeOfDay != null ? "'$timeOfDay'" : 'NULL';
+
+    if (moodDate != null) {
+      await _db!.query(
+        "INSERT INTO mood_entries (id, user_id, mood_value, date, time_of_day, recorded_at) "
+        "VALUES ('$recordId', '$userId', $moodId, '$dateStr', $timeOfDaySql, '$moodDate')",
+      );
+    } else {
+      await _db!.query(
+        "INSERT INTO mood_entries (id, user_id, mood_value, date, time_of_day) "
+        "VALUES ('$recordId', '$userId', $moodId, CURRENT_DATE, $timeOfDaySql)",
+      );
+    }
 
     return Response.json(statusCode: 201, body: {
       'id': recordId,
       'user_id': userId,
       'mood_id': moodId,
-      'mood_date': moodDate,
+      'mood_date': dateStr == 'CURRENT_DATE' ? DateTime.now().toIso8601String() : dateStr,
       'note': note,
     });
   } catch (e) {
@@ -820,18 +831,17 @@ Future<Response> _updateMoodRecord(RequestContext context, _AuthContext auth, St
   try {
     final body = await context.request.json();
     final moodId = body['mood_id'] as int?;
-    final note = body['note'] as String?;
 
     if (moodId == null) {
       return Response(statusCode: 400, body: 'mood_id is required');
     }
 
     await _db!.query(
-      "UPDATE mood_records SET mood_id = $moodId, note = ${note != null ? "'${note.replaceAll("'", "''")}'" : 'NULL'} "
+      "UPDATE mood_entries SET mood_value = $moodId "
       "WHERE id = '$id' AND user_id = '$userId'",
     );
 
-    return Response.json(body: {'id': id, 'mood_id': moodId, 'note': note});
+    return Response.json(body: {'id': id, 'mood_id': moodId});
   } catch (e) {
     return Response(statusCode: 500, body: 'Error: $e');
   }
@@ -842,11 +852,18 @@ Future<Response> _deleteMoodRecord(RequestContext context, _AuthContext auth, St
   if (userId == null) return Response(statusCode: 401, body: 'Unauthorized');
 
   try {
-    await _db!.query("DELETE FROM mood_records WHERE id = '$id' AND user_id = '$userId'");
+    await _db!.query("DELETE FROM mood_entries WHERE id = '$id' AND user_id = '$userId'");
     return Response(statusCode: 204);
   } catch (e) {
     return Response(statusCode: 500, body: 'Error: $e');
   }
+}
+
+String _getTimeOfDay(String isoDate) {
+  final dt = DateTime.parse(isoDate);
+  if (dt.hour < 12) return 'morning';
+  if (dt.hour < 18) return 'afternoon';
+  return 'evening';
 }
 
 void main() async {

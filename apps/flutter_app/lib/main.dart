@@ -43,26 +43,19 @@ class MyApp extends StatelessWidget {
           child: MultiBlocProvider(
             providers: [
               BlocProvider(
-                create: (ctx) {
+                create: (_) {
                   final authBloc = AuthBloc(repository: authRepository)..add(const AuthInit());
 
                   // Слушаем изменения состояния авторизации
                   authBloc.stream.listen((state) {
                     if (state is AuthAuthenticated) {
-                      // Пользователь вошёл — обновляем userId и токен
                       final userId = state.user.id;
                       final token = state.user.token;
                       debugPrint('Auth: пользователь вошёл, userId=$userId');
                       sleepRepository.setUserId(userId, token: token);
                       calendarRepository.setUserId(userId, token: token);
-                      // Обновляем DashboardBloc с токеном
-                      try {
-                        final dashboardBloc = ctx.read<DashboardBloc>();
-                        dashboardBloc.updateUserId(userId, token: token);
-                      } catch (_) {}
                     } else if (state is AuthUnauthenticated) {
-                      // Пользователь вышел — сбрасываем
-                      debugPrint('Auth: пользователь вышел, сброс репозиториев');
+                      debugPrint('Auth: пользователь вышел');
                       sleepRepository.setUserId('unknown', token: null);
                       calendarRepository.setUserId('unknown', token: null);
                     }
@@ -71,7 +64,11 @@ class MyApp extends StatelessWidget {
                   return authBloc;
                 },
               ),
-              BlocProvider(create: (_) => DashboardBloc()),
+              BlocProvider(create: (_) {
+                final dashboardBloc = DashboardBloc();
+                dashboardBloc.setSleepRepository(sleepRepository);
+                return dashboardBloc;
+              }),
               BlocProvider(
                 create: (ctx) => SleepBloc(repository: ctx.read<SleepRepository>()),
               ),

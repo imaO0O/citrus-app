@@ -19,6 +19,8 @@ import '../screens/analytics_screen.dart';
 import '../screens/settings_screen.dart';
 import '../screens/emergency_modal.dart';
 import '../features/auth/bloc/auth_bloc.dart';
+import '../bloc/dashboard_bloc.dart';
+import '../core/repository/sleep_repository.dart';
 
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
@@ -95,7 +97,15 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       builder: (context, _) {
         return BlocListener<AuthBloc, AuthState>(
           listener: (context, state) {
-            if (state is AuthUnauthenticated) {
+            if (state is AuthAuthenticated) {
+              debugPrint('MainNav: AuthAuthenticated, userId=${state.user.id}');
+              try {
+                final dashboardBloc = context.read<DashboardBloc>();
+                dashboardBloc.updateUserId(state.user.id, token: state.user.token);
+              } catch (e) {
+                debugPrint('MainNav: ошибка обновления DashboardBloc: $e');
+              }
+            } else if (state is AuthUnauthenticated) {
               context.go('/auth');
             }
           },
@@ -370,7 +380,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             child: GestureDetector(
               onTap: () {},
               child: Container(
-                constraints: const BoxConstraints(maxWidth: 500),
+                constraints: BoxConstraints(
+                  maxWidth: 500,
+                  maxHeight: MediaQuery.of(context).size.height * 0.8,
+                ),
                 decoration: BoxDecoration(
                   color: AppColors.surface2,
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
@@ -379,15 +392,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                   ),
                 ),
                 padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(
-                    maxHeight: MediaQuery.of(context).size.height * 0.75,
-                  ),
-                  child: SingleChildScrollView(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                    Row(
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Column(
@@ -506,8 +515,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                         ],
                       ),
                     ),
-                      ],
-                    ),
+                    ],
                   ),
                 ),
               ),

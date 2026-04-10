@@ -1,5 +1,7 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../core/repository/mood_repository.dart';
+import '../core/repository/sleep_repository.dart';
 import '../screens/models/mood.dart';
 
 abstract class DashboardEvent {}
@@ -63,30 +65,76 @@ class DashboardLoaded extends DashboardState {
 }
 
 class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
+  final MoodRepository _moodRepository = MoodRepository(userId: 'unknown', token: null);
+  SleepRepository? _sleepRepository;
+
   DashboardBloc() : super(DashboardInitial()) {
     on<DashboardLoad>(_onLoad);
     on<MoodSelected>(_onMoodSelected);
     on<MoodLogRefresh>(_onRefresh);
   }
 
-  final MoodRepository _repository = MoodRepository(userId: 'unknown', token: null);
-
   void updateUserId(String userId, {String? token}) {
-    _repository.setUserId(userId, token: token);
+    _moodRepository.setUserId(userId, token: token);
     add(DashboardLoad());
+  }
+
+  void setSleepRepository(SleepRepository repository) {
+    _sleepRepository = repository;
+  }
+
+  Future<String> _getSleepHours() async {
+    if (_sleepRepository == null || _sleepRepository!.userId == 'unknown') {
+      return '—';
+    }
+
+    try {
+      final now = DateTime.now();
+      final yesterday = DateTime(now.year, now.month, now.day - 1);
+      final tomorrow = DateTime(now.year, now.month, now.day);
+
+      final records = await _sleepRepository!.getSleepRecords(
+        startDate: yesterday,
+        endDate: tomorrow,
+      );
+
+      // Находим запись за вчера
+      for (final record in records) {
+        final rd = DateTime(record.sleepDate.year, record.sleepDate.month, record.sleepDate.day);
+        if (rd.isAtSameMomentAs(yesterday) && record.bedTime != null && record.wakeTime != null) {
+          final bedParts = record.bedTime!.split(':');
+          final wakeParts = record.wakeTime!.split(':');
+          final bedHour = int.tryParse(bedParts[0]) ?? 0;
+          final bedMin = int.tryParse(bedParts[1]) ?? 0;
+          final wakeHour = int.tryParse(wakeParts[0]) ?? 0;
+          final wakeMin = int.tryParse(wakeParts[1]) ?? 0;
+
+          double hours = (wakeHour + wakeMin / 60) - (bedHour + bedMin / 60);
+          if (hours < 0) hours += 24;
+
+          final h = hours.floor();
+          final m = ((hours - h) * 60).round();
+          return '${h}ч ${m}м';
+        }
+      }
+    } catch (e) {
+      // ignore
+    }
+
+    return '—';
   }
 
   Future<void> _onLoad(DashboardLoad event, Emitter<DashboardState> emit) async {
     emit(DashboardLoading());
 
     try {
-      final streak = await _repository.getStreak();
-      final goodDays = await _repository.getGoodDaysPercentage();
-      final todayRecords = await _repository.getTodayRecords();
-      final lastRecord = await _repository.getLastRecord();
-      final avgMood = await _repository.getAverageMood();
+      final streak = await _moodRepository.getStreak();
+      final goodDays = await _moodRepository.getGoodDaysPercentage();
+      final todayRecords = await _moodRepository.getTodayRecords();
+      final lastRecord = await _moodRepository.getLastRecord();
+      final avgMood = await _moodRepository.getAverageMood();
+      final sleepHours = await _getSleepHours();
 
-      // Конвертируем MoodRecord → MoodLogEntry для UI
       final todayLog = todayRecords
           .map((r) => MoodLogEntry(
                 timestamp: r.moodDate,
@@ -98,13 +146,12 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
       emit(DashboardLoaded(
         streakDays: streak,
         goodDaysPercent: '${goodDays.round()}%',
-        sleepHours: '—',
+        sleepHours: sleepHours,
         todayLog: todayLog,
         lastEntry: lastRecord,
         averageMood: avgMood,
       ));
     } catch (e) {
-      // При ошибке показываем пустое состояние
       emit(DashboardLoaded());
     }
   }
@@ -116,21 +163,17 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
     if (state is! DashboardLoaded) return;
 
     final current = state as DashboardLoaded;
-
-    // Временно показываем selected
     emit(current.copyWith(selectedMoodId: event.moodId));
 
     try {
-      // Сохраняем в БД
-      await _repository.createRecord(event.moodId, timestamp: event.timestamp);
-
-      // Обновляем данные через 1.5 сек
+      await _moodRepository.createRecord(event.moodId, timestamp: event.timestamp);
       await Future.delayed(const Duration(milliseconds: 1500));
 
-      final streak = await _repository.getStreak();
-      final goodDays = await _repository.getGoodDaysPercentage();
-      final todayRecords = await _repository.getTodayRecords();
-      final lastRecord = await _repository.getLastRecord();
+      final streak = await _moodRepository.getStreak();
+      final goodDays = await _moodRepository.getGoodDaysPercentage();
+      final todayRecords = await _moodRepository.getTodayRecords();
+      final lastRecord = await _moodRepository.getLastRecord();
+      final sleepHours = await _getSleepHours();
 
       final todayLog = todayRecords
           .map((r) => MoodLogEntry(
@@ -146,9 +189,10 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
         todayLog: todayLog,
         lastEntry: lastRecord,
         selectedMoodId: null,
+        sleepHours: sleepHours,
       ));
     } catch (e) {
-      // При ошибке просто убираем selected
+      debugPrint('DashboardBloc: ошибка сохранения настроения: $e');
       emit(current.copyWith(selectedMoodId: null));
     }
   }
@@ -162,10 +206,11 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
     final current = state as DashboardLoaded;
 
     try {
-      final streak = await _repository.getStreak();
-      final goodDays = await _repository.getGoodDaysPercentage();
-      final todayRecords = await _repository.getTodayRecords();
-      final lastRecord = await _repository.getLastRecord();
+      final streak = await _moodRepository.getStreak();
+      final goodDays = await _moodRepository.getGoodDaysPercentage();
+      final todayRecords = await _moodRepository.getTodayRecords();
+      final lastRecord = await _moodRepository.getLastRecord();
+      final sleepHours = await _getSleepHours();
 
       final todayLog = todayRecords
           .map((r) => MoodLogEntry(
@@ -180,6 +225,7 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
         goodDaysPercent: '${goodDays.round()}%',
         todayLog: todayLog,
         lastEntry: lastRecord,
+        sleepHours: sleepHours,
       ));
     } catch (e) {
       // ignore

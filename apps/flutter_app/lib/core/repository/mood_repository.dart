@@ -17,11 +17,25 @@ class MoodRecord {
   });
 
   factory MoodRecord.fromJson(Map<String, dynamic> json) {
+    // Поддерживаем оба варианта имени поля
+    final moodId = json['mood_id'] ?? json['mood_value'];
+    final moodDateStr = json['mood_date'] as String?;
+    DateTime moodDate;
+    if (moodDateStr != null) {
+      try {
+        moodDate = DateTime.parse(moodDateStr);
+      } catch (_) {
+        moodDate = DateTime.now();
+      }
+    } else {
+      moodDate = DateTime.now();
+    }
+
     return MoodRecord(
       id: json['id'] as String,
       userId: json['user_id'] as String,
-      moodId: json['mood_id'] as int,
-      moodDate: DateTime.parse(json['mood_date'] as String),
+      moodId: moodId as int,
+      moodDate: moodDate,
       note: json['note'] as String?,
     );
   }
