@@ -52,9 +52,14 @@ class MyApp extends StatelessWidget {
                       // Пользователь вошёл — обновляем userId и токен
                       final userId = state.user.id;
                       final token = state.user.token;
-                      debugPrint('Auth: пользователь вошёл, userId=$userId, token=${token.isEmpty ? "пустой" : "length=${token.length}"}');
+                      debugPrint('Auth: пользователь вошёл, userId=$userId');
                       sleepRepository.setUserId(userId, token: token);
                       calendarRepository.setUserId(userId, token: token);
+                      // Обновляем DashboardBloc с токеном
+                      try {
+                        final dashboardBloc = ctx.read<DashboardBloc>();
+                        dashboardBloc.updateUserId(userId, token: token);
+                      } catch (_) {}
                     } else if (state is AuthUnauthenticated) {
                       // Пользователь вышел — сбрасываем
                       debugPrint('Auth: пользователь вышел, сброс репозиториев');

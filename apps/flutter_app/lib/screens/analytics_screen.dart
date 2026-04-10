@@ -32,7 +32,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 480),
                   child: Padding(
-                    padding: const EdgeInsets.all(20),
+                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -51,13 +51,13 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                         _buildActivitySection(),
                         const SizedBox(height: 20),
                         _buildExportButtons(),
-                        const SizedBox(height: 80),
                       ],
                     ),
                   ),
                 ),
               ),
             ),
+            const SliverPadding(padding: EdgeInsets.only(bottom: 80)),
           ],
         ),
       ),

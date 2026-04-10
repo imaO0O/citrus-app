@@ -9,19 +9,19 @@ class _AffirmationData {
   const _AffirmationData({required this.emoji, required this.text, required this.color});
 }
 
-const _categories = ['\u0412\u0441\u0435', '\u0423\u0432\u0435\u0440\u0435\u043D\u043D\u043E\u0441\u0442\u044C', '\u0421\u043F\u043E\u043A\u043E\u0439\u0441\u0442\u0432\u0438\u0435', '\u0421\u0438\u043B\u0430', '\u041B\u044E\u0431\u043E\u0432\u044C'];
+const _categories = ['Все', 'Уверенность', 'Спокойствие', 'Сила', 'Любовь'];
 
 const _allAffirmations = [
-  _AffirmationData(emoji: '\u{1F31F}', text: '\u042F \u0434\u043E\u0441\u0442\u043E\u0438\u043D \u043B\u044E\u0431\u0432\u0438 \u0438 \u0443\u0432\u0430\u0436\u0435\u043D\u0438\u044F', color: Color(0xFFFFB347)),
-  _AffirmationData(emoji: '\u{1F331}', text: '\u041A\u0430\u0436\u0434\u044B\u0439 \u0434\u0435\u043D\u044C \u044F \u0441\u0442\u0430\u043D\u043E\u0432\u043B\u044E\u0441\u044C \u043B\u0443\u0447\u0448\u0435', color: AppColors.moodExcellent),
-  _AffirmationData(emoji: '\u{1F4AA}', text: '\u042F \u0441\u043F\u0440\u0430\u0432\u043B\u044E\u0441\u044C \u0441 \u043B\u044E\u0431\u044B\u043C\u0438 \u0442\u0440\u0443\u0434\u043D\u043E\u0441\u0442\u044F\u043C\u0438', color: AppColors.citrusOrange),
-  _AffirmationData(emoji: '\u2764\u{FE0F}', text: '\u041C\u043E\u0438 \u0447\u0443\u0432\u0441\u0442\u0432\u0430 \u0432\u0430\u0436\u043D\u044B', color: AppColors.citrusRed),
-  _AffirmationData(emoji: '\u{1F3C6}', text: '\u042F \u0433\u043E\u0440\u0436\u0443\u0441\u044C \u0441\u0432\u043E\u0438\u043C\u0438 \u0434\u043E\u0441\u0442\u0438\u0436\u0435\u043D\u0438\u044F\u043C\u0438', color: AppColors.citrusYellow),
-  _AffirmationData(emoji: '\u2728', text: '\u0423 \u043C\u0435\u043D\u044F \u0435\u0441\u0442\u044C \u0432\u0441\u0451 \u0434\u043B\u044F \u0443\u0441\u043F\u0435\u0445\u0430', color: Color(0xFFC084FC)),
-  _AffirmationData(emoji: '\u{1F98B}', text: '\u042F \u043F\u0440\u0438\u043D\u0438\u043C\u0430\u044E \u0441\u0435\u0431\u044F', color: Color(0xFFA78BFA)),
-  _AffirmationData(emoji: '\u2600\u{FE0F}', text: '\u0421\u0435\u0433\u043E\u0434\u043D\u044F \u044F \u0432\u044B\u0431\u0438\u0440\u0430\u044E \u043F\u043E\u0437\u0438\u0442\u0438\u0432', color: AppColors.citrusYellow),
-  _AffirmationData(emoji: '\u{1F9E0}', text: '\u041C\u043E\u0439 \u0443\u043C \u044F\u0441\u043D\u044B\u0439', color: Color(0xFFA78BFA)),
-  _AffirmationData(emoji: '\u{1F338}', text: '\u042F \u0437\u0430\u0441\u043B\u0443\u0436\u0438\u0432\u0430\u044E \u043E\u0442\u0434\u044B\u0445\u0430', color: AppColors.moodExcellent),
+  _AffirmationData(emoji: '🌟', text: 'Я достоин любви и уважения', color: Color(0xFFFFB347)),
+  _AffirmationData(emoji: '🌱', text: 'Каждый день я становлюсь лучше', color: AppColors.moodExcellent),
+  _AffirmationData(emoji: '💪', text: 'Я справлюсь с любыми трудностями', color: AppColors.citrusOrange),
+  _AffirmationData(emoji: '❤️', text: 'Мои чувства важны', color: AppColors.citrusRed),
+  _AffirmationData(emoji: '🏆', text: 'Я горжусь своими достижениями', color: AppColors.citrusYellow),
+  _AffirmationData(emoji: '✨', text: 'У меня есть всё для успеха', color: Color(0xFFC084FC)),
+  _AffirmationData(emoji: '🦋', text: 'Я принимаю себя', color: Color(0xFFA78BFA)),
+  _AffirmationData(emoji: '☀️', text: 'Сегодня я выбираю позитив', color: AppColors.citrusYellow),
+  _AffirmationData(emoji: '🧠', text: 'Мой ум ясный', color: Color(0xFFA78BFA)),
+  _AffirmationData(emoji: '🌸', text: 'Я заслуживаю отдыха', color: AppColors.moodExcellent),
 ];
 
 class AffirmationsScreen extends StatefulWidget {
@@ -35,11 +35,10 @@ class _AffirmationsScreenState extends State<AffirmationsScreen> {
   late PageController _pageController;
   int _currentIndex = 0;
   final Set<int> _favorites = {};
-  String _selectedCategory = '\u0412\u0441\u0435';
+  String _selectedCategory = 'Все';
 
   List<_AffirmationData> get _filteredAffirmations {
-    if (_selectedCategory == '\u0412\u0441\u0435') return _allAffirmations;
-    // Simple category filtering for demo
+    if (_selectedCategory == 'Все') return _allAffirmations;
     return _allAffirmations;
   }
 
@@ -81,14 +80,14 @@ class _AffirmationsScreenState extends State<AffirmationsScreen> {
       backgroundColor: AppColors.background,
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 480),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  '\u0410\u0444\u0444\u0438\u0440\u043C\u0430\u0446\u0438\u0438',
+                  'Аффирмации',
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.w700,
@@ -111,12 +110,13 @@ class _AffirmationsScreenState extends State<AffirmationsScreen> {
                 ),
                 const SizedBox(height: 16),
                 _buildPageIndicator(),
-                const SizedBox(height: 20),
+                const SizedBox(height: 16),
                 _buildActionButtons(),
                 if (_favorites.isNotEmpty) ...[
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 12),
                   _buildFavoritesSection(),
                 ],
+                const SizedBox(height: 80),
               ],
             ),
           ),
@@ -204,7 +204,7 @@ class _AffirmationsScreenState extends State<AffirmationsScreen> {
                 Text(affirmation.emoji, style: const TextStyle(fontSize: 64)),
                 const SizedBox(height: 24),
                 Text(
-                  '\u201C${affirmation.text}\u201D',
+                  '"${affirmation.text}"',
                   style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
@@ -295,7 +295,6 @@ class _AffirmationsScreenState extends State<AffirmationsScreen> {
   }
 
   Widget _buildActionButtons() {
-    final isLast = _currentIndex == _filteredAffirmations.length - 1;
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
@@ -349,21 +348,26 @@ class _AffirmationsScreenState extends State<AffirmationsScreen> {
             child: Icon(Icons.share_rounded, color: AppColors.mutedForeground, size: 20),
           ),
         ),
-        const SizedBox(height: 80),
       ],
     );
   }
 
   Widget _buildFavoritesSection() {
+    if (_favorites.isEmpty) return const SizedBox.shrink();
     final favoriteList = _favorites.toList()..sort();
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Padding(
-          padding: EdgeInsets.only(left: 8, bottom: 12),
-          child: Text(
-            '\u0418\u0417\u0411\u0420\u0410\u041D\u041D\u041E\u0415',
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.surface1,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.subtleBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'ИЗБРАННОЕ',
             style: TextStyle(
               fontSize: 10,
               fontWeight: FontWeight.w700,
@@ -371,37 +375,34 @@ class _AffirmationsScreenState extends State<AffirmationsScreen> {
               color: AppColors.dimForeground,
             ),
           ),
-        ),
-        ...favoriteList.map((index) {
-          final affirmation = _filteredAffirmations[index];
-          return Container(
-            margin: const EdgeInsets.only(bottom: 8),
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppColors.surface1,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.subtleBorder),
-            ),
-            child: Row(
-              children: [
-                Text(affirmation.emoji, style: const TextStyle(fontSize: 24)),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    affirmation.text,
-                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: AppColors.foreground),
+          const SizedBox(height: 8),
+          SizedBox(
+            height: 56,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: favoriteList.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 8),
+              itemBuilder: (context, index) {
+                final affirmation = _filteredAffirmations[favoriteList[index]];
+                return GestureDetector(
+                  onTap: () => _goToPage(favoriteList[index]),
+                  child: Container(
+                    width: 56,
+                    decoration: BoxDecoration(
+                      color: affirmation.color.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: affirmation.color.withOpacity(0.2)),
+                    ),
+                    child: Center(
+                      child: Text(affirmation.emoji, style: const TextStyle(fontSize: 20)),
+                    ),
                   ),
-                ),
-                const SizedBox(width: 8),
-                GestureDetector(
-                  onTap: () => _toggleFavorite(index),
-                  child: Icon(Icons.favorite_rounded, color: affirmation.color, size: 20),
-                ),
-              ],
+                );
+              },
             ),
-          );
-        }).toList(),
-      ],
+          ),
+        ],
+      ),
     );
   }
 }

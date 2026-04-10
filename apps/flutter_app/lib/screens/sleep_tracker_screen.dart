@@ -454,22 +454,38 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    _getDayLabel(record.sleepDate),
-                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.foreground),
+                  Expanded(
+                    child: Text(
+                      _getDayLabel(record.sleepDate),
+                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.foreground),
+                    ),
                   ),
+                  IconButton(
+                    icon: const Icon(Icons.edit, size: 18),
+                    color: AppColors.citrusOrange,
+                    onPressed: () => _showEditSleepDialog(context, record),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.delete, size: 18),
+                    color: AppColors.destructive,
+                    onPressed: () => _confirmDeleteSleep(context, record),
+                  ),
+                ],
+              ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  if (record.bedTime != null && record.wakeTime != null)
+                    Text(
+                      '${record.bedTime!.substring(0, 5)} - ${record.wakeTime!.substring(0, 5)}',
+                      style: const TextStyle(fontSize: 12, color: AppColors.mutedForeground),
+                    ),
                   Text(
                     hours > 0 ? _formatSleepDuration(hours) : '—',
                     style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.foreground),
                   ),
                 ],
               ),
-              const SizedBox(height: 4),
-              if (record.bedTime != null && record.wakeTime != null)
-                Text(
-                  '${record.bedTime!.substring(0, 5)} - ${record.wakeTime!.substring(0, 5)}',
-                  style: const TextStyle(fontSize: 12, color: AppColors.mutedForeground),
-                ),
               if (quality != null) ...[
                 const SizedBox(height: 4),
                 Text(
@@ -673,6 +689,167 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showEditSleepDialog(BuildContext context, SleepRecord record) {
+    String bedtime = record.bedTime?.substring(0, 5) ?? '23:00';
+    String wakeup = record.wakeTime?.substring(0, 5) ?? '07:00';
+    int quality = record.quality ?? 3;
+    DateTime selectedDate = record.sleepDate;
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) => AlertDialog(
+          backgroundColor: AppColors.surface1,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(color: AppColors.citrusPurple.withOpacity(0.2)),
+          ),
+          title: const Text(
+            'Редактировать запись',
+            style: TextStyle(color: AppColors.foreground, fontWeight: FontWeight.w600),
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.calendar_today, color: AppColors.mutedForeground, size: 20),
+                  title: const Text('Дата', style: TextStyle(color: AppColors.mutedForeground, fontSize: 13)),
+                  subtitle: Text(
+                    '${selectedDate.day}.${selectedDate.month}.${selectedDate.year}',
+                    style: const TextStyle(color: AppColors.foreground),
+                  ),
+                  onTap: () async {
+                    final date = await showDatePicker(
+                      context: context,
+                      initialDate: selectedDate,
+                      firstDate: DateTime(2020),
+                      lastDate: DateTime.now(),
+                    );
+                    if (date != null) setModalState(() => selectedDate = date);
+                  },
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    const Text('Отбой:', style: TextStyle(color: AppColors.mutedForeground, fontSize: 13)),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: TextField(
+                        style: const TextStyle(color: AppColors.foreground, fontSize: 13),
+                        controller: TextEditingController(text: bedtime),
+                        decoration: InputDecoration(
+                          filled: true, fillColor: AppColors.surface2,
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6), isDense: true,
+                        ),
+                        onChanged: (v) => bedtime = v,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    const Text('Подъём:', style: TextStyle(color: AppColors.mutedForeground, fontSize: 13)),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: TextField(
+                        style: const TextStyle(color: AppColors.foreground, fontSize: 13),
+                        controller: TextEditingController(text: wakeup),
+                        decoration: InputDecoration(
+                          filled: true, fillColor: AppColors.surface2,
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6), isDense: true,
+                        ),
+                        onChanged: (v) => wakeup = v,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                const Text('Качество:', style: TextStyle(color: AppColors.mutedForeground, fontSize: 13)),
+                const SizedBox(height: 6),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [1, 2, 3, 4, 5].map((q) {
+                    final isSelected = quality == q;
+                    return GestureDetector(
+                      onTap: () => setModalState(() => quality = q),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: isSelected ? AppColors.citrusPurple.withValues(alpha: 0.2) : AppColors.surface2,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: isSelected ? AppColors.citrusPurple : Colors.transparent),
+                        ),
+                        child: Text(_getQualityLabel(q), style: TextStyle(
+                          color: isSelected ? AppColors.citrusPurple : AppColors.mutedForeground, fontSize: 11)),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Отмена', style: TextStyle(color: AppColors.mutedForeground))),
+            FilledButton(
+              onPressed: () {
+                final btParts = bedtime.split(':');
+                final wuParts = wakeup.split(':');
+                final btH = int.tryParse(btParts[0]) ?? 0;
+                final btM = int.tryParse(btParts[1]) ?? 0;
+                final wuH = int.tryParse(wuParts[0]) ?? 0;
+                final wuM = int.tryParse(wuParts[1]) ?? 0;
+
+                final updatedRecord = SleepRecord(
+                  id: record.id,
+                  userId: record.userId,
+                  sleepDate: selectedDate,
+                  bedTime: '${btH.toString().padLeft(2, '0')}:${btM.toString().padLeft(2, '0')}:00',
+                  wakeTime: '${wuH.toString().padLeft(2, '0')}:${wuM.toString().padLeft(2, '0')}:00',
+                  quality: quality,
+                );
+
+                context.read<SleepBloc>().add(UpdateSleepRecord(updatedRecord));
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Запись обновлена'), backgroundColor: Colors.green));
+              },
+              style: FilledButton.styleFrom(backgroundColor: AppColors.citrusPurple),
+              child: const Text('Сохранить'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _confirmDeleteSleep(BuildContext context, SleepRecord record) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.surface1,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide(color: AppColors.destructive.withOpacity(0.3))),
+        title: const Text('Удалить запись?', style: TextStyle(color: AppColors.foreground)),
+        content: const Text('Запись о сне будет удалена навсегда.', style: TextStyle(color: AppColors.mutedForeground)),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Отмена', style: TextStyle(color: AppColors.mutedForeground))),
+          FilledButton(
+            onPressed: () {
+              context.read<SleepBloc>().add(DeleteSleepRecord(record.id));
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Запись удалена'), backgroundColor: Colors.orange));
+            },
+            style: FilledButton.styleFrom(backgroundColor: AppColors.destructive),
+            child: const Text('Удалить'),
+          ),
+        ],
       ),
     );
   }
