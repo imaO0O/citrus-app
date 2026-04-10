@@ -33,7 +33,7 @@ class _TestTakingScreenState extends State<TestTakingScreen> {
 
   void _selectAnswer(int answerIndex) {
     setState(() {
-      _answers[_currentQuestion] = answerIndex;
+      _answers[_test.questions[_currentQuestion].id] = answerIndex;
     });
   }
 
@@ -207,7 +207,7 @@ class _TestTakingScreenState extends State<TestTakingScreen> {
                   ...question.options.asMap().entries.map((entry) {
                     final index = entry.key;
                     final option = entry.value;
-                    final isSelected = _answers[_currentQuestion] == index;
+                    final isSelected = _answers[question.id] == index;
 
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 12),
@@ -250,7 +250,7 @@ class _TestTakingScreenState extends State<TestTakingScreen> {
                 Expanded(
                   flex: _currentQuestion == 0 ? 1 : 1,
                   child: ElevatedButton(
-                    onPressed: _answers[_currentQuestion] != null
+                    onPressed: _answers[question.id] != null
                         ? (_isSubmitting ? null : _nextQuestion)
                         : null,
                     style: ElevatedButton.styleFrom(
