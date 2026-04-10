@@ -29,7 +29,7 @@ ON CONFLICT (id) DO NOTHING;
 CREATE TABLE IF NOT EXISTS mood_entries (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES users(id) ON DELETE CASCADE,
-    mood_value INTEGER CHECK (mood_value BETWEEN 1 AND 5),
+    mood_value INTEGER CHECK (mood_value BETWEEN 0 AND 5),
     recorded_at TIMESTAMP DEFAULT NOW(),
     date DATE DEFAULT CURRENT_DATE,
     time_of_day TEXT  -- 'morning', 'afternoon', 'evening'

@@ -291,67 +291,66 @@ class _DiaryScreenState extends State<DiaryScreen> {
         decoration: BoxDecoration(
           color: AppColors.surface1,
           borderRadius: BorderRadius.circular(16),
-          border: Border(
-            left: BorderSide(color: entry.moodColor, width: 3),
-            top: BorderSide(color: AppColors.subtleBorder),
-            right: BorderSide(color: AppColors.subtleBorder),
-            bottom: BorderSide(color: AppColors.subtleBorder),
-          ),
+          border: Border.all(color: AppColors.subtleBorder),
         ),
-        child: Column(
+        child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(entry.mood, style: const TextStyle(fontSize: 28)),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        entry.title,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.foreground,
+            Container(
+              width: 3,
+              height: 60,
+              decoration: BoxDecoration(
+                color: entry.moodColor,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(entry.mood, style: const TextStyle(fontSize: 28)),
+                  const SizedBox(height: 4),
+                  Text(
+                    entry.title,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.foreground,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    entry.content,
+                    style: const TextStyle(fontSize: 13, color: AppColors.mutedForeground),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: entry.tags.map((tag) {
+                      return Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: entry.moodColor.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(999),
                         ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        entry.content,
-                        style: const TextStyle(fontSize: 13, color: AppColors.mutedForeground),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
+                        child: Text(
+                          tag,
+                          style: TextStyle(fontSize: 10, color: entry.moodColor, fontWeight: FontWeight.w500),
+                        ),
+                      );
+                    }).toList(),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 6,
-              runSpacing: 6,
-              children: entry.tags.map((tag) {
-                return Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: entry.moodColor.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(999),
+                  const SizedBox(height: 8),
+                  Text(
+                    _formatDate(entry.date),
+                    style: const TextStyle(fontSize: 10, color: AppColors.dimForeground),
                   ),
-                  child: Text(
-                    tag,
-                    style: TextStyle(fontSize: 10, color: entry.moodColor, fontWeight: FontWeight.w500),
-                  ),
-                );
-              }).toList(),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              _formatDate(entry.date),
-              style: const TextStyle(fontSize: 10, color: AppColors.dimForeground),
+                ],
+              ),
             ),
           ],
         ),
