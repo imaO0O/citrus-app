@@ -70,8 +70,6 @@ class MoodLogEntry {
     required this.moodId,
   });
 
-  TimeOfDay get time => TimeOfDay.fromDateTime(timestamp);
-
   Map<String, dynamic> toJson() => {
     'timestamp': timestamp.toIso8601String(),
     'moodId': moodId,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../models/mood.dart';
 
 class MoodLog extends StatelessWidget {
@@ -24,7 +25,7 @@ class MoodLog extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          ...entries.reversed.take(4).map(_buildEntry),
+          ...entries.map(_buildEntry),
         ],
       ),
     );
@@ -74,7 +75,7 @@ class MoodLog extends StatelessWidget {
             ),
             const SizedBox(width: 8),
             Text(
-              '${entry.time.hour.toString().padLeft(2, '0')}:${entry.time.minute.toString().padLeft(2, '0')}',
+              DateFormat('HH:mm').format(entry.timestamp),
               style: const TextStyle(
                 fontSize: 12,
                 color: Color(0xFF5A5468),

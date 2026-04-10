@@ -795,11 +795,11 @@ Future<Response> _getMoodRecords(RequestContext context, _AuthContext auth) asyn
     final endDate = query['end_date'];
 
     String whereClause = "WHERE user_id = '$userId'";
-    if (startDate != null) whereClause += " AND date >= '$startDate'";
-    if (endDate != null) whereClause += " AND date <= '$endDate'";
+    if (startDate != null) whereClause += " AND DATE(recorded_at) >= '$startDate'";
+    if (endDate != null) whereClause += " AND DATE(recorded_at) <= '$endDate'";
 
     final results = await _db!.query(
-      "SELECT id, user_id, mood_value, date::text, recorded_at::text "
+      "SELECT id, user_id, mood_value, recorded_at::text "
       "FROM mood_entries $whereClause ORDER BY recorded_at DESC",
     );
 
@@ -808,8 +808,6 @@ Future<Response> _getMoodRecords(RequestContext context, _AuthContext auth) asyn
       'user_id': row[1] is String ? row[1] : Uuid.unparse(row[1] as Uint8List),
       'mood_id': row[2] as int,
       'mood_date': row[3],
-      'note': null,
-      'created_at': row[4],
     }).toList();
 
     return Response.json(body: records);
@@ -833,29 +831,24 @@ Future<Response> _createMoodRecord(RequestContext context, _AuthContext auth) as
     }
 
     final recordId = const Uuid().v4();
-    final dateStr = moodDate != null ? moodDate.split('T').first : 'CURRENT_DATE';
     final timeOfDay = moodDate != null ? _getTimeOfDay(moodDate) : null;
     final timeOfDaySql = timeOfDay != null ? "'$timeOfDay'" : 'NULL';
 
     final sql = moodDate != null
-        ? "INSERT INTO mood_entries (id, user_id, mood_value, date, time_of_day, recorded_at) "
-          "VALUES ('$recordId', '$userId', $moodId, '$dateStr', $timeOfDaySql, '$moodDate')"
-        : "INSERT INTO mood_entries (id, user_id, mood_value, date, time_of_day) "
-          "VALUES ('$recordId', '$userId', $moodId, CURRENT_DATE, $timeOfDaySql)";
+        ? "INSERT INTO mood_entries (id, user_id, mood_value, time_of_day, recorded_at) "
+          "VALUES ('$recordId', '$userId', $moodId, $timeOfDaySql, '$moodDate')"
+        : "INSERT INTO mood_entries (id, user_id, mood_value, time_of_day) "
+          "VALUES ('$recordId', '$userId', $moodId, $timeOfDaySql)";
 
     print('mood create SQL: $sql');
 
-    if (moodDate != null) {
-      await _db!.query(sql);
-    } else {
-      await _db!.query(sql);
-    }
+    await _db!.query(sql);
 
     return Response.json(statusCode: 201, body: {
       'id': recordId,
       'user_id': userId,
       'mood_id': moodId,
-      'mood_date': dateStr == 'CURRENT_DATE' ? DateTime.now().toIso8601String() : dateStr,
+      'mood_date': moodDate ?? DateTime.now().toIso8601String(),
       'note': note,
     });
   } catch (e, stackTrace) {
