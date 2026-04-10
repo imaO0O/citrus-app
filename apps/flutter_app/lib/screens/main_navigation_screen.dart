@@ -379,9 +379,14 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                   ),
                 ),
                 padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxHeight: MediaQuery.of(context).size.height * 0.75,
+                  ),
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -501,7 +506,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                         ],
                       ),
                     ),
-                  ],
+                      ],
+                    ),
+                  ),
                 ),
               ),
             ),
