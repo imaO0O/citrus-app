@@ -15,6 +15,7 @@ class HomePage extends StatefulWidget {
   final VoidCallback? onNavigateToChat;
   final VoidCallback? onNavigateToDiary;
   final VoidCallback? onNavigateToSleep;
+  final VoidCallback? onNavigateToTests;
 
   const HomePage({
     super.key,
@@ -22,6 +23,7 @@ class HomePage extends StatefulWidget {
     this.onNavigateToChat,
     this.onNavigateToDiary,
     this.onNavigateToSleep,
+    this.onNavigateToTests,
   });
 
   @override
@@ -186,6 +188,7 @@ class _HomePageState extends State<HomePage> {
                       onChatTap: widget.onNavigateToChat,
                       onDiaryTap: widget.onNavigateToDiary,
                       onSleepTap: widget.onNavigateToSleep,
+                      onTestsTap: widget.onNavigateToTests,
                     ),
 
                     const SizedBox(height: 16),

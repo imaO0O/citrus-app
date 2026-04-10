@@ -5,6 +5,7 @@ class QuickLinks extends StatelessWidget {
   final VoidCallback? onChatTap;
   final VoidCallback? onDiaryTap;
   final VoidCallback? onSleepTap;
+  final VoidCallback? onTestsTap;
 
   const QuickLinks({
     super.key,
@@ -12,6 +13,7 @@ class QuickLinks extends StatelessWidget {
     this.onChatTap,
     this.onDiaryTap,
     this.onSleepTap,
+    this.onTestsTap,
   });
 
   @override
@@ -36,6 +38,11 @@ class QuickLinks extends StatelessWidget {
         icon: '🌙',
         label: 'Сон',
         onTap: onSleepTap ?? () {},
+      ),
+      _QuickLinkItem(
+        icon: '🧪',
+        label: 'Тесты',
+        onTap: onTestsTap ?? () {},
       ),
     ];
 

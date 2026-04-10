@@ -175,6 +175,62 @@ Future<Response> _handleRequest(RequestContext context) async {
     return _deleteMoodRecord(context, authContext, id);
   }
 
+  // Psychological tests endpoints (требуют авторизации для сохранения результатов)
+  if (path.startsWith('/tests')) {
+    // GET /tests и GET /tests/{id} - публичные, без авторизации
+    if (method == HttpMethod.get) {
+      if (path == '/tests' || path == '/tests/') {
+        return _getAvailableTests(context);
+      }
+      if (path.startsWith('/tests/') && !path.contains('/submit') && !path.contains('/results')) {
+        final testId = path.split('/')[2];
+        return _getTest(context, testId);
+      }
+    }
+
+    // Остальные методы требуют авторизации
+    final token = _extractToken(context);
+    if (token == null) {
+      return Response(statusCode: 401, body: 'Unauthorized');
+    }
+
+    try {
+      final jwt = JWT.verify(token, SecretKey(_jwtSecret));
+      authContext.userId = jwt.payload['user_id'] as String;
+    } catch (e) {
+      return Response(statusCode: 401, body: 'Invalid token');
+    }
+  }
+
+  // GET /tests - список доступных тестов
+  if (path == '/tests' && method == HttpMethod.get) {
+    return _getAvailableTests(context);
+  }
+
+  // GET /tests/{testId} - получить тест с вопросами
+  if (path.startsWith('/tests/') && method == HttpMethod.get && !path.contains('/submit') && !path.contains('/results')) {
+    final testId = path.split('/')[2];
+    return _getTest(context, testId);
+  }
+
+  // POST /tests/{testId}/submit - отправить ответы
+  if (path.contains('/submit') && method == HttpMethod.post) {
+    final parts = path.split('/');
+    final testId = parts[2];
+    return _submitTest(context, authContext, testId);
+  }
+
+  // GET /tests/results - история результатов
+  if ((path == '/tests/results' || path == '/tests/results/') && method == HttpMethod.get) {
+    return _getTestResults(context, authContext);
+  }
+
+  // GET /tests/results/{testId} - результаты конкретного теста
+  if (path.startsWith('/tests/results/') && method == HttpMethod.get && !path.contains('/submit')) {
+    final testId = path.split('/')[3];
+    return _getTestResult(context, authContext, testId);
+  }
+
   // Diary endpoints (требуют авторизации)
   if (path.startsWith('/diary/')) {
     final token = _extractToken(context);
@@ -1020,4 +1076,212 @@ Future<Response> _deleteDiaryEntry(RequestContext context, _AuthContext auth, St
 void main() async {
   final server = await serve(_handleRequest, InternetAddress.anyIPv4, 8081);
   print('Server running on http://${server.address.host}:${server.port}');
+}
+
+// ==================== PSYCHOLOGICAL TESTS ENDPOINTS ====================
+
+/// Метаданные всех доступных тестов (без вопросов)
+Future<Response> _getAvailableTests(RequestContext context) async {
+  try {
+    final tests = [
+      {
+        'id': 'big_five_ipip_50',
+        'title': 'Большая пятёрка (IPIP-50)',
+        'description': '5 основных черт личности',
+        'icon': '🧠',
+        'category': 'personality',
+        'questionsCount': 50,
+        'durationMinutes': 10,
+      },
+      {
+        'id': 'big_five_ipip_120',
+        'title': 'Большая пятёрка (IPIP-120)',
+        'description': 'Расширенный тест личности с аспектами',
+        'icon': '🧠',
+        'category': 'personality',
+        'questionsCount': 120,
+        'durationMinutes': 20,
+      },
+      {
+        'id': 'phq9',
+        'title': 'PHQ-9: Скрининг депрессии',
+        'description': 'Оценка депрессивных симптомов',
+        'icon': '📉',
+        'category': 'clinical',
+        'questionsCount': 9,
+        'durationMinutes': 3,
+      },
+      {
+        'id': 'gad7',
+        'title': 'GAD-7: Скрининг тревожности',
+        'description': 'Оценка симптомов тревоги',
+        'icon': '😰',
+        'category': 'clinical',
+        'questionsCount': 7,
+        'durationMinutes': 2,
+      },
+      {
+        'id': 'dass21',
+        'title': 'DASS-21: Депрессия, тревога, стресс',
+        'description': 'Комплексная оценка эмоционального состояния',
+        'icon': '📊',
+        'category': 'clinical',
+        'questionsCount': 21,
+        'durationMinutes': 5,
+      },
+      {
+        'id': 'rosenberg_self_esteem',
+        'title': 'Шкала самооценки Розенберга',
+        'description': 'Оценка уровня самооценки',
+        'icon': '💪',
+        'category': 'clinical',
+        'questionsCount': 10,
+        'durationMinutes': 3,
+      },
+      {
+        'id': 'dark_triad_sd3',
+        'title': 'Тёмная триада (SD3)',
+        'description': 'Нарциссизм, макиавеллизм, психопатия',
+        'icon': '🌑',
+        'category': 'personality',
+        'questionsCount': 27,
+        'durationMinutes': 7,
+      },
+      {
+        'id': 'disc',
+        'title': 'DISC: Стиль поведения',
+        'description': 'Доминирование, влияние, стабильность, добросовестность',
+        'icon': '🎯',
+        'category': 'behavioral',
+        'questionsCount': 28,
+        'durationMinutes': 10,
+      },
+    ];
+
+    return Response.json(body: tests);
+  } catch (e) {
+    return Response(statusCode: 500, body: 'Error: $e');
+  }
+}
+
+/// Получить полный тест с вопросами
+Future<Response> _getTest(RequestContext context, String testId) async {
+  // В production здесь загрузка из БД или файла
+  // Пока возвращаем заглушку - клиент сам содержит все тесты
+  return Response.json(body: {
+    'id': testId,
+    'message': 'Test questions are embedded in the client app',
+  });
+}
+
+/// Отправить ответы теста и получить результат
+Future<Response> _submitTest(
+    RequestContext context, _AuthContext auth, String testId) async {
+  final userId = auth.userId;
+  if (userId == null) return Response(statusCode: 401, body: 'Unauthorized');
+
+  try {
+    final body = await context.request.json();
+    final answers = body['answers'] as Map<String, dynamic>?;
+    final completedAt = body['completedAt'] as String?;
+
+    if (answers == null || answers.isEmpty) {
+      return Response(statusCode: 400, body: 'answers are required');
+    }
+
+    // Подсчёт баллов по шкалам
+    final scores = <String, int>{};
+    for (final entry in answers.entries) {
+      final questionId = entry.key;
+      final answerValue = entry.value as int;
+
+      // Для каждого теста своя логика, здесь упрощённо
+      // В реальном приложении используйте правила из тестов
+      scores['question_${questionId}'] = answerValue;
+    }
+
+    final recordId = const Uuid().v4();
+    final scoresJson = jsonEncode(scores);
+    final interpretationsJson = body['interpretations'] != null
+        ? jsonEncode(body['interpretations'])
+        : 'null';
+    final completedAtSql =
+        completedAt != null ? "'$completedAt'" : 'NOW()';
+
+    await _db!.query(
+      "INSERT INTO psychological_test_results (id, user_id, test_id, scores, interpretations, completed_at) "
+      "VALUES ('$recordId', '$userId', '$testId', '$scoresJson', $interpretationsJson, $completedAtSql)",
+    );
+
+    return Response.json(statusCode: 201, body: {
+      'id': recordId,
+      'testId': testId,
+      'scores': scores,
+      'completedAt': completedAt ?? DateTime.now().toIso8601String(),
+    });
+  } catch (e, stackTrace) {
+    print('Test submit error: $e');
+    print('stackTrace: $stackTrace');
+    return Response(statusCode: 500, body: 'Error: $e');
+  }
+}
+
+/// Получить историю результатов тестов
+Future<Response> _getTestResults(
+    RequestContext context, _AuthContext auth) async {
+  final userId = auth.userId;
+  if (userId == null) return Response(statusCode: 401, body: 'Unauthorized');
+
+  try {
+    final results = await _db!.query(
+      "SELECT id, test_id, scores::text, interpretations::text, completed_at "
+      "FROM psychological_test_results "
+      "WHERE user_id = '$userId' "
+      "ORDER BY completed_at DESC",
+    );
+
+    final records = results.map((row) => {
+          'id': row[0] is String
+              ? row[0]
+              : Uuid.unparse(row[0] as Uint8List),
+          'testId': row[1],
+          'scores': row[2],
+          'interpretations': row[3],
+          'completedAt': row[4],
+        }).toList();
+
+    return Response.json(body: records);
+  } catch (e) {
+    return Response(statusCode: 500, body: 'Error: $e');
+  }
+}
+
+/// Получить результаты конкретного теста
+Future<Response> _getTestResult(
+    RequestContext context, _AuthContext auth, String testId) async {
+  final userId = auth.userId;
+  if (userId == null) return Response(statusCode: 401, body: 'Unauthorized');
+
+  try {
+    final results = await _db!.query(
+      "SELECT id, test_id, scores::text, interpretations::text, completed_at "
+      "FROM psychological_test_results "
+      "WHERE user_id = '$userId' AND test_id = '$testId' "
+      "ORDER BY completed_at DESC",
+    );
+
+    final records = results.map((row) => {
+          'id': row[0] is String
+              ? row[0]
+              : Uuid.unparse(row[0] as Uint8List),
+          'testId': row[1],
+          'scores': row[2],
+          'interpretations': row[3],
+          'completedAt': row[4],
+        }).toList();
+
+    return Response.json(body: records);
+  } catch (e) {
+    return Response(statusCode: 500, body: 'Error: $e');
+  }
 }
