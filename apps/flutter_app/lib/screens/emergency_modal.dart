@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../core/theme/app_colors.dart';
 
 class EmergencyModal extends StatefulWidget {
@@ -11,8 +10,7 @@ class EmergencyModal extends StatefulWidget {
 }
 
 class _EmergencyModalState extends State<EmergencyModal> {
-  static const curatorKey = 'citrus_curator_phone';
-  String curatorPhone = '';
+  String curatorPhone = '+7-800-123-45-67'; // Телефон по умолчанию
   String inputValue = '';
   bool isEditing = false;
   final TextEditingController _phoneController = TextEditingController();
@@ -20,32 +18,16 @@ class _EmergencyModalState extends State<EmergencyModal> {
   @override
   void initState() {
     super.initState();
-    _loadCuratorPhone();
+    inputValue = curatorPhone;
+    _phoneController.text = curatorPhone;
   }
 
-  Future<void> _loadCuratorPhone() async {
-    final prefs = await SharedPreferences.getInstance();
-    final saved = prefs.getString(curatorKey) ?? '';
-    if (mounted) {
-      setState(() {
-        curatorPhone = saved;
-        inputValue = saved;
-        _phoneController.text = saved;
-        if (saved.isEmpty) isEditing = true;
-      });
-    }
-  }
-
-  Future<void> _handleSave() async {
+  void _handleSave() {
     final trimmed = inputValue.trim();
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(curatorKey, trimmed);
-    if (mounted) {
-      setState(() {
-        curatorPhone = trimmed;
-        isEditing = false;
-      });
-    }
+    setState(() {
+      curatorPhone = trimmed;
+      isEditing = false;
+    });
   }
 
   @override
