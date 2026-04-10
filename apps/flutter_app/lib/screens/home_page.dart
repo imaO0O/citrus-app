@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../bloc/dashboard_bloc.dart';
 import 'models/mood.dart';
@@ -12,7 +11,16 @@ import 'widgets/mood_log.dart';
 import 'widgets/daily_quote.dart';
 
 class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+  final VoidCallback? onNavigateToExercises;
+  final VoidCallback? onNavigateToChat;
+  final VoidCallback? onNavigateToSleep;
+
+  const HomePage({
+    super.key,
+    this.onNavigateToExercises,
+    this.onNavigateToChat,
+    this.onNavigateToSleep,
+  });
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -172,10 +180,10 @@ class _HomePageState extends State<HomePage> {
 
                     // ─── Quick Links ───
                     QuickLinks(
-                      onExerciseTap: () => context.push('/exercises'),
-                      onChatTap: () => context.go('/chatbot'),
-                      onDiaryTap: () => context.go('/'),
-                      onSleepTap: () => context.go('/sleep'),
+                      onExerciseTap: widget.onNavigateToExercises,
+                      onChatTap: widget.onNavigateToChat,
+                      onDiaryTap: null,
+                      onSleepTap: widget.onNavigateToSleep,
                     ),
 
                     const SizedBox(height: 16),
@@ -184,10 +192,7 @@ class _HomePageState extends State<HomePage> {
                     MoodLog(entries: state.todayLog),
 
                     // ─── Daily Quote ───
-                    GestureDetector(
-                      onTap: () => context.push('/affirmations'),
-                      child: const DailyQuote(),
-                    ),
+                    const DailyQuote(),
                   ],
                 ),
               ),

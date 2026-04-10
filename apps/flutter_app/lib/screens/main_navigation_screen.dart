@@ -37,7 +37,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   void initState() {
     super.initState();
     _screens.addAll([
-      const HomePage(),            // 0 — homepage из test_fornt
+      HomePage(                 // 0 — homepage из test_fornt
+        onNavigateToExercises: () => _setIndex(10),
+        onNavigateToChat: () => _setIndex(2),
+        onNavigateToSleep: () => _setIndex(8),
+      ),
       CalendarScreen(),            // 1
       ChatScreen(),                // 2
       DiaryScreen(),               // 3

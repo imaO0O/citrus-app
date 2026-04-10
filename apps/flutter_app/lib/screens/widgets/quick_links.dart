@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
 
 class QuickLinks extends StatelessWidget {
-  final VoidCallback onExerciseTap;
-  final VoidCallback onChatTap;
-  final VoidCallback onDiaryTap;
-  final VoidCallback onSleepTap;
+  final VoidCallback? onExerciseTap;
+  final VoidCallback? onChatTap;
+  final VoidCallback? onDiaryTap;
+  final VoidCallback? onSleepTap;
 
   const QuickLinks({
     super.key,
-    required this.onExerciseTap,
-    required this.onChatTap,
-    required this.onDiaryTap,
-    required this.onSleepTap,
+    this.onExerciseTap,
+    this.onChatTap,
+    this.onDiaryTap,
+    this.onSleepTap,
   });
 
   @override
@@ -20,22 +20,22 @@ class QuickLinks extends StatelessWidget {
       _QuickLinkItem(
         icon: '🌬️',
         label: 'Дыхание',
-        onTap: onExerciseTap,
+        onTap: onExerciseTap ?? () {},
       ),
       _QuickLinkItem(
         icon: '🤖',
         label: 'ИИ Чат',
-        onTap: onChatTap,
+        onTap: onChatTap ?? () {},
       ),
       _QuickLinkItem(
         icon: '📝',
         label: 'Дневник',
-        onTap: onDiaryTap,
+        onTap: onDiaryTap ?? () {},
       ),
       _QuickLinkItem(
         icon: '🌙',
         label: 'Сон',
-        onTap: onSleepTap,
+        onTap: onSleepTap ?? () {},
       ),
     ];
 
