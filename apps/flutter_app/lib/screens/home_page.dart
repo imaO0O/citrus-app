@@ -56,8 +56,7 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(
-        child: BlocBuilder<DashboardBloc, DashboardState>(
+      body: BlocBuilder<DashboardBloc, DashboardState>(
           builder: (context, state) {
             if (state is DashboardLoading) {
               return const Center(
@@ -202,7 +201,6 @@ class _HomePageState extends State<HomePage> {
             );
           },
         ),
-      ),
     );
   }
 }
