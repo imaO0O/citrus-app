@@ -165,13 +165,13 @@ class SleepBloc extends Bloc<SleepEvent, SleepState> {
     Emitter<SleepState> emit,
   ) async {
     try {
-      final record = await _repository.updateSleepRecord(event.record);
+      await _repository.updateSleepRecord(event.record);
+      // Перезагружаем записи из БД после обновления
       if (state is SleepLoaded) {
-        final records = (state as SleepLoaded).records
-            .where((r) => r.id != event.record.id)
-            .toList();
-        records.add(record);
-        emit(SleepLoaded(records));
+        add(LoadSleepRecords(
+          startDate: DateTime(2020, 1, 1),
+          endDate: DateTime(2030, 12, 31),
+        ));
       }
     } catch (e) {
       emit(SleepError('Ошибка обновления: $e'));
