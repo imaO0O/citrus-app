@@ -62,6 +62,20 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       AnalyticsScreen(),           // 11
       SettingsScreen(),            // 12
     ]);
+
+    // Инициализация DashboardBloc при старте
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      try {
+        final authBloc = context.read<AuthBloc>();
+        final authState = authBloc.state;
+        if (authState is AuthAuthenticated) {
+          debugPrint('MainNav: init — пользователь уже авторизован, userId=${authState.user.id}');
+          context.read<DashboardBloc>().updateUserId(authState.user.id, token: authState.user.token);
+        }
+      } catch (e) {
+        debugPrint('MainNav: ошибка init DashboardBloc: $e');
+      }
+    });
   }
 
   final List<Map<String, String>> _allFeatures = const [
@@ -100,8 +114,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             if (state is AuthAuthenticated) {
               debugPrint('MainNav: AuthAuthenticated, userId=${state.user.id}');
               try {
-                final dashboardBloc = context.read<DashboardBloc>();
-                dashboardBloc.updateUserId(state.user.id, token: state.user.token);
+                context.read<DashboardBloc>().updateUserId(state.user.id, token: state.user.token);
               } catch (e) {
                 debugPrint('MainNav: ошибка обновления DashboardBloc: $e');
               }

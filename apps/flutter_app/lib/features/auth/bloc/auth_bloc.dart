@@ -118,6 +118,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       }
       
       emit(AuthAuthenticated(user));
+      print('AuthBloc: Токен пользователя: ${user.token.isEmpty ? "ПУСТОЙ" : "length=${user.token.length}"}');
     } catch (e) {
       print('AuthBloc: Ошибка входа: $e');
       emit(AuthError(e.toString()));
