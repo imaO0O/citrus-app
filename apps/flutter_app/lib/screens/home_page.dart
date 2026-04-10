@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../bloc/dashboard_bloc.dart';
 import 'models/mood.dart';
@@ -171,10 +172,10 @@ class _HomePageState extends State<HomePage> {
 
                     // ─── Quick Links ───
                     QuickLinks(
-                      onExerciseTap: () => Navigator.pushNamed(context, '/exercises'),
-                      onChatTap: () => Navigator.pushNamed(context, '/chatbot'),
-                      onDiaryTap: () => Navigator.pushNamed(context, '/diary'),
-                      onSleepTap: () => Navigator.pushNamed(context, '/sleep'),
+                      onExerciseTap: () => context.push('/exercises'),
+                      onChatTap: () => context.go('/chatbot'),
+                      onDiaryTap: () => context.go('/'),
+                      onSleepTap: () => context.go('/sleep'),
                     ),
 
                     const SizedBox(height: 16),
@@ -184,7 +185,7 @@ class _HomePageState extends State<HomePage> {
 
                     // ─── Daily Quote ───
                     GestureDetector(
-                      onTap: () => Navigator.pushNamed(context, '/affirmations'),
+                      onTap: () => context.push('/affirmations'),
                       child: const DailyQuote(),
                     ),
                   ],

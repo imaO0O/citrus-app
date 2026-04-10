@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import '../features/dashboard/pages/dashboard_page.dart';
+import '../screens/home_page.dart';
 import '../features/sleep/pages/sleep_page.dart';
 import '../features/calendar/pages/calendar_page.dart';
 import '../features/chatbot/pages/chatbot_page.dart';
@@ -16,6 +16,8 @@ import '../features/auth/pages/login_page.dart';
 import '../features/auth/pages/register_page.dart';
 import '../features/auth/pages/home_wrapper.dart';
 import '../features/auth/bloc/auth_bloc.dart';
+import '../screens/exercises/exercises_page.dart';
+import '../screens/affirmations/affirmations_page.dart';
 
 class AppRouter {
   final GoRouter router = GoRouter(
@@ -74,7 +76,7 @@ class AppRouter {
               GoRoute(
                 path: '/',
                 name: 'dashboard',
-                builder: (context, state) => const DashboardPage(),
+                builder: (context, state) => const HomePage(),
               ),
             ],
           ),
@@ -155,6 +157,24 @@ class AppRouter {
                     builder: (context, state) => const EmergencyPage(),
                   ),
                 ],
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/exercises',
+                name: 'exercises',
+                builder: (context, state) => const ExercisesPage(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/affirmations',
+                name: 'affirmations',
+                builder: (context, state) => const AffirmationsPage(),
               ),
             ],
           ),
