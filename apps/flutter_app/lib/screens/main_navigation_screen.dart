@@ -133,25 +133,27 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
               });
             }
           },
-          child: Scaffold(
-            body: Stack(
-              children: [
-                Column(
-                  children: [
-                    _buildHeader(),
-                    Expanded(
-                      child: IndexedStack(
-                        index: _currentIndex,
-                        children: _screens,
+          child: SafeArea(
+            child: Scaffold(
+              body: Stack(
+                children: [
+                  Column(
+                    children: [
+                      _buildHeader(),
+                      Expanded(
+                        child: IndexedStack(
+                          index: _currentIndex,
+                          children: _screens,
+                        ),
                       ),
-                    ),
-                    _buildBottomNav(),
-                  ],
-                ),
-                if (_showMenu) _buildMenuOverlay(),
-                if (_showEmergency)
-                  EmergencyModal(onClose: () => setState(() => _showEmergency = false)),
-              ],
+                      _buildBottomNav(),
+                    ],
+                  ),
+                  if (_showMenu) _buildMenuOverlay(),
+                  if (_showEmergency)
+                    EmergencyModal(onClose: () => setState(() => _showEmergency = false)),
+                ],
+              ),
             ),
           ),
         );
