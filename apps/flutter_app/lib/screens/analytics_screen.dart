@@ -28,28 +28,33 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         child: CustomScrollView(
           slivers: [
             SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildHeader(),
-                    const SizedBox(height: 16),
-                    _buildPeriodSelector(),
-                    const SizedBox(height: 20),
-                    _buildOverviewCards(),
-                    const SizedBox(height: 20),
-                    _buildMoodChart(),
-                    const SizedBox(height: 20),
-                    _buildMoodDistribution(),
-                    const SizedBox(height: 20),
-                    _buildInsights(),
-                    const SizedBox(height: 20),
-                    _buildActivitySection(),
-                    const SizedBox(height: 20),
-                    _buildExportButtons(),
-                    const SizedBox(height: 16),
-                  ],
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 480),
+                  child: Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildHeader(),
+                        const SizedBox(height: 16),
+                        _buildPeriodSelector(),
+                        const SizedBox(height: 20),
+                        _buildOverviewCards(),
+                        const SizedBox(height: 20),
+                        _buildMoodChart(),
+                        const SizedBox(height: 20),
+                        _buildMoodDistribution(),
+                        const SizedBox(height: 20),
+                        _buildInsights(),
+                        const SizedBox(height: 20),
+                        _buildActivitySection(),
+                        const SizedBox(height: 20),
+                        _buildExportButtons(),
+                        const SizedBox(height: 16),
+                      ],
+                    ),
+                  ),
                 ),
               ),
             ),

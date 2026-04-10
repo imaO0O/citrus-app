@@ -82,40 +82,43 @@ class _AffirmationsScreenState extends State<AffirmationsScreen> {
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                '\u0410\u0444\u0444\u0438\u0440\u043C\u0430\u0446\u0438\u0438',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.foreground,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 480),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  '\u0410\u0444\u0444\u0438\u0440\u043C\u0430\u0446\u0438\u0438',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.foreground,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 16),
-              _buildCategoryPills(),
-              const SizedBox(height: 16),
-              Expanded(
-                child: PageView.builder(
-                  controller: _pageController,
-                  onPageChanged: (index) => setState(() => _currentIndex = index),
-                  itemCount: _filteredAffirmations.length,
-                  itemBuilder: (context, index) {
-                    final affirmation = _filteredAffirmations[index];
-                    return _buildMainCard(affirmation, index);
-                  },
+                const SizedBox(height: 16),
+                _buildCategoryPills(),
+                const SizedBox(height: 16),
+                Expanded(
+                  child: PageView.builder(
+                    controller: _pageController,
+                    onPageChanged: (index) => setState(() => _currentIndex = index),
+                    itemCount: _filteredAffirmations.length,
+                    itemBuilder: (context, index) {
+                      final affirmation = _filteredAffirmations[index];
+                      return _buildMainCard(affirmation, index);
+                    },
+                  ),
                 ),
-              ),
-              const SizedBox(height: 16),
-              _buildPageIndicator(),
-              const SizedBox(height: 20),
-              _buildActionButtons(),
-              if (_favorites.isNotEmpty) ...[
-                const SizedBox(height: 24),
-                _buildFavoritesSection(),
+                const SizedBox(height: 16),
+                _buildPageIndicator(),
+                const SizedBox(height: 20),
+                _buildActionButtons(),
+                if (_favorites.isNotEmpty) ...[
+                  const SizedBox(height: 24),
+                  _buildFavoritesSection(),
+                ],
               ],
-            ],
+            ),
           ),
         ),
       ),

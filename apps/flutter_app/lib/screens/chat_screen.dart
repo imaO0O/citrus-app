@@ -99,32 +99,37 @@ class _ChatScreenState extends State<ChatScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
-        child: Column(
-          children: [
-            _buildHeader(),
-            Expanded(
-              child: ListView.builder(
-                controller: _scrollController,
-                padding: const EdgeInsets.all(16),
-                itemCount: _messages.length + (_isTyping ? 1 : 0),
-                itemBuilder: (context, index) {
-                  if (index == _messages.length && _isTyping) {
-                    return Align(
-                      alignment: Alignment.centerLeft,
-                      child: Padding(
-                        padding: const EdgeInsets.only(top: 8),
-                        child: _TypingIndicator(),
-                      ),
-                    );
-                  }
-                  final msg = _messages[index];
-                  return _buildMessageBubble(msg);
-                },
-              ),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 480),
+            child: Column(
+              children: [
+                _buildHeader(),
+                Expanded(
+                  child: ListView.builder(
+                    controller: _scrollController,
+                    padding: const EdgeInsets.all(16),
+                    itemCount: _messages.length + (_isTyping ? 1 : 0),
+                    itemBuilder: (context, index) {
+                      if (index == _messages.length && _isTyping) {
+                        return Align(
+                          alignment: Alignment.centerLeft,
+                          child: Padding(
+                            padding: const EdgeInsets.only(top: 8),
+                            child: _TypingIndicator(),
+                          ),
+                        );
+                      }
+                      final msg = _messages[index];
+                      return _buildMessageBubble(msg);
+                    },
+                  ),
+                ),
+                if (!hasMessages) _buildSuggestions(),
+                _buildInputField(),
+              ],
             ),
-            if (!hasMessages) _buildSuggestions(),
-            _buildInputField(),
-          ],
+          ),
         ),
       ),
     );

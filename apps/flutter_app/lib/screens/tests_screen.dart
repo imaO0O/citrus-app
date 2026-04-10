@@ -119,23 +119,28 @@ class _TestsScreenState extends State<TestsScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                '\u041F\u0441\u0438\u0445\u043E\u043B\u043E\u0433\u0438\u0447\u0435\u0441\u043A\u0438\u0435 \u0442\u0435\u0441\u0442\u044B',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: AppColors.foreground),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 480),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    '\u041F\u0441\u0438\u0445\u043E\u043B\u043E\u0433\u0438\u0447\u0435\u0441\u043A\u0438\u0435 \u0442\u0435\u0441\u0442\u044B',
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: AppColors.foreground),
+                  ),
+                  const SizedBox(height: 16),
+                  _buildProgressCard(),
+                  const SizedBox(height: 16),
+                  ...tests.map((test) => Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: _buildTestCard(test),
+                  )),
+                ],
               ),
-              const SizedBox(height: 16),
-              _buildProgressCard(),
-              const SizedBox(height: 16),
-              ...tests.map((test) => Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: _buildTestCard(test),
-              )),
-            ],
+            ),
           ),
         ),
       ),

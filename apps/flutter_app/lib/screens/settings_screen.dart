@@ -21,59 +21,64 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildHeader(),
-              const SizedBox(height: 20),
-              BlocBuilder<AuthBloc, AuthState>(
-                builder: (context, state) {
-                  final user = state is AuthAuthenticated ? state.user : null;
-                  return _buildProfileCard(user);
-                },
-              ),
-              const SizedBox(height: 24),
-              _buildSection(
-                title: 'ПРИЛОЖЕНИЕ',
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 480),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildThemeSelector(),
-                  _buildToggleItem(
-                    icon: Icons.notifications_outlined,
-                    label: 'Уведомления',
-                    value: _notificationsEnabled,
-                    onChanged: (v) => setState(() => _notificationsEnabled = v),
+                  _buildHeader(),
+                  const SizedBox(height: 20),
+                  BlocBuilder<AuthBloc, AuthState>(
+                    builder: (context, state) {
+                      final user = state is AuthAuthenticated ? state.user : null;
+                      return _buildProfileCard(user);
+                    },
                   ),
-                  _buildToggleItem(
-                    icon: Icons.access_time_outlined,
-                    label: 'Ежедневные напоминания',
-                    value: _dailyReminders,
-                    onChanged: (v) => setState(() => _dailyReminders = v),
+                  const SizedBox(height: 24),
+                  _buildSection(
+                    title: 'ПРИЛОЖЕНИЕ',
+                    children: [
+                      _buildThemeSelector(),
+                      _buildToggleItem(
+                        icon: Icons.notifications_outlined,
+                        label: 'Уведомления',
+                        value: _notificationsEnabled,
+                        onChanged: (v) => setState(() => _notificationsEnabled = v),
+                      ),
+                      _buildToggleItem(
+                        icon: Icons.access_time_outlined,
+                        label: 'Ежедневные напоминания',
+                        value: _dailyReminders,
+                        onChanged: (v) => setState(() => _dailyReminders = v),
+                      ),
+                    ],
                   ),
+                  const SizedBox(height: 24),
+                  _buildSection(
+                    title: 'ПОДДЕРЖКА',
+                    children: [
+                      _buildSettingsItem(
+                        icon: Icons.info_outline,
+                        label: 'О приложении',
+                        subtitle: 'Версия 1.0.0',
+                        onTap: () => _showAboutDialog(context),
+                      ),
+                      _buildSettingsItem(
+                        icon: Icons.help_outline,
+                        label: 'Помощь',
+                        onTap: () {},
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 32),
+                  _buildLogoutButton(),
+                  const SizedBox(height: 20),
                 ],
               ),
-              const SizedBox(height: 24),
-              _buildSection(
-                title: 'ПОДДЕРЖКА',
-                children: [
-                  _buildSettingsItem(
-                    icon: Icons.info_outline,
-                    label: 'О приложении',
-                    subtitle: 'Версия 1.0.0',
-                    onTap: () => _showAboutDialog(context),
-                  ),
-                  _buildSettingsItem(
-                    icon: Icons.help_outline,
-                    label: 'Помощь',
-                    onTap: () {},
-                  ),
-                ],
-              ),
-              const SizedBox(height: 32),
-              _buildLogoutButton(),
-              const SizedBox(height: 20),
-            ],
+            ),
           ),
         ),
       ),

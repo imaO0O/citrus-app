@@ -179,31 +179,36 @@ class _ExercisesScreenState extends State<ExercisesScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Padding(
-              padding: EdgeInsets.fromLTRB(20, 16, 20, 0),
-              child: Text(
-                '\u0423\u043F\u0440\u0430\u0436\u043D\u0435\u043D\u0438\u044F',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700, color: AppColors.foreground),
-              ),
-            ),
-            _buildQuickStartCard(),
-            const SizedBox(height: 16),
-            _buildCategoryChips(),
-            const SizedBox(height: 16),
-            Expanded(
-              child: ListView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                itemCount: _filteredExercises.length,
-                itemBuilder: (context, index) => Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: _buildExerciseCard(_filteredExercises[index]),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 480),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Padding(
+                  padding: EdgeInsets.fromLTRB(20, 16, 20, 0),
+                  child: Text(
+                    '\u0423\u043F\u0440\u0430\u0436\u043D\u0435\u043D\u0438\u044F',
+                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700, color: AppColors.foreground),
+                  ),
                 ),
-              ),
+                _buildQuickStartCard(),
+                const SizedBox(height: 16),
+                _buildCategoryChips(),
+                const SizedBox(height: 16),
+                Expanded(
+                  child: ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    itemCount: _filteredExercises.length,
+                    itemBuilder: (context, index) => Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: _buildExerciseCard(_filteredExercises[index]),
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );

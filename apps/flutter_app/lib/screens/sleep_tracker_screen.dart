@@ -166,28 +166,33 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
   Widget _buildContent(List<SleepRecord> records, SleepLoaded state) {
     final last7Days = _getLast7Days(records);
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildHeader(),
-          const SizedBox(height: 20),
-          _buildSummaryCards(records, state),
-          const SizedBox(height: 24),
-          _buildSleepChart(last7Days),
-          const SizedBox(height: 24),
-          _buildLogSleepButton(),
-          const SizedBox(height: 24),
-          _buildSleepHistoryHeader(),
-          const SizedBox(height: 12),
-          _buildSleepHistoryList(records),
-          const SizedBox(height: 24),
-          _buildSleepTipsHeader(),
-          const SizedBox(height: 12),
-          _buildSleepTipsList(),
-          const SizedBox(height: 20),
-        ],
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 480),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildHeader(),
+              const SizedBox(height: 20),
+              _buildSummaryCards(records, state),
+              const SizedBox(height: 24),
+              _buildSleepChart(last7Days),
+              const SizedBox(height: 24),
+              _buildLogSleepButton(),
+              const SizedBox(height: 24),
+              _buildSleepHistoryHeader(),
+              const SizedBox(height: 12),
+              _buildSleepHistoryList(records),
+              const SizedBox(height: 24),
+              _buildSleepTipsHeader(),
+              const SizedBox(height: 12),
+              _buildSleepTipsList(),
+              const SizedBox(height: 20),
+            ],
+          ),
+        ),
       ),
     );
   }

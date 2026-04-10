@@ -20,25 +20,28 @@ class _ToyScreenState extends State<ToyScreen> {
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(20),
-          child: Column(
-            children: [
-              const Text(
-                '\u0410\u043D\u0442\u0438\u0441\u0442\u0440\u0435\u0441\u0441',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700, color: AppColors.foreground),
-              ),
-              const SizedBox(height: 20),
-              Expanded(
-                child: IndexedStack(
-                  index: _activeTab,
-                  children: const [
-                    SqueezeCitrusToy(),
-                    BubbleWrapToy(),
-                    BreathingExerciseToy(),
-                  ],
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 480),
+            child: Column(
+              children: [
+                const Text(
+                  '\u0410\u043D\u0442\u0438\u0441\u0442\u0440\u0435\u0441\u0441',
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700, color: AppColors.foreground),
                 ),
-              ),
-              _buildBottomTabs(),
-            ],
+                const SizedBox(height: 20),
+                Expanded(
+                  child: IndexedStack(
+                    index: _activeTab,
+                    children: const [
+                      SqueezeCitrusToy(),
+                      BubbleWrapToy(),
+                      BreathingExerciseToy(),
+                    ],
+                  ),
+                ),
+                _buildBottomTabs(),
+              ],
+            ),
           ),
         ),
       ),

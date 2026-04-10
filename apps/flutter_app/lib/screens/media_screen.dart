@@ -67,28 +67,33 @@ class _MediaScreenState extends State<MediaScreen> with SingleTickerProviderStat
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
-        child: Column(
-          children: [
-            if (_playingTrackId != null) _buildMiniPlayer(),
-            _buildCategoryChips(),
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildSectionTitle('\u0412\u0438\u0434\u0435\u043E'),
-                    const SizedBox(height: 12),
-                    _buildVideoGrid(),
-                    const SizedBox(height: 24),
-                    _buildSectionTitle('\u0410\u0443\u0434\u0438\u043E'),
-                    const SizedBox(height: 12),
-                    _buildAudioList(),
-                  ],
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 480),
+            child: Column(
+              children: [
+                if (_playingTrackId != null) _buildMiniPlayer(),
+                _buildCategoryChips(),
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildSectionTitle('\u0412\u0438\u0434\u0435\u043E'),
+                        const SizedBox(height: 12),
+                        _buildVideoGrid(),
+                        const SizedBox(height: 24),
+                        _buildSectionTitle('\u0410\u0443\u0434\u0438\u043E'),
+                        const SizedBox(height: 12),
+                        _buildAudioList(),
+                      ],
+                    ),
+                  ),
                 ),
-              ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );

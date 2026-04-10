@@ -109,15 +109,20 @@ class _DiaryScreenState extends State<DiaryScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
-        child: Column(
-          children: [
-            _buildHeader(),
-            _buildSearch(),
-            _buildWeeklyAnalysis(),
-            Expanded(
-              child: _buildEntriesList(),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 480),
+            child: Column(
+              children: [
+                _buildHeader(),
+                _buildSearch(),
+                _buildWeeklyAnalysis(),
+                Expanded(
+                  child: _buildEntriesList(),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
       floatingActionButton: Container(
