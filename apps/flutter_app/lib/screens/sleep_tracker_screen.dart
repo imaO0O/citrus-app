@@ -49,19 +49,23 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
 
   Color _getQualityColor(int? quality) {
     return switch (quality) {
-      3 => AppColors.moodExcellent,
-      2 => AppColors.moodGood,
+      4 => AppColors.moodExcellent,
+      5 => AppColors.moodExcellent,
+      3 => AppColors.moodGood,
+      2 => AppColors.moodOkay,
       1 => AppColors.moodAnxious,
-      _ => AppColors.moodVeryBad,
+      _ => AppColors.mutedForeground, // серый для неизвестного качества
     };
   }
 
   String _getQualityLabel(int? quality) {
     return switch (quality) {
-      3 => 'Отлично',
-      2 => 'Хорошо',
-      1 => 'Средне',
-      _ => 'Плохо',
+      5 => 'Отлично',
+      4 => 'Хорошо',
+      3 => 'Нормально',
+      2 => 'Плохо',
+      1 => 'Очень плохо',
+      _ => '—',
     };
   }
 
@@ -479,9 +483,7 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
           decoration: BoxDecoration(
             color: AppColors.surface1,
             borderRadius: BorderRadius.circular(14),
-            border: Border(
-              left: BorderSide(color: qColor, width: 3),
-            ),
+            border: Border.all(color: AppColors.subtleBorder),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
