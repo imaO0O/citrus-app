@@ -7,10 +7,12 @@ import 'core/utils/theme_service.dart';
 import 'core/repository/auth_repository.dart';
 import 'core/repository/sleep_repository.dart';
 import 'core/repository/calendar_event_repository.dart';
+import 'core/repository/diary_repository.dart';
 import 'bloc/dashboard_bloc.dart';
 import 'features/auth/bloc/auth_bloc.dart';
 import 'features/sleep/bloc/sleep_bloc.dart';
 import 'features/calendar/bloc/calendar_bloc.dart';
+import 'features/diary/bloc/diary_bloc.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -30,6 +32,7 @@ class MyApp extends StatelessWidget {
     final authRepository = AuthRepository();
     final sleepRepository = SleepRepository(userId: 'unknown', token: null);
     final calendarRepository = CalendarEventRepository(userId: 'unknown', token: null);
+    final diaryRepository = DiaryRepository(userId: 'unknown', token: null);
 
     return ListenableBuilder(
       listenable: ThemeService(),
@@ -39,6 +42,7 @@ class MyApp extends StatelessWidget {
             RepositoryProvider.value(value: authRepository),
             RepositoryProvider.value(value: sleepRepository),
             RepositoryProvider.value(value: calendarRepository),
+            RepositoryProvider.value(value: diaryRepository),
           ],
           child: MultiBlocProvider(
             providers: [
@@ -54,10 +58,12 @@ class MyApp extends StatelessWidget {
                       debugPrint('Auth: пользователь вошёл, userId=$userId');
                       sleepRepository.setUserId(userId, token: token);
                       calendarRepository.setUserId(userId, token: token);
+                      diaryRepository.setUserId(userId, token: token);
                     } else if (state is AuthUnauthenticated) {
                       debugPrint('Auth: пользователь вышел');
                       sleepRepository.setUserId('unknown', token: null);
                       calendarRepository.setUserId('unknown', token: null);
+                      diaryRepository.setUserId('unknown', token: null);
                     }
                   });
 
@@ -74,6 +80,9 @@ class MyApp extends StatelessWidget {
               ),
               BlocProvider(
                 create: (ctx) => CalendarBloc(repository: ctx.read<CalendarEventRepository>()),
+              ),
+              BlocProvider(
+                create: (ctx) => DiaryBloc(repository: ctx.read<DiaryRepository>()),
               ),
             ],
             child: MaterialApp.router(

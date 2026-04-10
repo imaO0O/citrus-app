@@ -21,6 +21,7 @@ import '../screens/emergency_modal.dart';
 import '../features/auth/bloc/auth_bloc.dart';
 import '../bloc/dashboard_bloc.dart';
 import '../core/repository/sleep_repository.dart';
+import '../features/diary/bloc/diary_bloc.dart';
 
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
@@ -63,7 +64,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       SettingsScreen(),            // 12
     ]);
 
-    // Инициализация DashboardBloc при старте
+    // Инициализация BLoC при старте
     WidgetsBinding.instance.addPostFrameCallback((_) {
       try {
         final authBloc = context.read<AuthBloc>();
@@ -71,9 +72,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         if (authState is AuthAuthenticated) {
           debugPrint('MainNav: init — пользователь уже авторизован, userId=${authState.user.id}');
           context.read<DashboardBloc>().updateUserId(authState.user.id, token: authState.user.token);
+          context.read<DiaryBloc>().updateUserId(authState.user.id, token: authState.user.token);
         }
       } catch (e) {
-        debugPrint('MainNav: ошибка init DashboardBloc: $e');
+        debugPrint('MainNav: ошибка init BLoC: $e');
       }
     });
   }
@@ -113,14 +115,14 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           listener: (context, state) {
             if (state is AuthAuthenticated) {
               debugPrint('MainNav: AuthAuthenticated, userId=${state.user.id}');
-              // Используем Future.microtask чтобы избежать проблем с деревом виджетов
               Future.microtask(() {
                 if (mounted) {
                   try {
                     context.read<DashboardBloc>().updateUserId(state.user.id, token: state.user.token);
-                  } catch (e) {
-                    debugPrint('MainNav: ошибка обновления DashboardBloc: $e');
-                  }
+                  } catch (e) {}
+                  try {
+                    context.read<DiaryBloc>().updateUserId(state.user.id, token: state.user.token);
+                  } catch (e) {}
                 }
               });
             } else if (state is AuthUnauthenticated) {
