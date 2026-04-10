@@ -1,4 +1,4 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../../../models/calendar_event.dart';
 
@@ -9,7 +9,7 @@ class CalendarEventApiService {
   final String? _token;
 
   CalendarEventApiService({
-    this.baseUrl = 'http://192.168.0.100:8081',
+    this.baseUrl = 'http://192.168.0.102:8081',
     http.Client? client,
     String? token,
   })  : _client = client ?? http.Client(),
