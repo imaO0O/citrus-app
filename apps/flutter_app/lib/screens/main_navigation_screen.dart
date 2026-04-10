@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:ui';
 import '../core/theme/app_colors.dart';
-import '../screens/home_screen.dart';
+import '../screens/home_page.dart';
 import '../screens/calendar_screen.dart';
 import '../screens/chat_screen.dart';
 import '../screens/diary_screen.dart';
@@ -37,24 +37,19 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   void initState() {
     super.initState();
     _screens.addAll([
-      HomeScreen(
-        onNavigateToExercises: () => _setIndex(10),
-        onNavigateToChat: () => _setIndex(2),
-        onNavigateToDiary: () => _setIndex(3),
-        onNavigateToSleep: () => _setIndex(8),
-      ),             // 0
-      CalendarScreen(),      // 1
-      ChatScreen(),          // 2
-      DiaryScreen(),         // 3
-      MediaScreen(),         // 4
-      AffirmationsScreen(),  // 5
-      PhotoGalleryScreen(),  // 6
-      ToyScreen(),           // 7
-      SleepTrackerScreen(),  // 8
-      TestsScreen(),         // 9
-      ExercisesScreen(),     // 10
-      AnalyticsScreen(),     // 11
-      SettingsScreen(),      // 12
+      const HomePage(),            // 0 — homepage из test_fornt
+      CalendarScreen(),            // 1
+      ChatScreen(),                // 2
+      DiaryScreen(),               // 3
+      MediaScreen(),               // 4
+      AffirmationsScreen(),        // 5
+      PhotoGalleryScreen(),        // 6
+      ToyScreen(),                 // 7
+      SleepTrackerScreen(),        // 8
+      TestsScreen(),               // 9
+      ExercisesScreen(),           // 10
+      AnalyticsScreen(),           // 11
+      SettingsScreen(),            // 12
     ]);
   }
 

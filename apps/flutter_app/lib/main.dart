@@ -5,6 +5,7 @@ import 'app/routes.dart';
 import 'core/utils/theme.dart';
 import 'core/utils/theme_service.dart';
 import 'core/repository/auth_repository.dart';
+import 'bloc/dashboard_bloc.dart';
 import 'features/auth/bloc/auth_bloc.dart';
 
 void main() async {
@@ -39,6 +40,7 @@ class MyApp extends StatelessWidget {
                   return authBloc;
                 },
               ),
+              BlocProvider(create: (_) => DashboardBloc()),
             ],
             child: MaterialApp.router(
               title: 'Citrus',
