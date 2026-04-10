@@ -5,8 +5,10 @@ import 'app/routes.dart';
 import 'core/utils/theme.dart';
 import 'core/utils/theme_service.dart';
 import 'core/repository/auth_repository.dart';
+import 'core/repository/sleep_repository.dart';
 import 'bloc/dashboard_bloc.dart';
 import 'features/auth/bloc/auth_bloc.dart';
+import 'features/sleep/bloc/sleep_bloc.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -24,6 +26,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     // Создаем репозитории
     final authRepository = AuthRepository();
+    final sleepRepository = SleepRepository(userId: 'unknown');
 
     return ListenableBuilder(
       listenable: ThemeService(),
@@ -31,6 +34,7 @@ class MyApp extends StatelessWidget {
         return MultiRepositoryProvider(
           providers: [
             RepositoryProvider.value(value: authRepository),
+            RepositoryProvider<SleepRepository>(create: (_) => sleepRepository),
           ],
           child: MultiBlocProvider(
             providers: [
@@ -41,6 +45,9 @@ class MyApp extends StatelessWidget {
                 },
               ),
               BlocProvider(create: (_) => DashboardBloc()),
+              BlocProvider(
+                create: (_) => SleepBloc(repository: sleepRepository),
+              ),
             ],
             child: MaterialApp.router(
               title: 'Citrus',
