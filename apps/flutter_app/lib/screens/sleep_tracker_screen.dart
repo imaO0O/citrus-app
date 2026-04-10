@@ -156,6 +156,7 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
         builder: (context, state) {
           if (state is SleepLoaded) {
             return FloatingActionButton(
+              heroTag: 'sleep_fab',
               onPressed: () => _showAddSleepDialog(context, state.records),
               backgroundColor: AppColors.citrusPurple,
               child: const Icon(Icons.add),
