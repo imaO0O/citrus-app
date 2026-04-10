@@ -474,6 +474,7 @@ class _PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
                     ),
                   ),
                 ),
+                const SizedBox(height: 80),
               ],
             ),
           ),

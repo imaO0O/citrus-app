@@ -133,7 +133,7 @@ class _HomePageState extends State<HomePage> {
                         duration: const Duration(milliseconds: 300),
                         child: state.selectedMoodId != null
                             ? Container(
-                                key: const ValueKey('selected'),
+                                key: ValueKey('mood_${state.selectedMoodId}'),
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 12,
                                   vertical: 4,
@@ -154,7 +154,7 @@ class _HomePageState extends State<HomePage> {
                                 ),
                               )
                             : Container(
-                                key: const ValueKey('hint'),
+                                key: const ValueKey('mood_hint'),
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 12,
                                   vertical: 4,

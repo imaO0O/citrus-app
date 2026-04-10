@@ -276,7 +276,7 @@ class _DiaryScreenState extends State<DiaryScreen> {
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.symmetric(horizontal: 20).copyWith(bottom: 80),
       itemCount: _filteredEntries.length,
       itemBuilder: (context, index) => _buildEntryCard(_filteredEntries[index]),
     );
