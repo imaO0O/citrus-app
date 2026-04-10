@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
 import '../core/theme/app_colors.dart';
+import '../features/calendar/bloc/calendar_bloc.dart';
+import '../features/auth/bloc/auth_bloc.dart';
+import '../models/calendar_event.dart';
 
 class CalendarScreen extends StatefulWidget {
   const CalendarScreen({super.key});
@@ -9,36 +14,32 @@ class CalendarScreen extends StatefulWidget {
 }
 
 class _CalendarScreenState extends State<CalendarScreen> {
-  DateTime _focusedMonth = DateTime(2026, 4);
+  late DateTime _focusedMonth;
   DateTime? _selectedDay;
 
   final List<String> _monthNames = [
-    '\u042F\u043D\u0432\u0430\u0440\u044C', '\u0424\u0435\u0432\u0440\u0430\u043B\u044C', '\u041C\u0430\u0440\u0442', '\u0410\u043F\u0440\u0435\u043B\u044C', '\u041C\u0430\u0439', '\u0418\u044E\u043D\u044C',
-    '\u0418\u044E\u043B\u044C', '\u0410\u0432\u0433\u0443\u0441\u0442', '\u0421\u0435\u043D\u0442\u044F\u0431\u0440\u044C', '\u041E\u043A\u0442\u044F\u0431\u0440\u044C', '\u041D\u043E\u044F\u0431\u0440\u044C', '\u0414\u0435\u043A\u0430\u0431\u0440\u044C',
+    'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
+    'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь',
   ];
-
-  final Map<DateTime, String> _moods = {};
-  final Map<DateTime, List<Map<String, String>>> _events = {};
 
   @override
   void initState() {
     super.initState();
+    _focusedMonth = DateTime.now();
     _selectedDay = DateTime.now();
-    _generateSampleData();
+    _loadCalendar();
   }
 
-  void _generateSampleData() {
-    final now = DateTime.now();
-    final sampleMoods = ['\u{1F60A}', '\u{1F610}', '\u{1F614}', '\u{1F604}', '\u{1F970}', '\u{1F624}', '\u{1F914}'];
-    for (int i = 1; i <= 30; i++) {
-      final day = DateTime(now.year, now.month, i);
-      _moods[day] = sampleMoods[i % sampleMoods.length];
-      if (i % 5 == 0) {
-        _events[day] = [
-          {'emoji': '\u{1F4DD}', 'title': '\u0417\u0430\u043F\u0438\u0441\u044C \u0432 \u0434\u043D\u0435\u0432\u043D\u0438\u043A\u0435'},
-          {'emoji': '\u{1F9D8}', 'title': '\u041C\u0435\u0434\u0438\u0442\u0430\u0446\u0438\u044F'},
-        ];
-      }
+  void _loadCalendar() {
+    context.read<CalendarBloc>().add(LoadCalendar(month: _focusedMonth));
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final authState = context.read<AuthBloc>().state;
+    if (authState is AuthAuthenticated) {
+      _loadCalendar();
     }
   }
 
@@ -46,12 +47,14 @@ class _CalendarScreenState extends State<CalendarScreen> {
     setState(() {
       _focusedMonth = DateTime(_focusedMonth.year, _focusedMonth.month - 1);
     });
+    context.read<CalendarBloc>().add(LoadCalendar(month: _focusedMonth));
   }
 
   void _nextMonth() {
     setState(() {
       _focusedMonth = DateTime(_focusedMonth.year, _focusedMonth.month + 1);
     });
+    context.read<CalendarBloc>().add(LoadCalendar(month: _focusedMonth));
   }
 
   List<DateTime> _getDaysInMonth(DateTime month) {
@@ -81,34 +84,64 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final days = _getDaysInMonth(_focusedMonth);
-    final today = DateTime.now();
-
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 480),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildMonthNavigation(),
-                const SizedBox(height: 16),
-                _buildWeekdayHeaders(),
-                const SizedBox(height: 8),
-                _buildCalendarGrid(days, today),
-                if (_selectedDay != null) ...[
-                  const SizedBox(height: 16),
-                  _buildSelectedDayPanel(),
-                ],
-                if (_selectedDay != null) const SizedBox(height: 24),
-                _buildUpcomingEvents(),
-              ],
-            ),
-          ),
+        child: BlocBuilder<CalendarBloc, CalendarState>(
+          builder: (context, state) {
+            if (state is CalendarLoading) {
+              return const Center(child: CircularProgressIndicator(color: AppColors.citrusOrange));
+            }
+
+            if (state is CalendarError) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.error_outline, size: 48, color: AppColors.destructive),
+                    const SizedBox(height: 16),
+                    Text(state.message, style: const TextStyle(color: AppColors.mutedForeground)),
+                    const SizedBox(height: 16),
+                    ElevatedButton(onPressed: _loadCalendar, child: const Text('Повторить')),
+                  ],
+                ),
+              );
+            }
+
+            final days = _getDaysInMonth(_focusedMonth);
+            final today = DateTime.now();
+            final events = state is CalendarLoaded ? state.getEventsForMonth(_focusedMonth) : <CalendarEventModel>[];
+            final eventsByDay = state is CalendarLoaded ? state.events : <DateTime, List<CalendarEventModel>>{};
+
+            return SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 480),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildMonthNavigation(),
+                    const SizedBox(height: 16),
+                    _buildWeekdayHeaders(),
+                    const SizedBox(height: 8),
+                    _buildCalendarGrid(days, today, eventsByDay),
+                    if (_selectedDay != null) ...[
+                      const SizedBox(height: 16),
+                      _buildSelectedDayPanel(eventsByDay),
+                    ],
+                    if (_selectedDay != null) const SizedBox(height: 24),
+                    _buildEventsList(events),
+                  ],
+                ),
+              ),
+            );
+          },
         ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => _showAddEventDialog(context),
+        backgroundColor: AppColors.citrusOrange,
+        child: const Icon(Icons.add),
       ),
     );
   }
@@ -157,7 +190,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
   }
 
   Widget _buildWeekdayHeaders() {
-    const weekdays = ['\u041F\u043D', '\u0412\u0442', '\u0421\u0440', '\u0427\u0442', '\u041F\u0442', '\u0421\u0431', '\u0412\u0441'];
+    const weekdays = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
     return GridView.count(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -180,7 +213,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
     );
   }
 
-  Widget _buildCalendarGrid(List<DateTime> days, DateTime today) {
+  Widget _buildCalendarGrid(List<DateTime> days, DateTime today, Map<DateTime, List<CalendarEventModel>> eventsByDay) {
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -196,8 +229,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
         final isCurrentMonth = day.month == _focusedMonth.month;
         final isToday = _isSameDay(day, today);
         final isSelected = _selectedDay != null && _isSameDay(day, _selectedDay!);
-        final hasEvents = _events[day] != null && _events[day]!.isNotEmpty;
-        final mood = _moods[day];
+        final dayKey = DateTime(day.year, day.month, day.day);
+        final dayEvents = eventsByDay[dayKey] ?? [];
+        final hasEvents = dayEvents.isNotEmpty;
 
         Color bgColor = Colors.transparent;
         Color borderColor = Colors.transparent;
@@ -229,17 +263,12 @@ class _CalendarScreenState extends State<CalendarScreen> {
                     color: isCurrentMonth ? AppColors.foreground : AppColors.dimForeground,
                   ),
                 ),
-                if (mood != null && isCurrentMonth)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 2),
-                    child: Text(mood, style: const TextStyle(fontSize: 12)),
-                  ),
                 if (hasEvents && isCurrentMonth)
                   Container(
                     margin: const EdgeInsets.only(top: 4),
                     width: 6,
                     height: 6,
-                    decoration: BoxDecoration(
+                    decoration: const BoxDecoration(
                       color: AppColors.citrusOrange,
                       shape: BoxShape.circle,
                     ),
@@ -252,9 +281,10 @@ class _CalendarScreenState extends State<CalendarScreen> {
     );
   }
 
-  Widget _buildSelectedDayPanel() {
+  Widget _buildSelectedDayPanel(Map<DateTime, List<CalendarEventModel>> eventsByDay) {
     final selected = _selectedDay!;
-    final dayEvents = _events[selected] ?? [];
+    final dayKey = DateTime(selected.year, selected.month, selected.day);
+    final dayEvents = eventsByDay[dayKey] ?? [];
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -278,7 +308,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 ),
               ),
               GestureDetector(
-                onTap: _showAddEventModal,
+                onTap: () => _showAddEventDialog(context, selected),
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
@@ -286,7 +316,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: const Text(
-                    '\u0414\u043E\u0431\u0430\u0432\u0438\u0442\u044C',
+                    'Добавить',
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w500,
@@ -299,14 +329,14 @@ class _CalendarScreenState extends State<CalendarScreen> {
           ),
           if (dayEvents.isNotEmpty) ...[
             const SizedBox(height: 12),
-            ...dayEvents.map((event) => _buildEventCard(event['emoji']!, event['title']!)),
+            ...dayEvents.map((event) => _buildEventCard(event)),
           ],
         ],
       ),
     );
   }
 
-  Widget _buildEventCard(String emoji, String title) {
+  Widget _buildEventCard(CalendarEventModel event) {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(12),
@@ -316,41 +346,60 @@ class _CalendarScreenState extends State<CalendarScreen> {
       ),
       child: Row(
         children: [
-          Text(emoji, style: const TextStyle(fontSize: 18)),
+          const Text('📌', style: TextStyle(fontSize: 18)),
           const SizedBox(width: 8),
-          Text(
-            title,
-            style: const TextStyle(fontSize: 14, color: AppColors.foreground),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  event.title,
+                  style: const TextStyle(fontSize: 14, color: AppColors.foreground),
+                ),
+                if (event.description != null && event.description!.isNotEmpty)
+                  Text(
+                    event.description!,
+                    style: const TextStyle(fontSize: 12, color: AppColors.mutedForeground),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+              ],
+            ),
           ),
+          if (event.startTime != null)
+            Text(
+              event.startTime!.substring(0, 5),
+              style: const TextStyle(fontSize: 12, color: AppColors.dimForeground),
+            ),
         ],
       ),
     );
   }
 
-  Widget _buildUpcomingEvents() {
-    final today = DateTime.now();
-    final upcoming = <Map<String, String>>[];
-
-    for (int i = 1; i <= 30; i++) {
-      final day = DateTime(today.year, today.month, today.day + i);
-      if (_events[day] != null) {
-        for (final event in _events[day]!) {
-          final shortMonth = _monthNames[day.month - 1].substring(0, 3).toLowerCase();
-          upcoming.add({
-            'date': '${day.day} $shortMonth',
-            'emoji': event['emoji']!,
-            'title': event['title']!,
-          });
-        }
-      }
-      if (upcoming.length >= 3) break;
+  Widget _buildEventsList(List<CalendarEventModel> events) {
+    if (events.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            children: [
+              Icon(Icons.event_note, size: 48, color: AppColors.dimForeground),
+              const SizedBox(height: 8),
+              const Text(
+                'Нет событий',
+                style: TextStyle(color: AppColors.mutedForeground),
+              ),
+            ],
+          ),
+        ),
+      );
     }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          '\u041F\u0420\u0415\u0414\u0421\u0422\u041E\u042F\u0429\u0418\u0415 \u0421\u041E\u0411\u042B\u0422\u0418\u042F',
+          'СОБЫТИЯ МЕСЯЦА',
           style: TextStyle(
             fontSize: 11,
             fontWeight: FontWeight.w700,
@@ -359,142 +408,37 @@ class _CalendarScreenState extends State<CalendarScreen> {
           ),
         ),
         const SizedBox(height: 12),
-        ...upcoming.map((event) => _buildUpcomingEventCard(
-              event['date']!,
-              event['emoji']!,
-              event['title']!,
-            )),
+        ...events.take(10).map((event) => _buildEventCard(event)),
       ],
     );
   }
 
-  Widget _buildUpcomingEventCard(String date, String emoji, String title) {
-    final dayNum = date.split(' ')[0];
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.03),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: AppColors.citrusOrange.withOpacity(0.12),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Center(
-              child: Text(
-                dayNum,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.citrusOrange,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Text(emoji, style: const TextStyle(fontSize: 20)),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              title,
-              style: const TextStyle(fontSize: 14, color: AppColors.foreground),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showAddEventModal() {
+  void _showAddEventDialog(BuildContext context, [DateTime? selectedDate]) {
     final titleController = TextEditingController();
-    final emojiController = TextEditingController();
-    String? selectedEmoji;
-    final emojis = ['\u{1F4DD}', '\u{1F9D8}', '\u{1F3CB}', '\u{1F4D6}', '\u{1F3A8}', '\u{1F3B5}', '\u{1F3AF}', '\u{1F3C6}'];
+    final descriptionController = TextEditingController();
+    TimeOfDay? selectedTime;
 
-    showModalBottomSheet(
+    showDialog(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setModalState) => Container(
-          decoration: const BoxDecoration(
-            color: AppColors.surface1,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-            border: Border(top: BorderSide(color: Color(0xFF2A2830))),
-          ),
-          padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.surface1,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: AppColors.citrusOrange.withOpacity(0.2)),
+        ),
+        title: const Text(
+          'Новое событие',
+          style: TextStyle(color: AppColors.foreground, fontWeight: FontWeight.w600),
+        ),
+        content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  margin: const EdgeInsets.only(bottom: 16),
-                  decoration: BoxDecoration(
-                    color: AppColors.dimForeground,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              const Text(
-                '\u041D\u043E\u0432\u043E\u0435 \u0441\u043E\u0431\u044B\u0442\u0438\u0435',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.foreground,
-                ),
-              ),
-              const SizedBox(height: 20),
-              const Text(
-                '\u0412\u044B\u0431\u0435\u0440\u0438\u0442\u0435 \u0438\u043A\u043E\u043D\u043A\u0443',
-                style: TextStyle(color: AppColors.mutedForeground, fontSize: 13),
-              ),
-              const SizedBox(height: 8),
-              GridView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 4,
-                  mainAxisSpacing: 8,
-                  crossAxisSpacing: 8,
-                  childAspectRatio: 1.2,
-                ),
-                itemCount: emojis.length,
-                itemBuilder: (context, index) {
-                  final emoji = emojis[index];
-                  final isSelected = selectedEmoji == emoji;
-                  return GestureDetector(
-                    onTap: () => setModalState(() => selectedEmoji = emoji),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: isSelected ? AppColors.surface2 : AppColors.surface1,
-                        border: Border.all(
-                          color: isSelected ? AppColors.citrusOrange.withOpacity(0.5) : Colors.white.withOpacity(0.06),
-                        ),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Center(
-                        child: Text(emoji, style: const TextStyle(fontSize: 24)),
-                      ),
-                    ),
-                  );
-                },
-              ),
-              const SizedBox(height: 16),
               TextField(
                 controller: titleController,
                 style: const TextStyle(color: AppColors.foreground),
                 decoration: InputDecoration(
-                  hintText: '\u041D\u0430\u0437\u0432\u0430\u043D\u0438\u0435 \u0441\u043E\u0431\u044B\u0442\u0438\u044F',
+                  hintText: 'Название события',
                   hintStyle: const TextStyle(color: AppColors.mutedForeground),
                   filled: true,
                   fillColor: AppColors.surface2,
@@ -502,48 +446,97 @@ class _CalendarScreenState extends State<CalendarScreen> {
                     borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide.none,
                   ),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 ),
+                autofocus: true,
               ),
-              const SizedBox(height: 20),
-              SizedBox(
-                width: double.infinity,
-                child: Container(
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [AppColors.citrusOrange, AppColors.citrusAmber],
-                    ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: descriptionController,
+                style: const TextStyle(color: AppColors.foreground),
+                decoration: InputDecoration(
+                  hintText: 'Описание (необязательно)',
+                  hintStyle: const TextStyle(color: AppColors.mutedForeground),
+                  filled: true,
+                  fillColor: AppColors.surface2,
+                  border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: ElevatedButton(
-                    onPressed: () {
-                      if (selectedEmoji != null && titleController.text.trim().isNotEmpty) {
-                        setState(() {
-                          _events[_selectedDay!] = [
-                            ...(_events[_selectedDay!] ?? []),
-                            {'emoji': selectedEmoji!, 'title': titleController.text.trim()},
-                          ];
-                        });
-                        Navigator.pop(context);
-                      }
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.transparent,
-                      shadowColor: Colors.transparent,
-                      foregroundColor: AppColors.background,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                    child: const Text(
-                      '\u0421\u043E\u0445\u0440\u0430\u043D\u0438\u0442\u044C',
-                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
-                    ),
+                    borderSide: BorderSide.none,
                   ),
                 ),
+                maxLines: 3,
+              ),
+              const SizedBox(height: 12),
+              ListTile(
+                leading: const Icon(Icons.access_time, color: AppColors.mutedForeground),
+                title: const Text('Время', style: TextStyle(color: AppColors.mutedForeground, fontSize: 13)),
+                subtitle: Text(
+                  selectedTime != null ? 'Выбрано: ${selectedTime!.format(context)}' : 'Не выбрано',
+                  style: const TextStyle(color: AppColors.foreground),
+                ),
+                onTap: () async {
+                  final time = await showTimePicker(
+                    context: context,
+                    initialTime: TimeOfDay.now(),
+                  );
+                  if (time != null) {
+                    setState(() => selectedTime = time);
+                  }
+                },
               ),
             ],
           ),
         ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Отмена', style: TextStyle(color: AppColors.mutedForeground)),
+          ),
+          FilledButton(
+            onPressed: () {
+              if (titleController.text.trim().isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Введите название')),
+                );
+                return;
+              }
+
+              final authState = context.read<AuthBloc>().state;
+              final userId = authState is AuthAuthenticated ? authState.user.id : 'unknown';
+              final day = selectedDate ?? _selectedDay ?? DateTime.now();
+
+              final event = CalendarEventModel(
+                id: DateTime.now().millisecondsSinceEpoch.toString(),
+                userId: userId,
+                title: titleController.text.trim(),
+                description: descriptionController.text.trim().isEmpty ? null : descriptionController.text.trim(),
+                eventDate: DateTime(
+                  day.year,
+                  day.month,
+                  day.day,
+                  selectedTime?.hour ?? 12,
+                  selectedTime?.minute ?? 0,
+                ),
+                startTime: selectedTime != null
+                    ? '${selectedTime!.hour.toString().padLeft(2, '0')}:${selectedTime!.minute.toString().padLeft(2, '0')}:00'
+                    : null,
+                endTime: null,
+                notificationEnabled: false,
+              );
+
+              context.read<CalendarBloc>().add(AddEvent(event));
+              Navigator.pop(context);
+
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Событие добавлено'),
+                  backgroundColor: Colors.green,
+                ),
+              );
+            },
+            style: FilledButton.styleFrom(backgroundColor: AppColors.citrusOrange),
+            child: const Text('Сохранить'),
+          ),
+        ],
       ),
     );
   }

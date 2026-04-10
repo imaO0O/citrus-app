@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../core/theme/app_colors.dart';
 import '../features/sleep/bloc/sleep_bloc.dart';
+import '../features/auth/bloc/auth_bloc.dart';
 import '../models/sleep_record.dart';
 
 class SleepTrackerScreen extends StatefulWidget {
@@ -31,9 +32,19 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
 
   void _loadSleepData() {
     final now = DateTime.now();
-    final startDate = DateTime(now.year, now.month - 1, 1);
-    final endDate = DateTime(now.year, now.month + 1, 0);
+    final startDate = DateTime(now.year - 1, 1, 1);
+    final endDate = DateTime(now.year + 1, 12, 31);
     context.read<SleepBloc>().add(LoadSleepRecords(startDate: startDate, endDate: endDate));
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Перезагружаем при изменении AuthState
+    final authState = context.read<AuthBloc>().state;
+    if (authState is AuthAuthenticated) {
+      _loadSleepData();
+    }
   }
 
   Color _getQualityColor(int? quality) {
