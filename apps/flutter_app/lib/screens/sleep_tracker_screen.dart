@@ -47,17 +47,6 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
     }
   }
 
-  Color _getQualityColor(int? quality) {
-    return switch (quality) {
-      4 => AppColors.moodExcellent,
-      5 => AppColors.moodExcellent,
-      3 => AppColors.moodGood,
-      2 => AppColors.moodOkay,
-      1 => AppColors.moodAnxious,
-      _ => AppColors.mutedForeground, // серый для неизвестного качества
-    };
-  }
-
   String _getQualityLabel(int? quality) {
     return switch (quality) {
       5 => 'Отлично',
@@ -340,7 +329,7 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
                             Container(
                               height: barHeight,
                               decoration: BoxDecoration(
-                                color: _getQualityColor(record.quality),
+                                color: AppColors.citrusPurple,
                                 borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
                               ),
                             ),
@@ -372,35 +361,12 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
             ),
           ),
           const SizedBox(height: 16),
-          Row(
-            children: [
-              _qualityLegend(3, 'Отлично'),
-              const SizedBox(width: 12),
-              _qualityLegend(2, 'Хорошо'),
-              const SizedBox(width: 12),
-              _qualityLegend(1, 'Средне'),
-            ],
+          const Text(
+            'Фиолетовые столбцы — длительность сна',
+            style: TextStyle(fontSize: 10, color: AppColors.mutedForeground),
           ),
         ],
       ),
-    );
-  }
-
-  Widget _qualityLegend(int level, String label) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 8,
-          height: 8,
-          decoration: BoxDecoration(
-            color: _getQualityColor(level),
-            shape: BoxShape.circle,
-          ),
-        ),
-        const SizedBox(width: 4),
-        Text(label, style: const TextStyle(fontSize: 10, color: AppColors.mutedForeground)),
-      ],
     );
   }
 
@@ -469,13 +435,10 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
       );
     }
 
-    final maxH = 10.0;
-
     return Column(
       children: records.take(10).map((record) {
         final hours = _calculateSleepDuration(record.bedTime, record.wakeTime);
         final quality = record.quality;
-        final qColor = _getQualityColor(quality);
 
         return Container(
           margin: const EdgeInsets.only(bottom: 8),
@@ -497,7 +460,7 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
                   ),
                   Text(
                     hours > 0 ? _formatSleepDuration(hours) : '—',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: qColor),
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.foreground),
                   ),
                 ],
               ),
@@ -508,23 +471,10 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
                   style: const TextStyle(fontSize: 12, color: AppColors.mutedForeground),
                 ),
               if (quality != null) ...[
-                const SizedBox(height: 8),
-                Container(
-                  height: 6,
-                  decoration: BoxDecoration(
-                    color: AppColors.surface3,
-                    borderRadius: BorderRadius.circular(3),
-                  ),
-                  child: FractionallySizedBox(
-                    alignment: Alignment.centerLeft,
-                    widthFactor: (quality / 5).clamp(0.0, 1.0),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: qColor,
-                        borderRadius: BorderRadius.circular(3),
-                      ),
-                    ),
-                  ),
+                const SizedBox(height: 4),
+                Text(
+                  _getQualityLabel(quality),
+                  style: const TextStyle(fontSize: 12, color: AppColors.mutedForeground),
                 ),
               ],
             ],
@@ -667,14 +617,14 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
-                          color: isSelected ? _getQualityColor(q).withValues(alpha: 0.2) : AppColors.surface2,
+                          color: isSelected ? AppColors.citrusPurple.withValues(alpha: 0.2) : AppColors.surface2,
                           borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: isSelected ? _getQualityColor(q) : Colors.transparent),
+                          border: Border.all(color: isSelected ? AppColors.citrusPurple : Colors.transparent),
                         ),
                         child: Text(
                           _getQualityLabel(q),
                           style: TextStyle(
-                            color: isSelected ? _getQualityColor(q) : AppColors.mutedForeground,
+                            color: isSelected ? AppColors.citrusPurple : AppColors.mutedForeground,
                             fontSize: 11,
                           ),
                         ),

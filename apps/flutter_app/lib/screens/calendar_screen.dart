@@ -336,7 +336,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
     );
   }
 
-  Widget _buildEventCard(CalendarEventModel event) {
+  Widget _buildEventCard(CalendarEventModel event, {bool showActions = false}) {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(12),
@@ -367,10 +367,25 @@ class _CalendarScreenState extends State<CalendarScreen> {
             ),
           ),
           if (event.startTime != null)
-            Text(
-              event.startTime!.substring(0, 5),
-              style: const TextStyle(fontSize: 12, color: AppColors.dimForeground),
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: Text(
+                event.startTime!.substring(0, 5),
+                style: const TextStyle(fontSize: 12, color: AppColors.dimForeground),
+              ),
             ),
+          if (showActions) ...[
+            IconButton(
+              icon: const Icon(Icons.edit, size: 18),
+              color: AppColors.citrusOrange,
+              onPressed: () => _showEditEventDialog(context, event),
+            ),
+            IconButton(
+              icon: const Icon(Icons.delete, size: 18),
+              color: AppColors.destructive,
+              onPressed: () => _confirmDeleteEvent(context, event),
+            ),
+          ],
         ],
       ),
     );
@@ -408,7 +423,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
           ),
         ),
         const SizedBox(height: 12),
-        ...events.take(10).map((event) => _buildEventCard(event)),
+        ...events.take(10).map((event) => _buildEventCard(event, showActions: true)),
       ],
     );
   }
@@ -535,6 +550,127 @@ class _CalendarScreenState extends State<CalendarScreen> {
             },
             style: FilledButton.styleFrom(backgroundColor: AppColors.citrusOrange),
             child: const Text('Сохранить'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showEditEventDialog(BuildContext context, CalendarEventModel event) {
+    final titleController = TextEditingController(text: event.title);
+    final descriptionController = TextEditingController(text: event.description ?? '');
+    TimeOfDay? selectedTime;
+    if (event.startTime != null) {
+      final parts = event.startTime!.split(':');
+      selectedTime = TimeOfDay(hour: int.parse(parts[0]), minute: int.parse(parts[1]));
+    }
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) => AlertDialog(
+          backgroundColor: AppColors.surface1,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(color: AppColors.citrusOrange.withOpacity(0.2)),
+          ),
+          title: const Text(
+            'Редактировать событие',
+            style: TextStyle(color: AppColors.foreground, fontWeight: FontWeight.w600),
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: titleController,
+                  style: const TextStyle(color: AppColors.foreground),
+                  decoration: InputDecoration(
+                    hintText: 'Название',
+                    hintStyle: const TextStyle(color: AppColors.mutedForeground),
+                    filled: true,
+                    fillColor: AppColors.surface2,
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                  ),
+                  autofocus: true,
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: descriptionController,
+                  style: const TextStyle(color: AppColors.foreground),
+                  decoration: InputDecoration(
+                    hintText: 'Описание',
+                    hintStyle: const TextStyle(color: AppColors.mutedForeground),
+                    filled: true,
+                    fillColor: AppColors.surface2,
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                  ),
+                  maxLines: 3,
+                ),
+                const SizedBox(height: 12),
+                ListTile(
+                  leading: const Icon(Icons.access_time, color: AppColors.mutedForeground),
+                  title: const Text('Время', style: TextStyle(color: AppColors.mutedForeground, fontSize: 13)),
+                  subtitle: Text(
+                    selectedTime != null ? 'Выбрано: ${selectedTime!.format(context)}' : 'Не выбрано',
+                    style: const TextStyle(color: AppColors.foreground),
+                  ),
+                  onTap: () async {
+                    final time = await showTimePicker(context: context, initialTime: TimeOfDay.now());
+                    if (time != null) setModalState(() => selectedTime = time);
+                  },
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Отмена', style: TextStyle(color: AppColors.mutedForeground))),
+            FilledButton(
+              onPressed: () {
+                if (titleController.text.trim().isEmpty) return;
+                final updated = CalendarEventModel(
+                  id: event.id,
+                  userId: event.userId,
+                  title: titleController.text.trim(),
+                  description: descriptionController.text.trim().isEmpty ? null : descriptionController.text.trim(),
+                  eventDate: event.eventDate,
+                  startTime: selectedTime != null
+                      ? '${selectedTime!.hour.toString().padLeft(2, '0')}:${selectedTime!.minute.toString().padLeft(2, '0')}:00'
+                      : event.startTime,
+                  endTime: event.endTime,
+                  notificationEnabled: event.notificationEnabled,
+                );
+                context.read<CalendarBloc>().add(UpdateEvent(updated));
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Событие обновлено'), backgroundColor: Colors.green));
+              },
+              style: FilledButton.styleFrom(backgroundColor: AppColors.citrusOrange),
+              child: const Text('Сохранить'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _confirmDeleteEvent(BuildContext context, CalendarEventModel event) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.surface1,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide(color: AppColors.destructive.withOpacity(0.3))),
+        title: const Text('Удалить событие?', style: TextStyle(color: AppColors.foreground)),
+        content: Text('«${event.title}» будет удалено навсегда.', style: const TextStyle(color: AppColors.mutedForeground)),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Отмена', style: TextStyle(color: AppColors.mutedForeground))),
+          FilledButton(
+            onPressed: () {
+              context.read<CalendarBloc>().add(DeleteEvent(event.id));
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Событие удалено'), backgroundColor: Colors.orange));
+            },
+            style: FilledButton.styleFrom(backgroundColor: AppColors.destructive),
+            child: const Text('Удалить'),
           ),
         ],
       ),

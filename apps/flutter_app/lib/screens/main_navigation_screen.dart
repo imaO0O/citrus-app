@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'dart:ui';
 import 'package:go_router/go_router.dart';
 import '../core/theme/app_colors.dart';
+import '../core/utils/theme_service.dart';
 import '../screens/home_page.dart';
 import '../screens/calendar_screen.dart';
 import '../screens/chat_screen.dart';
@@ -88,34 +89,38 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<AuthBloc, AuthState>(
-      listener: (context, state) {
-        if (state is AuthUnauthenticated) {
-          // При выходе — редирект на страницу авторизации
-          context.go('/auth');
-        }
-      },
-      child: Scaffold(
-        body: Stack(
-          children: [
-            Column(
+    return ListenableBuilder(
+      listenable: ThemeService(),
+      builder: (context, _) {
+        return BlocListener<AuthBloc, AuthState>(
+          listener: (context, state) {
+            if (state is AuthUnauthenticated) {
+              context.go('/auth');
+            }
+          },
+          child: Scaffold(
+            body: Stack(
               children: [
-                _buildHeader(),
-                Expanded(
-                  child: IndexedStack(
-                    index: _currentIndex,
-                    children: _screens,
-                  ),
+                Column(
+                  children: [
+                    _buildHeader(),
+                    Expanded(
+                      child: IndexedStack(
+                        index: _currentIndex,
+                        children: _screens,
+                      ),
+                    ),
+                    _buildBottomNav(),
+                  ],
                 ),
-                _buildBottomNav(),
+                if (_showMenu) _buildMenuOverlay(),
+                if (_showEmergency)
+                  EmergencyModal(onClose: () => setState(() => _showEmergency = false)),
               ],
             ),
-            if (_showMenu) _buildMenuOverlay(),
-            if (_showEmergency)
-              EmergencyModal(onClose: () => setState(() => _showEmergency = false)),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
