@@ -1,4 +1,4 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 /// Модель темы оформления
@@ -60,7 +60,7 @@ class AuthApiService {
   final String baseUrl;
   final http.Client _client;
 
-  AuthApiService({this.baseUrl = 'http://192.168.0.100:8081', http.Client? client})
+  AuthApiService({this.baseUrl = 'http://192.168.0.102:8081', http.Client? client})
       : _client = client ?? http.Client();
 
   /// Регистрация
