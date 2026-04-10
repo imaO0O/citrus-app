@@ -253,21 +253,15 @@ class _TestsListScreenState extends State<TestsListScreen> {
                             ),
                           ),
                           const SizedBox(width: 8),
-                          // Количество вопросов
-                          Text(
-                            '${test['questionsCount']} вопросов',
-                            style: const TextStyle(
-                              fontSize: 10,
-                              color: Color(0xFF5A5468),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          // Время
-                          Text(
-                            '~${test['durationMinutes']} мин',
-                            style: const TextStyle(
-                              fontSize: 10,
-                              color: Color(0xFF5A5468),
+                          // Количество вопросов и время — занимают оставшееся место
+                          Expanded(
+                            child: Text(
+                              '${test['questionsCount']} вопр. · ~${test['durationMinutes']} мин',
+                              style: const TextStyle(
+                                fontSize: 10,
+                                color: Color(0xFF5A5468),
+                              ),
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                         ],
