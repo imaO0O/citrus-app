@@ -75,6 +75,7 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
   }
 
   void updateUserId(String userId, {String? token}) {
+    debugPrint('DashboardBloc: updateUserId userId=$userId, token=${token == null ? "null" : token.isEmpty ? "empty" : "length=${token.length}"}');
     _moodRepository.setUserId(userId, token: token);
     add(DashboardLoad());
   }

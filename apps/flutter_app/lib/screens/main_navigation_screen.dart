@@ -440,7 +440,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                       physics: const NeverScrollableScrollPhysics(),
                       mainAxisSpacing: 12,
                       crossAxisSpacing: 12,
-                      childAspectRatio: 0.95,
+                      childAspectRatio: 0.85,
                       children: _allFeatures.map((feature) {
                         final featureIndex = int.parse(feature['path']!);
                         final isActive = _currentIndex == featureIndex;
@@ -452,7 +452,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                             });
                           },
                           child: Container(
-                            padding: const EdgeInsets.all(12),
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
                             decoration: BoxDecoration(
                               color: isActive
                                   ? AppColors.citrusOrange.withOpacity(0.15)
@@ -468,26 +468,30 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Text(feature['icon'] as String,
-                                    style: const TextStyle(fontSize: 24)),
-                                const SizedBox(height: 6),
+                                    style: const TextStyle(fontSize: 22)),
+                                const SizedBox(height: 4),
                                 Text(
                                   feature['label'] as String,
                                   style: TextStyle(
-                                    fontSize: 12,
+                                    fontSize: 11,
                                     fontWeight: FontWeight.w500,
                                     color: isActive
                                         ? AppColors.citrusOrange
                                         : AppColors.foreground,
                                   ),
                                   textAlign: TextAlign.center,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
-                                const SizedBox(height: 2),
+                                const SizedBox(height: 1),
                                 Text(
                                   feature['desc'] as String,
                                   style: const TextStyle(
-                                      fontSize: 10,
+                                      fontSize: 9,
                                       color: AppColors.dimForeground),
                                   textAlign: TextAlign.center,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ],
                             ),
