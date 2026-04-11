@@ -52,16 +52,19 @@ class _EmergencyModalState extends State<EmergencyModal> {
   }
 
   Future<void> _loadTrustedContacts() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('token');
-      if (token == null) return;
+    final prefs = await SharedPreferences.getInstance();
+    final savedToken = prefs.getString('token');
+    if (savedToken == null || savedToken.isEmpty) {
+      debugPrint('No token in SharedPreferences, skipping trusted contacts load');
+      return;
+    }
 
+    try {
       final response = await http.get(
         Uri.parse('${ApiConfig.baseUrl}/trusted-contacts'),
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
+          'Authorization': 'Bearer $savedToken',
         },
       );
       if (response.statusCode == 200) {

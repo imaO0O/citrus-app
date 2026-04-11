@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../core/theme/app_colors.dart';
@@ -25,13 +24,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final TextEditingController _trustedNameController = TextEditingController();
   final TextEditingController _trustedPhoneController = TextEditingController();
 
-  Future<String?> _getToken() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString('token');
+  String? _token;
+
+  Future<String?> _getToken(BuildContext context) async {
+    if (_token != null) return _token;
+    final authState = context.read<AuthBloc>().state;
+    if (authState is AuthAuthenticated) {
+      _token = authState.user.token;
+      return _token;
+    }
+    return null;
   }
 
-  Future<Map<String, String>> _headers() async {
-    final token = await _getToken();
+  Future<Map<String, String>> _headers(BuildContext context) async {
+    final token = await _getToken(context);
     return {
       'Content-Type': 'application/json',
       if (token != null) 'Authorization': 'Bearer $token',
@@ -41,7 +47,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   void initState() {
     super.initState();
-    _loadTrustedContacts();
+    // Загрузка после build, когда context доступен
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _getToken(context).then((_) => _loadTrustedContacts());
+    });
   }
 
   @override
@@ -672,7 +681,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _loadTrustedContacts() async {
     try {
-      final headers = await _headers();
+      final headers = await _headers(context);
       debugPrint('Loading trusted contacts from: ${ApiConfig.baseUrl}/trusted-contacts');
       debugPrint('Headers: $headers');
       final response = await http.get(
@@ -706,29 +715,43 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _saveTrustedContact() async {
     final phone = PhoneInputFormatter.extractDigits(_trustedPhoneController.text);
-    if (phone.isEmpty) return;
+    debugPrint('=== Save trusted contact ===');
+    debugPrint('Phone (digits): $phone');
+    debugPrint('Name: ${_trustedNameController.text}');
+    debugPrint('Editing ID: $_editingContactId');
+    debugPrint('URL: ${ApiConfig.baseUrl}/trusted-contacts');
+    if (phone.isEmpty) {
+      debugPrint('Phone is empty, aborting');
+      return;
+    }
 
     final body = jsonEncode({
       'name': _trustedNameController.text.trim(),
       'phone': phone,
     });
+    debugPrint('Request body: $body');
 
     try {
-      final headers = await _headers();
+      final headers = await _headers(context);
+      debugPrint('Headers: $headers');
       if (_editingContactId != null && _editingContactId!.isNotEmpty) {
         // Редактирование существующего
-        await http.put(
+        debugPrint('Method: PUT -> /trusted-contacts/$_editingContactId');
+        final resp = await http.put(
           Uri.parse('${ApiConfig.baseUrl}/trusted-contacts/$_editingContactId'),
           headers: headers,
           body: body,
         );
+        debugPrint('PUT response: ${resp.statusCode} ${resp.body}');
       } else {
         // Создание нового (_editingContactId == '')
-        await http.post(
+        debugPrint('Method: POST -> /trusted-contacts');
+        final resp = await http.post(
           Uri.parse('${ApiConfig.baseUrl}/trusted-contacts'),
           headers: headers,
           body: body,
         );
+        debugPrint('POST response: ${resp.statusCode} ${resp.body}');
       }
       setState(() {
         _editingContactId = null;
@@ -759,7 +782,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _deleteContact(String id) async {
     try {
-      final headers = await _headers();
+      final headers = await _headers(context);
       await http.delete(
         Uri.parse('${ApiConfig.baseUrl}/trusted-contacts/$id'),
         headers: headers,

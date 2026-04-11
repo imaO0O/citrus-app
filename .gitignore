@@ -22,3 +22,12 @@ postgres_data/
 *.sql
 !db/migrations/*.sql
 backup/
+apps/flutter_app/linux
+apps/flutter_app/windows
+apps/flutter_app/macos
+
+# Generated plugin registrants
+**/generated_plugin_registrant.cc
+**/generated_plugin_registrant.h
+**/generated_plugins.cmake
+**/GeneratedPluginRegistrant.swift
