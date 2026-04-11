@@ -22,6 +22,18 @@ class _AuthContext {
   String? userId;
 }
 
+String? _extractToken(RequestContext context) {
+  final authHeader = context.request.headers['authorization'];
+  if (authHeader == null || !authHeader.startsWith('Bearer ')) {
+    return null;
+  }
+  return authHeader.substring(7);
+}
+
+String _hashPassword(String password) {
+  return sha256.convert(utf8.encode(password)).toString();
+}
+
 Future<Response> _handleRequest(RequestContext context) async {
   final authContext = _AuthContext();
 
@@ -278,13 +290,10 @@ Future<Response> _handleRequest(RequestContext context) async {
 
   // Trusted contacts endpoints (требуют авторизации)
   if (path.startsWith('/trusted-contacts')) {
-  // Photos endpoints (требуют авторизации)
-  if (path.startsWith('/photos')) {
     final token = _extractToken(context);
     if (token == null) {
       return Response(statusCode: 401, body: 'Unauthorized');
     }
-
     try {
       final jwt = JWT.verify(token, SecretKey(_jwtSecret));
       authContext.userId = jwt.payload['user_id'] as String;
@@ -313,6 +322,23 @@ Future<Response> _handleRequest(RequestContext context) async {
   if (path.startsWith('/trusted-contacts/') && method == HttpMethod.delete) {
     final id = path.substring('/trusted-contacts/'.length);
     return _deleteTrustedContact(context, authContext, id);
+  }
+
+  // Photos endpoints (требуют авторизации)
+  if (path.startsWith('/photos')) {
+    final token = _extractToken(context);
+    if (token == null) {
+      return Response(statusCode: 401, body: 'Unauthorized');
+    }
+
+    try {
+      final jwt = JWT.verify(token, SecretKey(_jwtSecret));
+      authContext.userId = jwt.payload['user_id'] as String;
+    } catch (e) {
+      return Response(statusCode: 401, body: 'Invalid token');
+    }
+  }
+
   // GET /photos
   if (path == '/photos' && method == HttpMethod.get) {
     return _getPhotos(context, authContext);
@@ -323,30 +349,19 @@ Future<Response> _handleRequest(RequestContext context) async {
     return _createPhoto(context, authContext);
   }
 
-  // DELETE /photos/{id}
+  // PATCH /photos/{id}/favorite
   if (path.startsWith('/photos/') && path.endsWith('/favorite') && method == HttpMethod.patch) {
     final id = path.substring('/photos/'.length, path.length - '/favorite'.length);
     return _togglePhotoFavorite(context, authContext, id);
   }
 
+  // DELETE /photos/{id}
   if (path.startsWith('/photos/') && method == HttpMethod.delete) {
     final id = path.substring('/photos/'.length);
     return _deletePhoto(context, authContext, id);
   }
 
   return Response.json(body: {'message': 'Citrus API'});
-}
-
-String? _extractToken(RequestContext context) {
-  final authHeader = context.request.headers['authorization'];
-  if (authHeader == null || !authHeader.startsWith('Bearer ')) {
-    return null;
-  }
-  return authHeader.substring(7);
-}
-
-String _hashPassword(String password) {
-  return sha256.convert(utf8.encode(password)).toString();
 }
 
 Future<Response> _register(RequestContext context) async {
@@ -1077,21 +1092,23 @@ Future<Response> _createDiaryEntry(RequestContext context, _AuthContext auth) as
     }
 
     final recordId = const Uuid().v4();
-    final dateStr = entryDate != null ? entryDate.split('T').first : 'CURRENT_DATE';
+    final dateStr = entryDate != null ? entryDate.split('T').first : null;
+    final dateSql = dateStr != null ? "'$dateStr'" : 'CURRENT_DATE';
     final contentSql = "'${content.replaceAll("'", "''")}'";
     final moodSql = moodValue != null ? moodValue.toString() : 'NULL';
 
     await _db!.query(
       "INSERT INTO diary_entries (id, user_id, content, mood_value, entry_date) "
-      "VALUES ('$recordId', '$userId', $contentSql, $moodSql, '$dateStr')",
+      "VALUES ('$recordId', '$userId', $contentSql, $moodSql, $dateSql)",
     );
 
+    final returnedDate = dateStr ?? DateTime.now().toIso8601String().split('T').first;
     return Response.json(statusCode: 201, body: {
       'id': recordId,
       'user_id': userId,
       'content': content,
       'mood_value': moodValue,
-      'entry_date': dateStr == 'CURRENT_DATE' ? DateTime.now().toIso8601String().split('T').first : dateStr,
+      'entry_date': returnedDate,
     });
   } catch (e, stackTrace) {
     print('diary create error: $e');
@@ -1384,10 +1401,6 @@ Future<Response> _getTestResult(
 
 /// Получить все доверенные контакты пользователя
 Future<Response> _getTrustedContacts(RequestContext context, _AuthContext auth) async {
-// ==================== Photos / Memory endpoints ====================
-
-/// GET /photos — получить все фото пользователя
-Future<Response> _getPhotos(RequestContext context, _AuthContext auth) async {
   final userId = auth.userId;
   if (userId == null) return Response(statusCode: 401, body: 'Unauthorized');
 
@@ -1404,6 +1417,20 @@ Future<Response> _getPhotos(RequestContext context, _AuthContext auth) async {
         }).toList();
 
     return Response.json(body: records);
+  } catch (e) {
+    return Response(statusCode: 500, body: 'Error: $e');
+  }
+}
+
+// ==================== Photos / Memory endpoints ====================
+
+/// GET /photos — получить все фото пользователя
+Future<Response> _getPhotos(RequestContext context, _AuthContext auth) async {
+  final userId = auth.userId;
+  if (userId == null) return Response(statusCode: 401, body: 'Unauthorized');
+
+  try {
+    final results = await _db!.query(
       "SELECT id, user_id, image_url, caption, photo_date::text, is_favorite, created_at::text "
       "FROM memory_photos "
       "WHERE user_id = '$userId' "
@@ -1451,6 +1478,10 @@ Future<Response> _createTrustedContact(RequestContext context, _AuthContext auth
       statusCode: 201,
       body: {'id': contactId, 'name': name, 'phone': phone},
     );
+  } catch (e) {
+    return Response(statusCode: 500, body: 'Error: $e');
+  }
+}
 /// POST /photos — загрузить фото (multipart) -> Cloudinary -> БД
 Future<Response> _createPhoto(RequestContext context, _AuthContext auth) async {
   final userId = auth.userId;
@@ -1564,6 +1595,11 @@ Future<Response> _updateTrustedContact(RequestContext context, _AuthContext auth
       'name': row[1],
       'phone': row[2],
     });
+  } catch (e) {
+    return Response(statusCode: 500, body: 'Error: $e');
+  }
+}
+
 /// PATCH /photos/{id}/favorite — переключить избранное
 Future<Response> _togglePhotoFavorite(RequestContext context, _AuthContext auth, String id) async {
   final userId = auth.userId;
@@ -1593,8 +1629,6 @@ Future<Response> _togglePhotoFavorite(RequestContext context, _AuthContext auth,
 
 /// Удалить доверенный контакт
 Future<Response> _deleteTrustedContact(RequestContext context, _AuthContext auth, String id) async {
-/// DELETE /photos/{id} — удалить фото
-Future<Response> _deletePhoto(RequestContext context, _AuthContext auth, String id) async {
   final userId = auth.userId;
   if (userId == null) return Response(statusCode: 401, body: 'Unauthorized');
 
@@ -1608,20 +1642,45 @@ Future<Response> _deletePhoto(RequestContext context, _AuthContext auth, String 
     }
 
     return Response.json(body: {'success': true});
-    final results = await _db!.query(
+  } catch (e) {
+    return Response(statusCode: 500, body: 'Error: $e');
+  }
+}
+
+/// DELETE /photos/{id} — удалить фото
+Future<Response> _deletePhoto(RequestContext context, _AuthContext auth, String id) async {
+  final userId = auth.userId;
+  if (userId == null) return Response(statusCode: 401, body: 'Unauthorized');
+
+  try {
+    // Получаем URL фото для удаления из Cloudinary
+    final photoResults = await _db!.query(
       "SELECT image_url FROM memory_photos WHERE id = '$id' AND user_id = '$userId'",
     );
 
-    if (results.isEmpty) {
+    if (photoResults.isEmpty) {
       return Response(statusCode: 404, body: 'Photo not found');
     }
 
-    final imageUrl = results.first[0] as String;
-    await _deleteFromCloudinary(imageUrl);
+    final imageUrl = photoResults.first[0] as String;
 
-    await _db!.query("DELETE FROM memory_photos WHERE id = '$id' AND user_id = '$userId'");
+    // Удаляем из БД
+    final result = await _db!.query(
+      "DELETE FROM memory_photos WHERE id = '$id' AND user_id = '$userId'",
+    );
 
-    return Response(statusCode: 204);
+    if (result.affectedRowCount == 0) {
+      return Response(statusCode: 404, body: 'Photo not found');
+    }
+
+    // Удаляем из Cloudinary
+    try {
+      await _deleteFromCloudinary(imageUrl);
+    } catch (_) {
+      // Игнорируем ошибки удаления из Cloudinary
+    }
+
+    return Response.json(body: {'success': true});
   } catch (e) {
     return Response(statusCode: 500, body: 'Error: $e');
   }
