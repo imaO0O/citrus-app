@@ -150,7 +150,9 @@ class MoodRepository {
 
   Future<List<MoodRecord>> getTodayRecords() async {
     final now = DateTime.now();
-    final records = await getRecords(startDate: now, endDate: now.add(const Duration(days: 1)));
+    final today = DateTime(now.year, now.month, now.day); // Начало сегодняшнего дня (00:00:00)
+    final tomorrow = today.add(const Duration(days: 1));
+    final records = await getRecords(startDate: today, endDate: tomorrow);
     return records..sort((a, b) => a.moodDate.compareTo(b.moodDate));
   }
 

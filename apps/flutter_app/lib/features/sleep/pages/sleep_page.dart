@@ -70,6 +70,7 @@ class _SleepPageState extends State<SleepPage> {
           },
         ),
         floatingActionButton: FloatingActionButton(
+          heroTag: 'sleep_page_fab',
           onPressed: () => _showAddSleepDialog(context),
           child: const Icon(Icons.add),
         ),

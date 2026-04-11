@@ -49,6 +49,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         onNavigateToChat: () => _setIndex(2),
         onNavigateToDiary: () => _setIndex(3),
         onNavigateToSleep: () => _setIndex(8),
+        onNavigateToTests: () => _setIndex(9),
       ),
       CalendarScreen(),            // 1
       ChatScreen(),                // 2

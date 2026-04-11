@@ -118,6 +118,7 @@ class _DiaryScreenState extends State<DiaryScreen> {
         ),
       ),
       floatingActionButton: FloatingActionButton(
+        heroTag: 'diary_fab',
         onPressed: () => _showAddEntryDialog(context),
         backgroundColor: AppColors.citrusOrange,
         child: const Icon(Icons.add),

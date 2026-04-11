@@ -141,6 +141,8 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
                 timestamp: r.moodDate,
                 moodId: r.moodId,
               ))
+          .toList()
+          .reversed
           .take(4)
           .toList();
 
@@ -164,22 +166,32 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
     if (state is! DashboardLoaded) return;
 
     final current = state as DashboardLoaded;
-    emit(current.copyWith(selectedMoodId: event.moodId));
 
     try {
       debugPrint('DashboardBloc: сохраняем настроение moodId=${event.moodId}, userId=${_moodRepository.userId}');
 
       if (_moodRepository.userId == 'unknown') {
         debugPrint('DashboardBloc: пользователь не авторизован, настроение не сохранено');
-        emit(current.copyWith(selectedMoodId: null));
         return;
       }
 
+      // Оптимистичное обновление: сразу добавляем запись в начало списка
+      final newEntry = MoodLogEntry(
+        timestamp: event.timestamp,
+        moodId: event.moodId,
+      );
+      final updatedTodayLog = [newEntry, ...current.todayLog].take(4).toList();
+
+      emit(current.copyWith(
+        selectedMoodId: event.moodId,
+        todayLog: updatedTodayLog,
+      ));
+
+      // Сохраняем на сервере в фоне
       await _moodRepository.createRecord(event.moodId, timestamp: event.timestamp);
       debugPrint('DashboardBloc: настроение сохранено');
 
-      await Future.delayed(const Duration(milliseconds: 1500));
-
+      // Обновляем данные с сервера
       final streak = await _moodRepository.getStreak();
       final goodDays = await _moodRepository.getGoodDaysPercentage();
       final todayRecords = await _moodRepository.getTodayRecords();
@@ -191,6 +203,8 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
                 timestamp: r.moodDate,
                 moodId: r.moodId,
               ))
+          .toList()
+          .reversed
           .take(4)
           .toList();
 
@@ -228,6 +242,8 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
                 timestamp: r.moodDate,
                 moodId: r.moodId,
               ))
+          .toList()
+          .reversed
           .take(4)
           .toList();
 
