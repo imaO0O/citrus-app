@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import '../config/api_config.dart';
 
 class MoodApiService {
   final String baseUrl;
@@ -7,10 +8,11 @@ class MoodApiService {
   final http.Client _client;
 
   MoodApiService({
-    this.baseUrl = 'http://10.0.2.2:8081',
+    String? baseUrl,
     http.Client? client,
     String? token,
-  })  : _client = client ?? http.Client(),
+  })  : baseUrl = baseUrl ?? ApiConfig.baseUrl,
+        _client = client ?? http.Client(),
         _token = token;
 
   Map<String, String> get _headers {

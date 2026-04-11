@@ -276,6 +276,8 @@ Future<Response> _handleRequest(RequestContext context) async {
     return _deleteDiaryEntry(context, authContext, id);
   }
 
+  // Trusted contacts endpoints (требуют авторизации)
+  if (path.startsWith('/trusted-contacts')) {
   // Photos endpoints (требуют авторизации)
   if (path.startsWith('/photos')) {
     final token = _extractToken(context);
@@ -291,6 +293,26 @@ Future<Response> _handleRequest(RequestContext context) async {
     }
   }
 
+  // GET /trusted-contacts
+  if (path == '/trusted-contacts' && method == HttpMethod.get) {
+    return _getTrustedContacts(context, authContext);
+  }
+
+  // POST /trusted-contacts
+  if (path == '/trusted-contacts' && method == HttpMethod.post) {
+    return _createTrustedContact(context, authContext);
+  }
+
+  // PUT /trusted-contacts/{id}
+  if (path.startsWith('/trusted-contacts/') && method == HttpMethod.put) {
+    final id = path.substring('/trusted-contacts/'.length);
+    return _updateTrustedContact(context, authContext, id);
+  }
+
+  // DELETE /trusted-contacts/{id}
+  if (path.startsWith('/trusted-contacts/') && method == HttpMethod.delete) {
+    final id = path.substring('/trusted-contacts/'.length);
+    return _deleteTrustedContact(context, authContext, id);
   // GET /photos
   if (path == '/photos' && method == HttpMethod.get) {
     return _getPhotos(context, authContext);
@@ -1358,6 +1380,10 @@ Future<Response> _getTestResult(
   }
 }
 
+// ==================== TRUSTED CONTACTS CRUD ====================
+
+/// Получить все доверенные контакты пользователя
+Future<Response> _getTrustedContacts(RequestContext context, _AuthContext auth) async {
 // ==================== Photos / Memory endpoints ====================
 
 /// GET /photos — получить все фото пользователя
@@ -1367,6 +1393,17 @@ Future<Response> _getPhotos(RequestContext context, _AuthContext auth) async {
 
   try {
     final results = await _db!.query(
+      "SELECT id, name, phone, created_at FROM trusted_contacts WHERE user_id = '$userId' ORDER BY created_at DESC",
+    );
+
+    final records = results.map((row) => {
+          'id': row[0] is String ? row[0] : Uuid.unparse(row[0] as Uint8List),
+          'name': row[1],
+          'phone': row[2],
+          'created_at': row[3]?.toString(),
+        }).toList();
+
+    return Response.json(body: records);
       "SELECT id, user_id, image_url, caption, photo_date::text, is_favorite, created_at::text "
       "FROM memory_photos "
       "WHERE user_id = '$userId' "
@@ -1389,6 +1426,31 @@ Future<Response> _getPhotos(RequestContext context, _AuthContext auth) async {
   }
 }
 
+/// Создать доверенный контакт
+Future<Response> _createTrustedContact(RequestContext context, _AuthContext auth) async {
+  final userId = auth.userId;
+  if (userId == null) return Response(statusCode: 401, body: 'Unauthorized');
+
+  final body = await context.request.json();
+  final name = body['name'] as String? ?? '';
+  final phone = body['phone'] as String?;
+
+  if (phone == null || phone.isEmpty) {
+    return Response(statusCode: 400, body: 'phone is required');
+  }
+
+  try {
+    final contactId = const Uuid().v4();
+    final nameSql = name.isNotEmpty ? "'${name.replaceAll("'", "''")}'" : 'NULL';
+
+    await _db!.query(
+      "INSERT INTO trusted_contacts (id, user_id, name, phone) VALUES ('$contactId', '$userId', $nameSql, '${phone.replaceAll("'", "''")}')",
+    );
+
+    return Response.json(
+      statusCode: 201,
+      body: {'id': contactId, 'name': name, 'phone': phone},
+    );
 /// POST /photos — загрузить фото (multipart) -> Cloudinary -> БД
 Future<Response> _createPhoto(RequestContext context, _AuthContext auth) async {
   final userId = auth.userId;
@@ -1471,6 +1533,37 @@ Future<Response> _createPhoto(RequestContext context, _AuthContext auth) async {
   }
 }
 
+/// Обновить доверенный контакт
+Future<Response> _updateTrustedContact(RequestContext context, _AuthContext auth, String id) async {
+  final userId = auth.userId;
+  if (userId == null) return Response(statusCode: 401, body: 'Unauthorized');
+
+  final body = await context.request.json();
+  final name = body['name'] as String?;
+  final phone = body['phone'] as String?;
+
+  if (phone == null || phone.isEmpty) {
+    return Response(statusCode: 400, body: 'phone is required');
+  }
+
+  try {
+    final nameSql = name != null && name.isNotEmpty ? "'${name.replaceAll("'", "''")}'" : 'NULL';
+    final phoneSql = phone.replaceAll("'", "''");
+
+    final result = await _db!.query(
+      "UPDATE trusted_contacts SET name = $nameSql, phone = '$phoneSql' WHERE id = '$id' AND user_id = '$userId' RETURNING id, name, phone",
+    );
+
+    if (result.isEmpty) {
+      return Response(statusCode: 404, body: 'Contact not found');
+    }
+
+    final row = result.first;
+    return Response.json(body: {
+      'id': row[0] is String ? row[0] : Uuid.unparse(row[0] as Uint8List),
+      'name': row[1],
+      'phone': row[2],
+    });
 /// PATCH /photos/{id}/favorite — переключить избранное
 Future<Response> _togglePhotoFavorite(RequestContext context, _AuthContext auth, String id) async {
   final userId = auth.userId;
@@ -1498,12 +1591,23 @@ Future<Response> _togglePhotoFavorite(RequestContext context, _AuthContext auth,
   }
 }
 
+/// Удалить доверенный контакт
+Future<Response> _deleteTrustedContact(RequestContext context, _AuthContext auth, String id) async {
 /// DELETE /photos/{id} — удалить фото
 Future<Response> _deletePhoto(RequestContext context, _AuthContext auth, String id) async {
   final userId = auth.userId;
   if (userId == null) return Response(statusCode: 401, body: 'Unauthorized');
 
   try {
+    final result = await _db!.query(
+      "DELETE FROM trusted_contacts WHERE id = '$id' AND user_id = '$userId'",
+    );
+
+    if (result.affectedRowCount == 0) {
+      return Response(statusCode: 404, body: 'Contact not found');
+    }
+
+    return Response.json(body: {'success': true});
     final results = await _db!.query(
       "SELECT image_url FROM memory_photos WHERE id = '$id' AND user_id = '$userId'",
     );
