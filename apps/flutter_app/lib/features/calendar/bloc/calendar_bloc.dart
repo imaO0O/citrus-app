@@ -1,6 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../models/calendar_event.dart';
 import '../../../core/repository/calendar_event_repository.dart';
+import '../../../core/repository/mood_repository.dart';
 
 // События
 abstract class CalendarEvent {
@@ -49,11 +50,13 @@ class CalendarLoaded extends CalendarState {
   final Map<DateTime, List<CalendarEventModel>> events;
   final DateTime selectedDay;
   final DateTime focusedDay;
+  final Map<DateTime, double> moodAverages;
 
   const CalendarLoaded({
     required this.events,
     required this.selectedDay,
     required this.focusedDay,
+    this.moodAverages = const {},
   });
 
   List<CalendarEventModel> getEventsForDay(DateTime day) {
@@ -91,9 +94,13 @@ class CalendarError extends CalendarState {
 // BLoC
 class CalendarBloc extends Bloc<CalendarEvent, CalendarState> {
   final CalendarEventRepository _repository;
+  final MoodRepository _moodRepository;
 
-  CalendarBloc({required CalendarEventRepository repository})
-      : _repository = repository,
+  CalendarBloc({
+    required CalendarEventRepository repository,
+    required MoodRepository moodRepository,
+  })  : _repository = repository,
+        _moodRepository = moodRepository,
         super(const CalendarInitial()) {
     on<LoadCalendar>(_onLoadCalendar);
     on<AddEvent>(_onAddEvent);
@@ -132,11 +139,21 @@ class CalendarBloc extends Bloc<CalendarEvent, CalendarState> {
       }
       print('CalendarBloc: сгруппировано по ${eventsByDay.length} дням');
 
+      // Загружаем средние настроения по дням для всего месяца
+      final monthStart = DateTime(event.month.year, event.month.month, 1);
+      final monthEnd = DateTime(event.month.year, event.month.month + 1, 0);
+      final moodAverages = await _moodRepository.getAverageMoodByDay(
+        startDate: monthStart,
+        endDate: monthEnd,
+      );
+      print('CalendarBloc: загружены данные настроения для ${moodAverages.length} дней');
+
       final now = DateTime.now();
       emit(CalendarLoaded(
         events: eventsByDay,
         selectedDay: now,
         focusedDay: now,
+        moodAverages: moodAverages,
       ));
     } catch (e) {
       print('CalendarBloc: ошибка загрузки: $e');
@@ -166,6 +183,7 @@ class CalendarBloc extends Bloc<CalendarEvent, CalendarState> {
           events: updatedEvents,
           selectedDay: loadedState.selectedDay,
           focusedDay: loadedState.focusedDay,
+          moodAverages: loadedState.moodAverages,
         ));
       }
     } catch (e) {
@@ -211,6 +229,7 @@ class CalendarBloc extends Bloc<CalendarEvent, CalendarState> {
           events: updatedEvents,
           selectedDay: loadedState.selectedDay,
           focusedDay: loadedState.focusedDay,
+          moodAverages: loadedState.moodAverages,
         ));
       }
     } catch (e) {
@@ -228,6 +247,7 @@ class CalendarBloc extends Bloc<CalendarEvent, CalendarState> {
         events: loadedState.events,
         selectedDay: event.day,
         focusedDay: loadedState.focusedDay,
+        moodAverages: loadedState.moodAverages,
       ));
     }
   }

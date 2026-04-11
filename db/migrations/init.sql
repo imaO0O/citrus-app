@@ -75,6 +75,7 @@ CREATE TABLE IF NOT EXISTS memory_photos (
     image_url TEXT,
     caption TEXT,
     photo_date DATE,
+    is_favorite BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT NOW()
 );
 

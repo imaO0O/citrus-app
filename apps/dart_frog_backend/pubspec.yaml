@@ -11,6 +11,8 @@ dependencies:
   uuid: ^4.0.0
   crypto: ^3.0.3
   dart_jsonwebtoken: ^2.11.0
+  http: ^1.2.0
+  mime: ^1.0.4
 
 dev_dependencies:
   mocktail: ^1.0.0
