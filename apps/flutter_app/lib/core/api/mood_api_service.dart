@@ -7,7 +7,7 @@ class MoodApiService {
   final http.Client _client;
 
   MoodApiService({
-    this.baseUrl = 'http://192.168.0.102:8081',
+    this.baseUrl = 'http://10.0.2.2:8081',
     http.Client? client,
     String? token,
   })  : _client = client ?? http.Client(),

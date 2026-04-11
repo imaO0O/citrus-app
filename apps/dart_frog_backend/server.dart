@@ -1181,9 +1181,13 @@ Future<Response> _submitTest(
   if (userId == null) return Response(statusCode: 401, body: 'Unauthorized');
 
   try {
-    final body = await context.request.json();
+    // Читаем тело как строку с явным декодированием UTF-8
+    final bodyStr = await context.request.body();
+    final body = jsonDecode(bodyStr) as Map<String, dynamic>;
+    
     final answers = body['answers'] as Map<String, dynamic>?;
     final completedAt = body['completedAt'] as String?;
+    final interpretations = body['interpretations'] as Map<String, dynamic>?;
 
     if (answers == null || answers.isEmpty) {
       return Response(statusCode: 400, body: 'answers are required');
@@ -1193,19 +1197,36 @@ Future<Response> _submitTest(
     final scores = <String, int>{};
     for (final entry in answers.entries) {
       final questionId = entry.key;
-      final answerValue = entry.value as int;
-
-      // Для каждого теста своя логика, здесь упрощённо
-      // В реальном приложении используйте правила из тестов
-      scores['question_${questionId}'] = answerValue;
+      final answerValue = entry.value;
+      
+      // Безопасное приведение к int
+      if (answerValue is int) {
+        scores['question_${questionId}'] = answerValue;
+      } else if (answerValue is num) {
+        scores['question_${questionId}'] = answerValue.toInt();
+      } else {
+        print('Invalid answer value for $questionId: $answerValue');
+      }
     }
 
     final recordId = const Uuid().v4();
     final scoresJson = jsonEncode(scores);
-    final interpretationsJson = body['interpretations'] != null
-        ? jsonEncode(body['interpretations'])
+    final interpretationsJson = interpretations != null && interpretations.isNotEmpty
+        ? jsonEncode(interpretations)
         : null;
-    final completedAtValue = completedAt ?? DateTime.now().toIso8601String();
+    
+    // Безопасный парсинг даты
+    DateTime completedAtDate;
+    try {
+      completedAtDate = completedAt != null && completedAt.isNotEmpty
+          ? DateTime.parse(completedAt)
+          : DateTime.now();
+    } catch (e) {
+      print('Invalid date format: $completedAt, using current time');
+      completedAtDate = DateTime.now();
+    }
+
+    print('Inserting test result: testId=$testId, userId=$userId, scores=$scoresJson');
 
     await _db!.query(
       "INSERT INTO psychological_test_results (id, user_id, test_id, scores, interpretations, completed_at) "
@@ -1216,7 +1237,7 @@ Future<Response> _submitTest(
         'testId': testId,
         'scores': scoresJson,
         'interpretations': interpretationsJson,
-        'completedAt': DateTime.parse(completedAtValue),
+        'completedAt': completedAtDate.toUtc(),
       },
     );
 
@@ -1224,7 +1245,7 @@ Future<Response> _submitTest(
       'id': recordId,
       'testId': testId,
       'scores': scores,
-      'completedAt': completedAt ?? DateTime.now().toIso8601String(),
+      'completedAt': completedAtDate.toIso8601String(),
     });
   } catch (e, stackTrace) {
     print('Test submit error: $e');
