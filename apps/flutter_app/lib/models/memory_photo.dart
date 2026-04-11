@@ -4,6 +4,7 @@ class MemoryPhoto {
   final String imageUrl;
   final String? caption;
   final DateTime? photoDate;
+  final bool isFavorite;
   final DateTime createdAt;
 
   MemoryPhoto({
@@ -12,16 +13,18 @@ class MemoryPhoto {
     required this.imageUrl,
     this.caption,
     this.photoDate,
+    this.isFavorite = false,
     required this.createdAt,
   });
 
   factory MemoryPhoto.fromJson(Map<String, dynamic> json) => MemoryPhoto(
-        id: json['id'],
-        userId: json['user_id'],
-        imageUrl: json['image_url'],
-        caption: json['caption'],
-        photoDate: json['photo_date'] != null ? DateTime.parse(json['photo_date']) : null,
-        createdAt: DateTime.parse(json['created_at']),
+        id: json['id'] as String,
+        userId: json['user_id'] as String,
+        imageUrl: json['image_url'] as String,
+        caption: json['caption'] as String?,
+        photoDate: json['photo_date'] != null ? DateTime.parse(json['photo_date'] as String) : null,
+        isFavorite: json['is_favorite'] == true,
+        createdAt: json['created_at'] != null ? DateTime.parse(json['created_at'] as String) : DateTime.now(),
       );
 
   Map<String, dynamic> toJson() => {

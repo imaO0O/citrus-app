@@ -5,6 +5,7 @@ import '../core/theme/app_colors.dart';
 import '../features/calendar/bloc/calendar_bloc.dart';
 import '../features/auth/bloc/auth_bloc.dart';
 import '../models/calendar_event.dart';
+import '../screens/models/mood.dart';
 
 class CalendarScreen extends StatefulWidget {
   const CalendarScreen({super.key});
@@ -112,6 +113,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
             final today = DateTime.now();
             final events = state is CalendarLoaded ? state.getEventsForMonth(_focusedMonth) : <CalendarEventModel>[];
             final eventsByDay = state is CalendarLoaded ? state.events : <DateTime, List<CalendarEventModel>>{};
+            final moodAverages = state is CalendarLoaded ? state.moodAverages : <DateTime, double>{};
 
             return SingleChildScrollView(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
@@ -124,7 +126,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                     const SizedBox(height: 16),
                     _buildWeekdayHeaders(),
                     const SizedBox(height: 8),
-                    _buildCalendarGrid(days, today, eventsByDay),
+                    _buildCalendarGrid(days, today, eventsByDay, moodAverages),
                     if (_selectedDay != null) ...[
                       const SizedBox(height: 16),
                       _buildSelectedDayPanel(eventsByDay),
@@ -214,7 +216,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
     );
   }
 
-  Widget _buildCalendarGrid(List<DateTime> days, DateTime today, Map<DateTime, List<CalendarEventModel>> eventsByDay) {
+  Widget _buildCalendarGrid(List<DateTime> days, DateTime today, Map<DateTime, List<CalendarEventModel>> eventsByDay, Map<DateTime, double> moodAverages) {
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -233,6 +235,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
         final dayKey = DateTime(day.year, day.month, day.day);
         final dayEvents = eventsByDay[dayKey] ?? [];
         final hasEvents = dayEvents.isNotEmpty;
+        final avgMood = moodAverages[dayKey];
+        final hasMood = avgMood != null && isCurrentMonth;
 
         Color bgColor = Colors.transparent;
         Color borderColor = Colors.transparent;
@@ -243,6 +247,14 @@ class _CalendarScreenState extends State<CalendarScreen> {
         } else if (isToday) {
           bgColor = AppColors.citrusOrange.withOpacity(0.08);
           borderColor = AppColors.citrusOrange.withOpacity(0.25);
+        }
+
+        // Определяем цвет фона на основе среднего настроения
+        if (hasMood && !isSelected) {
+          // Округляем до ближайшего целого moodId
+          final roundedMoodId = avgMood!.round().clamp(0, Mood.all.length - 1);
+          final moodColor = Mood.all[roundedMoodId].color;
+          bgColor = moodColor.withOpacity(0.15);
         }
 
         return GestureDetector(
@@ -264,7 +276,15 @@ class _CalendarScreenState extends State<CalendarScreen> {
                     color: isCurrentMonth ? AppColors.foreground : AppColors.dimForeground,
                   ),
                 ),
-                if (hasEvents && isCurrentMonth)
+                if (hasMood)
+                  Container(
+                    margin: const EdgeInsets.only(top: 2),
+                    child: Text(
+                      _getMoodEmoji(avgMood!),
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                  )
+                else if (hasEvents && isCurrentMonth)
                   Container(
                     margin: const EdgeInsets.only(top: 4),
                     width: 6,
@@ -280,6 +300,11 @@ class _CalendarScreenState extends State<CalendarScreen> {
         );
       },
     );
+  }
+
+  String _getMoodEmoji(double avgMood) {
+    final roundedMoodId = avgMood.round().clamp(0, Mood.all.length - 1);
+    return Mood.all[roundedMoodId].emoji;
   }
 
   Widget _buildSelectedDayPanel(Map<DateTime, List<CalendarEventModel>> eventsByDay) {
