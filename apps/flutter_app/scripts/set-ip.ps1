@@ -4,10 +4,7 @@
     Скрипт для смены IP-адреса API в Flutter приложении
 
 .DESCRIPTION
-    Меняет baseUrl в файлах:
-    - lib/core/repository/auth_repository.dart
-    - lib/core/api/sleep_api_service.dart
-    - lib/core/api/calendar_event_api_service.dart
+    Обновляет baseUrl в lib/core/config/api_config.dart
 
 .PARAMETER Ip
     IP-адрес для установки (например, 192.168.0.100)
@@ -16,65 +13,69 @@
 .PARAMETER Port
     Порт для установки (например, 8081)
 
-.EXAMPLE
-    .\set-ip.ps1 -Ip 192.168.1.50 -Port 8081
+.PARAMETER Emulator
+    Использовать адрес эмулятора (10.0.2.2)
 
 .EXAMPLE
-    .\set-ip.ps1 -Port 8081
-    Автоматически определит IP компьютера
+    .\set-ip.ps1 -Ip 192.168.0.100 -Port 8081
 
 .EXAMPLE
     .\set-ip.ps1
-    Автоматически определит IP и порт 8081
+    Автоматически определяет IP и обновляет конфиг
+
+.EXAMPLE
+    .\set-ip.ps1 -Emulator
+    Устанавливает адрес для Android-эмулятора
 #>
 
 param(
     [Parameter(Mandatory = $false)]
     [string]$Ip,
-    
+
     [Parameter(Mandatory = $false)]
-    [string]$Port = "8081"
+    [string]$Port = "8081",
+
+    [switch]$Emulator
 )
 
 # Очистка параметров от кавычек
 $Ip = $Ip -replace "'", ""
 $Port = $Port -replace "'", ""
 
-# Вывод сообщений
-if ([string]::IsNullOrEmpty($Ip)) {
-    Write-Host "=== Смена IP-адреса API ===" -ForegroundColor Cyan
-    Write-Host "Автоматическое определение IP..." -ForegroundColor White
-} else {
-    Write-Host "=== Смена IP-адреса API ===" -ForegroundColor Cyan
-    Write-Host "IP: $Ip, Порт: $Port" -ForegroundColor White
-}
+Write-Host "=== Смена IP-адреса API ===" -ForegroundColor Cyan
 
-# Автоматическое определение IP, если не указан
-if ([string]::IsNullOrEmpty($Ip)) {
+# Режим эмулятора
+if ($Emulator) {
+    $Ip = "10.0.2.2"
+    Write-Host "[i] Режим эмулятора: $Ip`:$Port" -ForegroundColor Cyan
+}
+elseif ([string]::IsNullOrEmpty($Ip)) {
+    Write-Host "Автоматическое определение IP..." -ForegroundColor White
+
     # Приоритет: Wi-Fi адаптеры, затем Ethernet, исключая виртуальные
-    $Ip = (Get-NetIPAddress -AddressFamily IPv4 | 
-           Where-Object { 
+    $Ip = (Get-NetIPAddress -AddressFamily IPv4 |
+           Where-Object {
                $_.InterfaceAlias -notmatch "Loopback|Virtual|WSL|Hyper-V|Bluetooth" -and
                $_.IPAddress -match "^\d+\.\d+\.\d+\.\d+$"
            } |
-           Sort-Object { 
+           Sort-Object {
                if ($_.InterfaceAlias -match "Wi-Fi|Wireless|Беспроводная") { return 1 }
                elseif ($_.InterfaceAlias -match "Ethernet") { return 2 }
                else { return 3 }
            } |
            Select-Object -First 1 -ExpandProperty IPAddress)
-    
+
     if ([string]::IsNullOrEmpty($Ip)) {
         # Резервный вариант через WMI
-        $Ip = (Get-WmiObject Win32_NetworkAdapterConfiguration | 
-               Where-Object { 
-                   $_.IPEnabled -and 
+        $Ip = (Get-WmiObject Win32_NetworkAdapterConfiguration |
+               Where-Object {
+                   $_.IPEnabled -and
                    $_.IPAddress -match "^\d+\.\d+\.\d+\.\d+$" -and
                    $_.IPAddress -notmatch "26\.|169\.254\."
-               } | 
+               } |
                Select-Object -First 1 -ExpandProperty IPAddress)
     }
-    
+
     if ([string]::IsNullOrEmpty($Ip)) {
         $Ip = "127.0.0.1"
         Write-Host "[!] Не удалось определить IP, используем 127.0.0.1" -ForegroundColor Yellow
@@ -83,45 +84,31 @@ if ([string]::IsNullOrEmpty($Ip)) {
     }
 }
 
-Write-Host "Новый URL: http://$Ip`:$Port" -ForegroundColor Green
-Write-Host ""
+$NewUrl = "http://$Ip`:$Port"
+Write-Host "Новый URL: $NewUrl" -ForegroundColor Green
 
-# Путь к директории проекта
+# Путь к директории проекта (на уровень выше scripts)
 $ProjectRoot = Split-Path -Parent $PSScriptRoot
-$Files = @(
-    "lib\core\repository\auth_repository.dart",
-    "lib\core\api\sleep_api_service.dart",
-    "lib\core\api\calendar_event_api_service.dart"
-)
+$ConfigPath = Join-Path $ProjectRoot "lib\core\config\api_config.dart"
 
+if (-not (Test-Path $ConfigPath)) {
+    Write-Host "[!] Файл не найден: $ConfigPath" -ForegroundColor Red
+    exit 1
+}
+
+$Content = Get-Content $ConfigPath -Raw -Encoding UTF8
+
+# Заменяем URL в api_config.dart (ищем строку с baseUrl)
 $OldUrlPattern = "http://[\d\.]+:\d+"
-$NewUrl = "http://" + $Ip + ":" + $Port
+$NewContent = $Content -replace $OldUrlPattern, $NewUrl
 
-$ModifiedCount = 0
-
-foreach ($File in $Files) {
-    $FilePath = Join-Path $ProjectRoot $File
-    
-    if (-not (Test-Path $FilePath)) {
-        Write-Host "[!] Файл не найден: $File" -ForegroundColor Yellow
-        continue
-    }
-    
-    $Content = Get-Content $FilePath -Raw -Encoding UTF8
-    $NewContent = $Content -replace $OldUrlPattern, $NewUrl
-    
-    if ($Content -ne $NewContent) {
-        Set-Content $FilePath -Value $NewContent -Encoding UTF8 -NoNewline
-        Write-Host "[OK] Обновлён: $File" -ForegroundColor Green
-        $ModifiedCount++
-    } else {
-        Write-Host "[=] Без изменений: $File" -ForegroundColor Gray
-    }
+if ($Content -ne $NewContent) {
+    Set-Content $ConfigPath -Value $NewContent -Encoding UTF8 -NoNewline
+    Write-Host "[OK] Обновлён: api_config.dart" -ForegroundColor Green
+} else {
+    Write-Host "[=] URL уже установлен: $NewUrl" -ForegroundColor Gray
 }
 
 Write-Host ""
 Write-Host "=== Готово ===" -ForegroundColor Cyan
-Write-Host "Обновлено файлов: $ModifiedCount из $($Files.Count)" -ForegroundColor White
-Write-Host ""
-Write-Host "Для проверки запустите:" -ForegroundColor Yellow
-Write-Host "  flutter run"
+Write-Host "Запустите приложение: flutter run" -ForegroundColor Yellow

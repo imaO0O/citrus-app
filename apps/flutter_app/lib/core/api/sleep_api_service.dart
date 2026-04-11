@@ -1,6 +1,7 @@
 ﻿import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../../../models/sleep_record.dart';
+import '../config/api_config.dart';
 
 /// API сервис для работы с трекером сна
 class SleepApiService {
@@ -9,10 +10,11 @@ class SleepApiService {
   final String? _token;
 
   SleepApiService({
-    this.baseUrl = 'http://192.168.0.102:8081',
+    String? baseUrl,
     http.Client? client,
     String? token,
-  })  : _client = client ?? http.Client(),
+  })  : baseUrl = baseUrl ?? ApiConfig.baseUrl,
+        _client = client ?? http.Client(),
         _token = token;
 
   Map<String, String> get _headers {

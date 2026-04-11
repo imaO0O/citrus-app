@@ -1,6 +1,7 @@
 ﻿import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../../../models/calendar_event.dart';
+import '../config/api_config.dart';
 
 /// API сервис для работы с событиями календаря
 class CalendarEventApiService {
@@ -9,10 +10,11 @@ class CalendarEventApiService {
   final String? _token;
 
   CalendarEventApiService({
-    this.baseUrl = 'http://192.168.0.102:8081',
+    String? baseUrl,
     http.Client? client,
     String? token,
-  })  : _client = client ?? http.Client(),
+  })  : baseUrl = baseUrl ?? ApiConfig.baseUrl,
+        _client = client ?? http.Client(),
         _token = token {
     print('CalendarEventApiService: создан с token=${token != null ? "length=${token.length}" : "null"}');
   }

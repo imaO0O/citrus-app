@@ -1,5 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 import '../core/theme/app_colors.dart';
+import '../core/utils/phone_formatter.dart';
+import '../core/config/api_config.dart';
 
 class EmergencyModal extends StatefulWidget {
   final VoidCallback onClose;
@@ -10,23 +17,176 @@ class EmergencyModal extends StatefulWidget {
 }
 
 class _EmergencyModalState extends State<EmergencyModal> {
-  String curatorPhone = '+7-800-123-45-67'; // Телефон по умолчанию
+  String curatorPhone = '+7-800-123-45-67';
   String inputValue = '';
   bool isEditing = false;
   final TextEditingController _phoneController = TextEditingController();
 
+  // Состояния для техник
+  bool _showBreathingExercise = false;
+  bool _showGroundingExercise = false;
+  int _breathPhase = 0; // 0: вдох, 1: задержка, 2: выдох
+  int _breathSeconds = 0;
+  bool _breathingActive = false;
+
+  // Доверенные контакты из БД
+  List<Map<String, dynamic>> _trustedContacts = [];
+
   @override
   void initState() {
     super.initState();
-    inputValue = curatorPhone;
-    _phoneController.text = curatorPhone;
+    _loadCuratorPhone();
+    _loadTrustedContacts();
+  }
+
+  Future<void> _loadCuratorPhone() async {
+    final prefs = await SharedPreferences.getInstance();
+    final saved = prefs.getString('curator_phone');
+    if (saved != null && saved.isNotEmpty) {
+      setState(() {
+        curatorPhone = saved;
+        inputValue = saved;
+        _phoneController.text = saved;
+      });
+    }
+  }
+
+  Future<void> _loadTrustedContacts() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('token');
+      if (token == null) return;
+
+      final response = await http.get(
+        Uri.parse('${ApiConfig.baseUrl}/trusted-contacts'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        if (mounted) {
+          setState(() {
+            _trustedContacts = data.cast<Map<String, dynamic>>();
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('Error loading trusted contacts: $e');
+    }
+  }
+
+  Future<void> _saveCuratorPhone() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('curator_phone', curatorPhone);
   }
 
   void _handleSave() {
-    final trimmed = inputValue.trim();
+    final trimmed = _phoneController.text.trim();
+    if (trimmed.isEmpty) return;
     setState(() {
       curatorPhone = trimmed;
+      inputValue = trimmed;
       isEditing = false;
+    });
+    _saveCuratorPhone();
+  }
+
+  Future<void> _makePhoneCall(String phoneNumber) async {
+    final uri = Uri.parse('tel:$phoneNumber');
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri);
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Не удалось совершить звонок на $phoneNumber'),
+            backgroundColor: AppColors.destructive,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _sendSosMessage() async {
+    String? trustedPhone;
+
+    // Сначала пробуем из БД
+    if (_trustedContacts.isNotEmpty) {
+      trustedPhone = _trustedContacts.first['phone'];
+    }
+
+    // Fallback на SharedPreferences
+    if (trustedPhone == null || trustedPhone.isEmpty) {
+      final prefs = await SharedPreferences.getInstance();
+      trustedPhone = prefs.getString('trusted_contact');
+    }
+
+    if (trustedPhone == null || trustedPhone.isEmpty) {
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            backgroundColor: AppColors.surface2,
+            title: const Text('Доверенный контакт не настроен'),
+            content: const Text(
+              'Для отправки SOS укажите доверенный контакт в настройках приложения.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Понятно'),
+              ),
+            ],
+          ),
+        );
+      }
+      return;
+    }
+
+    final smsUri = Uri.parse(
+      'sms:$trustedPhone?body=🆘 SOS! Мне нужна помощь. Я отправляю это из приложения Citrus.',
+    );
+    if (await canLaunchUrl(smsUri)) {
+      await launchUrl(smsUri);
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Не удалось отправить SMS'),
+            backgroundColor: AppColors.destructive,
+          ),
+        );
+      }
+    }
+  }
+
+  void _startBreathingExercise() {
+    setState(() {
+      _showBreathingExercise = true;
+      _breathPhase = 0;
+      _breathSeconds = 0;
+      _breathingActive = true;
+    });
+  }
+
+  void _stopBreathingExercise() {
+    setState(() {
+      _showBreathingExercise = false;
+      _breathingActive = false;
+    });
+  }
+
+  void _startGroundingExercise() {
+    setState(() {
+      _showGroundingExercise = true;
+    });
+  }
+
+  void _stopGroundingExercise() {
+    setState(() {
+      _showGroundingExercise = false;
     });
   }
 
@@ -64,11 +224,19 @@ class _EmergencyModalState extends State<EmergencyModal> {
                           children: [
                             _buildAlertMessage(),
                             const SizedBox(height: 16),
-                            _buildContacts(),
-                            const SizedBox(height: 16),
-                            _buildQuickTechniques(),
-                            const SizedBox(height: 16),
-                            _buildTipsList(),
+                            if (_showBreathingExercise)
+                              _buildBreathingExercise()
+                            else if (_showGroundingExercise)
+                              _buildGroundingExercise()
+                            else ...[
+                              _buildContacts(),
+                              const SizedBox(height: 12),
+                              _buildSosButton(),
+                              const SizedBox(height: 16),
+                              _buildQuickTechniques(),
+                              const SizedBox(height: 16),
+                              _buildTipsList(),
+                            ],
                             const SizedBox(height: 12),
                             _buildCloseButton(),
                           ],
@@ -172,39 +340,34 @@ class _EmergencyModalState extends State<EmergencyModal> {
   }
 
   Widget _buildContacts() {
-    final contacts = [
-      {
-        'name': '\u0422\u0435\u043B\u0435\u0444\u043E\u043D \u0434\u043E\u0432\u0435\u0440\u0438\u044F',
-        'number': '8-800-2000-122',
-        'desc': '\u0411\u0435\u0441\u043F\u043B\u0430\u0442\u043D\u043E \u00B7 \u041A\u0440\u0443\u0433\u043B\u043E\u0441\u0443\u0442\u043E\u0447\u043D\u043E',
-        'icon': Icons.phone,
-        'color': AppColors.destructive,
-      },
-      {
-        'name': '\u0421\u043B\u0443\u0436\u0431\u0430 112',
-        'number': '112',
-        'desc': '\u042D\u043A\u0441\u0442\u0440\u0435\u043D\u043D\u044B\u0435 \u0441\u043B\u0443\u0436\u0431\u044B',
-        'icon': Icons.phone,
-        'color': AppColors.citrusOrange,
-      },
-      {
-        'name': '\u041F\u0441\u0438\u0445\u043E\u043B\u043E\u0433 \u0412\u0423\u0417\u0430',
-        'number': '\u0417\u0430\u043F\u0438\u0441\u0430\u0442\u044C\u0441\u044F',
-        'desc': '\u041F\u043E\u0434\u0434\u0435\u0440\u0436\u043A\u0430 \u0441\u0442\u0443\u0434\u0435\u043D\u0442\u043E\u0432',
-        'icon': Icons.people,
-        'color': AppColors.citrusPurple,
-      },
-    ];
-
     return Column(
       children: [
-        ...contacts.map((c) => _buildContactCard(
-          name: c['name'] as String,
-          number: c['number'] as String,
-          desc: c['desc'] as String,
-          icon: c['icon'] as IconData,
-          color: c['color'] as Color,
-        )),
+        _buildContactCard(
+          name: 'Телефон доверия',
+          number: '8-800-2000-122',
+          desc: 'Бесплатно · Круглосуточно',
+          icon: Icons.phone,
+          color: AppColors.destructive,
+          onTap: () => _makePhoneCall('88002000122'),
+        ),
+        const SizedBox(height: 8),
+        _buildContactCard(
+          name: 'Служба 112',
+          number: '112',
+          desc: 'Экстренные службы',
+          icon: Icons.phone,
+          color: AppColors.citrusOrange,
+          onTap: () => _makePhoneCall('112'),
+        ),
+        const SizedBox(height: 8),
+        _buildContactCard(
+          name: 'Психолог ВУЗа',
+          number: 'Записаться',
+          desc: 'Поддержка студентов',
+          icon: Icons.people,
+          color: AppColors.citrusPurple,
+          onTap: () => _makePhoneCall('88002000122'), // Заглушка
+        ),
         const SizedBox(height: 8),
         _buildCuratorCard(),
       ],
@@ -217,66 +380,70 @@ class _EmergencyModalState extends State<EmergencyModal> {
     required String desc,
     required IconData icon,
     required Color color,
+    required VoidCallback onTap,
   }) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.07),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withOpacity(0.15)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.12),
-              borderRadius: BorderRadius.circular(12),
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.07),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: color.withOpacity(0.15)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, color: color, size: 22),
             ),
-            child: Icon(icon, color: color, size: 22),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  name,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.foreground,
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    name,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.foreground,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  number,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: color,
+                  const SizedBox(height: 2),
+                  Text(
+                    number,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: color,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  desc,
-                  style: const TextStyle(fontSize: 10, color: AppColors.mutedForeground),
-                ),
-              ],
+                  const SizedBox(height: 2),
+                  Text(
+                    desc,
+                    style: const TextStyle(fontSize: 10, color: AppColors.mutedForeground),
+                  ),
+                ],
+              ),
             ),
-          ),
-          Container(
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.12),
-              borderRadius: BorderRadius.circular(12),
+            Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(Icons.phone, color: color, size: 16),
             ),
-            child: Icon(Icons.phone, color: color, size: 16),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -307,7 +474,7 @@ class _EmergencyModalState extends State<EmergencyModal> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  '\u041A\u0443\u0440\u0430\u0442\u043E\u0440 \u0443\u0447\u0435\u0431\u043D\u043E\u0439 \u0433\u0440\u0443\u043F\u043F\u044B',
+                  'Куратор учебной группы',
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
@@ -322,6 +489,7 @@ class _EmergencyModalState extends State<EmergencyModal> {
                         child: TextField(
                           controller: _phoneController,
                           style: const TextStyle(fontSize: 12, color: AppColors.foreground),
+                          inputFormatters: [PhoneInputFormatter()],
                           decoration: InputDecoration(
                             hintText: '+7 (___) ___-__-__',
                             hintStyle: const TextStyle(fontSize: 12, color: AppColors.dimForeground),
@@ -335,6 +503,7 @@ class _EmergencyModalState extends State<EmergencyModal> {
                             isDense: true,
                           ),
                           keyboardType: TextInputType.phone,
+                          onChanged: (val) => inputValue = val,
                           onSubmitted: (_) => _handleSave(),
                         ),
                       ),
@@ -359,7 +528,7 @@ class _EmergencyModalState extends State<EmergencyModal> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        curatorPhone.isEmpty ? '\u041D\u043E\u043C\u0435\u0440 \u043D\u0435 \u0443\u043A\u0430\u0437\u0430\u043D' : curatorPhone,
+                        curatorPhone.isEmpty ? 'Номер не указан' : curatorPhone,
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
@@ -367,7 +536,7 @@ class _EmergencyModalState extends State<EmergencyModal> {
                         ),
                       ),
                       const Text(
-                        '\u041A\u0443\u0440\u0430\u0442\u043E\u0440 \u0432\u0430\u0448\u0435\u0439 \u0433\u0440\u0443\u043F\u043F\u044B',
+                        'Куратор вашей группы',
                         style: TextStyle(fontSize: 10, color: AppColors.mutedForeground),
                       ),
                     ],
@@ -380,14 +549,17 @@ class _EmergencyModalState extends State<EmergencyModal> {
                 ? Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Container(
-                        width: 32,
-                        height: 32,
-                        decoration: BoxDecoration(
-                          color: color.withOpacity(0.12),
-                          borderRadius: BorderRadius.circular(12),
+                      GestureDetector(
+                        onTap: () => _makePhoneCall(curatorPhone.replaceAll(RegExp(r'[^0-9+]'), '')),
+                        child: Container(
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            color: color.withOpacity(0.12),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Icon(Icons.phone, color: color, size: 16),
                         ),
-                        child: Icon(Icons.phone, color: color, size: 16),
                       ),
                       const SizedBox(width: 6),
                       GestureDetector(
@@ -422,7 +594,7 @@ class _EmergencyModalState extends State<EmergencyModal> {
                         border: Border.all(color: color.withOpacity(0.2)),
                       ),
                       child: Text(
-                        '\u0414\u043E\u0431\u0430\u0432\u0438\u0442\u044C',
+                        'Добавить',
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
@@ -436,19 +608,63 @@ class _EmergencyModalState extends State<EmergencyModal> {
     );
   }
 
+  Widget _buildSosButton() {
+    return GestureDetector(
+      onTap: _sendSosMessage,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [AppColors.destructive, Color(0xFFFF5B5B)],
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight,
+          ),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.destructive.withOpacity(0.3),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.warning_amber_rounded, color: Colors.white, size: 24),
+            const SizedBox(width: 8),
+            const Flexible(
+              child: Text(
+                '🆘 Отправить SOS',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildQuickTechniques() {
     final techniques = [
       {
         'icon': Icons.air,
-        'label': '\u0414\u044B\u0445\u0430\u043D\u0438\u0435 4-4-4',
-        'desc': '\u0412\u0434\u043E\u0445 4\u0441 \u00B7 \u041F\u0430\u0443\u0437\u0430 4\u0441 \u00B7 \u0412\u044B\u0434\u043E\u0445 4\u0441',
+        'label': 'Дыхание 4-4-4',
+        'desc': 'Вдох 4с · Пауза 4с · Выдох 4с',
         'color': AppColors.citrusPurple,
+        'action': _startBreathingExercise,
       },
       {
         'icon': Icons.favorite,
         'label': '5-4-3-2-1',
-        'desc': '5 \u0432\u0438\u0434\u0438\u0448\u044C \u00B7 4 \u043F\u043E\u0442\u0440\u043E\u0433\u0430\u0442\u044C \u00B7 3 \u0441\u043B\u044B\u0448\u0438\u0448\u044C',
+        'desc': '5 видишь · 4 потрогать · 3 слышишь',
         'color': AppColors.citrusGreen,
+        'action': _startGroundingExercise,
       },
     ];
 
@@ -458,7 +674,7 @@ class _EmergencyModalState extends State<EmergencyModal> {
         const Padding(
           padding: EdgeInsets.only(bottom: 8),
           child: Text(
-            '\u0411\u042B\u0421\u0422\u0420\u042B\u0415 \u0422\u0415\u0425\u041D\u0418\u041A\u0418 \u0421\u0410\u041C\u041E\u041F\u041E\u041C\u041E\u0429\u0418',
+            'БЫСТРЫЕ ТЕХНИКИ САМОПОМОЩИ',
             style: TextStyle(
               fontSize: 10,
               fontWeight: FontWeight.w700,
@@ -475,32 +691,35 @@ class _EmergencyModalState extends State<EmergencyModal> {
           crossAxisSpacing: 8,
           childAspectRatio: 1.4,
           children: techniques.map((t) {
-            return Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: (t['color'] as Color).withOpacity(0.06),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: (t['color'] as Color).withOpacity(0.12)),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Icon(t['icon'] as IconData, color: t['color'] as Color, size: 20),
-                  const SizedBox(height: 6),
-                  Text(
-                    t['label'] as String,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.foreground,
+            return GestureDetector(
+              onTap: t['action'] as VoidCallback,
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: (t['color'] as Color).withOpacity(0.06),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: (t['color'] as Color).withOpacity(0.12)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(t['icon'] as IconData, color: t['color'] as Color, size: 20),
+                    const SizedBox(height: 6),
+                    Text(
+                      t['label'] as String,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.foreground,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    t['desc'] as String,
-                    style: const TextStyle(fontSize: 10, color: AppColors.mutedForeground),
-                  ),
-                ],
+                    const SizedBox(height: 2),
+                    Text(
+                      t['desc'] as String,
+                      style: const TextStyle(fontSize: 10, color: AppColors.mutedForeground),
+                    ),
+                  ],
+                ),
               ),
             );
           }).toList(),
@@ -509,12 +728,270 @@ class _EmergencyModalState extends State<EmergencyModal> {
     );
   }
 
+  Widget _buildBreathingExercise() {
+    final phaseNames = ['Вдох', 'Задержка', 'Выдох'];
+    final phaseColors = [
+      AppColors.citrusPurple,
+      AppColors.citrusOrange,
+      AppColors.citrusGreen,
+    ];
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: phaseColors[_breathPhase].withOpacity(0.06),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: phaseColors[_breathPhase].withOpacity(0.2)),
+      ),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Дыхание 4-4-4',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.foreground,
+                ),
+              ),
+              GestureDetector(
+                onTap: _stopBreathingExercise,
+                child: Container(
+                  width: 28,
+                  height: 28,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.07),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.close, size: 16, color: AppColors.mutedForeground),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          Container(
+            width: 120,
+            height: 120,
+            decoration: BoxDecoration(
+              color: phaseColors[_breathPhase].withOpacity(0.15),
+              shape: BoxShape.circle,
+              border: Border.all(color: phaseColors[_breathPhase].withOpacity(0.3)),
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  '$_breathSeconds',
+                  style: TextStyle(
+                    fontSize: 36,
+                    fontWeight: FontWeight.w700,
+                    color: phaseColors[_breathPhase],
+                  ),
+                ),
+                Text(
+                  phaseNames[_breathPhase],
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: phaseColors[_breathPhase],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _buildPhaseIndicator(0, phaseColors),
+              const SizedBox(width: 8),
+              _buildPhaseIndicator(1, phaseColors),
+              const SizedBox(width: 8),
+              _buildPhaseIndicator(2, phaseColors),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: _breathingActive ? _breathingActive ? null : null : _startBreathingExercise,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.citrusPurple,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: Text(
+                    _breathingActive ? 'Идёт упражнение...' : 'Начать',
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPhaseIndicator(int index, List<Color> colors) {
+    final isActive = _breathPhase == index;
+    return Row(
+      children: [
+        Container(
+          width: 12,
+          height: 12,
+          decoration: BoxDecoration(
+            color: isActive ? colors[index] : colors[index].withOpacity(0.2),
+            shape: BoxShape.circle,
+          ),
+        ),
+        const SizedBox(width: 4),
+        Text(
+          ['Вдох', 'Задержка', 'Выдох'][index],
+          style: TextStyle(
+            fontSize: 10,
+            color: isActive ? colors[index] : AppColors.mutedForeground,
+            fontWeight: isActive ? FontWeight.w700 : FontWeight.normal,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildGroundingExercise() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.citrusGreen.withOpacity(0.06),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.citrusGreen.withOpacity(0.2)),
+      ),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Техника 5-4-3-2-1',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.foreground,
+                ),
+              ),
+              GestureDetector(
+                onTap: _stopGroundingExercise,
+                child: Container(
+                  width: 28,
+                  height: 28,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.07),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.close, size: 16, color: AppColors.mutedForeground),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          _buildGroundingStep(
+            number: 5,
+            icon: Icons.visibility,
+            text: 'Назови 5 вещей, которые ты ВИДИШЬ',
+            color: AppColors.citrusPurple,
+          ),
+          const SizedBox(height: 8),
+          _buildGroundingStep(
+            number: 4,
+            icon: Icons.back_hand,
+            text: 'Назови 4 вещи, которые ты можешь ПОТРОГАТЬ',
+            color: AppColors.citrusGreen,
+          ),
+          const SizedBox(height: 8),
+          _buildGroundingStep(
+            number: 3,
+            icon: Icons.hearing,
+            text: 'Назови 3 звука, которые ты СЛЫШИШЬ',
+            color: AppColors.citrusOrange,
+          ),
+          const SizedBox(height: 8),
+          _buildGroundingStep(
+            number: 2,
+            icon: Icons.air,
+            text: 'Назови 2 запаха, которые ты ЧУВСТВУЕШЬ',
+            color: AppColors.citrusPurple,
+          ),
+          const SizedBox(height: 8),
+          _buildGroundingStep(
+            number: 1,
+            icon: Icons.favorite,
+            text: 'Назови 1 вещь, которая ты чувствуешь на ВКУС',
+            color: AppColors.destructive,
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            'Эта техника помогает вернуться в настоящий момент и снизить тревогу.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 11,
+              color: AppColors.mutedForeground,
+              height: 1.5,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGroundingStep({
+    required int number,
+    required IconData icon,
+    required String text,
+    required Color color,
+  }) {
+    return Row(
+      children: [
+        Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.12),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Center(
+            child: Text(
+              '$number',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: color,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(
+            text,
+            style: const TextStyle(
+              fontSize: 12,
+              color: AppColors.foreground,
+              height: 1.4,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildTipsList() {
     final tips = [
-      '\u0425\u043E\u043B\u043E\u0434\u043D\u0430\u044F \u0432\u043E\u0434\u0430 \u043D\u0430 \u0437\u0430\u043F\u044F\u0441\u0442\u044C\u044F \u0438\u043B\u0438 \u043B\u0438\u0446\u043E',
-      '\u041F\u043E\u0437\u0432\u043E\u043D\u0438 \u0431\u043B\u0438\u0437\u043A\u043E\u043C\u0443 \u0447\u0435\u043B\u043E\u0432\u0435\u043A\u0443',
-      '\u0412\u044B\u0439\u0434\u0438 \u043D\u0430 \u0441\u0432\u0435\u0436\u0438\u0439 \u0432\u043E\u0437\u0434\u0443\u0445',
-      '\u041D\u0430\u043F\u0438\u0448\u0438 \u043E \u0441\u0432\u043E\u0438\u0445 \u0447\u0443\u0432\u0441\u0442\u0432\u0430\u0445 \u0432 \u0434\u043D\u0435\u0432\u043D\u0438\u043A',
+      'Холодная вода на запястья или лицо',
+      'Позвони близкому человеку',
+      'Выйди на свежий воздух',
+      'Напиши о своих чувствах в дневник',
     ];
 
     return Container(
@@ -528,7 +1005,7 @@ class _EmergencyModalState extends State<EmergencyModal> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            '\u0427\u0442\u043E \u0434\u0435\u043B\u0430\u0442\u044C \u043F\u0440\u044F\u043C\u043E \u0441\u0435\u0439\u0447\u0430\u0441:',
+            'Что делать прямо сейчас:',
             style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w700,
@@ -542,7 +1019,7 @@ class _EmergencyModalState extends State<EmergencyModal> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '\u2192',
+                  '→',
                   style: TextStyle(color: AppColors.citrusPurple, fontSize: 12),
                 ),
                 const SizedBox(width: 6),
@@ -571,7 +1048,7 @@ class _EmergencyModalState extends State<EmergencyModal> {
           borderRadius: BorderRadius.circular(16),
         ),
         child: const Text(
-          '\u0417\u0430\u043A\u0440\u044B\u0442\u044C',
+          'Закрыть',
           textAlign: TextAlign.center,
           style: TextStyle(
             fontSize: 13,

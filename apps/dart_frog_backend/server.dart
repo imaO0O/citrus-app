@@ -268,6 +268,42 @@ Future<Response> _handleRequest(RequestContext context) async {
     return _deleteDiaryEntry(context, authContext, id);
   }
 
+  // Trusted contacts endpoints (требуют авторизации)
+  if (path.startsWith('/trusted-contacts')) {
+    final token = _extractToken(context);
+    if (token == null) {
+      return Response(statusCode: 401, body: 'Unauthorized');
+    }
+    try {
+      final jwt = JWT.verify(token, SecretKey(_jwtSecret));
+      authContext.userId = jwt.payload['user_id'] as String;
+    } catch (e) {
+      return Response(statusCode: 401, body: 'Invalid token');
+    }
+  }
+
+  // GET /trusted-contacts
+  if (path == '/trusted-contacts' && method == HttpMethod.get) {
+    return _getTrustedContacts(context, authContext);
+  }
+
+  // POST /trusted-contacts
+  if (path == '/trusted-contacts' && method == HttpMethod.post) {
+    return _createTrustedContact(context, authContext);
+  }
+
+  // PUT /trusted-contacts/{id}
+  if (path.startsWith('/trusted-contacts/') && method == HttpMethod.put) {
+    final id = path.substring('/trusted-contacts/'.length);
+    return _updateTrustedContact(context, authContext, id);
+  }
+
+  // DELETE /trusted-contacts/{id}
+  if (path.startsWith('/trusted-contacts/') && method == HttpMethod.delete) {
+    final id = path.substring('/trusted-contacts/'.length);
+    return _deleteTrustedContact(context, authContext, id);
+  }
+
   return Response.json(body: {'message': 'Citrus API'});
 }
 
@@ -1288,6 +1324,117 @@ Future<Response> _getTestResult(
         }).toList();
 
     return Response.json(body: records);
+  } catch (e) {
+    return Response(statusCode: 500, body: 'Error: $e');
+  }
+}
+
+// ==================== TRUSTED CONTACTS CRUD ====================
+
+/// Получить все доверенные контакты пользователя
+Future<Response> _getTrustedContacts(RequestContext context, _AuthContext auth) async {
+  final userId = auth.userId;
+  if (userId == null) return Response(statusCode: 401, body: 'Unauthorized');
+
+  try {
+    final results = await _db!.query(
+      "SELECT id, name, phone, created_at FROM trusted_contacts WHERE user_id = '$userId' ORDER BY created_at DESC",
+    );
+
+    final records = results.map((row) => {
+          'id': row[0] is String ? row[0] : Uuid.unparse(row[0] as Uint8List),
+          'name': row[1],
+          'phone': row[2],
+          'created_at': row[3]?.toString(),
+        }).toList();
+
+    return Response.json(body: records);
+  } catch (e) {
+    return Response(statusCode: 500, body: 'Error: $e');
+  }
+}
+
+/// Создать доверенный контакт
+Future<Response> _createTrustedContact(RequestContext context, _AuthContext auth) async {
+  final userId = auth.userId;
+  if (userId == null) return Response(statusCode: 401, body: 'Unauthorized');
+
+  final body = await context.request.json();
+  final name = body['name'] as String? ?? '';
+  final phone = body['phone'] as String?;
+
+  if (phone == null || phone.isEmpty) {
+    return Response(statusCode: 400, body: 'phone is required');
+  }
+
+  try {
+    final contactId = const Uuid().v4();
+    final nameSql = name.isNotEmpty ? "'${name.replaceAll("'", "''")}'" : 'NULL';
+
+    await _db!.query(
+      "INSERT INTO trusted_contacts (id, user_id, name, phone) VALUES ('$contactId', '$userId', $nameSql, '${phone.replaceAll("'", "''")}')",
+    );
+
+    return Response.json(
+      statusCode: 201,
+      body: {'id': contactId, 'name': name, 'phone': phone},
+    );
+  } catch (e) {
+    return Response(statusCode: 500, body: 'Error: $e');
+  }
+}
+
+/// Обновить доверенный контакт
+Future<Response> _updateTrustedContact(RequestContext context, _AuthContext auth, String id) async {
+  final userId = auth.userId;
+  if (userId == null) return Response(statusCode: 401, body: 'Unauthorized');
+
+  final body = await context.request.json();
+  final name = body['name'] as String?;
+  final phone = body['phone'] as String?;
+
+  if (phone == null || phone.isEmpty) {
+    return Response(statusCode: 400, body: 'phone is required');
+  }
+
+  try {
+    final nameSql = name != null && name.isNotEmpty ? "'${name.replaceAll("'", "''")}'" : 'NULL';
+    final phoneSql = phone.replaceAll("'", "''");
+
+    final result = await _db!.query(
+      "UPDATE trusted_contacts SET name = $nameSql, phone = '$phoneSql' WHERE id = '$id' AND user_id = '$userId' RETURNING id, name, phone",
+    );
+
+    if (result.isEmpty) {
+      return Response(statusCode: 404, body: 'Contact not found');
+    }
+
+    final row = result.first;
+    return Response.json(body: {
+      'id': row[0] is String ? row[0] : Uuid.unparse(row[0] as Uint8List),
+      'name': row[1],
+      'phone': row[2],
+    });
+  } catch (e) {
+    return Response(statusCode: 500, body: 'Error: $e');
+  }
+}
+
+/// Удалить доверенный контакт
+Future<Response> _deleteTrustedContact(RequestContext context, _AuthContext auth, String id) async {
+  final userId = auth.userId;
+  if (userId == null) return Response(statusCode: 401, body: 'Unauthorized');
+
+  try {
+    final result = await _db!.query(
+      "DELETE FROM trusted_contacts WHERE id = '$id' AND user_id = '$userId'",
+    );
+
+    if (result.affectedRowCount == 0) {
+      return Response(statusCode: 404, body: 'Contact not found');
+    }
+
+    return Response.json(body: {'success': true});
   } catch (e) {
     return Response(statusCode: 500, body: 'Error: $e');
   }

@@ -94,8 +94,18 @@ CREATE TABLE IF NOT EXISTS user_preferences (
     preferences JSONB,
     updated_at TIMESTAMP DEFAULT NOW()
 );
+-- Таблица для хранения результатов психологических тестов
+CREATE TABLE IF NOT EXISTS psychological_test_results (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    test_id TEXT NOT NULL,
+    scores JSONB NOT NULL,
+    interpretations JSONB,
+    completed_at TIMESTAMP DEFAULT NOW()
+);
 
--- Индексы для ускорения запросов
+-- Индекс для быстрого поиска результатов по пользователю и тесту
 CREATE INDEX IF NOT EXISTS idx_mood_entries_user_date ON mood_entries(user_id, date);
 CREATE INDEX IF NOT EXISTS idx_diary_entries_user_date ON diary_entries(user_id, entry_date);
 CREATE INDEX IF NOT EXISTS idx_calendar_events_user_date ON calendar_events(user_id, event_date);
+CREATE INDEX IF NOT EXISTS idx_test_results_user_test ON psychological_test_results(user_id, test_id, completed_at DESC);
