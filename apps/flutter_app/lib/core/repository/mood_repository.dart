@@ -161,4 +161,30 @@ class MoodRepository {
     final records = await getRecords(startDate: now.subtract(const Duration(days: 30)));
     return records.isEmpty ? null : records.first;
   }
+
+  /// Получить среднее настроение по дням для указанного периода.
+  /// Возвращает Map: ключ — дата (DateTime без времени), значение — средний moodId (double).
+  Future<Map<DateTime, double>> getAverageMoodByDay({
+    required DateTime startDate,
+    required DateTime endDate,
+  }) async {
+    final records = await getRecords(startDate: startDate, endDate: endDate);
+    if (records.isEmpty) return {};
+
+    // Группируем записи по дню
+    final Map<DateTime, List<int>> moodByDay = {};
+    for (final record in records) {
+      final day = DateTime(record.moodDate.year, record.moodDate.month, record.moodDate.day);
+      moodByDay.putIfAbsent(day, () => []).add(record.moodId);
+    }
+
+    // Вычисляем среднее для каждого дня
+    final Map<DateTime, double> averageByDay = {};
+    for (final entry in moodByDay.entries) {
+      final sum = entry.value.reduce((a, b) => a + b);
+      averageByDay[entry.key] = sum / entry.value.length;
+    }
+
+    return averageByDay;
+  }
 }

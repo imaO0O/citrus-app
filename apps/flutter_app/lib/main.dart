@@ -8,6 +8,8 @@ import 'core/repository/auth_repository.dart';
 import 'core/repository/sleep_repository.dart';
 import 'core/repository/calendar_event_repository.dart';
 import 'core/repository/diary_repository.dart';
+import 'core/repository/mood_repository.dart';
+import 'core/repository/memory_photo_repository.dart';
 import 'bloc/dashboard_bloc.dart';
 import 'features/auth/bloc/auth_bloc.dart';
 import 'features/sleep/bloc/sleep_bloc.dart';
@@ -33,6 +35,8 @@ class MyApp extends StatelessWidget {
     final sleepRepository = SleepRepository(userId: 'unknown', token: null);
     final calendarRepository = CalendarEventRepository(userId: 'unknown', token: null);
     final diaryRepository = DiaryRepository(userId: 'unknown', token: null);
+    final moodRepository = MoodRepository(userId: 'unknown', token: null);
+    final memoryPhotoRepository = MemoryPhotoRepository(userId: 'unknown', token: null);
 
     return ListenableBuilder(
       listenable: ThemeService(),
@@ -43,6 +47,8 @@ class MyApp extends StatelessWidget {
             RepositoryProvider.value(value: sleepRepository),
             RepositoryProvider.value(value: calendarRepository),
             RepositoryProvider.value(value: diaryRepository),
+            RepositoryProvider.value(value: moodRepository),
+            RepositoryProvider.value(value: memoryPhotoRepository),
           ],
           child: MultiBlocProvider(
             providers: [
@@ -59,11 +65,15 @@ class MyApp extends StatelessWidget {
                       sleepRepository.setUserId(userId, token: token);
                       calendarRepository.setUserId(userId, token: token);
                       diaryRepository.setUserId(userId, token: token);
+                      moodRepository.setUserId(userId, token: token);
+                      memoryPhotoRepository.setUserId(userId, token: token);
                     } else if (state is AuthUnauthenticated) {
                       debugPrint('Auth: пользователь вышел');
                       sleepRepository.setUserId('unknown', token: null);
                       calendarRepository.setUserId('unknown', token: null);
                       diaryRepository.setUserId('unknown', token: null);
+                      moodRepository.setUserId('unknown', token: null);
+                      memoryPhotoRepository.setUserId('unknown', token: null);
                     }
                   });
 
@@ -79,7 +89,10 @@ class MyApp extends StatelessWidget {
                 create: (ctx) => SleepBloc(repository: ctx.read<SleepRepository>()),
               ),
               BlocProvider(
-                create: (ctx) => CalendarBloc(repository: ctx.read<CalendarEventRepository>()),
+                create: (ctx) => CalendarBloc(
+                  repository: ctx.read<CalendarEventRepository>(),
+                  moodRepository: ctx.read<MoodRepository>(),
+                ),
               ),
               BlocProvider(
                 create: (ctx) => DiaryBloc(repository: ctx.read<DiaryRepository>()),

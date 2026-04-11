@@ -1,23 +1,13 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:intl/intl.dart';
 import '../core/theme/app_colors.dart';
-
-class _PhotoCard {
-  final String emoji;
-  final String title;
-  final String date;
-  final Color color;
-  final List<Color> gradientColors;
-  bool isLiked;
-
-  _PhotoCard({
-    required this.emoji,
-    required this.title,
-    required this.date,
-    required this.color,
-    required this.gradientColors,
-    this.isLiked = false,
-  });
-}
+import '../core/repository/memory_photo_repository.dart';
+import '../models/memory_photo.dart';
 
 class PhotoGalleryScreen extends StatefulWidget {
   const PhotoGalleryScreen({super.key});
@@ -27,57 +17,207 @@ class PhotoGalleryScreen extends StatefulWidget {
 }
 
 class _PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
-  final List<_PhotoCard> _photos = [
-    _PhotoCard(
-      emoji: '\u{1F393}',
-      title: '\u041F\u043E\u043B\u0443\u0447\u0435\u043D\u0438\u0435 \u0434\u0438\u043F\u043B\u043E\u043C\u0430',
-      date: '15 \u0438\u044E\u043D\u044F 2025',
-      color: const Color(0xFF6366F1),
-      gradientColors: [const Color(0xFF2563EB), const Color(0xFF9333EA)],
-    ),
-    _PhotoCard(
-      emoji: '\u{1F389}',
-      title: '\u0414\u0435\u043D\u044C \u0440\u043E\u0436\u0434\u0435\u043D\u0438\u044F',
-      date: '3 \u043C\u0430\u0440\u0442\u0430 2025',
-      color: AppColors.citrusRed,
-      gradientColors: [const Color(0xFFEC4899), const Color(0xFFF43F5E)],
-    ),
-    _PhotoCard(
-      emoji: '\u{1F3D6}\u{FE0F}',
-      title: '\u041B\u0435\u0442\u043D\u0438\u0439 \u043E\u0442\u0434\u044B\u0445',
-      date: '20 \u0438\u044E\u043B\u044F 2025',
-      color: const Color(0xFF2EC4B6),
-      gradientColors: [const Color(0xFF06B6D4), const Color(0xFF14B8A6)],
-    ),
-    _PhotoCard(
-      emoji: '\u{1F384}',
-      title: '\u041D\u043E\u0432\u044B\u0439 \u0433\u043E\u0434',
-      date: '31 \u0434\u0435\u043A\u0430\u0431\u0440\u044F 2024',
-      color: const Color(0xFF2A9D8F),
-      gradientColors: [const Color(0xFF22C55E), const Color(0xFF10B981)],
-    ),
-    _PhotoCard(
-      emoji: '\u{1F468}\u200D\u{1F469}\u200D\u{1F467}',
-      title: '\u0421\u0435\u043C\u0435\u0439\u043D\u044B\u0439 \u0443\u0436\u0438\u043D',
-      date: '10 \u044F\u043D\u0432\u0430\u0440\u044F 2025',
-      color: AppColors.citrusOrange,
-      gradientColors: [const Color(0xFFF97316), const Color(0xFFF59E0B)],
-    ),
-    _PhotoCard(
-      emoji: '\u{1F415}',
-      title: '\u0412\u0441\u0442\u0440\u0435\u0447\u0430 \u0441 \u0434\u0440\u0443\u0433\u043E\u043C',
-      date: '5 \u0444\u0435\u0432\u0440\u0430\u043B\u044F 2025',
-      color: AppColors.citrusAmber,
-      gradientColors: [const Color(0xFFEAB308), const Color(0xFFF97316)],
-    ),
-  ];
+  final ImagePicker _picker = ImagePicker();
+  List<MemoryPhoto> _photos = [];
+  bool _isLoading = true;
+  bool _isUploading = false;
+  bool _showFavoritesOnly = false;
+  String? _error;
 
-  void _toggleLike(int index) {
-    setState(() => _photos[index].isLiked = !_photos[index].isLiked);
+  @override
+  void initState() {
+    super.initState();
+    _loadPhotos();
   }
 
-  void _openPhotoDetail(int index) {
-    final photo = _photos[index];
+  Future<void> _loadPhotos() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      final repo = context.read<MemoryPhotoRepository>();
+      final photos = await repo.getPhotos();
+      setState(() {
+        _photos = photos;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _error = 'Ошибка загрузки: $e';
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _toggleFavorite(MemoryPhoto photo) async {
+    try {
+      final repo = context.read<MemoryPhotoRepository>();
+      final newFavorite = await repo.toggleFavorite(photo.id);
+      setState(() {
+        final index = _photos.indexWhere((p) => p.id == photo.id);
+        if (index != -1) {
+          _photos[index] = MemoryPhoto(
+            id: photo.id,
+            userId: photo.userId,
+            imageUrl: photo.imageUrl,
+            caption: photo.caption,
+            photoDate: photo.photoDate,
+            isFavorite: newFavorite,
+            createdAt: photo.createdAt,
+          );
+        }
+      });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Ошибка: $e'), backgroundColor: AppColors.destructive),
+        );
+      }
+    }
+  }
+
+  Future<void> _pickImage(ImageSource source) async {
+    try {
+      final XFile? image = await _picker.pickImage(
+        source: source,
+        maxWidth: 1920,
+        maxHeight: 1920,
+        imageQuality: 85,
+      );
+
+      if (image == null) return;
+
+      setState(() => _isUploading = true);
+
+      // Показать диалог для caption
+      final caption = await _showCaptionDialog();
+
+      final repo = context.read<MemoryPhotoRepository>();
+      await repo.uploadPhoto(
+        imageFile: File(image.path),
+        caption: caption,
+        photoDate: DateTime.now(),
+      );
+
+      setState(() => _isUploading = false);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Фото загружено'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        await _loadPhotos();
+      }
+    } catch (e) {
+      setState(() => _isUploading = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Ошибка загрузки: $e'),
+            backgroundColor: AppColors.destructive,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<String?> _showCaptionDialog() async {
+    final controller = TextEditingController();
+    return showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.surface1,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: AppColors.citrusOrange.withOpacity(0.2)),
+        ),
+        title: const Text(
+          'Добавить описание',
+          style: TextStyle(color: AppColors.foreground),
+        ),
+        content: TextField(
+          controller: controller,
+          style: const TextStyle(color: AppColors.foreground),
+          decoration: InputDecoration(
+            hintText: 'Название момента (необязательно)',
+            hintStyle: const TextStyle(color: AppColors.mutedForeground),
+            filled: true,
+            fillColor: AppColors.surface2,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
+            ),
+          ),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, ''),
+            child: const Text('Пропустить', style: TextStyle(color: AppColors.mutedForeground)),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, controller.text),
+            style: FilledButton.styleFrom(backgroundColor: AppColors.citrusOrange),
+            child: const Text('Далее'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _confirmDeletePhoto(MemoryPhoto photo) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.surface1,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: AppColors.destructive.withOpacity(0.3)),
+        ),
+        title: const Text('Удалить момент?', style: TextStyle(color: AppColors.foreground)),
+        content: Text(
+          photo.caption ?? 'Момент от ${DateFormat('dd.MM.yyyy').format(photo.createdAt)}',
+          style: const TextStyle(color: AppColors.mutedForeground),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Отмена', style: TextStyle(color: AppColors.mutedForeground)),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: FilledButton.styleFrom(backgroundColor: AppColors.destructive),
+            child: const Text('Удалить'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    try {
+      final repo = context.read<MemoryPhotoRepository>();
+      await repo.deletePhoto(photo.id);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Момент удалён'), backgroundColor: Colors.green),
+        );
+        await _loadPhotos();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Ошибка удаления: $e'), backgroundColor: AppColors.destructive),
+        );
+      }
+    }
+  }
+
+  void _openPhotoDetail(MemoryPhoto photo) {
     showDialog(
       context: context,
       builder: (context) => Dialog(
@@ -88,45 +228,32 @@ class _PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              // Изображение
               Container(
                 width: double.infinity,
-                constraints: const BoxConstraints(maxHeight: 300),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: photo.gradientColors,
-                  ),
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                constraints: const BoxConstraints(maxHeight: 350),
+                decoration: const BoxDecoration(
+                  color: AppColors.surface2,
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
                 ),
-                padding: const EdgeInsets.all(32),
-                child: Stack(
-                  alignment: Alignment.topRight,
-                  children: [
-                    Center(child: Text(photo.emoji, style: const TextStyle(fontSize: 72))),
-                    Positioned(
-                      top: 8,
-                      right: 8,
-                      child: GestureDetector(
-                        onTap: () => _toggleLike(index),
-                        child: Container(
-                          width: 40,
-                          height: 40,
-                          decoration: BoxDecoration(
-                            color: Colors.black.withOpacity(0.3),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Icon(
-                            photo.isLiked ? Icons.favorite : Icons.favorite_border,
-                            color: photo.isLiked ? AppColors.citrusRed : AppColors.foreground,
-                            size: 20,
-                          ),
-                        ),
+                child: ClipRRect(
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                  child: CachedNetworkImage(
+                    imageUrl: photo.imageUrl,
+                    fit: BoxFit.cover,
+                    placeholder: (context, url) => const Center(
+                      child: CircularProgressIndicator(color: AppColors.citrusOrange),
+                    ),
+                    errorWidget: (context, url, error) => Container(
+                      padding: const EdgeInsets.all(32),
+                      child: const Center(
+                        child: Icon(Icons.broken_image, size: 64, color: AppColors.mutedForeground),
                       ),
                     ),
-                  ],
+                  ),
                 ),
               ),
+              // Информация
               Container(
                 width: double.infinity,
                 decoration: const BoxDecoration(
@@ -137,29 +264,45 @@ class _PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      photo.title,
-                      style: const TextStyle(
-                        color: AppColors.foreground,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(photo.date, style: const TextStyle(color: AppColors.mutedForeground, fontSize: 13)),
-                    const SizedBox(height: 16),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: () => Navigator.pop(context),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.surface2,
-                          foregroundColor: AppColors.foreground,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    if (photo.caption != null && photo.caption!.isNotEmpty) ...[
+                      Text(
+                        photo.caption!,
+                        style: const TextStyle(
+                          color: AppColors.foreground,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
                         ),
-                        child: const Text('\u0417\u0430\u043A\u0440\u044B\u0442\u044C'),
                       ),
+                      const SizedBox(height: 4),
+                    ],
+                    Text(
+                      DateFormat('dd MMMM yyyy', 'ru_RU').format(photo.createdAt),
+                      style: const TextStyle(color: AppColors.mutedForeground, fontSize: 13),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: () => Navigator.pop(context),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.surface2,
+                              foregroundColor: AppColors.foreground,
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                            child: const Text('Закрыть'),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        IconButton(
+                          icon: const Icon(Icons.delete, color: AppColors.destructive),
+                          onPressed: () {
+                            Navigator.pop(context);
+                            _confirmDeletePhoto(photo);
+                          },
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -171,127 +314,46 @@ class _PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
     );
   }
 
-  void _openAddMomentModal() {
-    final emojis = ['\u{1F393}', '\u{1F389}', '\u{1F3D6}\u{FE0F}', '\u{1F384}', '\u{1F468}\u200D\u{1F469}\u200D\u{1F467}', '\u{1F415}', '\u{1F381}', '\u2708\u{FE0F}', '\u{1F3B8}', '\u{1F3C6}', '\u{1F305}', '\u{1F38A}'];
-    String? selectedEmoji;
-    final titleController = TextEditingController();
-
-    showDialog(
+  void _showUploadOptions() {
+    showModalBottomSheet(
       context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setModalState) => Dialog(
-          backgroundColor: Colors.transparent,
-          insetPadding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Container(
-            constraints: const BoxConstraints(maxWidth: 500),
-            decoration: BoxDecoration(
-              color: AppColors.surface1,
-              borderRadius: BorderRadius.circular(24),
+      backgroundColor: AppColors.surface1,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Padding(
+              padding: EdgeInsets.all(16),
+              child: Text(
+                'Добавить момент',
+                style: TextStyle(
+                  color: AppColors.foreground,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ),
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      '\u0414\u043E\u0431\u0430\u0432\u0438\u0442\u044C \u043C\u043E\u043C\u0435\u043D\u0442',
-                      style: TextStyle(color: AppColors.foreground, fontSize: 18, fontWeight: FontWeight.w600),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.close, color: AppColors.mutedForeground),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                const Text('\u0412\u044B\u0431\u0435\u0440\u0438\u0442\u0435 \u0438\u043A\u043E\u043D\u043A\u0443', style: TextStyle(color: AppColors.mutedForeground, fontSize: 13)),
-                const SizedBox(height: 8),
-                GridView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 6,
-                    mainAxisSpacing: 8,
-                    crossAxisSpacing: 8,
-                    childAspectRatio: 1,
-                  ),
-                  itemCount: emojis.length,
-                  itemBuilder: (context, index) {
-                    final emoji = emojis[index];
-                    final isSelected = selectedEmoji == emoji;
-                    return GestureDetector(
-                      onTap: () => setModalState(() => selectedEmoji = emoji),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: isSelected ? AppColors.surface2 : AppColors.surface1,
-                          border: Border.all(
-                            color: isSelected ? AppColors.citrusOrange.withOpacity(0.5) : AppColors.subtleBorder,
-                          ),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Center(child: Text(emoji, style: const TextStyle(fontSize: 24))),
-                      ),
-                    );
-                  },
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: titleController,
-                  style: const TextStyle(color: AppColors.foreground),
-                  decoration: InputDecoration(
-                    labelText: '\u041D\u0430\u0437\u0432\u0430\u043D\u0438\u0435',
-                    labelStyle: const TextStyle(color: AppColors.mutedForeground),
-                    filled: true,
-                    fillColor: AppColors.surface2,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                SizedBox(
-                  width: double.infinity,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(colors: [AppColors.citrusOrange, AppColors.citrusAmber]),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: ElevatedButton(
-                      onPressed: () {
-                        if (selectedEmoji != null && titleController.text.isNotEmpty) {
-                          setState(() {
-                            _photos.add(_PhotoCard(
-                              emoji: selectedEmoji!,
-                              title: titleController.text,
-                              date: '\u0421\u0435\u0433\u043E\u0434\u043D\u044F',
-                              color: AppColors.citrusOrange,
-                              gradientColors: [AppColors.citrusOrange, AppColors.citrusAmber],
-                            ));
-                          });
-                          Navigator.pop(context);
-                        }
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.transparent,
-                        shadowColor: Colors.transparent,
-                        foregroundColor: AppColors.background,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                      child: const Text(
-                        '\u0421\u043E\u0445\u0440\u0430\u043D\u0438\u0442\u044C \u043C\u043E\u043C\u0435\u043D\u0442',
-                        style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
+            ListTile(
+              leading: const Icon(Icons.photo_library, color: AppColors.citrusOrange),
+              title: const Text('Выбрать из галереи', style: TextStyle(color: AppColors.foreground)),
+              onTap: () {
+                Navigator.pop(context);
+                _pickImage(ImageSource.gallery);
+              },
             ),
-          ),
+            ListTile(
+              leading: const Icon(Icons.camera_alt, color: AppColors.citrusOrange),
+              title: const Text('Сделать фото', style: TextStyle(color: AppColors.foreground)),
+              onTap: () {
+                Navigator.pop(context);
+                _pickImage(ImageSource.camera);
+              },
+            ),
+            const SizedBox(height: 16),
+          ],
         ),
       ),
     );
@@ -299,7 +361,10 @@ class _PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final likedCount = _photos.where((p) => p.isLiked).length;
+    final displayedPhotos = _showFavoritesOnly
+        ? _photos.where((p) => p.isFavorite).toList()
+        : _photos;
+    final favoriteCount = _photos.where((p) => p.isFavorite).length;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -311,29 +376,68 @@ class _PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Заголовок
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     const Text(
-                      '\u0413\u0430\u043B\u0435\u0440\u0435\u044F \u043C\u043E\u043C\u0435\u043D\u0442\u043E\u0432',
+                      'Галерея моментов',
                       style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: AppColors.foreground),
                     ),
-                    GestureDetector(
-                      onTap: _openAddMomentModal,
-                      child: Container(
-                        width: 32,
-                        height: 32,
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(colors: [AppColors.citrusOrange, AppColors.citrusAmber]),
-                          borderRadius: BorderRadius.circular(10),
+                    Row(
+                      children: [
+                        // Фильтр избранное
+                        GestureDetector(
+                          onTap: () => setState(() => _showFavoritesOnly = !_showFavoritesOnly),
+                          child: Container(
+                            width: 32,
+                            height: 32,
+                            decoration: BoxDecoration(
+                              color: _showFavoritesOnly
+                                  ? AppColors.citrusRed.withOpacity(0.2)
+                                  : Colors.transparent,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                color: _showFavoritesOnly
+                                    ? AppColors.citrusRed.withOpacity(0.5)
+                                    : Colors.transparent,
+                              ),
+                            ),
+                            child: Icon(
+                              _showFavoritesOnly ? Icons.favorite : Icons.favorite_border,
+                              color: _showFavoritesOnly
+                                  ? AppColors.citrusRed
+                                  : AppColors.mutedForeground,
+                              size: 18,
+                            ),
+                          ),
                         ),
-                        child: const Icon(Icons.add, color: Colors.white, size: 18),
-                      ),
+                        const SizedBox(width: 8),
+                        // Кнопка добавить
+                        GestureDetector(
+                          onTap: _isUploading ? null : _showUploadOptions,
+                          child: Container(
+                            width: 32,
+                            height: 32,
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(colors: [AppColors.citrusOrange, AppColors.citrusAmber]),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: _isUploading
+                                ? const SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                  )
+                                : const Icon(Icons.add, color: Colors.white, size: 18),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
                 const SizedBox(height: 16),
-                // Dopamine card
+                // Мотивационная карточка
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(16),
@@ -347,110 +451,208 @@ class _PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
                     border: Border.all(color: AppColors.citrusRed.withOpacity(0.2)),
                   ),
                   child: const Text(
-                    '\u0414\u043E\u0444\u0430\u043C\u0438\u043D\n\u041A\u0430\u0436\u0434\u044B\u0439 \u0441\u0447\u0430\u0441\u0442\u043B\u0438\u0432\u044B\u0439 \u043C\u043E\u043C\u0435\u043D\u0442 \u0437\u0430\u0441\u043B\u0443\u0436\u0438\u0432\u0430\u0435\u0442 \u0431\u044B\u0442\u044C \u0441\u043E\u0445\u0440\u0430\u043D\u0451\u043D\u043D\u044B\u043C.',
+                    'Дофамин\nКаждый счастливый момент заслуживает быть сохранённым.',
                     style: TextStyle(color: AppColors.foreground, fontSize: 14, fontWeight: FontWeight.w500),
                   ),
                 ),
                 const SizedBox(height: 12),
+                // Счётчик
                 Row(
                   children: [
-                    const Icon(Icons.favorite, color: AppColors.citrusRed, size: 16),
+                    const Icon(Icons.photo, color: AppColors.citrusOrange, size: 16),
                     const SizedBox(width: 4),
-                    Text('$likedCount \u043B\u044E\u0431\u0438\u043C\u044B\u0445 \u043C\u043E\u043C\u0435\u043D\u0442\u043E\u0432', style: const TextStyle(color: AppColors.mutedForeground, fontSize: 13)),
+                    Text(
+                      '${_photos.length} моментов',
+                      style: const TextStyle(color: AppColors.mutedForeground, fontSize: 13),
+                    ),
+                    if (favoriteCount > 0) ...[
+                      const SizedBox(width: 12),
+                      const Icon(Icons.favorite, color: AppColors.citrusRed, size: 14),
+                      const SizedBox(width: 4),
+                      Text(
+                        '$favoriteCount избранных',
+                        style: const TextStyle(color: AppColors.mutedForeground, fontSize: 13),
+                      ),
+                    ],
+                    if (_showFavoritesOnly) ...[
+                      const SizedBox(width: 12),
+                      Text(
+                        '(показаны избранные)',
+                        style: const TextStyle(color: AppColors.citrusRed, fontSize: 12, fontStyle: FontStyle.italic),
+                      ),
+                    ],
                   ],
                 ),
                 const SizedBox(height: 16),
+                // Сетка фото
                 Expanded(
-                  child: GridView.builder(
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      crossAxisSpacing: 12,
-                      mainAxisSpacing: 12,
-                      childAspectRatio: 0.85,
-                    ),
-                    itemCount: _photos.length,
-                    itemBuilder: (context, index) {
-                      final photo = _photos[index];
-                      return GestureDetector(
-                        onTap: () => _openPhotoDetail(index),
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: AppColors.surface1,
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: AppColors.subtleBorder),
-                          ),
-                          child: Column(
-                            children: [
-                              Expanded(
-                                child: Stack(
-                                  children: [
-                                    Container(
-                                      width: double.infinity,
-                                      decoration: BoxDecoration(
-                                        gradient: LinearGradient(
-                                          begin: Alignment.topLeft,
-                                          end: Alignment.bottomRight,
-                                          colors: photo.gradientColors,
-                                        ),
-                                        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                  child: _isLoading
+                      ? const Center(child: CircularProgressIndicator(color: AppColors.citrusOrange))
+                      : _error != null
+                          ? Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const Icon(Icons.error_outline, size: 48, color: AppColors.destructive),
+                                  const SizedBox(height: 8),
+                                  Text(_error!, style: const TextStyle(color: AppColors.mutedForeground)),
+                                  const SizedBox(height: 16),
+                                  ElevatedButton(
+                                    onPressed: _loadPhotos,
+                                    child: const Text('Повторить'),
+                                  ),
+                                ],
+                              ),
+                            )
+                          : _photos.isEmpty
+                              ? Center(
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(Icons.photo_library, size: 64, color: AppColors.dimForeground),
+                                      const SizedBox(height: 8),
+                                      const Text(
+                                        'Пока нет моментов',
+                                        style: TextStyle(color: AppColors.mutedForeground),
                                       ),
-                                      child: Center(child: Text(photo.emoji, style: const TextStyle(fontSize: 48))),
-                                    ),
-                                    Positioned(
-                                      top: 8,
-                                      right: 8,
-                                      child: GestureDetector(
-                                        onTap: () => _toggleLike(index),
-                                        child: Container(
-                                          width: 28,
-                                          height: 28,
-                                          decoration: BoxDecoration(
-                                            color: Colors.black.withOpacity(0.4),
-                                            borderRadius: BorderRadius.circular(8),
-                                          ),
-                                          child: Icon(
-                                            photo.isLiked ? Icons.favorite : Icons.favorite_border,
-                                            color: photo.isLiked ? AppColors.citrusRed : AppColors.foreground,
-                                            size: 14,
-                                          ),
+                                      const SizedBox(height: 8),
+                                      const Text(
+                                        'Нажмите + чтобы добавить фото',
+                                        style: TextStyle(color: AppColors.dimForeground, fontSize: 12),
+                                      ),
+                                    ],
+                                  ),
+                                )
+                              : GridView.builder(
+                                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                                    crossAxisCount: 2,
+                                    crossAxisSpacing: 12,
+                                    mainAxisSpacing: 12,
+                                    childAspectRatio: 0.85,
+                                  ),
+                                  itemCount: displayedPhotos.length,
+                                  itemBuilder: (context, index) {
+                                    final photo = displayedPhotos[index];
+                                    return GestureDetector(
+                                      onTap: () => _openPhotoDetail(photo),
+                                      onLongPress: () {
+                                        HapticFeedback.mediumImpact();
+                                        _confirmDeletePhoto(photo);
+                                      },
+                                      child: Container(
+                                        decoration: BoxDecoration(
+                                          color: AppColors.surface1,
+                                          borderRadius: BorderRadius.circular(16),
+                                          border: Border.all(color: AppColors.subtleBorder),
+                                        ),
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            // Изображение
+                                            Expanded(
+                                              child: Stack(
+                                                children: [
+                                                  ClipRRect(
+                                                    borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                                                    child: CachedNetworkImage(
+                                                      imageUrl: photo.imageUrl,
+                                                      width: double.infinity,
+                                                      fit: BoxFit.cover,
+                                                      placeholder: (context, url) => Container(
+                                                        color: AppColors.surface2,
+                                                        child: const Center(
+                                                          child: CircularProgressIndicator(
+                                                            strokeWidth: 2,
+                                                            color: AppColors.citrusOrange,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                      errorWidget: (context, url, error) => Container(
+                                                        color: AppColors.surface2,
+                                                        child: const Center(
+                                                          child: Icon(
+                                                            Icons.broken_image,
+                                                            size: 48,
+                                                            color: AppColors.mutedForeground,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  // Кнопка избранного
+                                                  Positioned(
+                                                    top: 8,
+                                                    right: 8,
+                                                    child: GestureDetector(
+                                                      onTap: () => _toggleFavorite(photo),
+                                                      child: Container(
+                                                        width: 28,
+                                                        height: 28,
+                                                        decoration: BoxDecoration(
+                                                          color: Colors.black.withOpacity(0.4),
+                                                          borderRadius: BorderRadius.circular(8),
+                                                        ),
+                                                        child: Icon(
+                                                          photo.isFavorite ? Icons.favorite : Icons.favorite_border,
+                                                          color: photo.isFavorite
+                                                              ? AppColors.citrusRed
+                                                              : AppColors.foreground,
+                                                          size: 14,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                            // Описание
+                                            if (photo.caption != null && photo.caption!.isNotEmpty)
+                                              Padding(
+                                                padding: const EdgeInsets.all(8),
+                                                child: Column(
+                                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(
+                                                      photo.caption!,
+                                                      style: const TextStyle(
+                                                        color: AppColors.foreground,
+                                                        fontSize: 13,
+                                                        fontWeight: FontWeight.w500,
+                                                      ),
+                                                      maxLines: 1,
+                                                      overflow: TextOverflow.ellipsis,
+                                                    ),
+                                                    const SizedBox(height: 2),
+                                                    Text(
+                                                      DateFormat('dd.MM.yyyy').format(photo.createdAt),
+                                                      style: const TextStyle(
+                                                        color: AppColors.mutedForeground,
+                                                        fontSize: 11,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              )
+                                            else
+                                              Padding(
+                                                padding: const EdgeInsets.all(8),
+                                                child: Text(
+                                                  DateFormat('dd.MM.yyyy').format(photo.createdAt),
+                                                  style: const TextStyle(
+                                                    color: AppColors.mutedForeground,
+                                                    fontSize: 11,
+                                                  ),
+                                                ),
+                                              ),
+                                          ],
                                         ),
                                       ),
-                                    ),
-                                  ],
+                                    );
+                                  },
                                 ),
-                              ),
-                              Container(
-                                width: double.infinity,
-                                height: 4,
-                                decoration: BoxDecoration(
-                                  color: photo.color,
-                                  borderRadius: const BorderRadius.vertical(bottom: Radius.circular(16)),
-                                ),
-                              ),
-                              Padding(
-                                padding: const EdgeInsets.all(8),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      photo.title,
-                                      style: const TextStyle(color: AppColors.foreground, fontSize: 13, fontWeight: FontWeight.w500),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Text(photo.date, style: const TextStyle(color: AppColors.mutedForeground, fontSize: 11)),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  ),
                 ),
                 const SizedBox(height: 12),
+                // Кнопка добавления
                 SizedBox(
                   width: double.infinity,
                   child: Container(
@@ -459,7 +661,7 @@ class _PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: ElevatedButton(
-                      onPressed: _openAddMomentModal,
+                      onPressed: _isUploading ? null : _showUploadOptions,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.transparent,
                         shadowColor: Colors.transparent,
@@ -467,10 +669,16 @@ class _PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
-                      child: const Text(
-                        '\u0414\u043E\u0431\u0430\u0432\u0438\u0442\u044C \u043C\u043E\u043C\u0435\u043D\u0442',
-                        style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
-                      ),
+                      child: _isUploading
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.background),
+                            )
+                          : const Text(
+                              'Добавить момент',
+                              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+                            ),
                     ),
                   ),
                 ),
