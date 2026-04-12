@@ -1,6 +1,9 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+
+import '../config/api_config.dart';
 
 class MemoryPhotoApiService {
   final String baseUrl;
@@ -8,10 +11,11 @@ class MemoryPhotoApiService {
   final http.Client _client;
 
   MemoryPhotoApiService({
-    this.baseUrl = 'http://10.0.2.2:8081',
+    String? baseUrl,
     http.Client? client,
     String? token,
-  })  : _client = client ?? http.Client(),
+  })  : baseUrl = baseUrl ?? ApiConfig.baseUrl,
+        _client = client ?? http.Client(),
         _token = token;
 
   Map<String, String> get _headers {
@@ -24,16 +28,21 @@ class MemoryPhotoApiService {
 
   /// Получить все фото пользователя
   Future<List<Map<String, dynamic>>> getPhotos() async {
+    debugPrint('[MemoryPhotoApiService] GET $baseUrl/photos');
+    debugPrint('[MemoryPhotoApiService] Headers: $_headers');
     final response = await _client.get(
       Uri.parse('$baseUrl/photos'),
       headers: _headers,
     );
+    debugPrint('[MemoryPhotoApiService] Status: ${response.statusCode}');
+    debugPrint('[MemoryPhotoApiService] Body: ${response.body}');
 
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body) as List;
       return data.cast<Map<String, dynamic>>();
     }
-    throw Exception('Failed to load photos: ${response.statusCode}');
+    final errorBody = response.body;
+    throw Exception('Failed to load photos: ${response.statusCode} - $errorBody');
   }
 
   /// Загрузить фото (multipart)
@@ -85,7 +94,7 @@ class MemoryPhotoApiService {
       headers: _headers,
     );
 
-    if (response.statusCode != 204) {
+    if (response.statusCode != 200 && response.statusCode != 204) {
       throw Exception('Failed to delete photo: ${response.statusCode}');
     }
   }

@@ -373,9 +373,10 @@ class _PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
           padding: const EdgeInsets.all(20),
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 480),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
                 // Заголовок
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -485,7 +486,8 @@ class _PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
                 ),
                 const SizedBox(height: 16),
                 // Сетка фото
-                Expanded(
+                SizedBox(
+                  height: MediaQuery.of(context).size.height - 380,
                   child: _isLoading
                       ? const Center(child: CircularProgressIndicator(color: AppColors.citrusOrange))
                       : _error != null
@@ -685,6 +687,7 @@ class _PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
                 const SizedBox(height: 80),
               ],
             ),
+          ),
           ),
         ),
       ),
