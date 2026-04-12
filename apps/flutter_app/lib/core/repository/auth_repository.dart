@@ -1,6 +1,8 @@
 ﻿import 'dart:convert';
 import 'package:http/http.dart' as http;
 
+import '../config/api_config.dart';
+
 /// Модель темы оформления
 class Theme {
   final String id;
@@ -60,8 +62,9 @@ class AuthApiService {
   final String baseUrl;
   final http.Client _client;
 
-  AuthApiService({this.baseUrl = 'http://10.0.2.2:8081', http.Client? client})
-      : _client = client ?? http.Client();
+  AuthApiService({String? baseUrl, http.Client? client})
+      : baseUrl = baseUrl ?? ApiConfig.baseUrl,
+        _client = client ?? http.Client();
 
   /// Регистрация
   Future<User> register({
