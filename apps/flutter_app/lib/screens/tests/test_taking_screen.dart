@@ -3,6 +3,7 @@ import '../../models/psychological_test.dart';
 import '../../data/tests/tests.dart';
 import '../../core/api/test_api_service.dart';
 import '../../core/services/test_scoring_service.dart';
+import '../../core/theme/app_colors.dart';
 import 'test_result_screen.dart';
 
 class TestTakingScreen extends StatefulWidget {
@@ -75,13 +76,14 @@ class _TestTakingScreenState extends State<TestTakingScreen> {
 
       // Показ результатов
       if (!mounted) return;
-      Navigator.pushReplacement(
+      Navigator.push(
         context,
         MaterialPageRoute(
           builder: (context) => TestResultScreen(
             test: _test,
             scores: scores,
             interpretations: interpretations,
+            token: widget.token,
           ),
         ),
       );
@@ -101,33 +103,38 @@ class _TestTakingScreenState extends State<TestTakingScreen> {
     final progress = (_currentQuestion + 1) / _test.questions.length;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0F0F1A),
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0F0F1A),
+        backgroundColor: AppColors.background,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.close, color: Color(0xFFEDE8E0)),
+          icon: Icon(Icons.close, color: AppColors.foreground),
           onPressed: () {
             showDialog(
               context: context,
               builder: (context) => AlertDialog(
-                backgroundColor: const Color(0xFF1A1A2E),
-                title: const Text('Выйти из теста?',
-                    style: TextStyle(color: Color(0xFFEDE8E0))),
-                content: const Text(
+                backgroundColor: AppColors.card,
+                title: Text('Выйти из теста?',
+                    style: TextStyle(color: AppColors.foreground)),
+                content: Text(
                   'Прогресс будет потерян. Продолжить?',
-                  style: TextStyle(color: Color(0xFF8A8298)),
+                  style: TextStyle(color: AppColors.mutedForeground),
                 ),
                 actions: [
                   TextButton(
                     onPressed: () => Navigator.pop(context),
-                    child: const Text('Отмена',
-                        style: TextStyle(color: Color(0xFF8A8298))),
+                    child: Text('Отмена',
+                        style: TextStyle(color: AppColors.mutedForeground)),
                   ),
                   TextButton(
-                    onPressed: () => Navigator.popUntil(context, (r) => r.isFirst),
-                    child: const Text('Выйти',
-                        style: TextStyle(color: Color(0xFFFF5B5B))),
+                    onPressed: () {
+                      // Закрываем диалог, потом выходим на главную
+                      Navigator.of(context).pop();
+                      // Закрываем экран прохождения теста
+                      Navigator.of(context).pop();
+                    },
+                    child: Text('Выйти',
+                        style: TextStyle(color: AppColors.destructive)),
                   ),
                 ],
               ),
@@ -136,8 +143,8 @@ class _TestTakingScreenState extends State<TestTakingScreen> {
         ),
         title: Text(
           _test.title,
-          style: const TextStyle(
-            color: Color(0xFFEDE8E0),
+          style: TextStyle(
+            color: AppColors.foreground,
             fontSize: 16,
             fontWeight: FontWeight.w600,
           ),
@@ -155,15 +162,15 @@ class _TestTakingScreenState extends State<TestTakingScreen> {
                   children: [
                     Text(
                       'Вопрос ${_currentQuestion + 1} из ${_test.questions.length}',
-                      style: const TextStyle(
-                        color: Color(0xFF8A8298),
+                      style: TextStyle(
+                        color: AppColors.mutedForeground,
                         fontSize: 12,
                       ),
                     ),
                     Text(
                       '${(progress * 100).toInt()}%',
-                      style: const TextStyle(
-                        color: Color(0xFFFF8C42),
+                      style: TextStyle(
+                        color: AppColors.citrusOrange,
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                       ),
@@ -173,9 +180,9 @@ class _TestTakingScreenState extends State<TestTakingScreen> {
                 const SizedBox(height: 8),
                 LinearProgressIndicator(
                   value: progress,
-                  backgroundColor: const Color(0xFF1A1A2E),
-                  valueColor: const AlwaysStoppedAnimation<Color>(
-                    Color(0xFFFF8C42),
+                  backgroundColor: AppColors.card,
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    AppColors.citrusOrange,
                   ),
                   minHeight: 6,
                   borderRadius: BorderRadius.circular(3),
@@ -195,10 +202,10 @@ class _TestTakingScreenState extends State<TestTakingScreen> {
                 children: [
                   Text(
                     question.text,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFFEDE8E0),
+                      color: AppColors.foreground,
                       height: 1.4,
                     ),
                   ),
@@ -234,8 +241,8 @@ class _TestTakingScreenState extends State<TestTakingScreen> {
                     child: OutlinedButton(
                       onPressed: _prevQuestion,
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: const Color(0xFFEDE8E0),
-                        side: const BorderSide(color: Color(0xFF5A5468)),
+                        foregroundColor: AppColors.foreground,
+                        side: BorderSide(color: AppColors.dimForeground),
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -254,8 +261,8 @@ class _TestTakingScreenState extends State<TestTakingScreen> {
                         ? (_isSubmitting ? null : _nextQuestion)
                         : null,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFFF8C42),
-                      foregroundColor: Colors.white,
+                      backgroundColor: AppColors.citrusOrange,
+                      foregroundColor: AppColors.primaryForeground,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -301,8 +308,8 @@ class _AnswerOption extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       color: isSelected
-          ? const Color(0xFFFF8C42).withOpacity(0.2)
-          : const Color(0xFF1A1A2E),
+          ? AppColors.citrusOrange.withOpacity(0.2)
+          : AppColors.card,
       borderRadius: BorderRadius.circular(12),
       child: InkWell(
         onTap: onTap,
@@ -312,8 +319,8 @@ class _AnswerOption extends StatelessWidget {
           decoration: BoxDecoration(
             border: Border.all(
               color: isSelected
-                  ? const Color(0xFFFF8C42)
-                  : const Color.fromRGBO(255, 255, 255, 0.05),
+                  ? AppColors.citrusOrange
+                  : AppColors.foreground.withOpacity(0.05),
               width: isSelected ? 2 : 1,
             ),
             borderRadius: BorderRadius.circular(12),
@@ -328,8 +335,8 @@ class _AnswerOption extends StatelessWidget {
                   shape: BoxShape.circle,
                   border: Border.all(
                     color: isSelected
-                        ? const Color(0xFFFF8C42)
-                        : const Color(0xFF5A5468),
+                        ? AppColors.citrusOrange
+                        : AppColors.dimForeground,
                     width: 2,
                   ),
                 ),
@@ -339,7 +346,7 @@ class _AnswerOption extends StatelessWidget {
                           width: 12,
                           height: 12,
                           decoration: const BoxDecoration(
-                            color: Color(0xFFFF8C42),
+                            color: AppColors.citrusOrange,
                             shape: BoxShape.circle,
                           ),
                         ),
@@ -353,8 +360,8 @@ class _AnswerOption extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 14,
                     color: isSelected
-                        ? const Color(0xFFFF8C42)
-                        : const Color(0xFFEDE8E0),
+                        ? AppColors.citrusOrange
+                        : AppColors.foreground,
                   ),
                 ),
               ),

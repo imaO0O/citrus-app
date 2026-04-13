@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/mood.dart';
+import '../../core/theme/app_colors.dart';
 
 class MoodLog extends StatelessWidget {
   final List<MoodLogEntry> entries;
@@ -16,12 +17,12 @@ class MoodLog extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Сегодня',
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
-              color: Color(0xFFEDE8E0),
+              color: AppColors.foreground,
             ),
           ),
           const SizedBox(height: 8),
@@ -39,10 +40,10 @@ class MoodLog extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: const Color(0xFF1A1A2E),
+          color: AppColors.card,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: const Color.fromRGBO(255, 255, 255, 0.05),
+            color: AppColors.foreground.withOpacity(0.05),
           ),
         ),
         child: Row(
@@ -52,10 +53,10 @@ class MoodLog extends StatelessWidget {
             Expanded(
               child: Text(
                 mood.label,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
-                  color: Color(0xFFEDE8E0),
+                  color: AppColors.foreground,
                 ),
               ),
             ),
@@ -76,9 +77,9 @@ class MoodLog extends StatelessWidget {
             const SizedBox(width: 8),
             Text(
               DateFormat('HH:mm').format(entry.timestamp),
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
-                color: Color(0xFF5A5468),
+                color: AppColors.dimForeground,
               ),
             ),
           ],

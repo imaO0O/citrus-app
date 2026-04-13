@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'dart:ui';
 import 'package:go_router/go_router.dart';
@@ -40,6 +40,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   // 0-3: main nav screens, 4+: feature screens
   static const _mainScreenCount = 4;
 
+  // Ключ для AnalyticsScreen, чтобы вызывать refresh при навигации
+  final GlobalKey<State<AnalyticsScreen>> _analyticsKey = GlobalKey<State<AnalyticsScreen>>();
+
   final List<Widget> _screens = [];
 
   @override
@@ -63,7 +66,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       SleepTrackerScreen(),        // 8
       TestsScreen(),               // 9
       ExercisesScreen(),           // 10
-      AnalyticsScreen(),           // 11
+      AnalyticsScreen(key: _analyticsKey),           // 11
       SettingsScreen(),            // 12
       const ArticlesPage(showBackButton: false),  // 13
     ]);
@@ -103,6 +106,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       _currentIndex = index;
       _showMenu = false;
     });
+    // При переключении на аналитику — запрашиваем актуальные данные
+    if (index == 11) {
+      (_analyticsKey.currentState as dynamic)?.refreshData();
+    }
   }
 
   bool get _isMenuActive => _currentIndex >= _mainScreenCount;
@@ -142,28 +149,68 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
               });
             }
           },
-          child: SafeArea(
-            child: Scaffold(
-              body: Stack(
-                children: [
-                  Column(
-                    children: [
-                      _buildHeader(),
-                      Expanded(
-                        child: IndexedStack(
-                          index: _currentIndex,
-                          children: _screens,
-                        ),
+          child: BlocBuilder<AuthBloc, AuthState>(
+            builder: (context, authState) {
+              // Показываем splash пока авторизация не определилась
+              if (authState is AuthLoading || authState is AuthInitial) {
+                return MaterialApp(
+                  home: Scaffold(
+                    body: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            width: 64,
+                            height: 64,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(20),
+                              gradient: const LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [AppColors.citrusOrange, AppColors.citrusAmber],
+                              ),
+                            ),
+                            child: const Center(child: Text('🍊', style: TextStyle(fontSize: 32))),
+                          ),
+                          const SizedBox(height: 24),
+                          Text(
+                            'Загрузка...',
+                            style: TextStyle(color: AppColors.mutedForeground, fontSize: 14),
+                          ),
+                        ],
                       ),
-                      _buildBottomNav(),
+                    ),
+                  ),
+                );
+              }
+              if (authState is AuthUnauthenticated) {
+                return const SizedBox.shrink(); // redirect перенаправит на /auth
+              }
+
+              return SafeArea(
+                child: Scaffold(
+                  body: Stack(
+                    children: [
+                      Column(
+                        children: [
+                          _buildHeader(),
+                          Expanded(
+                            child: IndexedStack(
+                              index: _currentIndex,
+                              children: _screens,
+                            ),
+                          ),
+                          _buildBottomNav(),
+                        ],
+                      ),
+                      if (_showMenu) _buildMenuOverlay(),
+                      if (_showEmergency)
+                        EmergencyModal(onClose: () => setState(() => _showEmergency = false)),
                     ],
                   ),
-                  if (_showMenu) _buildMenuOverlay(),
-                  if (_showEmergency)
-                    EmergencyModal(onClose: () => setState(() => _showEmergency = false)),
-                ],
-              ),
-            ),
+                ),
+              );
+            },
           ),
         );
       },
@@ -208,12 +255,12 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                     ),
                   ],
                 ),
-                child: const Center(
+                child: Center(
                   child: Text('🍊', style: TextStyle(fontSize: 16)),
                 ),
               ),
-              const SizedBox(width: 8),
-              const Text(
+              SizedBox(width: 8),
+              Text(
                 'Цитрус',
                 style: TextStyle(
                   fontSize: 16,
@@ -222,14 +269,14 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                   letterSpacing: -0.5,
                 ),
               ),
-              const SizedBox(width: 6),
+              SizedBox(width: 6),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
                   color: AppColors.citrusOrange.withOpacity(0.15),
                   borderRadius: BorderRadius.circular(999),
                 ),
-                child: const Text(
+                child: Text(
                   'Beta',
                   style: TextStyle(
                     fontSize: 10,
@@ -249,10 +296,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                   color: Colors.white.withOpacity(0.05),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Icon(Icons.notifications_none,
+                child: Icon(Icons.notifications_none,
                     color: AppColors.mutedForeground, size: 18),
               ),
-              const SizedBox(width: 8),
+              SizedBox(width: 8),
               GestureDetector(
                 onTap: () => setState(() => _showEmergency = true),
                 child: Container(
@@ -266,7 +313,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                     children: [
                       Icon(Icons.warning_amber_rounded,
                           color: AppColors.destructive, size: 14),
-                      const SizedBox(width: 4),
+                      SizedBox(width: 4),
                       Text(
                         'SOS',
                         style: TextStyle(
@@ -297,7 +344,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
       decoration: BoxDecoration(
-        color: const Color(0xFF0D0D16).withOpacity(0.95),
+        color: AppColors.background.withOpacity(0.95),
         border: Border(
           top: BorderSide(color: AppColors.citrusOrange.withOpacity(0.1)),
         ),
@@ -309,7 +356,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.03),
+              color: AppColors.foreground.withOpacity(0.03),
               borderRadius: BorderRadius.circular(16),
             ),
             child: Row(
@@ -341,7 +388,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                                   : AppColors.dimForeground,
                               size: 20,
                             ),
-                            const SizedBox(height: 4),
+                            SizedBox(height: 4),
                             Text(
                               item['label'] as String,
                               style: TextStyle(
@@ -380,7 +427,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                                 : AppColors.dimForeground,
                             size: 20,
                           ),
-                          const SizedBox(height: 4),
+                          SizedBox(height: 4),
                           Text(
                             'Ещё',
                             style: TextStyle(
@@ -437,7 +484,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
+                            Text(
                               'Все функции',
                               style: TextStyle(
                                 fontSize: 18,
@@ -445,8 +492,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                                 color: AppColors.foreground,
                               ),
                             ),
-                            const SizedBox(height: 4),
-                            const Text(
+                            SizedBox(height: 4),
+                            Text(
                               'Все инструменты ментального здоровья',
                               style: TextStyle(
                                   fontSize: 11, color: AppColors.mutedForeground),
@@ -462,13 +509,13 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                               color: Colors.white.withOpacity(0.08),
                               borderRadius: BorderRadius.circular(12),
                             ),
-                            child: const Icon(Icons.close,
+                            child: Icon(Icons.close,
                                 color: AppColors.mutedForeground, size: 18),
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 20),
+                    SizedBox(height: 20),
                     GridView.count(
                       shrinkWrap: true,
                       crossAxisCount: 3,
@@ -503,8 +550,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Text(feature['icon'] as String,
-                                    style: const TextStyle(fontSize: 22)),
-                                const SizedBox(height: 4),
+                                    style: TextStyle(fontSize: 22)),
+                                SizedBox(height: 4),
                                 Text(
                                   feature['label'] as String,
                                   style: TextStyle(
@@ -518,10 +565,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                 ),
-                                const SizedBox(height: 1),
+                                SizedBox(height: 1),
                                 Text(
                                   feature['desc'] as String,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                       fontSize: 9,
                                       color: AppColors.dimForeground),
                                   textAlign: TextAlign.center,
@@ -544,7 +591,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text(
+                          Text(
                             'Быстрый доступ',
                             style: TextStyle(
                                 fontSize: 11, color: AppColors.mutedForeground),

@@ -1,5 +1,4 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/repository/auth_repository.dart';
 import '../../../core/utils/theme_service.dart';
 
@@ -86,14 +85,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
     if (_repository.isAuthenticated) {
       final user = _repository.currentUser!;
-      
-      // Применяем тему пользователя при инициализации
-      if (user.themeId != null) {
-        final themeService = ThemeService();
-        final isDark = user.themeId == '00000000-0000-0000-0000-000000000002';
-        themeService.toggleTheme(isDark);
-      }
-      
+      ThemeService().setUserCredentials(user.token, user.id);
+      // Тема уже загружена в ThemeService при старте приложения,
+      // не нужно вызывать toggleTheme — он перезаписывает серверную тему
       emit(AuthAuthenticated(user));
     } else {
       emit(const AuthUnauthenticated());
@@ -101,39 +95,26 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   }
 
   Future<void> _onLogin(AuthLogin event, Emitter<AuthState> emit) async {
-    print('AuthBloc: Вход пользователя ${event.email}...');
     emit(const AuthLoading());
     try {
       final user = await _repository.login(
         email: event.email,
         password: event.password,
       );
-      print('AuthBloc: Успешный вход! User: ${user.email}');
-      
-      // Применяем тему пользователя
-      if (user.themeId != null) {
-        final themeService = ThemeService();
-        // Тёмная тема по умолчанию для ID 00000000-0000-0000-0000-000000000002
-        final isDark = user.themeId == '00000000-0000-0000-0000-000000000002';
-        themeService.toggleTheme(isDark);
-      }
-      
-      emit(AuthAuthenticated(user));
-      print('AuthBloc: Токен пользователя: ${user.token.isEmpty ? "ПУСТОЙ" : "length=${user.token.length}"}');
 
-      // Сохраняем токен в SharedPreferences
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('token', user.token);
-      await prefs.setString('user_id', user.id);
-      await prefs.setString('user_email', user.email);
+      ThemeService().setUserCredentials(user.token, user.id);
+      if (user.themeId != null) {
+        final isDark = user.themeId == '00000000-0000-0000-0000-000000000002';
+        ThemeService().toggleTheme(isDark);
+      }
+
+      emit(AuthAuthenticated(user));
     } catch (e) {
-      print('AuthBloc: Ошибка входа: $e');
       emit(AuthError(e.toString()));
     }
   }
 
   Future<void> _onRegister(AuthRegister event, Emitter<AuthState> emit) async {
-    print('AuthBloc: Регистрация пользователя ${event.email}...');
     emit(const AuthLoading());
     try {
       final user = await _repository.register(
@@ -141,42 +122,26 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         password: event.password,
         name: event.name,
       );
-      print('AuthBloc: Успешно! User: ${user.email}');
-      
-      // Применяем тему пользователя (по умолчанию светлая)
-      if (user.themeId != null) {
-        final themeService = ThemeService();
-        final isDark = user.themeId == '00000000-0000-0000-0000-000000000002';
-        themeService.toggleTheme(isDark);
-      }
-      
-      emit(AuthAuthenticated(user));
 
-      // Сохраняем токен в SharedPreferences
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('token', user.token);
-      await prefs.setString('user_id', user.id);
-      await prefs.setString('user_email', user.email);
+      ThemeService().setUserCredentials(user.token, user.id);
+      if (user.themeId != null) {
+        final isDark = user.themeId == '00000000-0000-0000-0000-000000000002';
+        ThemeService().toggleTheme(isDark);
+      }
+
+      emit(AuthAuthenticated(user));
     } catch (e) {
-      print('AuthBloc: Ошибка регистрации: $e');
       emit(AuthError(e.toString()));
     }
   }
 
   Future<void> _onLogout(AuthLogout event, Emitter<AuthState> emit) async {
     await _repository.logout();
-    // Очищаем токен из SharedPreferences
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('token');
-    await prefs.remove('user_id');
-    await prefs.remove('user_email');
     emit(const AuthUnauthenticated());
   }
 
   Future<void> _onThemeChanged(AuthThemeChanged event, Emitter<AuthState> emit) async {
-    // Обновляем пользователя в репозитории
     _repository.currentUser = event.user;
-    // Обновляем состояние
     emit(AuthAuthenticated(event.user));
   }
 }

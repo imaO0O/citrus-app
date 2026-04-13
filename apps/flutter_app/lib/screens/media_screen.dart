@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../core/theme/app_colors.dart';
 
 class MediaScreen extends StatefulWidget {
@@ -81,11 +81,11 @@ class _MediaScreenState extends State<MediaScreen> with SingleTickerProviderStat
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         _buildSectionTitle('\u0412\u0438\u0434\u0435\u043E'),
-                        const SizedBox(height: 12),
+                        SizedBox(height: 12),
                         _buildVideoGrid(),
-                        const SizedBox(height: 24),
+                        SizedBox(height: 24),
                         _buildSectionTitle('\u0410\u0443\u0434\u0438\u043E'),
-                        const SizedBox(height: 12),
+                        SizedBox(height: 12),
                         _buildAudioList(),
                       ],
                     ),
@@ -122,11 +122,11 @@ class _MediaScreenState extends State<MediaScreen> with SingleTickerProviderStat
       child: Row(
         children: [
           _buildEqualizer(color: color),
-          const SizedBox(width: 12),
+          SizedBox(width: 12),
           Expanded(
             child: Text(
               track['title'] as String,
-              style: const TextStyle(color: AppColors.foreground, fontSize: 14, fontWeight: FontWeight.w500),
+              style: TextStyle(color: AppColors.foreground, fontSize: 14, fontWeight: FontWeight.w500),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
@@ -178,7 +178,7 @@ class _MediaScreenState extends State<MediaScreen> with SingleTickerProviderStat
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
         itemCount: _categories.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        separatorBuilder: (_, __) => SizedBox(width: 8),
         itemBuilder: (context, index) {
           final category = _categories[index];
           final isSelected = category == _selectedCategory;
@@ -208,7 +208,7 @@ class _MediaScreenState extends State<MediaScreen> with SingleTickerProviderStat
   Widget _buildSectionTitle(String title) {
     return Text(
       title,
-      style: const TextStyle(
+      style: TextStyle(
         color: AppColors.foreground,
         fontSize: 20,
         fontWeight: FontWeight.w700,
@@ -253,22 +253,22 @@ class _MediaScreenState extends State<MediaScreen> with SingleTickerProviderStat
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text(video['icon'] as String, style: const TextStyle(fontSize: 32)),
-                const SizedBox(height: 8),
+                Text(video['icon'] as String, style: TextStyle(fontSize: 32)),
+                SizedBox(height: 8),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 8),
                   child: Text(
                     video['title'] as String,
                     textAlign: TextAlign.center,
-                    style: const TextStyle(color: AppColors.foreground, fontSize: 13, fontWeight: FontWeight.w500),
+                    style: TextStyle(color: AppColors.foreground, fontSize: 13, fontWeight: FontWeight.w500),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                const SizedBox(height: 4),
-                Text(video['duration'] as String, style: const TextStyle(color: AppColors.mutedForeground, fontSize: 12)),
+                SizedBox(height: 4),
+                Text(video['duration'] as String, style: TextStyle(color: AppColors.mutedForeground, fontSize: 12)),
                 if (isPlaying) ...[
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8),
                   SizedBox(width: 20, height: 16, child: _buildEqualizer(color: color)),
                 ],
               ],
@@ -307,24 +307,24 @@ class _MediaScreenState extends State<MediaScreen> with SingleTickerProviderStat
             ),
             child: Row(
               children: [
-                Text(audio['icon'] as String, style: const TextStyle(fontSize: 24)),
-                const SizedBox(width: 12),
+                Text(audio['icon'] as String, style: TextStyle(fontSize: 24)),
+                SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         audio['title'] as String,
-                        style: const TextStyle(color: AppColors.foreground, fontSize: 14, fontWeight: FontWeight.w500),
+                        style: TextStyle(color: AppColors.foreground, fontSize: 14, fontWeight: FontWeight.w500),
                       ),
-                      const SizedBox(height: 4),
-                      Text(audio['duration'] as String, style: const TextStyle(color: AppColors.mutedForeground, fontSize: 12)),
+                      SizedBox(height: 4),
+                      Text(audio['duration'] as String, style: TextStyle(color: AppColors.mutedForeground, fontSize: 12)),
                     ],
                   ),
                 ),
                 if (isPlaying) ...[
                   _buildEqualizer(color: color),
-                  const SizedBox(width: 8),
+                  SizedBox(width: 8),
                   Icon(Icons.pause, color: AppColors.citrusOrange, size: 24),
                 ] else
                   Icon(Icons.play_arrow, color: AppColors.mutedForeground, size: 24),

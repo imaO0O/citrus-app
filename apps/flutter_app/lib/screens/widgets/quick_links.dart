@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/theme/app_colors.dart';
 
 class QuickLinks extends StatelessWidget {
   final VoidCallback? onExerciseTap;
@@ -80,10 +81,10 @@ class _QuickLinkItem extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
-          color: const Color(0xFF1A1A2E),
+          color: AppColors.card,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: const Color.fromRGBO(255, 255, 255, 0.05),
+            color: AppColors.foreground.withOpacity(0.05),
           ),
         ),
         child: Column(
@@ -94,10 +95,10 @@ class _QuickLinkItem extends StatelessWidget {
             Text(
               label,
               textAlign: TextAlign.center,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 10,
                 fontWeight: FontWeight.w500,
-                color: Color(0xFF8A8298),
+                color: AppColors.mutedForeground,
               ),
             ),
           ],

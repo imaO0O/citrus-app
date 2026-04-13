@@ -106,23 +106,27 @@ class MyApp extends StatelessWidget {
                 create: (ctx) => ArticleBloc(repository: ctx.read<ArticleRepository>()),
               ),
             ],
-            child: MaterialApp.router(
-              title: 'Citrus',
-              theme: lightTheme,
-              darkTheme: darkTheme,
-              themeMode: ThemeService().themeMode,
-              routerConfig: AppRouter().router,
-              debugShowCheckedModeBanner: false,
-              locale: const Locale('ru', 'RU'),
-              localizationsDelegates: const [
-                GlobalMaterialLocalizations.delegate,
-                GlobalWidgetsLocalizations.delegate,
-                GlobalCupertinoLocalizations.delegate,
-              ],
-              supportedLocales: const [
-                Locale('ru', 'RU'),
-                Locale('en', 'US'),
-              ],
+            child: Builder(
+              builder: (ctx) {
+                return MaterialApp.router(
+                  title: 'Citrus',
+                  theme: lightTheme,
+                  darkTheme: darkTheme,
+                  themeMode: ThemeService().themeMode,
+                  routerConfig: AppRouter().router,
+                  debugShowCheckedModeBanner: false,
+                  locale: const Locale('ru', 'RU'),
+                  localizationsDelegates: const [
+                    GlobalMaterialLocalizations.delegate,
+                    GlobalWidgetsLocalizations.delegate,
+                    GlobalCupertinoLocalizations.delegate,
+                  ],
+                  supportedLocales: const [
+                    Locale('ru', 'RU'),
+                    Locale('en', 'US'),
+                  ],
+                );
+              },
             ),
           ),
         );

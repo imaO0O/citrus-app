@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../core/theme/app_colors.dart';
 
 class _AffirmationData {
@@ -86,7 +86,7 @@ class _AffirmationsScreenState extends State<AffirmationsScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Аффирмации',
                   style: TextStyle(
                     fontSize: 24,
@@ -94,9 +94,9 @@ class _AffirmationsScreenState extends State<AffirmationsScreen> {
                     color: AppColors.foreground,
                   ),
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: 16),
                 _buildCategoryPills(),
-                const SizedBox(height: 16),
+                SizedBox(height: 16),
                 Expanded(
                   child: PageView.builder(
                     controller: _pageController,
@@ -108,15 +108,15 @@ class _AffirmationsScreenState extends State<AffirmationsScreen> {
                     },
                   ),
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: 16),
                 _buildPageIndicator(),
-                const SizedBox(height: 16),
+                SizedBox(height: 16),
                 _buildActionButtons(),
                 if (_favorites.isNotEmpty) ...[
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12),
                   _buildFavoritesSection(),
                 ],
-                const SizedBox(height: 80),
+                SizedBox(height: 80),
               ],
             ),
           ),
@@ -131,7 +131,7 @@ class _AffirmationsScreenState extends State<AffirmationsScreen> {
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         itemCount: _categories.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        separatorBuilder: (_, __) => SizedBox(width: 8),
         itemBuilder: (context, index) {
           final category = _categories[index];
           final isSelected = category == _selectedCategory;
@@ -201,11 +201,11 @@ class _AffirmationsScreenState extends State<AffirmationsScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text(affirmation.emoji, style: const TextStyle(fontSize: 64)),
-                const SizedBox(height: 24),
+                Text(affirmation.emoji, style: TextStyle(fontSize: 64)),
+                SizedBox(height: 24),
                 Text(
                   '"${affirmation.text}"',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
                     color: AppColors.foreground,
@@ -214,7 +214,7 @@ class _AffirmationsScreenState extends State<AffirmationsScreen> {
                   ),
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 20),
+                SizedBox(height: 20),
                 Text(
                   '${index + 1} / ${_filteredAffirmations.length}',
                   style: TextStyle(fontSize: 12, color: AppColors.foreground.withOpacity(0.5)),
@@ -234,7 +234,7 @@ class _AffirmationsScreenState extends State<AffirmationsScreen> {
                   color: Colors.black.withOpacity(0.3),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Icon(Icons.chevron_left_rounded, color: AppColors.foreground, size: 20),
+                child: Icon(Icons.chevron_left_rounded, color: AppColors.foreground, size: 20),
               ),
             ),
           ),
@@ -250,7 +250,7 @@ class _AffirmationsScreenState extends State<AffirmationsScreen> {
                   color: Colors.black.withOpacity(0.3),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Icon(Icons.chevron_right_rounded, color: AppColors.foreground, size: 20),
+                child: Icon(Icons.chevron_right_rounded, color: AppColors.foreground, size: 20),
               ),
             ),
           ),
@@ -310,7 +310,7 @@ class _AffirmationsScreenState extends State<AffirmationsScreen> {
             child: Icon(Icons.favorite_border_rounded, color: AppColors.mutedForeground, size: 20),
           ),
         ),
-        const SizedBox(width: 12),
+        SizedBox(width: 12),
         GestureDetector(
           onTap: () {
             final next = (_currentIndex + 1) % _filteredAffirmations.length;
@@ -330,12 +330,12 @@ class _AffirmationsScreenState extends State<AffirmationsScreen> {
                 ),
               ],
             ),
-            child: const Center(
+            child: Center(
               child: Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 24),
             ),
           ),
         ),
-        const SizedBox(width: 12),
+        SizedBox(width: 12),
         GestureDetector(
           onTap: () {},
           child: Container(
@@ -366,7 +366,7 @@ class _AffirmationsScreenState extends State<AffirmationsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'ИЗБРАННОЕ',
             style: TextStyle(
               fontSize: 10,
@@ -375,13 +375,13 @@ class _AffirmationsScreenState extends State<AffirmationsScreen> {
               color: AppColors.dimForeground,
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           SizedBox(
             height: 56,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               itemCount: favoriteList.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 8),
+              separatorBuilder: (_, __) => SizedBox(width: 8),
               itemBuilder: (context, index) {
                 final affirmation = _filteredAffirmations[favoriteList[index]];
                 return GestureDetector(
@@ -394,7 +394,7 @@ class _AffirmationsScreenState extends State<AffirmationsScreen> {
                       border: Border.all(color: affirmation.color.withOpacity(0.2)),
                     ),
                     child: Center(
-                      child: Text(affirmation.emoji, style: const TextStyle(fontSize: 20)),
+                      child: Text(affirmation.emoji, style: TextStyle(fontSize: 20)),
                     ),
                   ),
                 );

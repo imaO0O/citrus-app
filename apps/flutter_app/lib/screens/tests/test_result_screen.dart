@@ -1,36 +1,45 @@
 import 'package:flutter/material.dart';
 import '../../models/psychological_test.dart';
+import '../../core/theme/app_colors.dart';
+import 'test_taking_screen.dart';
 
 class TestResultScreen extends StatelessWidget {
   final PsychologicalTest test;
   final Map<String, int> scores;
   final Map<String, ScoreInterpretation?> interpretations;
+  final String? token;
 
   const TestResultScreen({
     super.key,
     required this.test,
     required this.scores,
     required this.interpretations,
+    this.token,
   });
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0F0F1A),
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0F0F1A),
+        backgroundColor: AppColors.background,
         elevation: 0,
-        title: const Text(
+        title: Text(
           'Результаты',
           style: TextStyle(
-            color: Color(0xFFEDE8E0),
+            color: AppColors.foreground,
             fontSize: 20,
             fontWeight: FontWeight.w700,
           ),
         ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFFEDE8E0)),
-          onPressed: () => Navigator.popUntil(context, (r) => r.isFirst),
+          icon: Icon(Icons.arrow_back, color: AppColors.foreground),
+          onPressed: () {
+            // В стеке: TestsListScreen → TestTakingScreen → TestResultScreen
+            // 2 попа: закрываем результат и прохождение → список тестов
+            Navigator.of(context).pop();
+            Navigator.of(context).pop();
+          },
         ),
       ),
       body: SingleChildScrollView(
@@ -49,19 +58,19 @@ class TestResultScreen extends StatelessWidget {
                   const SizedBox(height: 16),
                   Text(
                     test.title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.w700,
-                      color: Color(0xFFEDE8E0),
+                      color: AppColors.foreground,
                     ),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 8),
                   Text(
                     'Завершено ${_formatDate(DateTime.now())}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
-                      color: Color(0xFF5A5468),
+                      color: AppColors.dimForeground,
                     ),
                   ),
                 ],
@@ -71,12 +80,12 @@ class TestResultScreen extends StatelessWidget {
             const SizedBox(height: 32),
 
             // Результаты по шкалам
-            const Text(
+            Text(
               'Ваши результаты',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
-                color: Color(0xFFEDE8E0),
+                color: AppColors.foreground,
               ),
             ),
             const SizedBox(height: 16),
@@ -102,26 +111,26 @@ class TestResultScreen extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: const Color(0xFF1A1A2E),
+                color: AppColors.card,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: const Color(0xFFFF8C42).withOpacity(0.3),
+                  color: AppColors.citrusOrange.withOpacity(0.3),
                 ),
               ),
               child: Row(
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.info_outline,
-                    color: Color(0xFFFF8C42),
+                    color: AppColors.citrusOrange,
                     size: 24,
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
                       'Этот тест носит информационный характер. Для профессиональной консультации обратитесь к специалисту.',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
-                        color: Color(0xFF8A8298),
+                        color: AppColors.mutedForeground,
                       ),
                     ),
                   ),
@@ -136,12 +145,22 @@ class TestResultScreen extends StatelessWidget {
               children: [
                 Expanded(
                   child: OutlinedButton.icon(
-                    onPressed: () => Navigator.pop(context),
+                    onPressed: () {
+                      // Пройти снова — заменяем текущий экран на TestTakingScreen
+                      Navigator.of(context).pushReplacement(
+                        MaterialPageRoute(
+                          builder: (context) => TestTakingScreen(
+                            testId: test.id,
+                            token: token,
+                          ),
+                        ),
+                      );
+                    },
                     icon: const Icon(Icons.replay),
                     label: const Text('Пройти снова'),
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: const Color(0xFFEDE8E0),
-                      side: const BorderSide(color: Color(0xFF5A5468)),
+                      foregroundColor: AppColors.foreground,
+                      side: BorderSide(color: AppColors.dimForeground),
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -152,13 +171,16 @@ class TestResultScreen extends StatelessWidget {
                 const SizedBox(width: 12),
                 Expanded(
                   child: ElevatedButton.icon(
-                    onPressed: () =>
-                        Navigator.popUntil(context, (r) => r.isFirst),
+                    onPressed: () {
+                      // Закрываем результат и прохождение → список тестов
+                      Navigator.of(context).pop();
+                      Navigator.of(context).pop();
+                    },
                     icon: const Icon(Icons.list),
                     label: const Text('Все тесты'),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFFF8C42),
-                      foregroundColor: Colors.white,
+                      backgroundColor: AppColors.citrusOrange,
+                      foregroundColor: AppColors.primaryForeground,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -210,14 +232,14 @@ class _ScaleResultCard extends StatelessWidget {
       case 'mild':
         return const Color(0xFFFFD93D);
       case 'moderate':
-        return const Color(0xFFFF8C42);
+        return AppColors.citrusOrange;
       case 'high':
       case 'severe':
       case 'moderately_severe':
       case 'extremely_severe':
-        return const Color(0xFFFF5B5B);
+        return AppColors.destructive;
       default:
-        return const Color(0xFF8A8298);
+        return AppColors.mutedForeground;
     }
   }
 
@@ -226,10 +248,10 @@ class _ScaleResultCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF1A1A2E),
+        color: AppColors.card,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: const Color.fromRGBO(255, 255, 255, 0.05),
+          color: AppColors.foreground.withOpacity(0.05),
         ),
       ),
       child: Column(
@@ -242,19 +264,19 @@ class _ScaleResultCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   scale.label,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xFFEDE8E0),
+                    color: AppColors.foreground,
                   ),
                 ),
               ),
               Text(
                 '$score / ${scale.maxScore}',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color: Color(0xFF8A8298),
+                  color: AppColors.mutedForeground,
                 ),
               ),
             ],
@@ -266,7 +288,7 @@ class _ScaleResultCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(4),
             child: LinearProgressIndicator(
               value: _progress.clamp(0.0, 1.0),
-              backgroundColor: const Color(0xFF2A2A3E),
+              backgroundColor: AppColors.muted,
               valueColor: AlwaysStoppedAnimation<Color>(_levelColor),
               minHeight: 8,
             ),
@@ -293,9 +315,9 @@ class _ScaleResultCard extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               interpretation!.description,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
-                color: Color(0xFF8A8298),
+                color: AppColors.mutedForeground,
                 height: 1.4,
               ),
             ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/api/test_api_service.dart';
+import '../../core/theme/app_colors.dart';
 import 'test_taking_screen.dart';
 
 class TestsListScreen extends StatefulWidget {
@@ -54,14 +55,14 @@ class _TestsListScreenState extends State<TestsListScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0F0F1A),
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0F0F1A),
+        backgroundColor: AppColors.background,
         elevation: 0,
-        title: const Text(
+        title: Text(
           'Психологические тесты',
           style: TextStyle(
-            color: Color(0xFFEDE8E0),
+            color: AppColors.foreground,
             fontSize: 20,
             fontWeight: FontWeight.w700,
           ),
@@ -69,7 +70,7 @@ class _TestsListScreenState extends State<TestsListScreen> {
       ),
       body: _isLoading
           ? const Center(
-              child: CircularProgressIndicator(color: Color(0xFFFF8C42)),
+              child: CircularProgressIndicator(color: AppColors.citrusOrange),
             )
           : _error != null
               ? _buildError()
@@ -100,10 +101,10 @@ class _TestsListScreenState extends State<TestsListScreen> {
               onSelected: (_) {
                 setState(() => _selectedCategory = entry.key);
               },
-              backgroundColor: const Color(0xFF1A1A2E),
-              selectedColor: const Color(0xFFFF8C42).withOpacity(0.3),
+              backgroundColor: AppColors.card,
+              selectedColor: AppColors.citrusOrange.withOpacity(0.3),
               labelStyle: TextStyle(
-                color: isSelected ? const Color(0xFFFF8C42) : const Color(0xFF5A5468),
+                color: isSelected ? AppColors.citrusOrange : AppColors.dimForeground,
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
               ),
             ),
@@ -118,10 +119,10 @@ class _TestsListScreenState extends State<TestsListScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.error_outline, size: 48, color: Color(0xFFFF5B5B)),
+          const Icon(Icons.error_outline, size: 48, color: AppColors.destructive),
           const SizedBox(height: 16),
           Text('Ошибка: $_error',
-              style: const TextStyle(color: Color(0xFFEDE8E0))),
+              style: TextStyle(color: AppColors.foreground)),
           const SizedBox(height: 16),
           ElevatedButton(
             onPressed: _loadTests,
@@ -135,10 +136,10 @@ class _TestsListScreenState extends State<TestsListScreen> {
   Widget _buildTestsList() {
     final tests = _filteredTests;
     if (tests.isEmpty) {
-      return const Center(
+      return Center(
         child: Text(
           'Нет тестов в этой категории',
-          style: TextStyle(color: Color(0xFF5A5468)),
+          style: TextStyle(color: AppColors.dimForeground),
         ),
       );
     }
@@ -166,13 +167,13 @@ class _TestsListScreenState extends State<TestsListScreen> {
       'behavioral': 'Поведенческий',
     };
 
-    final accentColor = categoryColors[test['category']] ?? const Color(0xFF8A8298);
+    final accentColor = categoryColors[test['category']] ?? AppColors.mutedForeground;
     final categoryLabel = categoryLabels[test['category']] ?? 'Тест';
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Material(
-        color: const Color(0xFF1A1A2E),
+        color: AppColors.card,
         borderRadius: BorderRadius.circular(16),
         child: InkWell(
           onTap: () {
@@ -214,18 +215,18 @@ class _TestsListScreenState extends State<TestsListScreen> {
                     children: [
                       Text(
                         test['title'] as String,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
-                          color: Color(0xFFEDE8E0),
+                          color: AppColors.foreground,
                         ),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         test['description'] as String,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
-                          color: Color(0xFF8A8298),
+                          color: AppColors.mutedForeground,
                         ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
@@ -257,9 +258,9 @@ class _TestsListScreenState extends State<TestsListScreen> {
                           Expanded(
                             child: Text(
                               '${test['questionsCount']} вопр. · ~${test['durationMinutes']} мин',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 10,
-                                color: Color(0xFF5A5468),
+                                color: AppColors.dimForeground,
                               ),
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -269,9 +270,9 @@ class _TestsListScreenState extends State<TestsListScreen> {
                     ],
                   ),
                 ),
-                const Icon(
+                Icon(
                   Icons.chevron_right,
-                  color: Color(0xFF5A5468),
+                  color: AppColors.dimForeground,
                   size: 24,
                 ),
               ],

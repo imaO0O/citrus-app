@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/theme/app_colors.dart';
 
 class DailyQuote extends StatelessWidget {
   final String quote;
@@ -41,19 +42,19 @@ class DailyQuote extends StatelessWidget {
                 children: [
                   Text(
                     '«$quote»',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
                       fontStyle: FontStyle.italic,
                       height: 1.5,
-                      color: Color(0xFFC8B89A),
+                      color: AppColors.mutedForeground,
                     ),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     label,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
-                      color: Color(0xFF5A5468),
+                      color: AppColors.dimForeground,
                     ),
                   ),
                 ],

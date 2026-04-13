@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -74,14 +74,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildHeader(),
-                  const SizedBox(height: 20),
+                  SizedBox(height: 20),
                   BlocBuilder<AuthBloc, AuthState>(
                     builder: (context, state) {
                       final user = state is AuthAuthenticated ? state.user : null;
                       return _buildProfileCard(user);
                     },
                   ),
-                  const SizedBox(height: 24),
+                  SizedBox(height: 24),
                   _buildSection(
                     title: 'ПРИЛОЖЕНИЕ',
                     children: [
@@ -100,14 +100,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 24),
+                  SizedBox(height: 24),
                   _buildSection(
                     title: 'ДОВЕРЕННЫЙ КОНТАКТ',
                     children: [
                       _buildTrustedContactCard(),
                     ],
                   ),
-                  const SizedBox(height: 24),
+                  SizedBox(height: 24),
                   _buildSection(
                     title: 'ПОДДЕРЖКА',
                     children: [
@@ -124,9 +124,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 32),
+                  SizedBox(height: 32),
                   _buildLogoutButton(),
-                  const SizedBox(height: 20),
+                  SizedBox(height: 20),
                 ],
               ),
             ),
@@ -137,7 +137,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _buildHeader() {
-    return const Text(
+    return Text(
       'Настройки',
       style: TextStyle(
         fontSize: 24,
@@ -172,7 +172,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: Center(
               child: Text(
                 displayName.isNotEmpty ? displayName[0].toUpperCase() : '?',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
                   color: AppColors.background,
@@ -180,14 +180,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ),
           ),
-          const SizedBox(width: 12),
+          SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   displayName,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
                     color: AppColors.foreground,
@@ -195,10 +195,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 2),
+                SizedBox(height: 2),
                 Text(
                   displayEmail,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
                     color: AppColors.mutedForeground,
                   ),
@@ -230,13 +230,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   isCreating
                       ? 'Новый доверенный контакт'
                       : 'Редактировать контакт',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                     color: AppColors.foreground,
                   ),
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: 12),
                 TextField(
                   controller: _trustedNameController,
                   decoration: InputDecoration(
@@ -251,7 +251,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     isDense: true,
                   ),
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: 8),
                 TextField(
                   controller: _trustedPhoneController,
                   keyboardType: TextInputType.phone,
@@ -268,7 +268,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     isDense: true,
                   ),
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: 12),
                 Row(
                   children: [
                     Expanded(
@@ -279,10 +279,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           padding: const EdgeInsets.symmetric(vertical: 10),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                         ),
-                        child: const Text('Сохранить', style: TextStyle(color: Colors.white)),
+                        child: Text('Сохранить', style: TextStyle(color: Colors.white)),
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    SizedBox(width: 8),
                     Expanded(
                       child: OutlinedButton(
                         onPressed: _cancelEditing,
@@ -290,7 +290,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           padding: const EdgeInsets.symmetric(vertical: 10),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                         ),
-                        child: const Text('Отмена'),
+                        child: Text('Отмена'),
                       ),
                     ),
                   ],
@@ -315,12 +315,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 child: Row(
                   children: [
                     Icon(Icons.person_add_outlined, color: AppColors.citrusOrange, size: 20),
-                    const SizedBox(width: 12),
+                    SizedBox(width: 12),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
+                          Text(
                             'Добавить доверенный контакт',
                             style: TextStyle(
                               fontSize: 14,
@@ -328,7 +328,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               color: AppColors.foreground,
                             ),
                           ),
-                          const SizedBox(height: 2),
+                          SizedBox(height: 2),
                           Text(
                             'Для отправки SOS-сообщений',
                             style: TextStyle(
@@ -357,7 +357,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 child: Row(
                   children: [
                     Icon(Icons.favorite, color: AppColors.destructive, size: 18),
-                    const SizedBox(width: 10),
+                    SizedBox(width: 10),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -366,7 +366,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             contact['name']?.isNotEmpty == true
                                 ? contact['name']
                                 : 'Контакт',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
                               color: AppColors.foreground,
@@ -374,7 +374,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           ),
                           Text(
                             _formatPhoneForDisplay(contact['phone']),
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 12,
                               color: AppColors.mutedForeground,
                             ),
@@ -383,15 +383,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.edit, size: 18),
+                      icon: Icon(Icons.edit, size: 18),
                       onPressed: () => _editContact(contact),
                       color: AppColors.mutedForeground,
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(),
                     ),
-                    const SizedBox(width: 12),
+                    SizedBox(width: 12),
                     IconButton(
-                      icon: const Icon(Icons.delete_outline, size: 18),
+                      icon: Icon(Icons.delete_outline, size: 18),
                       onPressed: () => _deleteContact(contact['id']),
                       color: AppColors.destructive,
                       padding: EdgeInsets.zero,
@@ -419,7 +419,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 child: Row(
                   children: [
                     Icon(Icons.add, color: AppColors.citrusOrange, size: 20),
-                    const SizedBox(width: 8),
+                    SizedBox(width: 8),
                     Text(
                       'Добавить ещё',
                       style: TextStyle(
@@ -445,7 +445,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           padding: const EdgeInsets.only(bottom: 12),
           child: Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w700,
               letterSpacing: 1.5,
@@ -477,12 +477,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
           child: Row(
             children: [
               Icon(Icons.palette_outlined, color: AppColors.mutedForeground, size: 20),
-              const SizedBox(width: 12),
+              SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'Тема',
                       style: TextStyle(
                         fontSize: 14,
@@ -492,7 +492,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                     Text(
                       isDark ? 'Тёмная' : 'Светлая',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
                         color: AppColors.mutedForeground,
                       ),
@@ -535,11 +535,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
       child: Row(
         children: [
           Icon(icon, color: AppColors.mutedForeground, size: 20),
-          const SizedBox(width: 12),
+          SizedBox(width: 12),
           Expanded(
             child: Text(
               label,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
                 color: AppColors.foreground,
@@ -574,14 +574,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
           child: Row(
             children: [
               Icon(icon, color: AppColors.mutedForeground, size: 20),
-              const SizedBox(width: 12),
+              SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       label,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
                         color: AppColors.foreground,
@@ -590,7 +590,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     if (subtitle != null)
                       Text(
                         subtitle,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
                           color: AppColors.mutedForeground,
                         ),
@@ -624,7 +624,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(Icons.logout, color: AppColors.destructive, size: 20),
-                const SizedBox(width: 8),
+                SizedBox(width: 8),
                 Text(
                   'Выйти из аккаунта',
                   style: TextStyle(
@@ -651,18 +651,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
           side: BorderSide(color: AppColors.destructive.withOpacity(0.3)),
         ),
         icon: Icon(Icons.logout, color: AppColors.destructive, size: 32),
-        title: const Text(
+        title: Text(
           'Выйти из аккаунта?',
           style: TextStyle(color: AppColors.foreground, fontWeight: FontWeight.w600),
         ),
-        content: const Text(
+        content: Text(
           'Вы будете перенаправлены на страницу входа. Все несохранённые данные будут потеряны.',
           style: TextStyle(color: AppColors.mutedForeground),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Отмена', style: TextStyle(color: AppColors.mutedForeground)),
+            child: Text('Отмена', style: TextStyle(color: AppColors.mutedForeground)),
           ),
           FilledButton(
             onPressed: () {
@@ -672,7 +672,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             style: FilledButton.styleFrom(
               backgroundColor: AppColors.destructive,
             ),
-            child: const Text('Выйти'),
+            child: Text('Выйти'),
           ),
         ],
       ),
@@ -822,14 +822,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
       builder: (context) => AlertDialog(
         backgroundColor: AppColors.surface1,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Row(
+        title: Row(
           children: [
             Icon(Icons.info, color: AppColors.citrusOrange),
             SizedBox(width: 8),
             Text('О приложении', style: TextStyle(color: AppColors.foreground)),
           ],
         ),
-        content: const Column(
+        content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -847,7 +847,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Закрыть', style: TextStyle(color: AppColors.citrusOrange)),
+            child: Text('Закрыть', style: TextStyle(color: AppColors.citrusOrange)),
           ),
         ],
       ),
