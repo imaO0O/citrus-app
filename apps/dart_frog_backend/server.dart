@@ -398,6 +398,11 @@ Future<Response> _handleRequest(RequestContext context) async {
     return _chatWithAI(context);
   }
 
+  // GET /chat/messages - получить историю сообщений пользователя
+  if (path == '/chat/messages' && method == HttpMethod.get) {
+    return _getChatMessages(context);
+  }
+
   return Response.json(body: {'message': 'Citrus API'});
 }
 
@@ -1776,6 +1781,16 @@ Future<Response> _chatWithAI(RequestContext context) async {
       );
     }
 
+    // Получаем userId из токена (если есть авторизация)
+    String? userId;
+    final token = _extractToken(context);
+    if (token != null) {
+      try {
+        final jwt = JWT.verify(token, SecretKey(_jwtSecret));
+        userId = jwt.payload['user_id'] as String?;
+      } catch (_) {}
+    }
+
     // Отправляем сообщение в GigaChat
     final response = await _gigachatService!.chat(
       message,
@@ -1783,6 +1798,21 @@ Future<Response> _chatWithAI(RequestContext context) async {
       temperature: temperature,
       maxTokens: maxTokens,
     );
+
+    // Сохраняем сообщения в БД (если пользователь авторизован)
+    if (userId != null && _db != null) {
+      try {
+        final msgId = const Uuid().v4();
+        final now = DateTime.now().toIso8601String();
+        final escapedUser = message.replaceAll("'", "''");
+        final escapedResponse = response.replaceAll("'", "''");
+        await _db!.query(
+          "INSERT INTO chat_messages (id, user_id, user_message, ai_response, created_at) VALUES ('$msgId', '$userId', '$escapedUser', '$escapedResponse', '$now')",
+        );
+      } catch (e) {
+        print('Warning: failed to save chat message: $e');
+      }
+    }
 
     return Response.json(
       statusCode: 200,
@@ -1797,6 +1827,39 @@ Future<Response> _chatWithAI(RequestContext context) async {
       statusCode: 500,
       body: {'error': 'Failed to get AI response: $e'},
     );
+  }
+}
+
+/// GET /chat/messages - получить историю сообщений пользователя
+Future<Response> _getChatMessages(RequestContext context) async {
+  final token = _extractToken(context);
+  if (token == null) {
+    return Response(statusCode: 401, body: 'Unauthorized');
+  }
+
+  try {
+    final jwt = JWT.verify(token, SecretKey(_jwtSecret));
+    final userId = jwt.payload['user_id'] as String;
+
+    final result = await _db!.query(
+      '''SELECT id, user_message, ai_response, created_at 
+         FROM chat_messages 
+         WHERE user_id = '$userId' 
+         ORDER BY created_at DESC 
+         LIMIT 100''',
+    );
+
+    final messages = result.map((row) => {
+      'id': row[0] as String,
+      'user_message': row[1] as String,
+      'ai_response': row[2] as String,
+      'created_at': (row[3] as DateTime).toIso8601String(),
+    }).toList();
+
+    return Response.json(body: messages);
+  } catch (e) {
+    // Если таблица ещё не создана, возвращаем пустой список
+    return Response.json(body: <Map<String, dynamic>>[]);
   }
 }
 
