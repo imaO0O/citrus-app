@@ -1,12 +1,12 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../core/theme/app_colors.dart';
 import '../core/utils/phone_formatter.dart';
 import '../core/config/api_config.dart';
+import '../core/services/storage_service.dart';
 
 class EmergencyModal extends StatefulWidget {
   final VoidCallback onClose;
@@ -40,8 +40,8 @@ class _EmergencyModalState extends State<EmergencyModal> {
   }
 
   Future<void> _loadCuratorPhone() async {
-    final prefs = await SharedPreferences.getInstance();
-    final saved = prefs.getString('curator_phone');
+    final storage = StorageService();
+    final saved = await storage.getString('curator_phone');
     if (saved != null && saved.isNotEmpty) {
       setState(() {
         curatorPhone = saved;
@@ -52,10 +52,10 @@ class _EmergencyModalState extends State<EmergencyModal> {
   }
 
   Future<void> _loadTrustedContacts() async {
-    final prefs = await SharedPreferences.getInstance();
-    final savedToken = prefs.getString('token');
+    final storage = StorageService();
+    final savedToken = await storage.getString('auth_token');
     if (savedToken == null || savedToken.isEmpty) {
-      debugPrint('No token in SharedPreferences, skipping trusted contacts load');
+      debugPrint('No token in Storage, skipping trusted contacts load');
       return;
     }
 
@@ -81,8 +81,8 @@ class _EmergencyModalState extends State<EmergencyModal> {
   }
 
   Future<void> _saveCuratorPhone() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('curator_phone', curatorPhone);
+    final storage = StorageService();
+    await storage.setString('curator_phone', curatorPhone);
   }
 
   void _handleSave() {
@@ -122,8 +122,8 @@ class _EmergencyModalState extends State<EmergencyModal> {
 
     // Fallback на SharedPreferences
     if (trustedPhone == null || trustedPhone.isEmpty) {
-      final prefs = await SharedPreferences.getInstance();
-      trustedPhone = prefs.getString('trusted_contact');
+      final storage = StorageService();
+      trustedPhone = await storage.getString('trusted_contact');
     }
 
     if (trustedPhone == null || trustedPhone.isEmpty) {

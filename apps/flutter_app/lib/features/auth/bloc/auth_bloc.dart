@@ -1,5 +1,4 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/repository/auth_repository.dart';
 import '../../../core/utils/theme_service.dart';
 
@@ -120,12 +119,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       
       emit(AuthAuthenticated(user));
       print('AuthBloc: Токен пользователя: ${user.token.isEmpty ? "ПУСТОЙ" : "length=${user.token.length}"}');
-
-      // Сохраняем токен в SharedPreferences
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('token', user.token);
-      await prefs.setString('user_id', user.id);
-      await prefs.setString('user_email', user.email);
     } catch (e) {
       print('AuthBloc: Ошибка входа: $e');
       emit(AuthError(e.toString()));
@@ -151,12 +144,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       }
       
       emit(AuthAuthenticated(user));
-
-      // Сохраняем токен в SharedPreferences
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('token', user.token);
-      await prefs.setString('user_id', user.id);
-      await prefs.setString('user_email', user.email);
     } catch (e) {
       print('AuthBloc: Ошибка регистрации: $e');
       emit(AuthError(e.toString()));
@@ -165,11 +152,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
   Future<void> _onLogout(AuthLogout event, Emitter<AuthState> emit) async {
     await _repository.logout();
-    // Очищаем токен из SharedPreferences
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('token');
-    await prefs.remove('user_id');
-    await prefs.remove('user_email');
     emit(const AuthUnauthenticated());
   }
 
