@@ -10,11 +10,13 @@ import 'core/repository/calendar_event_repository.dart';
 import 'core/repository/diary_repository.dart';
 import 'core/repository/mood_repository.dart';
 import 'core/repository/memory_photo_repository.dart';
+import 'core/repository/article_repository.dart';
 import 'bloc/dashboard_bloc.dart';
 import 'features/auth/bloc/auth_bloc.dart';
 import 'features/sleep/bloc/sleep_bloc.dart';
 import 'features/calendar/bloc/calendar_bloc.dart';
 import 'features/diary/bloc/diary_bloc.dart';
+import 'features/articles/bloc/article_bloc.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -37,6 +39,7 @@ class MyApp extends StatelessWidget {
     final diaryRepository = DiaryRepository(userId: 'unknown', token: null);
     final moodRepository = MoodRepository(userId: 'unknown', token: null);
     final memoryPhotoRepository = MemoryPhotoRepository(userId: 'unknown', token: null);
+    final articleRepository = ArticleRepository();
 
     return ListenableBuilder(
       listenable: ThemeService(),
@@ -49,6 +52,7 @@ class MyApp extends StatelessWidget {
             RepositoryProvider.value(value: diaryRepository),
             RepositoryProvider.value(value: moodRepository),
             RepositoryProvider.value(value: memoryPhotoRepository),
+            RepositoryProvider.value(value: articleRepository),
           ],
           child: MultiBlocProvider(
             providers: [
@@ -67,6 +71,7 @@ class MyApp extends StatelessWidget {
                       diaryRepository.setUserId(userId, token: token);
                       moodRepository.setUserId(userId, token: token);
                       memoryPhotoRepository.setUserId(userId, token: token);
+                      articleRepository.setToken(token);
                     } else if (state is AuthUnauthenticated) {
                       debugPrint('Auth: пользователь вышел');
                       sleepRepository.setUserId('unknown', token: null);
@@ -96,6 +101,9 @@ class MyApp extends StatelessWidget {
               ),
               BlocProvider(
                 create: (ctx) => DiaryBloc(repository: ctx.read<DiaryRepository>()),
+              ),
+              BlocProvider(
+                create: (ctx) => ArticleBloc(repository: ctx.read<ArticleRepository>()),
               ),
             ],
             child: MaterialApp.router(

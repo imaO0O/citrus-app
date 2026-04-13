@@ -5,6 +5,8 @@ import '../../../core/repository/auth_repository.dart';
 import '../../../core/utils/theme_service.dart';
 import '../../auth/bloc/auth_bloc.dart';
 import '../bloc/profile_bloc.dart';
+import '../../articles/pages/articles_page.dart';
+import '../../articles/pages/create_edit_article_page.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({Key? key}) : super(key: key);
@@ -65,9 +67,15 @@ class _ProfilePageState extends State<ProfilePage> {
               const Divider(height: 1),
               ListTile(
                 leading: const Icon(Icons.article_outlined),
-                title: const Text('Настройка предпочтений по статьям'),
+                title: const Text('Статьи самопомощи'),
                 trailing: const Icon(Icons.chevron_right),
-                onTap: () {},
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const ArticlesPage(),
+                    ),
+                  );
+                },
               ),
               ListTile(
                 leading: const Icon(Icons.notifications_outlined),
@@ -91,7 +99,13 @@ class _ProfilePageState extends State<ProfilePage> {
                 leading: const Icon(Icons.add_circle_outline),
                 title: const Text('Создать кастомную статью'),
                 trailing: const Icon(Icons.chevron_right),
-                onTap: () {},
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const CreateEditArticlePage(),
+                    ),
+                  );
+                },
               ),
             ],
           ),

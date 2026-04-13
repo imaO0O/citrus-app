@@ -22,6 +22,8 @@ import '../features/auth/bloc/auth_bloc.dart';
 import '../bloc/dashboard_bloc.dart';
 import '../core/repository/sleep_repository.dart';
 import '../features/diary/bloc/diary_bloc.dart';
+import '../features/articles/pages/articles_page.dart';
+import '../features/articles/bloc/article_bloc.dart';
 
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
@@ -63,6 +65,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       ExercisesScreen(),           // 10
       AnalyticsScreen(),           // 11
       SettingsScreen(),            // 12
+      const ArticlesPage(showBackButton: false),  // 13
     ]);
 
     // Инициализация BLoC при старте
@@ -74,6 +77,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           debugPrint('MainNav: init — пользователь уже авторизован, userId=${authState.user.id}');
           context.read<DashboardBloc>().updateUserId(authState.user.id, token: authState.user.token);
           context.read<DiaryBloc>().updateUserId(authState.user.id, token: authState.user.token);
+          context.read<ArticleBloc>().setToken(authState.user.token);
         }
       } catch (e) {
         debugPrint('MainNav: ошибка init BLoC: $e');
@@ -91,6 +95,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     {'path': '10', 'label': 'Упражнения',    'icon': '🧘', 'desc': 'Практики'},
     {'path': '11', 'label': 'Аналитика',     'icon': '📊', 'desc': 'Статистика'},
     {'path': '12', 'label': 'Настройки',     'icon': '⚙️', 'desc': 'Параметры'},
+    {'path': '13', 'label': 'Статьи',        'icon': '📖', 'desc': 'Самопомощь'},
   ];
 
   void _setIndex(int index) {
@@ -123,6 +128,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                   } catch (e) {}
                   try {
                     context.read<DiaryBloc>().updateUserId(state.user.id, token: state.user.token);
+                  } catch (e) {}
+                  try {
+                    context.read<ArticleBloc>().setToken(state.user.token);
                   } catch (e) {}
                 }
               });
