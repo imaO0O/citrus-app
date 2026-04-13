@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/theme/app_colors.dart';
 
 class StatsStrip extends StatelessWidget {
   final int streakDays;
@@ -69,10 +70,10 @@ class _StatCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFF1A1A2E),
+        color: AppColors.card,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: const Color.fromRGBO(255, 140, 66, 0.1),
+          color: AppColors.citrusOrange.withOpacity(0.1),
         ),
       ),
       child: Column(
@@ -83,18 +84,18 @@ class _StatCard extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             value,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w700,
-              color: Color(0xFFEDE8E0),
+              color: AppColors.foreground,
             ),
           ),
           const SizedBox(height: 2),
           Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 10,
-              color: Color(0xFF8A8298),
+              color: AppColors.mutedForeground,
             ),
           ),
         ],

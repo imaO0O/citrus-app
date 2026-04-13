@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../models/mood.dart';
+import '../../core/theme/app_colors.dart';
 
 class CitrusWheel extends StatefulWidget {
   final int? selectedMoodId;
@@ -161,10 +162,10 @@ class _CitrusWheelState extends State<CitrusWheel>
                   ),
                   child: Text(
                     '${selectedMood.emoji} ${selectedMood.label}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFF0C0C14),
+                      color: AppColors.primaryForeground,
                     ),
                   ),
                 ),
@@ -177,9 +178,9 @@ class _CitrusWheelState extends State<CitrusWheel>
               height: 82,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: const Color(0xFF0C0C14),
+                color: AppColors.background,
                 border: Border.all(
-                  color: const Color.fromRGBO(255, 140, 66, 0.2),
+                  color: AppColors.citrusOrange.withOpacity(0.2),
                   width: 1.5,
                 ),
               ),
@@ -189,7 +190,7 @@ class _CitrusWheelState extends State<CitrusWheel>
                   height: 68,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: const Color.fromRGBO(255, 140, 66, 0.08),
+                    color: AppColors.citrusOrange.withOpacity(0.08),
                   ),
                   child: Center(
                     child: Text(

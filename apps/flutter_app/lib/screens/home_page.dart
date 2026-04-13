@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import '../bloc/dashboard_bloc.dart';
+import '../core/theme/app_colors.dart';
 import 'models/mood.dart';
 import 'widgets/citrus_wheel.dart';
 import 'widgets/stats_strip.dart';
@@ -63,7 +64,7 @@ class _HomePageState extends State<HomePage> {
             if (state is DashboardLoading) {
               return const Center(
                 child: CircularProgressIndicator(
-                  color: Color(0xFFFF8C42),
+                  color: AppColors.citrusOrange,
                 ),
               );
             }
@@ -76,7 +77,7 @@ class _HomePageState extends State<HomePage> {
               onRefresh: () async {
                 context.read<DashboardBloc>().add(MoodLogRefresh());
               },
-              color: const Color(0xFFFF8C42),
+              color: AppColors.citrusOrange,
               child: SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
                 padding: const EdgeInsets.only(bottom: 80),
@@ -91,27 +92,27 @@ class _HomePageState extends State<HomePage> {
                         children: [
                           Text(
                             _formatDate(DateTime.now()),
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w500,
-                              color: Color(0xFF8A8298),
+                              color: AppColors.mutedForeground,
                             ),
                           ),
                           const SizedBox(height: 4),
-                          const Text(
+                          Text(
                             'Как твоё состояние?',
                             style: TextStyle(
                               fontSize: 24,
                               fontWeight: FontWeight.w700,
-                              color: Color(0xFFEDE8E0),
+                              color: AppColors.foreground,
                             ),
                           ),
                           const SizedBox(height: 4),
-                          const Text(
+                          Text(
                             'Нажми на дольку цитруса, чтобы отметить настроение',
                             style: TextStyle(
                               fontSize: 12,
-                              color: Color(0xFF5A5468),
+                              color: AppColors.dimForeground,
                             ),
                           ),
                         ],
@@ -140,7 +141,7 @@ class _HomePageState extends State<HomePage> {
                                   vertical: 4,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: const Color.fromRGBO(255, 255, 255, 0.06),
+                                  color: AppColors.foreground.withOpacity(0.06),
                                   borderRadius: BorderRadius.circular(20),
                                 ),
                                 child: Text(
@@ -160,11 +161,11 @@ class _HomePageState extends State<HomePage> {
                                   horizontal: 12,
                                   vertical: 4,
                                 ),
-                                child: const Text(
+                                child: Text(
                                   '6 уровней настроения · нажми на дольку',
                                   style: TextStyle(
                                     fontSize: 12,
-                                    color: Color(0xFF5A5468),
+                                    color: AppColors.dimForeground,
                                   ),
                                 ),
                               ),

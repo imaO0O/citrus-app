@@ -6,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:just_audio/just_audio.dart';
 import '../core/theme/app_colors.dart';
+import '../core/services/exercise_tracker_service.dart';
 
 class ExerciseItem {
   final String id;
@@ -420,7 +421,7 @@ class _ExercisesScreenState extends State<ExercisesScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Padding(
+                Padding(
                   padding: EdgeInsets.fromLTRB(20, 16, 20, 0),
                   child: Text(
                     'Упражнения',
@@ -428,9 +429,9 @@ class _ExercisesScreenState extends State<ExercisesScreen> {
                   ),
                 ),
                 _buildQuickStartCard(),
-                const SizedBox(height: 16),
+                SizedBox(height: 16),
                 _buildCategoryChips(),
-                const SizedBox(height: 16),
+                SizedBox(height: 16),
                 Expanded(
                   child: ListView.builder(
                     padding: const EdgeInsets.symmetric(horizontal: 20).copyWith(bottom: 80),
@@ -460,7 +461,7 @@ class _ExercisesScreenState extends State<ExercisesScreen> {
       ),
       child: Row(
         children: [
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -476,7 +477,7 @@ class _ExercisesScreenState extends State<ExercisesScreen> {
               ],
             ),
           ),
-          const SizedBox(width: 12),
+          SizedBox(width: 12),
           GestureDetector(
             onTap: () {
               if (_filteredExercises.isNotEmpty) _showExerciseDetail(_filteredExercises.first);
@@ -506,7 +507,7 @@ class _ExercisesScreenState extends State<ExercisesScreen> {
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 20),
         itemCount: _categories.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        separatorBuilder: (_, __) => SizedBox(width: 8),
         itemBuilder: (context, index) {
           final category = _categories[index];
           final isSelected = category == _selectedCategory;
@@ -606,19 +607,19 @@ class _ExercisesScreenState extends State<ExercisesScreen> {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 4),
+                      SizedBox(height: 4),
                       Text(
                         exercise.description,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(color: AppColors.mutedForeground, fontSize: 12),
+                        style: TextStyle(color: AppColors.mutedForeground, fontSize: 12),
                       ),
                     ],
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
             Row(
               children: [
                 Text(exercise.duration, style: const TextStyle(color: AppColors.dimForeground, fontSize: 11)),
@@ -1218,6 +1219,8 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet>
           _phaseText = 'Упражнение завершено!';
         });
         _animationController.stop();
+        // Сохраняем выполненное упражнение
+        ExerciseTrackerService().recordExercise(widget.exercise.id);
       }
     });
   }
@@ -1264,7 +1267,7 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet>
       maxChildSize: 0.95,
       builder: (context, scrollController) {
         return Container(
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             color: AppColors.background,
             borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
             border: Border(top: BorderSide(color: Color(0xFF2A2830), width: 1)),
@@ -1287,8 +1290,8 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet>
                   children: [
                     Row(
                       children: [
-                        Text(widget.exercise.icon, style: const TextStyle(fontSize: 28)),
-                        const SizedBox(width: 12),
+                        Text(widget.exercise.icon, style: TextStyle(fontSize: 28)),
+                        SizedBox(width: 12),
                         Expanded(
                           child: Text(
                             widget.exercise.title,
@@ -1301,7 +1304,7 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet>
                         ),
                       ],
                     ),
-                    const SizedBox(height: 20),
+                    SizedBox(height: 20),
                     if (isBreathingExercise)
                       Center(
                         child: AnimatedBuilder(
@@ -1355,15 +1358,15 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet>
                             border: Border.all(color: color.withOpacity(0.3)),
                           ),
                           child: Center(
-                            child: Text(widget.exercise.icon, style: const TextStyle(fontSize: 56)),
+                            child: Text(widget.exercise.icon, style: TextStyle(fontSize: 56)),
                           ),
                         ),
                       ),
-                    const SizedBox(height: 20),
+                    SizedBox(height: 20),
                     Center(
                       child: Text(
                         _isRunning || _isFinished ? _formatTime(_remainingSeconds) : widget.exercise.duration,
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: AppColors.foreground,
                           fontSize: 32,
                           fontWeight: FontWeight.w700,
@@ -1371,7 +1374,7 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet>
                       ),
                     ),
                     if (_phaseText.isNotEmpty && _isRunning) ...[
-                      const SizedBox(height: 8),
+                      SizedBox(height: 8),
                       Center(
                         child: Text(
                           _phaseText,
@@ -1392,7 +1395,7 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet>
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    SizedBox(height: 12),
                     ...widget.exercise.steps.asMap().entries.map((entry) {
                       final index = entry.key;
                       final step = entry.value;
@@ -1419,7 +1422,7 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet>
                                 ),
                               ),
                             ),
-                            const SizedBox(width: 12),
+                            SizedBox(width: 12),
                             Expanded(
                               child: Text(
                                 step,
@@ -1435,14 +1438,14 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet>
                       );
                     }),
                     if (_isFinished) ...[
-                      const SizedBox(height: 16),
+                      SizedBox(height: 16),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                         decoration: BoxDecoration(
                           color: AppColors.citrusGreen.withOpacity(0.15),
                           borderRadius: BorderRadius.circular(10),
                         ),
-                        child: const Row(
+                        child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(Icons.check_circle, color: AppColors.citrusGreen, size: 20),
@@ -1458,9 +1461,9 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet>
                           ],
                         ),
                       ),
-                      const SizedBox(height: 12),
+                      SizedBox(height: 12),
                     ],
-                    const SizedBox(height: 16),
+                    SizedBox(height: 16),
                     Row(
                       children: [
                         Expanded(

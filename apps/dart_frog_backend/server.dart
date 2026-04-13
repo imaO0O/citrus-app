@@ -8,9 +8,16 @@ import 'package:crypto/crypto.dart';
 import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
 import 'package:http/http.dart' as http;
 import 'package:mime/mime.dart';
+import 'lib/services/gigachat_service.dart';
 
 PostgreSQLConnection? _db;
 const _jwtSecret = 'citrus-app-secret-key-change-in-production';
+
+// GigaChat конфигурация
+// В production используйте переменные окружения!
+String? _gigachatClientId;
+String? _gigachatClientSecret;
+GigaChatService? _gigachatService;
 
 // Cloudinary конфигурация
 const _cloudinaryCloudName = 'dgeoniumv';
@@ -117,6 +124,26 @@ Future<Response> _handleRequest(RequestContext context) async {
     }
   }
 
+  // Инициализация GigaChat сервиса (если ещё не инициализирован)
+  if (_gigachatService == null) {
+    _gigachatClientId = Platform.environment['GIGACHAT_CLIENT_ID'];
+    _gigachatClientSecret = Platform.environment['GIGACHAT_CLIENT_SECRET'];
+    
+    if (_gigachatClientId != null && _gigachatClientSecret != null) {
+      try {
+        _gigachatService = GigaChatService(
+          clientId: _gigachatClientId!,
+          clientSecret: _gigachatClientSecret!,
+        );
+        print('GigaChat service initialized!');
+      } catch (e) {
+        print('Failed to initialize GigaChat service: $e');
+      }
+    } else {
+      print('GigaChat credentials not found. Set GIGACHAT_CLIENT_ID and GIGACHAT_CLIENT_SECRET environment variables.');
+    }
+  }
+
   final path = context.request.uri.path;
   final method = context.request.method;
 
@@ -131,6 +158,11 @@ Future<Response> _handleRequest(RequestContext context) async {
   // GET /themes - получить список тем
   if (path == '/themes' && method == HttpMethod.get) {
     return _getThemes(context);
+  }
+
+  // GET /user/theme - получить тему пользователя
+  if (path == '/user/theme' && method == HttpMethod.get) {
+    return _getUserTheme(context);
   }
 
   // PUT /user/theme - обновить тему пользователя
@@ -457,6 +489,16 @@ Future<Response> _handleRequest(RequestContext context) async {
     return _deletePhoto(context, authContext, id);
   }
 
+  // POST /chat - чат с GigaChat AI (требует авторизации)
+  if (path == '/chat' && method == HttpMethod.post) {
+    return _chatWithAI(context);
+  }
+
+  // GET /chat/messages - получить историю сообщений пользователя
+  if (path == '/chat/messages' && method == HttpMethod.get) {
+    return _getChatMessages(context);
+  }
+
   return Response.json(body: {'message': 'Citrus API'});
 }
 
@@ -772,6 +814,32 @@ Future<Response> _getThemes(RequestContext context) async {
     }).toList();
 
     return Response.json(body: themes);
+  } catch (e) {
+    return Response(statusCode: 500, body: 'Error: $e');
+  }
+}
+
+/// Получить тему пользователя
+Future<Response> _getUserTheme(RequestContext context) async {
+  final token = _extractToken(context);
+  if (token == null) {
+    return Response(statusCode: 401, body: 'Unauthorized');
+  }
+
+  try {
+    final jwt = JWT.verify(token, SecretKey(_jwtSecret));
+    final userId = jwt.payload['user_id'] as String;
+
+    final result = await _db!.query(
+      "SELECT theme_id FROM users WHERE id = '$userId'",
+    );
+
+    if (result.isEmpty) {
+      return Response(statusCode: 404, body: 'User not found');
+    }
+
+    final themeId = result.first[0] as String?;
+    return Response.json(body: {'theme_id': themeId});
   } catch (e) {
     return Response(statusCode: 500, body: 'Error: $e');
   }
@@ -1779,6 +1847,115 @@ Future<Response> _deletePhoto(RequestContext context, _AuthContext auth, String 
     return Response.json(body: {'success': true});
   } catch (e) {
     return Response(statusCode: 500, body: 'Error: $e');
+  }
+}
+
+/// POST /chat - чат с GigaChat AI
+Future<Response> _chatWithAI(RequestContext context) async {
+  // Проверяем, инициализирован ли GigaChat сервис
+  if (_gigachatService == null) {
+    return Response.json(
+      statusCode: 503,
+      body: {
+        'error': 'GigaChat service is not configured',
+        'message': 'Установите переменные окружения GIGACHAT_CLIENT_ID и GIGACHAT_CLIENT_SECRET',
+      },
+    );
+  }
+
+  try {
+    final body = await context.request.json();
+    final message = body['message'] as String?;
+    final systemPrompt = body['system_prompt'] as String?;
+    final temperature = (body['temperature'] as num?)?.toDouble() ?? 0.7;
+    final maxTokens = body['max_tokens'] as int? ?? 1024;
+
+    if (message == null || message.trim().isEmpty) {
+      return Response.json(
+        statusCode: 400,
+        body: {'error': 'message is required'},
+      );
+    }
+
+    // Получаем userId из токена (если есть авторизация)
+    String? userId;
+    final token = _extractToken(context);
+    if (token != null) {
+      try {
+        final jwt = JWT.verify(token, SecretKey(_jwtSecret));
+        userId = jwt.payload['user_id'] as String?;
+      } catch (_) {}
+    }
+
+    // Отправляем сообщение в GigaChat
+    final response = await _gigachatService!.chat(
+      message,
+      systemPrompt: systemPrompt ?? 'Ты полезный ассистент по имени Цитрус. Ты помогаешь пользователям следить за своим ментальным здоровьем, даёшь советы по улучшению настроения, борьбе с тревогой и поддержанию хорошего эмоционального состояния. Отвечай дружелюбно и поддерживающе.',
+      temperature: temperature,
+      maxTokens: maxTokens,
+    );
+
+    // Сохраняем сообщения в БД (если пользователь авторизован)
+    if (userId != null && _db != null) {
+      try {
+        final msgId = const Uuid().v4();
+        final now = DateTime.now().toIso8601String();
+        final escapedUser = message.replaceAll("'", "''");
+        final escapedResponse = response.replaceAll("'", "''");
+        await _db!.query(
+          "INSERT INTO chat_messages (id, user_id, user_message, ai_response, created_at) VALUES ('$msgId', '$userId', '$escapedUser', '$escapedResponse', '$now')",
+        );
+      } catch (e) {
+        print('Warning: failed to save chat message: $e');
+      }
+    }
+
+    return Response.json(
+      statusCode: 200,
+      body: {
+        'response': response,
+        'timestamp': DateTime.now().toIso8601String(),
+      },
+    );
+  } catch (e) {
+    print('Error in /chat endpoint: $e');
+    return Response.json(
+      statusCode: 500,
+      body: {'error': 'Failed to get AI response: $e'},
+    );
+  }
+}
+
+/// GET /chat/messages - получить историю сообщений пользователя
+Future<Response> _getChatMessages(RequestContext context) async {
+  final token = _extractToken(context);
+  if (token == null) {
+    return Response(statusCode: 401, body: 'Unauthorized');
+  }
+
+  try {
+    final jwt = JWT.verify(token, SecretKey(_jwtSecret));
+    final userId = jwt.payload['user_id'] as String;
+
+    final result = await _db!.query(
+      '''SELECT id, user_message, ai_response, created_at 
+         FROM chat_messages 
+         WHERE user_id = '$userId' 
+         ORDER BY created_at DESC 
+         LIMIT 100''',
+    );
+
+    final messages = result.map((row) => {
+      'id': row[0] as String,
+      'user_message': row[1] as String,
+      'ai_response': row[2] as String,
+      'created_at': (row[3] as DateTime).toIso8601String(),
+    }).toList();
+
+    return Response.json(body: messages);
+  } catch (e) {
+    // Если таблица ещё не создана, возвращаем пустой список
+    return Response.json(body: <Map<String, dynamic>>[]);
   }
 }
 

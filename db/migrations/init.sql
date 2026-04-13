@@ -31,7 +31,6 @@ CREATE TABLE IF NOT EXISTS mood_entries (
     user_id UUID REFERENCES users(id) ON DELETE CASCADE,
     mood_value INTEGER CHECK (mood_value BETWEEN 0 AND 5),
     recorded_at TIMESTAMP DEFAULT NOW(),
-    date DATE DEFAULT CURRENT_DATE,
     time_of_day TEXT  -- 'morning', 'afternoon', 'evening'
 );
 
@@ -95,7 +94,8 @@ CREATE TABLE IF NOT EXISTS user_preferences (
     preferences JSONB,
     updated_at TIMESTAMP DEFAULT NOW()
 );
--- Таблица для хранения результатов психологических тестов
+
+-- Результаты психологических тестов
 CREATE TABLE IF NOT EXISTS psychological_test_results (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES users(id) ON DELETE CASCADE,
@@ -105,8 +105,30 @@ CREATE TABLE IF NOT EXISTS psychological_test_results (
     completed_at TIMESTAMP DEFAULT NOW()
 );
 
--- Индекс для быстрого поиска результатов по пользователю и тесту
-CREATE INDEX IF NOT EXISTS idx_mood_entries_user_date ON mood_entries(user_id, date);
+-- Сообщения чата с ИИ
+CREATE TABLE IF NOT EXISTS chat_messages (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    user_message TEXT NOT NULL,
+    ai_response TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Доверенные контакты
+CREATE TABLE IF NOT EXISTS trusted_contacts (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    phone TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Индексы для быстрого поиска
+CREATE INDEX IF NOT EXISTS idx_mood_entries_user_recorded_at ON mood_entries(user_id, recorded_at DESC);
 CREATE INDEX IF NOT EXISTS idx_diary_entries_user_date ON diary_entries(user_id, entry_date);
 CREATE INDEX IF NOT EXISTS idx_calendar_events_user_date ON calendar_events(user_id, event_date);
 CREATE INDEX IF NOT EXISTS idx_test_results_user_test ON psychological_test_results(user_id, test_id, completed_at DESC);
+CREATE INDEX IF NOT EXISTS idx_chat_messages_user_id ON chat_messages(user_id);
+CREATE INDEX IF NOT EXISTS idx_chat_messages_created_at ON chat_messages(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_trusted_contacts_user_id ON trusted_contacts(user_id);
+CREATE INDEX IF NOT EXISTS idx_memory_photos_user_id ON memory_photos(user_id, created_at DESC);

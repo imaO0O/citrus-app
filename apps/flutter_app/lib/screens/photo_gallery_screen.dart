@@ -1,4 +1,4 @@
-import 'dart:io';
+﻿import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -135,16 +135,16 @@ class _PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
           borderRadius: BorderRadius.circular(16),
           side: BorderSide(color: AppColors.citrusOrange.withOpacity(0.2)),
         ),
-        title: const Text(
+        title: Text(
           'Добавить описание',
           style: TextStyle(color: AppColors.foreground),
         ),
         content: TextField(
           controller: controller,
-          style: const TextStyle(color: AppColors.foreground),
+          style: TextStyle(color: AppColors.foreground),
           decoration: InputDecoration(
             hintText: 'Название момента (необязательно)',
-            hintStyle: const TextStyle(color: AppColors.mutedForeground),
+            hintStyle: TextStyle(color: AppColors.mutedForeground),
             filled: true,
             fillColor: AppColors.surface2,
             border: OutlineInputBorder(
@@ -157,12 +157,12 @@ class _PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, ''),
-            child: const Text('Пропустить', style: TextStyle(color: AppColors.mutedForeground)),
+            child: Text('Пропустить', style: TextStyle(color: AppColors.mutedForeground)),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, controller.text),
             style: FilledButton.styleFrom(backgroundColor: AppColors.citrusOrange),
-            child: const Text('Далее'),
+            child: Text('Далее'),
           ),
         ],
       ),
@@ -178,20 +178,20 @@ class _PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
           borderRadius: BorderRadius.circular(16),
           side: BorderSide(color: AppColors.destructive.withOpacity(0.3)),
         ),
-        title: const Text('Удалить момент?', style: TextStyle(color: AppColors.foreground)),
+        title: Text('Удалить момент?', style: TextStyle(color: AppColors.foreground)),
         content: Text(
           photo.caption ?? 'Момент от ${DateFormat('dd.MM.yyyy').format(photo.createdAt)}',
-          style: const TextStyle(color: AppColors.mutedForeground),
+          style: TextStyle(color: AppColors.mutedForeground),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Отмена', style: TextStyle(color: AppColors.mutedForeground)),
+            child: Text('Отмена', style: TextStyle(color: AppColors.mutedForeground)),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
             style: FilledButton.styleFrom(backgroundColor: AppColors.destructive),
-            child: const Text('Удалить'),
+            child: Text('Удалить'),
           ),
         ],
       ),
@@ -232,7 +232,7 @@ class _PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
               Container(
                 width: double.infinity,
                 constraints: const BoxConstraints(maxHeight: 350),
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   color: AppColors.surface2,
                   borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
                 ),
@@ -241,12 +241,12 @@ class _PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
                   child: CachedNetworkImage(
                     imageUrl: photo.imageUrl,
                     fit: BoxFit.cover,
-                    placeholder: (context, url) => const Center(
+                    placeholder: (context, url) => Center(
                       child: CircularProgressIndicator(color: AppColors.citrusOrange),
                     ),
                     errorWidget: (context, url, error) => Container(
                       padding: const EdgeInsets.all(32),
-                      child: const Center(
+                      child: Center(
                         child: Icon(Icons.broken_image, size: 64, color: AppColors.mutedForeground),
                       ),
                     ),
@@ -256,7 +256,7 @@ class _PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
               // Информация
               Container(
                 width: double.infinity,
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   color: AppColors.surface1,
                   borderRadius: BorderRadius.vertical(bottom: Radius.circular(24)),
                 ),
@@ -267,19 +267,19 @@ class _PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
                     if (photo.caption != null && photo.caption!.isNotEmpty) ...[
                       Text(
                         photo.caption!,
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: AppColors.foreground,
                           fontSize: 18,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      SizedBox(height: 4),
                     ],
                     Text(
                       DateFormat('dd MMMM yyyy', 'ru_RU').format(photo.createdAt),
-                      style: const TextStyle(color: AppColors.mutedForeground, fontSize: 13),
+                      style: TextStyle(color: AppColors.mutedForeground, fontSize: 13),
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: 16),
                     Row(
                       children: [
                         Expanded(
@@ -291,12 +291,12 @@ class _PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
                               padding: const EdgeInsets.symmetric(vertical: 12),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                             ),
-                            child: const Text('Закрыть'),
+                            child: Text('Закрыть'),
                           ),
                         ),
-                        const SizedBox(width: 8),
+                        SizedBox(width: 8),
                         IconButton(
-                          icon: const Icon(Icons.delete, color: AppColors.destructive),
+                          icon: Icon(Icons.delete, color: AppColors.destructive),
                           onPressed: () {
                             Navigator.pop(context);
                             _confirmDeletePhoto(photo);
@@ -325,7 +325,7 @@ class _PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Padding(
+            Padding(
               padding: EdgeInsets.all(16),
               child: Text(
                 'Добавить момент',
@@ -337,22 +337,22 @@ class _PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
               ),
             ),
             ListTile(
-              leading: const Icon(Icons.photo_library, color: AppColors.citrusOrange),
-              title: const Text('Выбрать из галереи', style: TextStyle(color: AppColors.foreground)),
+              leading: Icon(Icons.photo_library, color: AppColors.citrusOrange),
+              title: Text('Выбрать из галереи', style: TextStyle(color: AppColors.foreground)),
               onTap: () {
                 Navigator.pop(context);
                 _pickImage(ImageSource.gallery);
               },
             ),
             ListTile(
-              leading: const Icon(Icons.camera_alt, color: AppColors.citrusOrange),
-              title: const Text('Сделать фото', style: TextStyle(color: AppColors.foreground)),
+              leading: Icon(Icons.camera_alt, color: AppColors.citrusOrange),
+              title: Text('Сделать фото', style: TextStyle(color: AppColors.foreground)),
               onTap: () {
                 Navigator.pop(context);
                 _pickImage(ImageSource.camera);
               },
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
           ],
         ),
       ),
@@ -381,7 +381,7 @@ class _PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
+                    Text(
                       'Галерея моментов',
                       style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: AppColors.foreground),
                     ),
@@ -413,7 +413,7 @@ class _PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
                             ),
                           ),
                         ),
-                        const SizedBox(width: 8),
+                        SizedBox(width: 8),
                         // Кнопка добавить
                         GestureDetector(
                           onTap: _isUploading ? null : _showUploadOptions,
@@ -425,19 +425,19 @@ class _PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: _isUploading
-                                ? const SizedBox(
+                                ? SizedBox(
                                     width: 16,
                                     height: 16,
                                     child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                                   )
-                                : const Icon(Icons.add, color: Colors.white, size: 18),
+                                : Icon(Icons.add, color: Colors.white, size: 18),
                           ),
                         ),
                       ],
                     ),
                   ],
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: 16),
                 // Мотивационная карточка
                 Container(
                   width: double.infinity,
@@ -451,57 +451,57 @@ class _PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(color: AppColors.citrusRed.withOpacity(0.2)),
                   ),
-                  child: const Text(
+                  child: Text(
                     'Дофамин\nКаждый счастливый момент заслуживает быть сохранённым.',
                     style: TextStyle(color: AppColors.foreground, fontSize: 14, fontWeight: FontWeight.w500),
                   ),
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: 12),
                 // Счётчик
                 Row(
                   children: [
-                    const Icon(Icons.photo, color: AppColors.citrusOrange, size: 16),
-                    const SizedBox(width: 4),
+                    Icon(Icons.photo, color: AppColors.citrusOrange, size: 16),
+                    SizedBox(width: 4),
                     Text(
                       '${_photos.length} моментов',
-                      style: const TextStyle(color: AppColors.mutedForeground, fontSize: 13),
+                      style: TextStyle(color: AppColors.mutedForeground, fontSize: 13),
                     ),
                     if (favoriteCount > 0) ...[
-                      const SizedBox(width: 12),
-                      const Icon(Icons.favorite, color: AppColors.citrusRed, size: 14),
-                      const SizedBox(width: 4),
+                      SizedBox(width: 12),
+                      Icon(Icons.favorite, color: AppColors.citrusRed, size: 14),
+                      SizedBox(width: 4),
                       Text(
                         '$favoriteCount избранных',
-                        style: const TextStyle(color: AppColors.mutedForeground, fontSize: 13),
+                        style: TextStyle(color: AppColors.mutedForeground, fontSize: 13),
                       ),
                     ],
                     if (_showFavoritesOnly) ...[
-                      const SizedBox(width: 12),
+                      SizedBox(width: 12),
                       Text(
                         '(показаны избранные)',
-                        style: const TextStyle(color: AppColors.citrusRed, fontSize: 12, fontStyle: FontStyle.italic),
+                        style: TextStyle(color: AppColors.citrusRed, fontSize: 12, fontStyle: FontStyle.italic),
                       ),
                     ],
                   ],
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: 16),
                 // Сетка фото
                 SizedBox(
                   height: MediaQuery.of(context).size.height - 380,
                   child: _isLoading
-                      ? const Center(child: CircularProgressIndicator(color: AppColors.citrusOrange))
+                      ? Center(child: CircularProgressIndicator(color: AppColors.citrusOrange))
                       : _error != null
                           ? Center(
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  const Icon(Icons.error_outline, size: 48, color: AppColors.destructive),
-                                  const SizedBox(height: 8),
-                                  Text(_error!, style: const TextStyle(color: AppColors.mutedForeground)),
-                                  const SizedBox(height: 16),
+                                  Icon(Icons.error_outline, size: 48, color: AppColors.destructive),
+                                  SizedBox(height: 8),
+                                  Text(_error!, style: TextStyle(color: AppColors.mutedForeground)),
+                                  SizedBox(height: 16),
                                   ElevatedButton(
                                     onPressed: _loadPhotos,
-                                    child: const Text('Повторить'),
+                                    child: Text('Повторить'),
                                   ),
                                 ],
                               ),
@@ -512,13 +512,13 @@ class _PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
                                       Icon(Icons.photo_library, size: 64, color: AppColors.dimForeground),
-                                      const SizedBox(height: 8),
-                                      const Text(
+                                      SizedBox(height: 8),
+                                      Text(
                                         'Пока нет моментов',
                                         style: TextStyle(color: AppColors.mutedForeground),
                                       ),
-                                      const SizedBox(height: 8),
-                                      const Text(
+                                      SizedBox(height: 8),
+                                      Text(
                                         'Нажмите + чтобы добавить фото',
                                         style: TextStyle(color: AppColors.dimForeground, fontSize: 12),
                                       ),
@@ -562,7 +562,7 @@ class _PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
                                                       fit: BoxFit.cover,
                                                       placeholder: (context, url) => Container(
                                                         color: AppColors.surface2,
-                                                        child: const Center(
+                                                        child: Center(
                                                           child: CircularProgressIndicator(
                                                             strokeWidth: 2,
                                                             color: AppColors.citrusOrange,
@@ -571,7 +571,7 @@ class _PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
                                                       ),
                                                       errorWidget: (context, url, error) => Container(
                                                         color: AppColors.surface2,
-                                                        child: const Center(
+                                                        child: Center(
                                                           child: Icon(
                                                             Icons.broken_image,
                                                             size: 48,
@@ -616,7 +616,7 @@ class _PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
                                                   children: [
                                                     Text(
                                                       photo.caption!,
-                                                      style: const TextStyle(
+                                                      style: TextStyle(
                                                         color: AppColors.foreground,
                                                         fontSize: 13,
                                                         fontWeight: FontWeight.w500,
@@ -624,10 +624,10 @@ class _PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
                                                       maxLines: 1,
                                                       overflow: TextOverflow.ellipsis,
                                                     ),
-                                                    const SizedBox(height: 2),
+                                                    SizedBox(height: 2),
                                                     Text(
                                                       DateFormat('dd.MM.yyyy').format(photo.createdAt),
-                                                      style: const TextStyle(
+                                                      style: TextStyle(
                                                         color: AppColors.mutedForeground,
                                                         fontSize: 11,
                                                       ),
@@ -640,7 +640,7 @@ class _PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
                                                 padding: const EdgeInsets.all(8),
                                                 child: Text(
                                                   DateFormat('dd.MM.yyyy').format(photo.createdAt),
-                                                  style: const TextStyle(
+                                                  style: TextStyle(
                                                     color: AppColors.mutedForeground,
                                                     fontSize: 11,
                                                   ),
@@ -653,7 +653,7 @@ class _PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
                                   },
                                 ),
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: 12),
                 // Кнопка добавления
                 SizedBox(
                   width: double.infinity,
@@ -672,19 +672,19 @@ class _PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
                       child: _isUploading
-                          ? const SizedBox(
+                          ? SizedBox(
                               width: 20,
                               height: 20,
                               child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.background),
                             )
-                          : const Text(
+                          : Text(
                               'Добавить момент',
                               style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
                             ),
                     ),
                   ),
                 ),
-                const SizedBox(height: 80),
+                SizedBox(height: 80),
               ],
             ),
           ),
