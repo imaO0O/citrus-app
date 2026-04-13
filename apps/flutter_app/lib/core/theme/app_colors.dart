@@ -9,12 +9,8 @@ import '../utils/theme_service.dart';
 class AppColors {
   static bool get _isDark {
     try {
-      final service = ThemeService();
-      final isDark = service.isDarkMode;
-      print('AppColors._isDark: $isDark');
-      return isDark;
-    } catch (e, st) {
-      print('AppColors: ОШИБКА чтения темы: $e\n$st, fallback на dark');
+      return ThemeService().isDarkMode;
+    } catch (e) {
       return true;
     }
   }

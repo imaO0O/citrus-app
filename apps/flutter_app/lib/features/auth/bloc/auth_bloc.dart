@@ -85,14 +85,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
     if (_repository.isAuthenticated) {
       final user = _repository.currentUser!;
-      
-      // Применяем тему пользователя при инициализации
+      ThemeService().setUserCredentials(user.token, user.id);
       if (user.themeId != null) {
-        final themeService = ThemeService();
         final isDark = user.themeId == '00000000-0000-0000-0000-000000000002';
-        themeService.toggleTheme(isDark);
+        ThemeService().toggleTheme(isDark);
       }
-      
       emit(AuthAuthenticated(user));
     } else {
       emit(const AuthUnauthenticated());
@@ -100,33 +97,26 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   }
 
   Future<void> _onLogin(AuthLogin event, Emitter<AuthState> emit) async {
-    print('AuthBloc: Вход пользователя ${event.email}...');
     emit(const AuthLoading());
     try {
       final user = await _repository.login(
         email: event.email,
         password: event.password,
       );
-      print('AuthBloc: Успешный вход! User: ${user.email}');
-      
-      // Применяем тему пользователя
+
+      ThemeService().setUserCredentials(user.token, user.id);
       if (user.themeId != null) {
-        final themeService = ThemeService();
-        // Тёмная тема по умолчанию для ID 00000000-0000-0000-0000-000000000002
         final isDark = user.themeId == '00000000-0000-0000-0000-000000000002';
-        themeService.toggleTheme(isDark);
+        ThemeService().toggleTheme(isDark);
       }
-      
+
       emit(AuthAuthenticated(user));
-      print('AuthBloc: Токен пользователя: ${user.token.isEmpty ? "ПУСТОЙ" : "length=${user.token.length}"}');
     } catch (e) {
-      print('AuthBloc: Ошибка входа: $e');
       emit(AuthError(e.toString()));
     }
   }
 
   Future<void> _onRegister(AuthRegister event, Emitter<AuthState> emit) async {
-    print('AuthBloc: Регистрация пользователя ${event.email}...');
     emit(const AuthLoading());
     try {
       final user = await _repository.register(
@@ -134,18 +124,15 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         password: event.password,
         name: event.name,
       );
-      print('AuthBloc: Успешно! User: ${user.email}');
-      
-      // Применяем тему пользователя (по умолчанию светлая)
+
+      ThemeService().setUserCredentials(user.token, user.id);
       if (user.themeId != null) {
-        final themeService = ThemeService();
         final isDark = user.themeId == '00000000-0000-0000-0000-000000000002';
-        themeService.toggleTheme(isDark);
+        ThemeService().toggleTheme(isDark);
       }
-      
+
       emit(AuthAuthenticated(user));
     } catch (e) {
-      print('AuthBloc: Ошибка регистрации: $e');
       emit(AuthError(e.toString()));
     }
   }
@@ -156,9 +143,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   }
 
   Future<void> _onThemeChanged(AuthThemeChanged event, Emitter<AuthState> emit) async {
-    // Обновляем пользователя в репозитории
     _repository.currentUser = event.user;
-    // Обновляем состояние
     emit(AuthAuthenticated(event.user));
   }
 }

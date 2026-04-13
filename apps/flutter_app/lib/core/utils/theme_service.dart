@@ -1,37 +1,39 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
+
+import '../config/api_config.dart';
 
 /// Сервис для управления темой приложения с сохранением
 class ThemeService extends ChangeNotifier {
   ThemeService._internal();
   static final ThemeService _instance = ThemeService._internal();
-  
-  factory ThemeService() {
-    return _instance;
-  }
+
+  factory ThemeService() => _instance;
 
   static const String _fileName = 'theme_config.json';
   ThemeMode _themeMode = ThemeMode.light;
   bool _isLoaded = false;
 
-  ThemeMode get themeMode {
-    print('>>> ThemeService.themeMode getter: $_themeMode');
-    return _themeMode;
-  }
-  bool get isDarkMode {
-    final result = _themeMode == ThemeMode.dark;
-    print('>>> ThemeService.isDarkMode getter: $result');
-    return result;
-  }
+  /// Токен и ID пользователя для сохранения темы в БД
+  String? _userToken;
+  String? _userId;
+
+  ThemeMode get themeMode => _themeMode;
+  bool get isDarkMode => _themeMode == ThemeMode.dark;
   bool get isLoaded => _isLoaded;
+
+  /// Установить данные пользователя для синхронизации темы с БД
+  void setUserCredentials(String? token, String? userId) {
+    _userToken = token;
+    _userId = userId;
+  }
 
   /// Инициализация сервиса
   Future<void> init() async {
-    print('ThemeService.init() вызван');
     await _loadTheme();
-    print('ThemeService.init() завершён, isDarkMode=$isDarkMode, isLoaded=$_isLoaded');
   }
 
   /// Загрузка темы из файла
@@ -39,21 +41,15 @@ class ThemeService extends ChangeNotifier {
     try {
       final directory = await getApplicationDocumentsDirectory();
       final file = File('${directory.path}/$_fileName');
-      print('ThemeService: загружаю тему из ${file.path}');
 
       if (await file.exists()) {
         final content = await file.readAsString();
-        print('ThemeService: содержимое файла: $content');
         final data = jsonDecode(content) as Map<String, dynamic>;
         final isDark = data['isDarkMode'] as bool? ?? false;
-
         _themeMode = isDark ? ThemeMode.dark : ThemeMode.light;
-        print('ThemeService: загружена тема isDark=$isDark');
-      } else {
-        print('ThemeService: файл темы не найден, использую светлую');
       }
     } catch (e) {
-      debugPrint('ThemeService: ОШИБКА загрузки темы: $e');
+      debugPrint('Ошибка загрузки темы: $e');
       _themeMode = ThemeMode.light;
     }
 
@@ -66,39 +62,42 @@ class ThemeService extends ChangeNotifier {
     try {
       final directory = await getApplicationDocumentsDirectory();
       final file = File('${directory.path}/$_fileName');
-      print('ThemeService: сохраняю тему в ${file.path}, isDark=$isDark');
-
       final data = {'isDarkMode': isDark};
       await file.writeAsString(jsonEncode(data));
-      print('ThemeService: тема сохранена успешно');
     } catch (e) {
-      print('ThemeService: ОШИБКА сохранения темы: $e');
+      debugPrint('Ошибка сохранения темы: $e');
     }
   }
 
-  /// Установка режима темы
-  Future<void> setThemeMode(ThemeMode mode) async {
-    final isDark = mode == ThemeMode.dark;
-    _themeMode = mode;
-    await _saveTheme(isDark);
-    notifyListeners();
+  /// Сохранение темы в БД
+  Future<void> _saveThemeToDb(bool isDark) async {
+    if (_userToken == null || _userToken!.isEmpty || _userId == null) return;
+
+    try {
+      // Тёмная тема = ID 00000000-0000-0000-0000-000000000002
+      // Светлая тема = ID 00000000-0000-0000-0000-000000000001
+      final themeId = isDark
+          ? '00000000-0000-0000-0000-000000000002'
+          : '00000000-0000-0000-0000-000000000001';
+
+      await http.put(
+        Uri.parse('${ApiConfig.baseUrl}/user/theme'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $_userToken',
+        },
+        body: jsonEncode({'theme_id': themeId}),
+      );
+    } catch (e) {
+      debugPrint('Ошибка сохранения темы в БД: $e');
+    }
   }
 
   /// Переключение темы
   Future<void> toggleTheme(bool isDark) async {
-    try {
-      print('>>> ThemeService.toggleTheme(isDark=$isDark) START');
-      print('>>> До: themeMode=$_themeMode, isDarkMode=${_themeMode == ThemeMode.dark}');
-      _themeMode = isDark ? ThemeMode.dark : ThemeMode.light;
-      print('>>> После: themeMode=$_themeMode, isDarkMode=${_themeMode == ThemeMode.dark}');
-      await _saveTheme(isDark);
-      print('>>> Вызываю notifyListeners()...');
-      notifyListeners();
-      print('>>> notifyListeners() вызван успешно');
-      print('>>> ThemeService.toggleTheme END');
-    } catch (e, st) {
-      print('>>> ThemeService: КРИТИЧЕСКАЯ ОШИБКА при переключении темы: $e');
-      print('>>> Stack trace: $st');
-    }
+    _themeMode = isDark ? ThemeMode.dark : ThemeMode.light;
+    notifyListeners();
+    await _saveTheme(isDark);
+    await _saveThemeToDb(isDark);
   }
 }

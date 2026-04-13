@@ -1,4 +1,5 @@
 ﻿import 'dart:convert';
+import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
 import '../config/api_config.dart';
@@ -175,19 +176,13 @@ class AuthRepository {
   Future<void> init() async {
     try {
       final storage = StorageService();
-
-      // Загружаем сохранённые данные
       final savedToken = await storage.getString('auth_token');
       final savedUserId = await storage.getString('auth_user_id');
       final savedEmail = await storage.getString('auth_user_email');
       final savedName = await storage.getString('auth_user_name');
       final savedThemeId = await storage.getString('auth_user_theme_id');
 
-      print('AuthRepository.init(): token=${savedToken != null ? "present(${savedToken.length})" : "null"}, '
-          'userId=$savedUserId, email=$savedEmail, name=$savedName, themeId=$savedThemeId');
-
       if (savedToken != null && savedToken.isNotEmpty && savedUserId != null) {
-        // Восстанавливаем пользователя из сохранённых данных
         _currentUser = User(
           id: savedUserId,
           email: savedEmail ?? '',
@@ -195,40 +190,38 @@ class AuthRepository {
           themeId: savedThemeId,
           token: savedToken,
         );
-        print('AuthRepository: Сессия восстановлена для $savedEmail');
-      } else {
-        print('AuthRepository: Нет сохранённой сессии');
       }
-    } catch (e, st) {
-      print('AuthRepository: ОШИБКА при инициализации: $e\n$st');
+    } catch (e) {
+      debugPrint('AuthRepository init error: $e');
     }
   }
 
   /// Сохранить данные пользователя в постоянное хранилище
   Future<void> _saveSession(User user) async {
-    final storage = StorageService();
-    print('AuthRepository: Сохраняю сессию для ${user.email}, token length=${user.token.length}');
     try {
+      final storage = StorageService();
       await storage.setString('auth_token', user.token);
       await storage.setString('auth_user_id', user.id);
       await storage.setString('auth_user_email', user.email);
       if (user.name != null) await storage.setString('auth_user_name', user.name!);
       if (user.themeId != null) await storage.setString('auth_user_theme_id', user.themeId!);
-      print('AuthRepository: Сессия сохранена успешно');
     } catch (e) {
-      print('AuthRepository: ОШИБКА сохранения сессии: $e');
+      debugPrint('AuthRepository save error: $e');
     }
   }
 
   /// Очистить сохранённую сессию
   Future<void> _clearSession() async {
-    final storage = StorageService();
-    await storage.remove('auth_token');
-    await storage.remove('auth_user_id');
-    await storage.remove('auth_user_email');
-    await storage.remove('auth_user_name');
-    await storage.remove('auth_user_theme_id');
-    print('AuthRepository: Сессия очищена');
+    try {
+      final storage = StorageService();
+      await storage.remove('auth_token');
+      await storage.remove('auth_user_id');
+      await storage.remove('auth_user_email');
+      await storage.remove('auth_user_name');
+      await storage.remove('auth_user_theme_id');
+    } catch (e) {
+      debugPrint('AuthRepository clear error: $e');
+    }
   }
 
   /// Регистрация

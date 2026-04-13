@@ -41,8 +41,6 @@ class MyApp extends StatelessWidget {
     return ListenableBuilder(
       listenable: ThemeService(),
       builder: (context, _) {
-        final currentTheme = ThemeService().themeMode;
-        debugPrint('>>> ListenableBuilder rebuild: themeMode=$currentTheme');
         return MultiRepositoryProvider(
           providers: [
             RepositoryProvider.value(value: authRepository),
@@ -102,13 +100,11 @@ class MyApp extends StatelessWidget {
             ],
             child: Builder(
               builder: (ctx) {
-                final themeMode = ThemeService().themeMode;
-                debugPrint('>>> MaterialApp rebuild: themeMode=$themeMode');
                 return MaterialApp.router(
                   title: 'Citrus',
                   theme: lightTheme,
                   darkTheme: darkTheme,
-                  themeMode: themeMode,
+                  themeMode: ThemeService().themeMode,
                   routerConfig: AppRouter().router,
                   debugShowCheckedModeBanner: false,
                   locale: const Locale('ru', 'RU'),
