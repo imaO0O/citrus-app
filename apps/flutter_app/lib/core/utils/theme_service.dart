@@ -87,14 +87,15 @@ class ThemeService extends ChangeNotifier {
   /// Переключение темы
   Future<void> toggleTheme(bool isDark) async {
     try {
-      print('>>> ThemeService.toggleTheme(isDark=$isDark)');
-      print('>>> До: themeMode=$_themeMode');
+      print('>>> ThemeService.toggleTheme(isDark=$isDark) START');
+      print('>>> До: themeMode=$_themeMode, isDarkMode=${_themeMode == ThemeMode.dark}');
       _themeMode = isDark ? ThemeMode.dark : ThemeMode.light;
-      print('>>> После: themeMode=$_themeMode, isDarkMode=$isDarkMode');
+      print('>>> После: themeMode=$_themeMode, isDarkMode=${_themeMode == ThemeMode.dark}');
       await _saveTheme(isDark);
       print('>>> Вызываю notifyListeners()...');
       notifyListeners();
       print('>>> notifyListeners() вызван успешно');
+      print('>>> ThemeService.toggleTheme END');
     } catch (e, st) {
       print('>>> ThemeService: КРИТИЧЕСКАЯ ОШИБКА при переключении темы: $e');
       print('>>> Stack trace: $st');

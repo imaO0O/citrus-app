@@ -11,9 +11,10 @@ class AppColors {
     try {
       final service = ThemeService();
       final isDark = service.isDarkMode;
+      print('AppColors._isDark: $isDark');
       return isDark;
-    } catch (e) {
-      print('AppColors: ОШИБКА чтения темы: $e, fallback на dark');
+    } catch (e, st) {
+      print('AppColors: ОШИБКА чтения темы: $e\n$st, fallback на dark');
       return true;
     }
   }
