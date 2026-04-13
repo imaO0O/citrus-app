@@ -1,4 +1,6 @@
-﻿import 'package:flutter/material.dart';
+﻿import 'dart:convert';
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:printing/printing.dart';
 import '../core/theme/app_colors.dart';
 import '../services/pdf_report_service.dart';
@@ -6,6 +8,9 @@ import '../models/analytics_report.dart';
 import '../core/repository/mood_repository.dart';
 import '../core/repository/sleep_repository.dart';
 import '../core/services/storage_service.dart';
+import '../core/api/test_api_service.dart';
+import '../core/services/exercise_tracker_service.dart';
+import '../core/config/api_config.dart';
 
 class AnalyticsScreen extends StatefulWidget {
   const AnalyticsScreen({super.key});
@@ -88,15 +93,41 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
             final bedMin = int.tryParse(bedParts[1]) ?? 0;
             final wakeHour = int.tryParse(wakeParts[0]) ?? 0;
             final wakeMin = int.tryParse(wakeParts[1]) ?? 0;
-            
+
             double hours = (wakeHour + wakeMin / 60) - (bedHour + bedMin / 60);
             if (hours < 0) hours += 24;
-            
+
             totalHours += hours;
             count++;
           }
         }
         avgSleepHours = count > 0 ? totalHours / count : 0;
+      }
+
+      // Загружаем количество пройденных тестов
+      int testsCount = 0;
+      try {
+        final testApi = TestApiService(token: token);
+        final testResults = await testApi.getTestResults();
+        testsCount = testResults.length;
+      } catch (e) {
+        debugPrint('Error loading test results: $e');
+      }
+
+      // Загружаем количество выполненных упражнений
+      int exercisesCount = 0;
+      try {
+        exercisesCount = await _getExercisesCount();
+      } catch (e) {
+        debugPrint('Error loading exercises count: $e');
+      }
+
+      // Загружаем количество сообщений чата
+      int chatMessagesCount = 0;
+      try {
+        chatMessagesCount = await _getChatMessagesCount(token);
+      } catch (e) {
+        debugPrint('Error loading chat messages count: $e');
       }
 
       // Строим данные по дням для графика
@@ -185,9 +216,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           insights: _generateInsights(moodRecords, sleepRecords, averageMood, avgSleepHours),
           activity: ActivityStats(
             moodRecords: moodRecords.length,
-            chatMessages: 0,
-            exercises: 0,
-            tests: 0,
+            chatMessages: chatMessagesCount,
+            exercises: exercisesCount,
+            tests: testsCount,
           ),
         );
         _isLoading = false;
@@ -274,6 +305,29 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         setState(() => _isGeneratingPdf = false);
       }
     }
+  }
+
+  /// Получить количество выполненных упражнений из локального хранилища
+  Future<int> _getExercisesCount() async {
+    return await ExerciseTrackerService().getExercisesCount();
+  }
+
+  /// Получить количество сообщений чата с бэкенда
+  Future<int> _getChatMessagesCount(String? token) async {
+    if (token == null || token.isEmpty) return 0;
+
+    final response = await http.get(
+      Uri.parse('${ApiConfig.baseUrl}/chat/messages'),
+      headers: {
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body) as List;
+      return data.length;
+    }
+    return 0;
   }
 
   /// Создать тестовый отчёт (заглушка - заменить данными из репозиториев)
