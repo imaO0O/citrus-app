@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import '../core/theme/app_colors.dart';
@@ -24,11 +24,11 @@ class _ToyScreenState extends State<ToyScreen> {
             constraints: const BoxConstraints(maxWidth: 480),
             child: Column(
               children: [
-                const Text(
+                Text(
                   '\u0410\u043D\u0442\u0438\u0441\u0442\u0440\u0435\u0441\u0441',
                   style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700, color: AppColors.foreground),
                 ),
-                const SizedBox(height: 20),
+                SizedBox(height: 20),
                 Expanded(
                   child: IndexedStack(
                     index: _activeTab,
@@ -73,7 +73,7 @@ class _ToyScreenState extends State<ToyScreen> {
                     emojis[i],
                     style: TextStyle(fontSize: 24, color: isActive ? AppColors.citrusOrange : AppColors.mutedForeground),
                   ),
-                  const SizedBox(height: 4),
+                  SizedBox(height: 4),
                   Text(
                     labels[i],
                     style: TextStyle(
@@ -137,11 +137,11 @@ class _SqueezeCitrusToyState extends State<SqueezeCitrusToy>
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Text(
+          Text(
             '\u041D\u0430\u0436\u043C\u0438 \u043D\u0430 \u0430\u043F\u0435\u043B\u044C\u0441\u0438\u043D!',
             style: TextStyle(fontSize: 14, color: AppColors.mutedForeground, fontWeight: FontWeight.w500),
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: 24),
           GestureDetector(
             onTap: _onSqueeze,
             child: AnimatedBuilder(
@@ -167,7 +167,7 @@ class _SqueezeCitrusToyState extends State<SqueezeCitrusToy>
                         ),
                       ],
                     ),
-                    child: const Center(
+                    child: Center(
                       child: Text('\u{1F34A}', style: TextStyle(fontSize: 72)),
                     ),
                   ),
@@ -175,16 +175,16 @@ class _SqueezeCitrusToyState extends State<SqueezeCitrusToy>
               },
             ),
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: 24),
           Text(
             '$_squeezeCount',
-            style: const TextStyle(
+            style: TextStyle(
               color: AppColors.foreground,
               fontSize: 32,
               fontWeight: FontWeight.w700,
             ),
           ),
-          const Text(
+          Text(
             '\u0440\u0430\u0437 \u0441\u043E\u0436\u0430\u0442\u043E',
             style: TextStyle(color: AppColors.mutedForeground, fontSize: 13),
           ),
@@ -233,7 +233,7 @@ class _BubbleWrapToyState extends State<BubbleWrapToy> {
           children: [
             Text(
               '\u041B\u043E\u043F\u043D\u0443\u0442\u043E: $_poppedCount',
-              style: const TextStyle(color: AppColors.foreground, fontSize: 16, fontWeight: FontWeight.w600),
+              style: TextStyle(color: AppColors.foreground, fontSize: 16, fontWeight: FontWeight.w600),
             ),
             if (_poppedCount > 0)
               GestureDetector(
@@ -244,7 +244,7 @@ class _BubbleWrapToyState extends State<BubbleWrapToy> {
                     color: AppColors.citrusOrange.withOpacity(0.15),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Text(
+                  child: Text(
                     '\u0421\u0431\u0440\u043E\u0441\u0438\u0442\u044C',
                     style: TextStyle(color: AppColors.citrusOrange, fontSize: 12, fontWeight: FontWeight.w500),
                   ),
@@ -252,7 +252,7 @@ class _BubbleWrapToyState extends State<BubbleWrapToy> {
               ),
           ],
         ),
-        const SizedBox(height: 16),
+        SizedBox(height: 16),
         Expanded(
           child: GridView.builder(
             physics: const NeverScrollableScrollPhysics(),
@@ -295,7 +295,7 @@ class _BubbleWrapToyState extends State<BubbleWrapToy> {
                           ],
                   ),
                   child: isPopped
-                      ? const Center(child: Text('\u2713', style: TextStyle(color: AppColors.mutedForeground, fontSize: 14)))
+                      ? Center(child: Text('\u2713', style: TextStyle(color: AppColors.mutedForeground, fontSize: 14)))
                       : null,
                 ),
               );
@@ -505,7 +505,7 @@ class _BreathingExerciseToyState extends State<BreathingExerciseToy>
                       children: [
                         Text(
                           _getPhaseText(),
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: AppColors.foreground,
                             fontSize: 18,
                             fontWeight: FontWeight.w700,
@@ -514,7 +514,7 @@ class _BreathingExerciseToyState extends State<BreathingExerciseToy>
                         if (_isRunning)
                           Text(
                             '\u0426\u0438\u043A\u043B\u043E\u0432: $_cycleCount',
-                            style: const TextStyle(color: AppColors.mutedForeground, fontSize: 13),
+                            style: TextStyle(color: AppColors.mutedForeground, fontSize: 13),
                           ),
                       ],
                     ),
@@ -523,7 +523,7 @@ class _BreathingExerciseToyState extends State<BreathingExerciseToy>
               );
             },
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: 24),
           GestureDetector(
             onTap: _isRunning ? _stopBreathing : _startBreathing,
             child: Container(

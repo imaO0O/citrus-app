@@ -321,7 +321,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       backgroundColor: AppColors.background,
       body: SafeArea(
         child: _isLoading
-            ? const Center(
+            ? Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -348,19 +348,19 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               _buildHeader(),
-                              const SizedBox(height: 16),
+                              SizedBox(height: 16),
                               _buildPeriodSelector(),
-                              const SizedBox(height: 20),
+                              SizedBox(height: 20),
                               _buildOverviewCards(),
-                              const SizedBox(height: 20),
+                              SizedBox(height: 20),
                               _buildMoodChart(),
-                              const SizedBox(height: 20),
+                              SizedBox(height: 20),
                               _buildMoodDistribution(),
-                              const SizedBox(height: 20),
+                              SizedBox(height: 20),
                               _buildInsights(),
-                              const SizedBox(height: 20),
+                              SizedBox(height: 20),
                               _buildActivitySection(),
-                              const SizedBox(height: 20),
+                              SizedBox(height: 20),
                               _buildExportButtons(),
                             ],
                           ),
@@ -368,7 +368,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                       ),
                     ),
                   ),
-                  const SliverPadding(padding: EdgeInsets.only(bottom: 80)),
+                  SliverPadding(padding: EdgeInsets.only(bottom: 80)),
                 ],
               ),
       ),
@@ -379,7 +379,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        const Column(
+        Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
@@ -401,7 +401,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
               color: Colors.white.withOpacity(0.06),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: const Icon(Icons.download_outlined, color: AppColors.citrusOrange, size: 20),
+            child: Icon(Icons.download_outlined, color: AppColors.citrusOrange, size: 20),
           ),
         ),
       ],
@@ -484,12 +484,12 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
             children: [
               Text(
                 card['value'] as String,
-                style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: AppColors.foreground),
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: AppColors.foreground),
               ),
-              const SizedBox(height: 4),
+              SizedBox(height: 4),
               Text(
                 card['label'] as String,
-                style: const TextStyle(fontSize: 10, color: AppColors.dimForeground),
+                style: TextStyle(fontSize: 10, color: AppColors.dimForeground),
               ),
             ],
           ),
@@ -511,7 +511,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: AppColors.subtleBorder),
         ),
-        child: const Center(
+        child: Center(
           child: Text(
             'Нет данных о настроении за выбранный период',
             style: TextStyle(color: AppColors.mutedForeground, fontSize: 14),
@@ -535,9 +535,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         children: [
           Text(
             '\u0413\u0440\u0430\u0444\u0438\u043A \u043D\u0430\u0441\u0442\u0440\u043E\u0435\u043D\u0438\u044F (${moodByDay.length} \u0434\u043D\u0435\u0439)',
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.foreground),
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.foreground),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           SizedBox(
             height: 150,
             child: SingleChildScrollView(
@@ -560,11 +560,11 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                               borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
                             ),
                           ),
-                          const SizedBox(height: 8),
+                          SizedBox(height: 8),
                           Text(
                             days[index],
                             textAlign: TextAlign.center,
-                            style: const TextStyle(fontSize: 10, color: AppColors.dimForeground),
+                            style: TextStyle(fontSize: 10, color: AppColors.dimForeground),
                           ),
                         ],
                       ),
@@ -594,11 +594,11 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             '\u0420\u0430\u0441\u043F\u0440\u0435\u0434\u0435\u043B\u0435\u043D\u0438\u0435 \u043D\u0430\u0441\u0442\u0440\u043E\u0435\u043D\u0438\u044F',
             style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.foreground),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           ...distributions.where((d) => d.count > 0).map((d) => Padding(
             padding: const EdgeInsets.only(bottom: 12),
             child: Column(
@@ -606,14 +606,14 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
               children: [
                 Row(
                   children: [
-                    Text(d.emoji, style: const TextStyle(fontSize: 14)),
-                    const SizedBox(width: 6),
-                    Text(d.label, style: const TextStyle(fontSize: 12, color: AppColors.foreground, fontWeight: FontWeight.w500)),
+                    Text(d.emoji, style: TextStyle(fontSize: 14)),
+                    SizedBox(width: 6),
+                    Text(d.label, style: TextStyle(fontSize: 12, color: AppColors.foreground, fontWeight: FontWeight.w500)),
                     const Spacer(),
-                    Text('${d.count} (${d.percent.toStringAsFixed(0)}%)', style: const TextStyle(fontSize: 11, color: AppColors.mutedForeground)),
+                    Text('${d.count} (${d.percent.toStringAsFixed(0)}%)', style: TextStyle(fontSize: 11, color: AppColors.mutedForeground)),
                   ],
                 ),
-                const SizedBox(height: 6),
+                SizedBox(height: 6),
                 Container(
                   height: 10,
                   decoration: BoxDecoration(
@@ -645,11 +645,11 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           '\u0418\u043D\u0441\u0430\u0439\u0442\u044B',
           style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.foreground),
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: 12),
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
@@ -670,12 +670,12 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('\u{1F4A1}', style: TextStyle(fontSize: 18)),
-                  const SizedBox(width: 10),
+                  Text('\u{1F4A1}', style: TextStyle(fontSize: 18)),
+                  SizedBox(width: 10),
                   Expanded(
                     child: Text(
                       insight,
-                      style: const TextStyle(fontSize: 12, color: AppColors.mutedForeground, height: 1.4),
+                      style: TextStyle(fontSize: 12, color: AppColors.mutedForeground, height: 1.4),
                     ),
                   ),
                 ],
@@ -702,17 +702,17 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             '\u0410\u043A\u0442\u0438\u0432\u043D\u043E\u0441\u0442\u044C',
             style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.foreground),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           _buildActivityBar('\u0417\u0430\u043F\u0438\u0441\u0438 \u043D\u0430\u0441\u0442\u0440\u043E\u0435\u043D\u0438\u044F', a.moodRecords, 30, AppColors.citrusOrange),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           _buildActivityBar('\u0421\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u044F \u0432 \u0447\u0430\u0442\u0435', a.chatMessages, 30, AppColors.citrusAmber),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           _buildActivityBar('\u0423\u043F\u0440\u0430\u0436\u043D\u0435\u043D\u0438\u044F', a.exercises, 30, AppColors.moodGood),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           _buildActivityBar('\u0422\u0435\u0441\u0442\u044B', a.tests, 30, AppColors.moodVeryBad),
         ],
       ),
@@ -727,12 +727,12 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       children: [
         Row(
           children: [
-            Text(label, style: const TextStyle(fontSize: 12, color: AppColors.mutedForeground, fontWeight: FontWeight.w500)),
+            Text(label, style: TextStyle(fontSize: 12, color: AppColors.mutedForeground, fontWeight: FontWeight.w500)),
             const Spacer(),
             Text(value.toString(), style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: color)),
           ],
         ),
-        const SizedBox(height: 6),
+        SizedBox(height: 6),
         Container(
           height: 8,
           decoration: BoxDecoration(
@@ -760,7 +760,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         Expanded(
           child: _buildExportButton(icon: Icons.picture_as_pdf, label: 'PDF', onTap: _generatePdfReport),
         ),
-        const SizedBox(width: 12),
+        SizedBox(width: 12),
         Expanded(
           child: _buildExportButton(icon: Icons.table_chart, label: 'CSV', onTap: () {}),
         ),
@@ -779,7 +779,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           border: Border.all(color: AppColors.subtleBorder),
         ),
         child: isLoading
-            ? const SizedBox(
+            ? SizedBox(
                 height: 18,
                 width: 18,
                 child: CircularProgressIndicator(
@@ -791,8 +791,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(icon, color: AppColors.citrusOrange, size: 18),
-                  const SizedBox(width: 8),
-                  Text(label, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.foreground)),
+                  SizedBox(width: 8),
+                  Text(label, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.foreground)),
                 ],
               ),
       ),

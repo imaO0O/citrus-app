@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../core/theme/app_colors.dart';
@@ -186,15 +186,15 @@ class _ChatScreenState extends State<ChatScreen> {
                 ),
               ],
             ),
-            child: const Center(child: Text('\u{1F34A}', style: TextStyle(fontSize: 20))),
+            child: Center(child: Text('\u{1F34A}', style: TextStyle(fontSize: 20))),
           ),
-          const SizedBox(width: 12),
+          SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text(
+                Text(
                   '\u0418\u0418-\u0410\u0441\u0441\u0438\u0441\u0442\u0435\u043D\u0442 \u0426\u0438\u0442\u0440\u0443\u0441',
                   style: TextStyle(
                     color: AppColors.foreground,
@@ -202,12 +202,12 @@ class _ChatScreenState extends State<ChatScreen> {
                     fontSize: 15,
                   ),
                 ),
-                const SizedBox(height: 2),
+                SizedBox(height: 2),
                 Row(
                   children: [
                     _PulsingDot(),
-                    const SizedBox(width: 6),
-                    const Text(
+                    SizedBox(width: 6),
+                    Text(
                       '\u0412\u0441\u0435\u0433\u0434\u0430 \u043E\u043D\u043B\u0430\u0439\u043D',
                       style: TextStyle(color: Color(0xFF4ADE80), fontSize: 12),
                     ),
@@ -254,7 +254,7 @@ class _ChatScreenState extends State<ChatScreen> {
             crossAxisAlignment: isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
             children: [
               if (!isUser)
-                const Padding(
+                Padding(
                   padding: EdgeInsets.only(bottom: 4),
                   child: Text('\u{1F34A}', style: TextStyle(fontSize: 16)),
                 ),
@@ -266,7 +266,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   height: 1.5,
                 ),
               ),
-              const SizedBox(height: 6),
+              SizedBox(height: 6),
               Text(
                 msg.time,
                 style: TextStyle(
@@ -301,13 +301,13 @@ class _ChatScreenState extends State<ChatScreen> {
                   ),
                   child: Text(
                     hint,
-                    style: const TextStyle(color: AppColors.citrusOrange, fontSize: 12),
+                    style: TextStyle(color: AppColors.citrusOrange, fontSize: 12),
                   ),
                 ),
               );
             }).toList(),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           GestureDetector(
             onTap: () {
               _sendMessage(text: '\u0417\u0430\u0433\u0440\u0443\u0436\u0430\u044E \u0434\u043D\u0435\u0432\u043D\u0438\u043A \u0434\u043B\u044F \u0430\u043D\u0430\u043B\u0438\u0437\u0430');
@@ -323,8 +323,8 @@ class _ChatScreenState extends State<ChatScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(Icons.upload_file, color: AppColors.citrusPurple, size: 16),
-                  const SizedBox(width: 8),
-                  const Text(
+                  SizedBox(width: 8),
+                  Text(
                     '\u0417\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044C \u0434\u043D\u0435\u0432\u043D\u0438\u043A \u0434\u043B\u044F \u0430\u043D\u0430\u043B\u0438\u0437\u0430',
                     style: TextStyle(color: AppColors.citrusPurple, fontSize: 12),
                   ),
@@ -352,7 +352,7 @@ class _ChatScreenState extends State<ChatScreen> {
             child: TextField(
               controller: _controller,
               focusNode: _focusNode,
-              style: const TextStyle(color: AppColors.foreground),
+              style: TextStyle(color: AppColors.foreground),
               maxLines: 4,
               minLines: 1,
               decoration: InputDecoration(
@@ -378,7 +378,7 @@ class _ChatScreenState extends State<ChatScreen> {
               onSubmitted: (_) => _sendMessage(),
             ),
           ),
-          const SizedBox(width: 8),
+          SizedBox(width: 8),
           GestureDetector(
             onTap: hasText ? _sendMessage : null,
             child: AnimatedContainer(
@@ -459,8 +459,8 @@ class _TypingIndicatorState extends State<_TypingIndicator>
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text('\u{1F34A}', style: TextStyle(fontSize: 16)),
-              const SizedBox(width: 8),
+              Text('\u{1F34A}', style: TextStyle(fontSize: 16)),
+              SizedBox(width: 8),
               for (int i = 0; i < 3; i++) ...[
                 Transform.scale(
                   scale: 0.6 + 0.4 * ((0.5 + 0.5 * math.sin((_controller.value * 2 * math.pi + i * 0.8)))).clamp(0.0, 1.0),
@@ -473,7 +473,7 @@ class _TypingIndicatorState extends State<_TypingIndicator>
                     ),
                   ),
                 ),
-                if (i < 2) const SizedBox(width: 4),
+                if (i < 2) SizedBox(width: 4),
               ],
             ],
           ),
@@ -523,7 +523,7 @@ class _PulsingDotState extends State<_PulsingDot>
           child: Container(
             width: 7,
             height: 7,
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               color: Color(0xFF4ADE80),
               shape: BoxShape.circle,
             ),

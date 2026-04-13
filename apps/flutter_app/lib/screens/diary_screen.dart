@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import '../core/theme/app_colors.dart';
@@ -52,7 +52,7 @@ class _DiaryScreenState extends State<DiaryScreen> {
                   child: BlocBuilder<DiaryBloc, DiaryState>(
                     builder: (context, state) {
                       if (state is DiaryLoading) {
-                        return const Center(
+                        return Center(
                           child: CircularProgressIndicator(color: AppColors.citrusOrange),
                         );
                       }
@@ -62,13 +62,13 @@ class _DiaryScreenState extends State<DiaryScreen> {
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              const Icon(Icons.error_outline, size: 48, color: AppColors.destructive),
-                              const SizedBox(height: 16),
-                              Text(state.message, style: const TextStyle(color: AppColors.mutedForeground)),
-                              const SizedBox(height: 16),
+                              Icon(Icons.error_outline, size: 48, color: AppColors.destructive),
+                              SizedBox(height: 16),
+                              Text(state.message, style: TextStyle(color: AppColors.mutedForeground)),
+                              SizedBox(height: 16),
                               ElevatedButton(
                                 onPressed: _loadEntries,
-                                child: const Text('Повторить'),
+                                child: Text('Повторить'),
                               ),
                             ],
                           ),
@@ -82,16 +82,16 @@ class _DiaryScreenState extends State<DiaryScreen> {
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Icon(Icons.menu_book, size: 64, color: AppColors.dimForeground),
-                                const SizedBox(height: 16),
-                                const Text(
+                                SizedBox(height: 16),
+                                Text(
                                   'Нет записей в дневнике',
                                   style: TextStyle(color: AppColors.mutedForeground),
                                 ),
-                                const SizedBox(height: 16),
+                                SizedBox(height: 16),
                                 ElevatedButton.icon(
                                   onPressed: () => _showAddEntryDialog(context),
-                                  icon: const Icon(Icons.add),
-                                  label: const Text('Добавить запись'),
+                                  icon: Icon(Icons.add),
+                                  label: Text('Добавить запись'),
                                 ),
                               ],
                             ),
@@ -121,7 +121,7 @@ class _DiaryScreenState extends State<DiaryScreen> {
         heroTag: 'diary_fab',
         onPressed: () => _showAddEntryDialog(context),
         backgroundColor: AppColors.citrusOrange,
-        child: const Icon(Icons.add),
+        child: Icon(Icons.add),
       ),
     );
   }
@@ -132,12 +132,12 @@ class _DiaryScreenState extends State<DiaryScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Дневник',
             style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700, color: AppColors.foreground),
           ),
-          const SizedBox(height: 4),
-          const Text(
+          SizedBox(height: 4),
+          Text(
             'Записывайте мысли и наблюдения',
             style: TextStyle(fontSize: 13, color: AppColors.mutedForeground),
           ),
@@ -151,11 +151,11 @@ class _DiaryScreenState extends State<DiaryScreen> {
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
       child: TextField(
         controller: _searchController,
-        style: const TextStyle(color: AppColors.foreground),
+        style: TextStyle(color: AppColors.foreground),
         decoration: InputDecoration(
           hintText: 'Поиск записей...',
-          hintStyle: const TextStyle(color: AppColors.mutedForeground),
-          prefixIcon: const Icon(Icons.search, color: AppColors.mutedForeground, size: 20),
+          hintStyle: TextStyle(color: AppColors.mutedForeground),
+          prefixIcon: Icon(Icons.search, color: AppColors.mutedForeground, size: 20),
           filled: true,
           fillColor: AppColors.surface1,
           border: OutlineInputBorder(
@@ -165,7 +165,7 @@ class _DiaryScreenState extends State<DiaryScreen> {
           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           suffixIcon: _searchQuery.isNotEmpty
               ? IconButton(
-                  icon: const Icon(Icons.clear, size: 18),
+                  icon: Icon(Icons.clear, size: 18),
                   onPressed: () {
                     _searchController.clear();
                     setState(() => _searchQuery = '');
@@ -204,7 +204,7 @@ class _DiaryScreenState extends State<DiaryScreen> {
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
-            if (entry.moodValue != null) const SizedBox(width: 12),
+            if (entry.moodValue != null) SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -212,12 +212,12 @@ class _DiaryScreenState extends State<DiaryScreen> {
                   Row(
                     children: [
                       if (entry.moodValue != null)
-                        Text(entry.mood, style: const TextStyle(fontSize: 24)),
-                      if (entry.moodValue != null) const SizedBox(width: 8),
+                        Text(entry.mood, style: TextStyle(fontSize: 24)),
+                      if (entry.moodValue != null) SizedBox(width: 8),
                       Expanded(
                         child: Text(
                           entry.title,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
                             color: AppColors.foreground,
@@ -228,36 +228,36 @@ class _DiaryScreenState extends State<DiaryScreen> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 4),
+                  SizedBox(height: 4),
                   Text(
                     entry.content.length > 100
                         ? '${entry.content.substring(0, 100)}...'
                         : entry.content,
-                    style: const TextStyle(fontSize: 13, color: AppColors.mutedForeground),
+                    style: TextStyle(fontSize: 13, color: AppColors.mutedForeground),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
                         _formatDate(entry.entryDate),
-                        style: const TextStyle(fontSize: 10, color: AppColors.dimForeground),
+                        style: TextStyle(fontSize: 10, color: AppColors.dimForeground),
                       ),
                       Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           IconButton(
-                            icon: const Icon(Icons.edit, size: 18),
+                            icon: Icon(Icons.edit, size: 18),
                             color: AppColors.citrusOrange,
                             onPressed: () => _showEditEntryDialog(context, entry),
                             padding: EdgeInsets.zero,
                             constraints: const BoxConstraints(),
                           ),
-                          const SizedBox(width: 8),
+                          SizedBox(width: 8),
                           IconButton(
-                            icon: const Icon(Icons.delete, size: 18),
+                            icon: Icon(Icons.delete, size: 18),
                             color: AppColors.destructive,
                             onPressed: () => _confirmDeleteEntry(context, entry),
                             padding: EdgeInsets.zero,
@@ -290,7 +290,7 @@ class _DiaryScreenState extends State<DiaryScreen> {
             borderRadius: BorderRadius.circular(16),
             side: BorderSide(color: AppColors.citrusOrange.withOpacity(0.2)),
           ),
-          title: const Text(
+          title: Text(
             'Новая запись',
             style: TextStyle(color: AppColors.foreground, fontWeight: FontWeight.w600),
           ),
@@ -300,11 +300,11 @@ class _DiaryScreenState extends State<DiaryScreen> {
               children: [
                 ListTile(
                   contentPadding: EdgeInsets.zero,
-                  leading: const Icon(Icons.calendar_today, color: AppColors.mutedForeground, size: 20),
-                  title: const Text('Дата', style: TextStyle(color: AppColors.mutedForeground, fontSize: 13)),
+                  leading: Icon(Icons.calendar_today, color: AppColors.mutedForeground, size: 20),
+                  title: Text('Дата', style: TextStyle(color: AppColors.mutedForeground, fontSize: 13)),
                   subtitle: Text(
                     '${selectedDate.day}.${selectedDate.month}.${selectedDate.year}',
-                    style: const TextStyle(color: AppColors.foreground),
+                    style: TextStyle(color: AppColors.foreground),
                   ),
                   onTap: () async {
                     final date = await showDatePicker(
@@ -316,9 +316,9 @@ class _DiaryScreenState extends State<DiaryScreen> {
                     if (date != null) setModalState(() => selectedDate = date);
                   },
                 ),
-                const SizedBox(height: 12),
-                const Text('Настроение:', style: TextStyle(color: AppColors.mutedForeground, fontSize: 13)),
-                const SizedBox(height: 6),
+                SizedBox(height: 12),
+                Text('Настроение:', style: TextStyle(color: AppColors.mutedForeground, fontSize: 13)),
+                SizedBox(height: 6),
                 Wrap(
                   alignment: WrapAlignment.center,
                   spacing: 6,
@@ -337,18 +337,18 @@ class _DiaryScreenState extends State<DiaryScreen> {
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(color: isSelected ? AppColors.citrusOrange : Colors.transparent),
                         ),
-                        child: Text(emoji, style: const TextStyle(fontSize: 22)),
+                        child: Text(emoji, style: TextStyle(fontSize: 22)),
                       ),
                     );
                   }).toList(),
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: 12),
                 TextField(
                   controller: contentController,
-                  style: const TextStyle(color: AppColors.foreground),
+                  style: TextStyle(color: AppColors.foreground),
                   decoration: InputDecoration(
                     hintText: 'О чём думаете?',
-                    hintStyle: const TextStyle(color: AppColors.mutedForeground),
+                    hintStyle: TextStyle(color: AppColors.mutedForeground),
                     filled: true,
                     fillColor: AppColors.surface2,
                     border: OutlineInputBorder(
@@ -365,7 +365,7 @@ class _DiaryScreenState extends State<DiaryScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Отмена', style: TextStyle(color: AppColors.mutedForeground)),
+              child: Text('Отмена', style: TextStyle(color: AppColors.mutedForeground)),
             ),
             FilledButton(
               onPressed: () {
@@ -381,7 +381,7 @@ class _DiaryScreenState extends State<DiaryScreen> {
                 );
               },
               style: FilledButton.styleFrom(backgroundColor: AppColors.citrusOrange),
-              child: const Text('Сохранить'),
+              child: Text('Сохранить'),
             ),
           ],
         ),
@@ -402,7 +402,7 @@ class _DiaryScreenState extends State<DiaryScreen> {
             borderRadius: BorderRadius.circular(16),
             side: BorderSide(color: AppColors.citrusOrange.withOpacity(0.2)),
           ),
-          title: const Text(
+          title: Text(
             'Редактировать запись',
             style: TextStyle(color: AppColors.foreground, fontWeight: FontWeight.w600),
           ),
@@ -410,8 +410,8 @@ class _DiaryScreenState extends State<DiaryScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text('Настроение:', style: TextStyle(color: AppColors.mutedForeground, fontSize: 13)),
-                const SizedBox(height: 6),
+                Text('Настроение:', style: TextStyle(color: AppColors.mutedForeground, fontSize: 13)),
+                SizedBox(height: 6),
                 Wrap(
                   alignment: WrapAlignment.center,
                   spacing: 6,
@@ -430,18 +430,18 @@ class _DiaryScreenState extends State<DiaryScreen> {
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(color: isSelected ? AppColors.citrusOrange : Colors.transparent),
                         ),
-                        child: Text(emoji, style: const TextStyle(fontSize: 22)),
+                        child: Text(emoji, style: TextStyle(fontSize: 22)),
                       ),
                     );
                   }).toList(),
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: 12),
                 TextField(
                   controller: contentController,
-                  style: const TextStyle(color: AppColors.foreground),
+                  style: TextStyle(color: AppColors.foreground),
                   decoration: InputDecoration(
                     hintText: 'О чём думаете?',
-                    hintStyle: const TextStyle(color: AppColors.mutedForeground),
+                    hintStyle: TextStyle(color: AppColors.mutedForeground),
                     filled: true,
                     fillColor: AppColors.surface2,
                     border: OutlineInputBorder(
@@ -455,7 +455,7 @@ class _DiaryScreenState extends State<DiaryScreen> {
             ),
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Отмена', style: TextStyle(color: AppColors.mutedForeground))),
+            TextButton(onPressed: () => Navigator.pop(context), child: Text('Отмена', style: TextStyle(color: AppColors.mutedForeground))),
             FilledButton(
               onPressed: () {
                 if (contentController.text.trim().isEmpty) return;
@@ -470,7 +470,7 @@ class _DiaryScreenState extends State<DiaryScreen> {
                 );
               },
               style: FilledButton.styleFrom(backgroundColor: AppColors.citrusOrange),
-              child: const Text('Сохранить'),
+              child: Text('Сохранить'),
             ),
           ],
         ),
@@ -486,12 +486,12 @@ class _DiaryScreenState extends State<DiaryScreen> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Row(
           children: [
-            if (entry.moodValue != null) Text(entry.mood, style: const TextStyle(fontSize: 24)),
-            if (entry.moodValue != null) const SizedBox(width: 8),
+            if (entry.moodValue != null) Text(entry.mood, style: TextStyle(fontSize: 24)),
+            if (entry.moodValue != null) SizedBox(width: 8),
             Expanded(
               child: Text(
                 _formatDate(entry.entryDate),
-                style: const TextStyle(color: AppColors.foreground, fontSize: 16),
+                style: TextStyle(color: AppColors.foreground, fontSize: 16),
               ),
             ),
           ],
@@ -499,11 +499,11 @@ class _DiaryScreenState extends State<DiaryScreen> {
         content: SingleChildScrollView(
           child: Text(
             entry.content,
-            style: const TextStyle(color: Color(0xFFD4D0D8), fontSize: 14, height: 1.6),
+            style: TextStyle(color: Color(0xFFD4D0D8), fontSize: 14, height: 1.6),
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Закрыть', style: TextStyle(color: AppColors.citrusOrange))),
+          TextButton(onPressed: () => Navigator.pop(context), child: Text('Закрыть', style: TextStyle(color: AppColors.citrusOrange))),
         ],
       ),
     );
@@ -515,10 +515,10 @@ class _DiaryScreenState extends State<DiaryScreen> {
       builder: (context) => AlertDialog(
         backgroundColor: AppColors.surface1,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide(color: AppColors.destructive.withOpacity(0.3))),
-        title: const Text('Удалить запись?', style: TextStyle(color: AppColors.foreground)),
-        content: const Text('Запись будет удалена навсегда.', style: TextStyle(color: AppColors.mutedForeground)),
+        title: Text('Удалить запись?', style: TextStyle(color: AppColors.foreground)),
+        content: Text('Запись будет удалена навсегда.', style: TextStyle(color: AppColors.mutedForeground)),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Отмена', style: TextStyle(color: AppColors.mutedForeground))),
+          TextButton(onPressed: () => Navigator.pop(context), child: Text('Отмена', style: TextStyle(color: AppColors.mutedForeground))),
           FilledButton(
             onPressed: () {
               context.read<DiaryBloc>().add(DeleteDiaryEntry(entry.id));
@@ -526,7 +526,7 @@ class _DiaryScreenState extends State<DiaryScreen> {
               ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Запись удалена'), backgroundColor: Colors.orange));
             },
             style: FilledButton.styleFrom(backgroundColor: AppColors.destructive),
-            child: const Text('Удалить'),
+            child: Text('Удалить'),
           ),
         ],
       ),

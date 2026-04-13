@@ -1,4 +1,4 @@
-import 'dart:math' as math;
+﻿import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../core/theme/app_colors.dart';
 
@@ -197,21 +197,21 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildGreeting(),
-              const SizedBox(height: 8),
+              SizedBox(height: 8),
               _buildCitrusWheel(),
-              const SizedBox(height: 12),
+              SizedBox(height: 12),
               _buildSelectedLabel(),
-              const SizedBox(height: 8),
+              SizedBox(height: 8),
               _buildStatsStrip(),
-              const SizedBox(height: 16),
+              SizedBox(height: 16),
               _buildQuickLinks(),
               if (_todayLog.isNotEmpty) ...[
-                const SizedBox(height: 16),
+                SizedBox(height: 16),
                 _buildTodaysMoodLog(),
               ],
-              const SizedBox(height: 16),
+              SizedBox(height: 16),
               _buildDailyQuote(),
-              const SizedBox(height: 16),
+              SizedBox(height: 16),
             ],
           ),
         ),
@@ -227,14 +227,14 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         children: [
           Text(
             _getFormattedDate(),
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w500,
               color: AppColors.mutedForeground,
             ),
           ),
-          const SizedBox(height: 4),
-          const Text(
+          SizedBox(height: 4),
+          Text(
             'Как твоё состояние?',
             style: TextStyle(
               fontSize: 20,
@@ -242,8 +242,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               color: AppColors.foreground,
             ),
           ),
-          const SizedBox(height: 4),
-          const Text(
+          SizedBox(height: 4),
+          Text(
             'Нажми на дольку цитруса, чтобы отметить настроение',
             style: TextStyle(fontSize: 12, color: AppColors.dimForeground),
           ),
@@ -331,7 +331,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       ),
       child: Text(
         '${mood.emoji} ${mood.label}',
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 13,
           fontWeight: FontWeight.w600,
           color: Color(0xFF0C0C14),
@@ -376,7 +376,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             : Container(
                 key: const ValueKey('hs_hint'),
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                child: const Text(
+                child: Text(
                   '6 уровней настроения · нажми на дольку',
                   style: TextStyle(fontSize: 11, color: AppColors.dimForeground),
                 ),
@@ -412,20 +412,20 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(s['icon'] as String, style: const TextStyle(fontSize: 16)),
-                const SizedBox(height: 6),
+                Text(s['icon'] as String, style: TextStyle(fontSize: 16)),
+                SizedBox(height: 6),
                 Text(
                   s['value'] as String,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
                     color: AppColors.foreground,
                   ),
                 ),
-                const SizedBox(height: 2),
+                SizedBox(height: 2),
                 Text(
                   s['label'] as String,
-                  style: const TextStyle(fontSize: 10, color: AppColors.mutedForeground),
+                  style: TextStyle(fontSize: 10, color: AppColors.mutedForeground),
                 ),
               ],
             ),
@@ -465,11 +465,11 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(link['icon'] as String, style: const TextStyle(fontSize: 20)),
-                  const SizedBox(height: 6),
+                  Text(link['icon'] as String, style: TextStyle(fontSize: 20)),
+                  SizedBox(height: 6),
                   Text(
                     link['label'] as String,
-                    style: const TextStyle(fontSize: 10, color: AppColors.mutedForeground, fontWeight: FontWeight.w500),
+                    style: TextStyle(fontSize: 10, color: AppColors.mutedForeground, fontWeight: FontWeight.w500),
                     textAlign: TextAlign.center,
                   ),
                 ],
@@ -487,7 +487,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Сегодня',
             style: TextStyle(
               fontSize: 16,
@@ -495,7 +495,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               color: AppColors.foreground,
             ),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           ..._todayLog.reversed.take(4).map((entry) {
             final mood = moods.firstWhere((m) => m.id == entry['id']);
             return Container(
@@ -508,12 +508,12 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               ),
               child: Row(
                 children: [
-                  Text(mood.emoji, style: const TextStyle(fontSize: 20)),
-                  const SizedBox(width: 12),
+                  Text(mood.emoji, style: TextStyle(fontSize: 20)),
+                  SizedBox(width: 12),
                   Expanded(
                     child: Text(
                       mood.label,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
                         color: AppColors.foreground,
@@ -531,10 +531,10 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                       ],
                     ),
                   ),
-                  const SizedBox(width: 10),
+                  SizedBox(width: 10),
                   Text(
                     entry['time'] as String,
-                    style: const TextStyle(fontSize: 12, color: AppColors.dimForeground),
+                    style: TextStyle(fontSize: 12, color: AppColors.dimForeground),
                   ),
                 ],
               ),
@@ -564,9 +564,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('✨', style: TextStyle(fontSize: 20)),
-          const SizedBox(width: 12),
-          const Expanded(
+          Text('✨', style: TextStyle(fontSize: 20)),
+          SizedBox(width: 12),
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -700,7 +700,7 @@ class CitrusWheelPainter extends CustomPainter {
         ? moods.firstWhere((m) => m.id == selectedId).emoji
         : '🍊';
     final centerText = TextPainter(
-      text: TextSpan(text: centerEmoji, style: const TextStyle(fontSize: 22)),
+      text: TextSpan(text: centerEmoji, style: TextStyle(fontSize: 22)),
       textDirection: TextDirection.ltr,
     );
     centerText.layout();
