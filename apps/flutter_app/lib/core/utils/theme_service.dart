@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 
 import '../config/api_config.dart';
+import '../services/storage_service.dart';
 
 /// Сервис для управления темой приложения с сохранением
 class ThemeService extends ChangeNotifier {
@@ -34,6 +35,44 @@ class ThemeService extends ChangeNotifier {
   /// Инициализация сервиса
   Future<void> init() async {
     await _loadTheme();
+    // Попытка загрузить тему с сервера, если есть сохранённый токен
+    await _loadThemeFromServer();
+  }
+
+  /// Загрузка темы с сервера
+  Future<void> _loadThemeFromServer() async {
+    // Проверяем, есть ли сохранённый токен
+    try {
+      final storage = StorageService();
+      final savedToken = await storage.getString('auth_token');
+      final savedThemeId = await storage.getString('auth_user_theme_id');
+
+      if (savedToken == null || savedToken.isEmpty || savedThemeId == null) return;
+
+      // Загружаем тему пользователя с сервера
+      final response = await http.get(
+        Uri.parse('${ApiConfig.baseUrl}/user/theme'),
+        headers: {
+          'Authorization': 'Bearer $savedToken',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        final serverThemeId = data['theme_id'] as String?;
+        if (serverThemeId != null) {
+          final isDark = serverThemeId == '00000000-0000-0000-0000-000000000002';
+          if (_themeMode != (isDark ? ThemeMode.dark : ThemeMode.light)) {
+            _themeMode = isDark ? ThemeMode.dark : ThemeMode.light;
+            // Сохраняем серверную тему локально
+            await _saveTheme(isDark);
+            notifyListeners();
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('Ошибка загрузки темы с сервера: $e');
+    }
   }
 
   /// Загрузка темы из файла
