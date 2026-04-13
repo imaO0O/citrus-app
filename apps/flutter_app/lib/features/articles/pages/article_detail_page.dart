@@ -24,7 +24,7 @@ class ArticleDetailPage extends StatelessWidget {
         automaticallyImplyLeading: false,
         leading: showBackButton
             ? IconButton(
-                icon: const Icon(Icons.arrow_back, color: AppColors.foreground),
+                icon: Icon(Icons.arrow_back, color: AppColors.foreground),
                 onPressed: () {
                   if (Navigator.of(context).canPop()) {
                     Navigator.of(context).pop();
@@ -36,7 +36,7 @@ class ArticleDetailPage extends StatelessWidget {
           article.title.length > 40
               ? '${article.title.substring(0, 40)}...'
               : article.title,
-          style: const TextStyle(
+          style: TextStyle(
             color: AppColors.foreground,
             fontSize: 18,
             fontWeight: FontWeight.w600,
@@ -121,7 +121,7 @@ class ArticleDetailPage extends StatelessWidget {
                 const SizedBox(width: 6),
                 Text(
                   _getCategoryName(article.category),
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: AppColors.accent,
                     fontSize: 13,
                     fontWeight: FontWeight.w500,
@@ -135,7 +135,7 @@ class ArticleDetailPage extends StatelessWidget {
           // Заголовок
           Text(
             article.title,
-            style: const TextStyle(
+            style: TextStyle(
               color: AppColors.foreground,
               fontSize: 26,
               fontWeight: FontWeight.bold,
@@ -147,7 +147,7 @@ class ArticleDetailPage extends StatelessWidget {
           // Дата создания
           Text(
             'Опубликовано: ${_formatDate(article.createdAt)}',
-            style: const TextStyle(
+            style: TextStyle(
               color: AppColors.dimForeground,
               fontSize: 13,
             ),
@@ -174,7 +174,7 @@ class ArticleDetailPage extends StatelessWidget {
                             const SizedBox(width: 4),
                             Text(
                               _getCategoryName(tag),
-                              style: const TextStyle(
+                              style: TextStyle(
                                 color: AppColors.accent,
                                 fontSize: 12,
                                 fontWeight: FontWeight.w500,
@@ -187,59 +187,59 @@ class ArticleDetailPage extends StatelessWidget {
             ),
           ],
 
-          const Divider(color: AppColors.border, height: 32),
+          Divider(color: AppColors.border, height: 32),
 
           // Markdown контент
           MarkdownBody(
             data: article.content,
             selectable: true,
             styleSheet: MarkdownStyleSheet(
-              p: const TextStyle(
+              p: TextStyle(
                 color: AppColors.mutedForeground,
                 fontSize: 16,
                 height: 1.7,
               ),
-              h1: const TextStyle(
+              h1: TextStyle(
                 color: AppColors.foreground,
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
                 height: 1.4,
               ),
-              h2: const TextStyle(
+              h2: TextStyle(
                 color: AppColors.foreground,
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
                 height: 1.4,
               ),
-              h3: const TextStyle(
+              h3: TextStyle(
                 color: AppColors.foreground,
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
                 height: 1.4,
               ),
-              h4: const TextStyle(
+              h4: TextStyle(
                 color: AppColors.foreground,
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
                 height: 1.4,
               ),
-              h5: const TextStyle(
+              h5: TextStyle(
                 color: AppColors.foreground,
                 fontSize: 15,
                 fontWeight: FontWeight.w600,
                 height: 1.4,
               ),
-              h6: const TextStyle(
+              h6: TextStyle(
                 color: AppColors.foreground,
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
                 height: 1.4,
               ),
-              strong: const TextStyle(
+              strong: TextStyle(
                 color: AppColors.foreground,
                 fontWeight: FontWeight.bold,
               ),
-              em: const TextStyle(
+              em: TextStyle(
                 color: AppColors.mutedForeground,
                 fontStyle: FontStyle.italic,
               ),
@@ -264,8 +264,8 @@ class ArticleDetailPage extends StatelessWidget {
                 borderRadius: BorderRadius.circular(8),
               ),
               tableBorder: TableBorder.all(color: AppColors.border),
-              tableBody: const TextStyle(color: AppColors.mutedForeground, fontSize: 14),
-              tableHead: const TextStyle(
+              tableBody: TextStyle(color: AppColors.mutedForeground, fontSize: 14),
+              tableHead: TextStyle(
                 color: AppColors.foreground,
                 fontWeight: FontWeight.bold,
                 fontSize: 14,
