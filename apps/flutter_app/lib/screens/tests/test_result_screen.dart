@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../../models/psychological_test.dart';
 import '../../core/theme/app_colors.dart';
 import 'test_taking_screen.dart';
@@ -35,10 +36,7 @@ class TestResultScreen extends StatelessWidget {
         leading: IconButton(
           icon: Icon(Icons.arrow_back, color: AppColors.foreground),
           onPressed: () {
-            // TestTakingScreen был заменён на этот экран через pushReplacement,
-            // поэтому в стеке: TestsListScreen → TestResultScreen
-            // Один pop вернёт к списку тестов
-            Navigator.of(context).pop();
+            context.go('/');
           },
         ),
       ),
@@ -171,11 +169,7 @@ class TestResultScreen extends StatelessWidget {
                 const SizedBox(width: 12),
                 Expanded(
                   child: ElevatedButton.icon(
-                    onPressed: () {
-                      // Все тесты — возвращаемся к списку тестов
-                      Navigator.of(context).pop();
-                      Navigator.of(context).pop();
-                    },
+                    onPressed: () => context.go('/'),
                     icon: const Icon(Icons.list),
                     label: const Text('Все тесты'),
                     style: ElevatedButton.styleFrom(
