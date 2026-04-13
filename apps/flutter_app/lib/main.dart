@@ -41,6 +41,8 @@ class MyApp extends StatelessWidget {
     return ListenableBuilder(
       listenable: ThemeService(),
       builder: (context, _) {
+        final currentTheme = ThemeService().themeMode;
+        debugPrint('>>> ListenableBuilder rebuild: themeMode=$currentTheme');
         return MultiRepositoryProvider(
           providers: [
             RepositoryProvider.value(value: authRepository),
@@ -98,23 +100,29 @@ class MyApp extends StatelessWidget {
                 create: (ctx) => DiaryBloc(repository: ctx.read<DiaryRepository>()),
               ),
             ],
-            child: MaterialApp.router(
-              title: 'Citrus',
-              theme: lightTheme,
-              darkTheme: darkTheme,
-              themeMode: ThemeService().themeMode,
-              routerConfig: AppRouter().router,
-              debugShowCheckedModeBanner: false,
-              locale: const Locale('ru', 'RU'),
-              localizationsDelegates: const [
-                GlobalMaterialLocalizations.delegate,
-                GlobalWidgetsLocalizations.delegate,
-                GlobalCupertinoLocalizations.delegate,
-              ],
-              supportedLocales: const [
-                Locale('ru', 'RU'),
-                Locale('en', 'US'),
-              ],
+            child: Builder(
+              builder: (ctx) {
+                final themeMode = ThemeService().themeMode;
+                debugPrint('>>> MaterialApp rebuild: themeMode=$themeMode');
+                return MaterialApp.router(
+                  title: 'Citrus',
+                  theme: lightTheme,
+                  darkTheme: darkTheme,
+                  themeMode: themeMode,
+                  routerConfig: AppRouter().router,
+                  debugShowCheckedModeBanner: false,
+                  locale: const Locale('ru', 'RU'),
+                  localizationsDelegates: const [
+                    GlobalMaterialLocalizations.delegate,
+                    GlobalWidgetsLocalizations.delegate,
+                    GlobalCupertinoLocalizations.delegate,
+                  ],
+                  supportedLocales: const [
+                    Locale('ru', 'RU'),
+                    Locale('en', 'US'),
+                  ],
+                );
+              },
             ),
           ),
         );
