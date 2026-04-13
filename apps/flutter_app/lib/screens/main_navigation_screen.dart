@@ -119,51 +119,91 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     return ListenableBuilder(
       listenable: ThemeService(),
       builder: (context, _) {
-        return BlocListener<AuthBloc, AuthState>(
-          listener: (context, state) {
-            if (state is AuthAuthenticated) {
-              debugPrint('MainNav: AuthAuthenticated, userId=${state.user.id}');
-              Future.microtask(() {
-                if (mounted) {
-                  try {
-                    context.read<DashboardBloc>().updateUserId(state.user.id, token: state.user.token);
-                  } catch (e) {}
-                  try {
-                    context.read<DiaryBloc>().updateUserId(state.user.id, token: state.user.token);
-                  } catch (e) {}
-                }
-              });
-            } else if (state is AuthUnauthenticated) {
-              Future.microtask(() {
-                if (mounted) {
-                  context.go('/auth');
-                }
-              });
-            }
-          },
-          child: SafeArea(
-            child: Scaffold(
-              body: Stack(
-                children: [
-                  Column(
-                    children: [
-                      _buildHeader(),
-                      Expanded(
-                        child: IndexedStack(
-                          index: _currentIndex,
-                          children: _screens,
+        return BlocBuilder<AuthBloc, AuthState>(
+          builder: (context, authState) {
+            // Показываем splash пока авторизация не определилась
+            if (authState is AuthLoading || authState is AuthInitial) {
+              return MaterialApp(
+                home: Scaffold(
+                  body: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          width: 64,
+                          height: 64,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(20),
+                            gradient: const LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [AppColors.citrusOrange, AppColors.citrusAmber],
+                            ),
+                          ),
+                          child: const Center(child: Text('🍊', style: TextStyle(fontSize: 32))),
                         ),
+                        const SizedBox(height: 24),
+                        Text(
+                          'Загрузка...',
+                          style: TextStyle(color: AppColors.mutedForeground, fontSize: 14),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }
+            if (authState is AuthUnauthenticated) {
+              return const SizedBox.shrink(); // redirect перенаправит на /auth
+            }
+
+            return BlocListener<AuthBloc, AuthState>(
+              listener: (context, state) {
+                if (state is AuthAuthenticated) {
+                  debugPrint('MainNav: AuthAuthenticated, userId=${state.user.id}');
+                  Future.microtask(() {
+                    if (mounted) {
+                      try {
+                        context.read<DashboardBloc>().updateUserId(state.user.id, token: state.user.token);
+                      } catch (e) {}
+                      try {
+                        context.read<DiaryBloc>().updateUserId(state.user.id, token: state.user.token);
+                      } catch (e) {}
+                    }
+                  });
+                } else if (state is AuthUnauthenticated) {
+                  Future.microtask(() {
+                    if (mounted) {
+                      context.go('/auth');
+                    }
+                  });
+                }
+              },
+              child: SafeArea(
+                child: Scaffold(
+                  body: Stack(
+                    children: [
+                      Column(
+                        children: [
+                          _buildHeader(),
+                          Expanded(
+                            child: IndexedStack(
+                              index: _currentIndex,
+                              children: _screens,
+                            ),
+                          ),
+                          _buildBottomNav(),
+                        ],
                       ),
-                      _buildBottomNav(),
+                      if (_showMenu) _buildMenuOverlay(),
+                      if (_showEmergency)
+                        EmergencyModal(onClose: () => setState(() => _showEmergency = false)),
                     ],
                   ),
-                  if (_showMenu) _buildMenuOverlay(),
-                  if (_showEmergency)
-                    EmergencyModal(onClose: () => setState(() => _showEmergency = false)),
-                ],
+                ),
               ),
-            ),
-          ),
+            );
+          },
         );
       },
     );

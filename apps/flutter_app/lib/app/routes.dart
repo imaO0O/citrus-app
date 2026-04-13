@@ -8,24 +8,27 @@ import '../features/auth/bloc/auth_bloc.dart';
 
 class AppRouter {
   final GoRouter router = GoRouter(
-    initialLocation: '/auth',
+    initialLocation: '/',
     redirect: (context, state) {
       final authBloc = context.read<AuthBloc>();
       final authState = authBloc.state;
+
+      // Пока идёт инициализация — не перенаправляем, показываем loader
+      if (authState is AuthLoading || authState is AuthInitial) {
+        return null;
+      }
+
       final isAuthenticated = authState is AuthAuthenticated;
-      
+
       final isAuthPage = state.fullPath == '/auth' ||
           state.fullPath == '/login' ||
           state.fullPath == '/register';
-      
-      final isLoggingIn = state.fullPath == '/login';
-      final isRegistering = state.fullPath == '/register';
 
       // Если авторизован и на auth странице — перенаправляем на главную
       if (isAuthenticated && isAuthPage) {
         return '/';
       }
-      
+
       // Если не авторизован и пытается зайти не на auth страницу
       if (!isAuthenticated && !isAuthPage) {
         return '/auth';
