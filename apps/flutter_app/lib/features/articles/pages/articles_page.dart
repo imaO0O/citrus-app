@@ -68,11 +68,11 @@ class _ArticlesPageState extends State<ArticlesPage> {
             automaticallyImplyLeading: false,
             leading: widget.showBackButton
                 ? IconButton(
-                    icon: const Icon(Icons.arrow_back, color: AppColors.foreground),
+                    icon: Icon(Icons.arrow_back, color: AppColors.foreground),
                     onPressed: () => Navigator.of(context).pop(),
                   )
                 : null,
-            title: const Text(
+            title: Text(
               'Статьи самопомощи',
               style: TextStyle(
                 color: AppColors.foreground,
@@ -100,14 +100,14 @@ class _ArticlesPageState extends State<ArticlesPage> {
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: TextField(
                   controller: _searchController,
-                  style: const TextStyle(color: AppColors.foreground, fontSize: 14),
+                  style: TextStyle(color: AppColors.foreground, fontSize: 14),
                   decoration: InputDecoration(
                     hintText: 'Поиск статей...',
-                    hintStyle: const TextStyle(color: AppColors.mutedForeground, fontSize: 14),
-                    prefixIcon: const Icon(Icons.search, color: AppColors.mutedForeground, size: 20),
+                    hintStyle: TextStyle(color: AppColors.mutedForeground, fontSize: 14),
+                    prefixIcon: Icon(Icons.search, color: AppColors.mutedForeground, size: 20),
                     suffixIcon: _searchQuery.isNotEmpty
                         ? IconButton(
-                            icon: const Icon(Icons.clear, size: 18, color: AppColors.mutedForeground),
+                            icon: Icon(Icons.clear, size: 18, color: AppColors.mutedForeground),
                             onPressed: () {
                               setState(() {
                                 _searchController.clear();
@@ -201,7 +201,7 @@ class _ArticlesPageState extends State<ArticlesPage> {
 
   Widget _buildBody(BuildContext context, ArticleState state) {
     if (state is ArticleLoading) {
-      return const Center(
+      return Center(
         child: CircularProgressIndicator(
           valueColor: AlwaysStoppedAnimation<Color>(AppColors.citrusOrange),
         ),
@@ -213,11 +213,11 @@ class _ArticlesPageState extends State<ArticlesPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.error_outline, size: 64, color: AppColors.destructive),
+            Icon(Icons.error_outline, size: 64, color: AppColors.destructive),
             const SizedBox(height: 16),
             Text(
               state.message,
-              style: const TextStyle(color: AppColors.mutedForeground),
+              style: TextStyle(color: AppColors.mutedForeground),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 16),
@@ -251,7 +251,7 @@ class _ArticlesPageState extends State<ArticlesPage> {
               const SizedBox(height: 16),
               Text(
                 hasFilters ? 'Ничего не найдено' : 'Статей пока нет',
-                style: const TextStyle(
+                style: TextStyle(
                   color: AppColors.mutedForeground,
                   fontSize: 18,
                   fontWeight: FontWeight.w500,
@@ -262,7 +262,7 @@ class _ArticlesPageState extends State<ArticlesPage> {
                 hasFilters
                     ? 'Попробуйте изменить фильтры'
                     : 'Создайте свою первую статью',
-                style: const TextStyle(color: AppColors.mutedForeground),
+                style: TextStyle(color: AppColors.mutedForeground),
               ),
               if (!hasFilters) ...[
                 const SizedBox(height: 24),
@@ -302,7 +302,7 @@ class _ArticlesPageState extends State<ArticlesPage> {
             padding: const EdgeInsets.only(left: 16, bottom: 8),
             child: Text(
               'Найдено: ${filteredArticles.length}',
-              style: const TextStyle(
+              style: TextStyle(
                 color: AppColors.dimForeground,
                 fontSize: 13,
               ),
@@ -331,7 +331,7 @@ class _ArticlesPageState extends State<ArticlesPage> {
                           const SizedBox(width: 8),
                           Text(
                             _getCategoryName(category),
-                            style: const TextStyle(
+                            style: TextStyle(
                               color: AppColors.accent,
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
@@ -346,7 +346,7 @@ class _ArticlesPageState extends State<ArticlesPage> {
                             ),
                             child: Text(
                               '${articles.length}',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 color: AppColors.mutedForeground,
                                 fontSize: 12,
                               ),
@@ -395,15 +395,15 @@ class _ArticlesPageState extends State<ArticlesPage> {
       context: context,
       builder: (dialogContext) => AlertDialog(
         backgroundColor: AppColors.card,
-        title: const Text('Удалить статью?', style: TextStyle(color: AppColors.foreground)),
+        title: Text('Удалить статью?', style: TextStyle(color: AppColors.foreground)),
         content: Text(
           'Вы уверены, что хотите удалить "${article.title}"?',
-          style: const TextStyle(color: AppColors.mutedForeground),
+          style: TextStyle(color: AppColors.mutedForeground),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(),
-            child: const Text('Отмена', style: TextStyle(color: AppColors.mutedForeground)),
+            child: Text('Отмена', style: TextStyle(color: AppColors.mutedForeground)),
           ),
           TextButton(
             onPressed: () {
@@ -455,7 +455,7 @@ class _ArticleCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 8),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppColors.radiusMd),
-        side: const BorderSide(color: AppColors.border, width: 0.5),
+        side: BorderSide(color: AppColors.border, width: 0.5),
       ),
       child: InkWell(
         onTap: onTap,
@@ -542,7 +542,7 @@ class _ArticleCard extends StatelessWidget {
                   Expanded(
                     child: Text(
                       article.title,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: AppColors.foreground,
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
@@ -577,7 +577,7 @@ class _ArticleCard extends StatelessWidget {
                 article.content.length > 120
                     ? '${article.content.substring(0, 120)}...'
                     : article.content,
-                style: const TextStyle(
+                style: TextStyle(
                   color: AppColors.mutedForeground,
                   fontSize: 14,
                 ),
@@ -587,7 +587,7 @@ class _ArticleCard extends StatelessWidget {
               const SizedBox(height: 8),
               Text(
                 'Создано: ${_formatDate(article.createdAt)}',
-                style: const TextStyle(
+                style: TextStyle(
                   color: AppColors.dimForeground,
                   fontSize: 12,
                 ),

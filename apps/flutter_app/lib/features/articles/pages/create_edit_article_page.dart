@@ -70,14 +70,14 @@ class _CreateEditArticlePageState extends State<CreateEditArticlePage> {
           elevation: 0,
           title: Text(
             isEditing ? 'Редактировать статью' : 'Новая статья',
-            style: const TextStyle(
+            style: TextStyle(
               color: AppColors.foreground,
               fontSize: 18,
               fontWeight: FontWeight.w600,
             ),
           ),
           leading: IconButton(
-            icon: const Icon(Icons.close, color: AppColors.foreground),
+            icon: Icon(Icons.close, color: AppColors.foreground),
             onPressed: () => Navigator.of(context).pop(),
           ),
           actions: [
@@ -119,7 +119,7 @@ class _CreateEditArticlePageState extends State<CreateEditArticlePage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Категория
-            const Text(
+            Text(
               'Категория',
               style: TextStyle(
                 color: AppColors.foreground,
@@ -174,7 +174,7 @@ class _CreateEditArticlePageState extends State<CreateEditArticlePage> {
             const SizedBox(height: 24),
 
             // Заголовок
-            const Text(
+            Text(
               'Заголовок',
               style: TextStyle(
                 color: AppColors.foreground,
@@ -185,15 +185,15 @@ class _CreateEditArticlePageState extends State<CreateEditArticlePage> {
             const SizedBox(height: 8),
             TextFormField(
               controller: _titleController,
-              style: const TextStyle(color: AppColors.foreground, fontSize: 16),
+              style: TextStyle(color: AppColors.foreground, fontSize: 16),
               decoration: InputDecoration(
                 hintText: 'Введите заголовок статьи...',
-                hintStyle: const TextStyle(color: AppColors.mutedForeground),
+                hintStyle: TextStyle(color: AppColors.mutedForeground),
                 filled: true,
                 fillColor: AppColors.inputFieldBackground,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(AppColors.radiusMd),
-                  borderSide: const BorderSide(color: AppColors.border),
+                  borderSide: BorderSide(color: AppColors.border),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(AppColors.radiusMd),
@@ -212,7 +212,7 @@ class _CreateEditArticlePageState extends State<CreateEditArticlePage> {
             const SizedBox(height: 24),
 
             // Содержимое
-            const Text(
+            Text(
               'Содержание',
               style: TextStyle(
                 color: AppColors.foreground,
@@ -221,22 +221,22 @@ class _CreateEditArticlePageState extends State<CreateEditArticlePage> {
               ),
             ),
             const SizedBox(height: 8),
-            const Text(
+            Text(
               'Поддерживается Markdown разметка: **жирный**, *курсив*, - список, # заголовки',
               style: TextStyle(color: AppColors.dimForeground, fontSize: 12),
             ),
             const SizedBox(height: 8),
             TextFormField(
               controller: _contentController,
-              style: const TextStyle(color: AppColors.foreground, fontSize: 15),
+              style: TextStyle(color: AppColors.foreground, fontSize: 15),
               decoration: InputDecoration(
                 hintText: 'Напишите статью...',
-                hintStyle: const TextStyle(color: AppColors.mutedForeground),
+                hintStyle: TextStyle(color: AppColors.mutedForeground),
                 filled: true,
                 fillColor: AppColors.inputFieldBackground,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(AppColors.radiusMd),
-                  borderSide: const BorderSide(color: AppColors.border),
+                  borderSide: BorderSide(color: AppColors.border),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(AppColors.radiusMd),
@@ -282,7 +282,7 @@ class _CreateEditArticlePageState extends State<CreateEditArticlePage> {
     final content = _contentController.text.trim();
 
     if (title.isEmpty && content.isEmpty) {
-      return const Center(
+      return Center(
         child: Text(
           'Начните вводить текст для предпросмотра',
           style: TextStyle(color: AppColors.mutedForeground),
@@ -314,7 +314,7 @@ class _CreateEditArticlePageState extends State<CreateEditArticlePage> {
                 const SizedBox(width: 6),
                 Text(
                   _categories.firstWhere((c) => c.value == _selectedCategory).label,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: AppColors.accent,
                     fontSize: 13,
                     fontWeight: FontWeight.w500,
@@ -328,14 +328,14 @@ class _CreateEditArticlePageState extends State<CreateEditArticlePage> {
           // Заголовок
           Text(
             title.isNotEmpty ? title : 'Без заголовка',
-            style: const TextStyle(
+            style: TextStyle(
               color: AppColors.foreground,
               fontSize: 26,
               fontWeight: FontWeight.bold,
               height: 1.3,
             ),
           ),
-          const Divider(color: AppColors.border, height: 32),
+          Divider(color: AppColors.border, height: 32),
 
           // Содержимое
           content.isNotEmpty
@@ -343,63 +343,63 @@ class _CreateEditArticlePageState extends State<CreateEditArticlePage> {
                   data: content,
                   selectable: true,
                   styleSheet: MarkdownStyleSheet(
-                    p: const TextStyle(
+                    p: TextStyle(
                       color: AppColors.mutedForeground,
                       fontSize: 16,
                       height: 1.7,
                     ),
-                    h1: const TextStyle(
+                    h1: TextStyle(
                       color: AppColors.foreground,
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
                       height: 1.4,
                     ),
-                    h2: const TextStyle(
+                    h2: TextStyle(
                       color: AppColors.foreground,
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
                       height: 1.4,
                     ),
-                    h3: const TextStyle(
+                    h3: TextStyle(
                       color: AppColors.foreground,
                       fontSize: 18,
                       fontWeight: FontWeight.w600,
                       height: 1.4,
                     ),
-                    h4: const TextStyle(
+                    h4: TextStyle(
                       color: AppColors.foreground,
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
                       height: 1.4,
                     ),
-                    h5: const TextStyle(
+                    h5: TextStyle(
                       color: AppColors.foreground,
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
                       height: 1.4,
                     ),
-                    h6: const TextStyle(
+                    h6: TextStyle(
                       color: AppColors.foreground,
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
                       height: 1.4,
                     ),
-                    strong: const TextStyle(
+                    strong: TextStyle(
                       color: AppColors.foreground,
                       fontWeight: FontWeight.bold,
                     ),
-                    em: const TextStyle(
+                    em: TextStyle(
                       color: AppColors.mutedForeground,
                       fontStyle: FontStyle.italic,
                     ),
-                    blockquote: const TextStyle(
+                    blockquote: TextStyle(
                       color: AppColors.citrusAmber,
                       fontSize: 16,
                       fontStyle: FontStyle.italic,
                       height: 1.6,
                     ),
                     blockquotePadding: const EdgeInsets.only(left: 16),
-                    listBullet: const TextStyle(
+                    listBullet: TextStyle(
                       color: AppColors.citrusOrange,
                       fontSize: 16,
                     ),
@@ -414,7 +414,7 @@ class _CreateEditArticlePageState extends State<CreateEditArticlePage> {
                     ),
                   ),
                 )
-              : const Text(
+              : Text(
                   'Нет содержания',
                   style: TextStyle(color: AppColors.mutedForeground),
                 ),
