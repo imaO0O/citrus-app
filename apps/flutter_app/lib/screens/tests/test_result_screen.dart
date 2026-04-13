@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../../models/psychological_test.dart';
 import '../../core/theme/app_colors.dart';
 
@@ -31,7 +32,7 @@ class TestResultScreen extends StatelessWidget {
         ),
         leading: IconButton(
           icon: Icon(Icons.arrow_back, color: AppColors.foreground),
-          onPressed: () => Navigator.popUntil(context, (r) => r.isFirst),
+          onPressed: () => context.go('/'),
         ),
       ),
       body: SingleChildScrollView(
@@ -153,8 +154,7 @@ class TestResultScreen extends StatelessWidget {
                 const SizedBox(width: 12),
                 Expanded(
                   child: ElevatedButton.icon(
-                    onPressed: () =>
-                        Navigator.popUntil(context, (r) => r.isFirst),
+                    onPressed: () => context.go('/'),
                     icon: const Icon(Icons.list),
                     label: const Text('Все тесты'),
                     style: ElevatedButton.styleFrom(

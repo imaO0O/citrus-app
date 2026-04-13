@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../../models/psychological_test.dart';
 import '../../data/tests/tests.dart';
 import '../../core/api/test_api_service.dart';
@@ -126,7 +127,7 @@ class _TestTakingScreenState extends State<TestTakingScreen> {
                         style: TextStyle(color: AppColors.mutedForeground)),
                   ),
                   TextButton(
-                    onPressed: () => Navigator.popUntil(context, (r) => r.isFirst),
+                    onPressed: () => context.go('/'),
                     child: Text('Выйти',
                         style: TextStyle(color: AppColors.destructive)),
                   ),
