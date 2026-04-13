@@ -20,11 +20,19 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   bool _isGeneratingPdf = false;
   bool _isLoading = true;
   AnalyticsReport? _report;
+  bool _initialized = false;
 
   @override
   void initState() {
     super.initState();
     _loadReportData();
+  }
+
+  /// Публичный метод для принудительного обновления данных (вызывается при навигации)
+  void refreshData() {
+    if (_initialized) {
+      _loadReportData();
+    }
   }
 
   Future<void> _loadReportData() async {
@@ -183,12 +191,14 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           ),
         );
         _isLoading = false;
+        _initialized = true;
       });
     } catch (e) {
       debugPrint('Error loading analytics: $e');
       setState(() {
         _report = _createSampleReport();
         _isLoading = false;
+        _initialized = true;
       });
     }
   }

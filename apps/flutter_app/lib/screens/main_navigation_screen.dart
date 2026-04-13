@@ -38,6 +38,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   // 0-3: main nav screens, 4+: feature screens
   static const _mainScreenCount = 4;
 
+  // Ключ для AnalyticsScreen, чтобы вызывать refresh при навигации
+  final GlobalKey<State<AnalyticsScreen>> _analyticsKey = GlobalKey<State<AnalyticsScreen>>();
+
   final List<Widget> _screens = [];
 
   @override
@@ -61,7 +64,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       SleepTrackerScreen(),        // 8
       TestsScreen(),               // 9
       ExercisesScreen(),           // 10
-      AnalyticsScreen(),           // 11
+      AnalyticsScreen(key: _analyticsKey),           // 11
       SettingsScreen(),            // 12
     ]);
 
@@ -98,6 +101,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       _currentIndex = index;
       _showMenu = false;
     });
+    // При переключении на аналитику — запрашиваем актуальные данные
+    if (index == 11) {
+      (_analyticsKey.currentState as dynamic)?.refreshData();
+    }
   }
 
   bool get _isMenuActive => _currentIndex >= _mainScreenCount;
