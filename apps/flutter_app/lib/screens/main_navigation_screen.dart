@@ -289,7 +289,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
       decoration: BoxDecoration(
-        color: const Color(0xFF0D0D16).withOpacity(0.95),
+        color: AppColors.background.withOpacity(0.95),
         border: Border(
           top: BorderSide(color: AppColors.citrusOrange.withOpacity(0.1)),
         ),
@@ -301,7 +301,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.03),
+              color: AppColors.foreground.withOpacity(0.03),
               borderRadius: BorderRadius.circular(16),
             ),
             child: Row(
