@@ -8,9 +8,16 @@ import 'package:crypto/crypto.dart';
 import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
 import 'package:http/http.dart' as http;
 import 'package:mime/mime.dart';
+import 'lib/services/gigachat_service.dart';
 
 PostgreSQLConnection? _db;
 const _jwtSecret = 'citrus-app-secret-key-change-in-production';
+
+// GigaChat конфигурация
+// В production используйте переменные окружения!
+String? _gigachatClientId;
+String? _gigachatClientSecret;
+GigaChatService? _gigachatService;
 
 // Cloudinary конфигурация
 const _cloudinaryCloudName = 'dgeoniumv';
@@ -54,6 +61,26 @@ Future<Response> _handleRequest(RequestContext context) async {
         statusCode: 500,
         body: 'Database connection failed: $e',
       );
+    }
+  }
+
+  // Инициализация GigaChat сервиса (если ещё не инициализирован)
+  if (_gigachatService == null) {
+    _gigachatClientId = Platform.environment['GIGACHAT_CLIENT_ID'];
+    _gigachatClientSecret = Platform.environment['GIGACHAT_CLIENT_SECRET'];
+    
+    if (_gigachatClientId != null && _gigachatClientSecret != null) {
+      try {
+        _gigachatService = GigaChatService(
+          clientId: _gigachatClientId!,
+          clientSecret: _gigachatClientSecret!,
+        );
+        print('GigaChat service initialized!');
+      } catch (e) {
+        print('Failed to initialize GigaChat service: $e');
+      }
+    } else {
+      print('GigaChat credentials not found. Set GIGACHAT_CLIENT_ID and GIGACHAT_CLIENT_SECRET environment variables.');
     }
   }
 
@@ -359,6 +386,11 @@ Future<Response> _handleRequest(RequestContext context) async {
   if (path.startsWith('/photos/') && method == HttpMethod.delete) {
     final id = path.substring('/photos/'.length);
     return _deletePhoto(context, authContext, id);
+  }
+
+  // POST /chat - чат с GigaChat AI (требует авторизации)
+  if (path == '/chat' && method == HttpMethod.post) {
+    return _chatWithAI(context);
   }
 
   return Response.json(body: {'message': 'Citrus API'});
@@ -1683,6 +1715,57 @@ Future<Response> _deletePhoto(RequestContext context, _AuthContext auth, String 
     return Response.json(body: {'success': true});
   } catch (e) {
     return Response(statusCode: 500, body: 'Error: $e');
+  }
+}
+
+/// POST /chat - чат с GigaChat AI
+Future<Response> _chatWithAI(RequestContext context) async {
+  // Проверяем, инициализирован ли GigaChat сервис
+  if (_gigachatService == null) {
+    return Response.json(
+      statusCode: 503,
+      body: {
+        'error': 'GigaChat service is not configured',
+        'message': 'Установите переменные окружения GIGACHAT_CLIENT_ID и GIGACHAT_CLIENT_SECRET',
+      },
+    );
+  }
+
+  try {
+    final body = await context.request.json();
+    final message = body['message'] as String?;
+    final systemPrompt = body['system_prompt'] as String?;
+    final temperature = (body['temperature'] as num?)?.toDouble() ?? 0.7;
+    final maxTokens = body['max_tokens'] as int? ?? 1024;
+
+    if (message == null || message.trim().isEmpty) {
+      return Response.json(
+        statusCode: 400,
+        body: {'error': 'message is required'},
+      );
+    }
+
+    // Отправляем сообщение в GigaChat
+    final response = await _gigachatService!.chat(
+      message,
+      systemPrompt: systemPrompt ?? 'Ты полезный ассистент по имени Цитрус. Ты помогаешь пользователям следить за своим ментальным здоровьем, даёшь советы по улучшению настроения, борьбе с тревогой и поддержанию хорошего эмоционального состояния. Отвечай дружелюбно и поддерживающе.',
+      temperature: temperature,
+      maxTokens: maxTokens,
+    );
+
+    return Response.json(
+      statusCode: 200,
+      body: {
+        'response': response,
+        'timestamp': DateTime.now().toIso8601String(),
+      },
+    );
+  } catch (e) {
+    print('Error in /chat endpoint: $e');
+    return Response.json(
+      statusCode: 500,
+      body: {'error': 'Failed to get AI response: $e'},
+    );
   }
 }
 
