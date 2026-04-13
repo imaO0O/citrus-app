@@ -173,30 +173,34 @@ class AuthRepository {
 
   /// Инициализация — восстанавливаем данные из хранилища
   Future<void> init() async {
-    final storage = StorageService();
-    
-    // Загружаем сохранённые данные
-    final savedToken = await storage.getString('auth_token');
-    final savedUserId = await storage.getString('auth_user_id');
-    final savedEmail = await storage.getString('auth_user_email');
-    final savedName = await storage.getString('auth_user_name');
-    final savedThemeId = await storage.getString('auth_user_theme_id');
-    
-    print('AuthRepository.init(): token=${savedToken != null ? "present(${savedToken.length})" : "null"}, '
-        'userId=$savedUserId, email=$savedEmail, name=$savedName, themeId=$savedThemeId');
+    try {
+      final storage = StorageService();
 
-    if (savedToken != null && savedToken.isNotEmpty && savedUserId != null) {
-      // Восстанавливаем пользователя из сохранённых данных
-      _currentUser = User(
-        id: savedUserId,
-        email: savedEmail ?? '',
-        name: savedName,
-        themeId: savedThemeId,
-        token: savedToken,
-      );
-      print('AuthRepository: Сессия восстановлена для $savedEmail');
-    } else {
-      print('AuthRepository: Нет сохранённой сессии');
+      // Загружаем сохранённые данные
+      final savedToken = await storage.getString('auth_token');
+      final savedUserId = await storage.getString('auth_user_id');
+      final savedEmail = await storage.getString('auth_user_email');
+      final savedName = await storage.getString('auth_user_name');
+      final savedThemeId = await storage.getString('auth_user_theme_id');
+
+      print('AuthRepository.init(): token=${savedToken != null ? "present(${savedToken.length})" : "null"}, '
+          'userId=$savedUserId, email=$savedEmail, name=$savedName, themeId=$savedThemeId');
+
+      if (savedToken != null && savedToken.isNotEmpty && savedUserId != null) {
+        // Восстанавливаем пользователя из сохранённых данных
+        _currentUser = User(
+          id: savedUserId,
+          email: savedEmail ?? '',
+          name: savedName,
+          themeId: savedThemeId,
+          token: savedToken,
+        );
+        print('AuthRepository: Сессия восстановлена для $savedEmail');
+      } else {
+        print('AuthRepository: Нет сохранённой сессии');
+      }
+    } catch (e, st) {
+      print('AuthRepository: ОШИБКА при инициализации: $e\n$st');
     }
   }
 
