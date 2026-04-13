@@ -174,11 +174,16 @@ class AuthRepository {
   /// Инициализация — восстанавливаем данные из хранилища
   Future<void> init() async {
     final storage = StorageService();
+    
+    // Загружаем сохранённые данные
     final savedToken = await storage.getString('auth_token');
     final savedUserId = await storage.getString('auth_user_id');
     final savedEmail = await storage.getString('auth_user_email');
     final savedName = await storage.getString('auth_user_name');
     final savedThemeId = await storage.getString('auth_user_theme_id');
+    
+    print('AuthRepository.init(): token=${savedToken != null ? "present(${savedToken.length})" : "null"}, '
+        'userId=$savedUserId, email=$savedEmail, name=$savedName, themeId=$savedThemeId');
 
     if (savedToken != null && savedToken.isNotEmpty && savedUserId != null) {
       // Восстанавливаем пользователя из сохранённых данных
@@ -198,6 +203,7 @@ class AuthRepository {
   /// Сохранить данные пользователя в постоянное хранилище
   Future<void> _saveSession(User user) async {
     final storage = StorageService();
+    print('AuthRepository: Сохраняю сессию для ${user.email}, token length=${user.token.length}');
     await storage.setString('auth_token', user.token);
     await storage.setString('auth_user_id', user.id);
     await storage.setString('auth_user_email', user.email);
