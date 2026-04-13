@@ -86,10 +86,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     if (_repository.isAuthenticated) {
       final user = _repository.currentUser!;
       ThemeService().setUserCredentials(user.token, user.id);
-      if (user.themeId != null) {
-        final isDark = user.themeId == '00000000-0000-0000-0000-000000000002';
-        ThemeService().toggleTheme(isDark);
-      }
+      // Тема уже загружена в ThemeService при старте приложения,
+      // не нужно вызывать toggleTheme — он перезаписывает серверную тему
       emit(AuthAuthenticated(user));
     } else {
       emit(const AuthUnauthenticated());

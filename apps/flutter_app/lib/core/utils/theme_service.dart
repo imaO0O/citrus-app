@@ -34,20 +34,23 @@ class ThemeService extends ChangeNotifier {
 
   /// Инициализация сервиса
   Future<void> init() async {
-    await _loadTheme();
-    // Попытка загрузить тему с сервера, если есть сохранённый токен
-    await _loadThemeFromServer();
+    // Сначала пытаемся загрузить тему с сервера (если есть токен)
+    final loadedFromServer = await _loadThemeFromServer();
+    // Если серверная тема не загрузилась, загружаем из локального файла
+    if (!loadedFromServer) {
+      await _loadThemeLocal();
+    }
+
+    _isLoaded = true;
+    notifyListeners();
   }
 
-  /// Загрузка темы с сервера
-  Future<void> _loadThemeFromServer() async {
-    // Проверяем, есть ли сохранённый токен
+  /// Загрузка темы с сервера. Возвращает true, если тема загружена успешно.
+  Future<bool> _loadThemeFromServer() async {
     try {
       final storage = StorageService();
       final savedToken = await storage.getString('auth_token');
-      final savedThemeId = await storage.getString('auth_user_theme_id');
-
-      if (savedToken == null || savedToken.isEmpty || savedThemeId == null) return;
+      if (savedToken == null || savedToken.isEmpty) return false;
 
       // Загружаем тему пользователя с сервера
       final response = await http.get(
@@ -62,21 +65,21 @@ class ThemeService extends ChangeNotifier {
         final serverThemeId = data['theme_id'] as String?;
         if (serverThemeId != null) {
           final isDark = serverThemeId == '00000000-0000-0000-0000-000000000002';
-          if (_themeMode != (isDark ? ThemeMode.dark : ThemeMode.light)) {
-            _themeMode = isDark ? ThemeMode.dark : ThemeMode.light;
-            // Сохраняем серверную тему локально
-            await _saveTheme(isDark);
-            notifyListeners();
-          }
+          _themeMode = isDark ? ThemeMode.dark : ThemeMode.light;
+          // Сохраняем серверную тему локально
+          await _saveThemeLocal(isDark);
+          debugPrint('Тема загружена с сервера: ${isDark ? "тёмная" : "светлая"}');
+          return true;
         }
       }
     } catch (e) {
       debugPrint('Ошибка загрузки темы с сервера: $e');
     }
+    return false;
   }
 
   /// Загрузка темы из файла
-  Future<void> _loadTheme() async {
+  Future<void> _loadThemeLocal() async {
     try {
       final directory = await getApplicationDocumentsDirectory();
       final file = File('${directory.path}/$_fileName');
@@ -91,13 +94,14 @@ class ThemeService extends ChangeNotifier {
       debugPrint('Ошибка загрузки темы: $e');
       _themeMode = ThemeMode.light;
     }
-
-    _isLoaded = true;
-    notifyListeners();
   }
 
   /// Сохранение темы в файл
   Future<void> _saveTheme(bool isDark) async {
+    await _saveThemeLocal(isDark);
+  }
+
+  Future<void> _saveThemeLocal(bool isDark) async {
     try {
       final directory = await getApplicationDocumentsDirectory();
       final file = File('${directory.path}/$_fileName');
