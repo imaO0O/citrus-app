@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import '../../models/psychological_test.dart';
 import '../../core/theme/app_colors.dart';
 import 'test_taking_screen.dart';
@@ -36,7 +35,10 @@ class TestResultScreen extends StatelessWidget {
         leading: IconButton(
           icon: Icon(Icons.arrow_back, color: AppColors.foreground),
           onPressed: () {
-            context.go('/');
+            // В стеке: TestsListScreen → TestTakingScreen → TestResultScreen
+            // 2 попа: закрываем результат и прохождение → список тестов
+            Navigator.of(context).pop();
+            Navigator.of(context).pop();
           },
         ),
       ),
@@ -169,7 +171,11 @@ class TestResultScreen extends StatelessWidget {
                 const SizedBox(width: 12),
                 Expanded(
                   child: ElevatedButton.icon(
-                    onPressed: () => context.go('/'),
+                    onPressed: () {
+                      // Закрываем результат и прохождение → список тестов
+                      Navigator.of(context).pop();
+                      Navigator.of(context).pop();
+                    },
                     icon: const Icon(Icons.list),
                     label: const Text('Все тесты'),
                     style: ElevatedButton.styleFrom(

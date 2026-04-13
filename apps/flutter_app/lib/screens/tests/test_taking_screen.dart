@@ -76,7 +76,7 @@ class _TestTakingScreenState extends State<TestTakingScreen> {
 
       // Показ результатов
       if (!mounted) return;
-      Navigator.pushReplacement(
+      Navigator.push(
         context,
         MaterialPageRoute(
           builder: (context) => TestResultScreen(
