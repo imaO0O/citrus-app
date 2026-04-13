@@ -17,12 +17,12 @@ class ThemeService extends ChangeNotifier {
   bool _isLoaded = false;
 
   ThemeMode get themeMode {
-    print('ThemeService.themeMode getter: $_themeMode');
+    print('>>> ThemeService.themeMode getter: $_themeMode');
     return _themeMode;
   }
   bool get isDarkMode {
     final result = _themeMode == ThemeMode.dark;
-    print('ThemeService.isDarkMode getter: $result');
+    print('>>> ThemeService.isDarkMode getter: $result');
     return result;
   }
   bool get isLoaded => _isLoaded;
