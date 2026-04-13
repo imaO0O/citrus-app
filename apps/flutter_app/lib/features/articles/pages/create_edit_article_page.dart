@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../models/article.dart';
 import '../bloc/article_bloc.dart';
@@ -22,7 +23,6 @@ class _CreateEditArticlePageState extends State<CreateEditArticlePage> {
   bool _isPreviewMode = false;
 
   final List<CategoryOption> _categories = [
-    const CategoryOption(value: 'custom', label: 'Пользовательская', icon: Icons.article),
     const CategoryOption(value: 'anxiety', label: 'Тревожность', icon: Icons.psychology),
     const CategoryOption(value: 'depression', label: 'Депрессия', icon: Icons.cloud),
     const CategoryOption(value: 'sleep', label: 'Сон', icon: Icons.nightlight),
@@ -37,7 +37,7 @@ class _CreateEditArticlePageState extends State<CreateEditArticlePage> {
     super.initState();
     _titleController = TextEditingController(text: widget.article?.title ?? '');
     _contentController = TextEditingController(text: widget.article?.content ?? '');
-    _selectedCategory = widget.article?.category ?? 'custom';
+    _selectedCategory = widget.article?.category ?? 'anxiety';
   }
 
   @override
@@ -339,12 +339,79 @@ class _CreateEditArticlePageState extends State<CreateEditArticlePage> {
 
           // Содержимое
           content.isNotEmpty
-              ? SelectableText(
-                  content,
-                  style: const TextStyle(
-                    color: AppColors.mutedForeground,
-                    fontSize: 16,
-                    height: 1.7,
+              ? MarkdownBody(
+                  data: content,
+                  selectable: true,
+                  styleSheet: MarkdownStyleSheet(
+                    p: const TextStyle(
+                      color: AppColors.mutedForeground,
+                      fontSize: 16,
+                      height: 1.7,
+                    ),
+                    h1: const TextStyle(
+                      color: AppColors.foreground,
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      height: 1.4,
+                    ),
+                    h2: const TextStyle(
+                      color: AppColors.foreground,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      height: 1.4,
+                    ),
+                    h3: const TextStyle(
+                      color: AppColors.foreground,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      height: 1.4,
+                    ),
+                    h4: const TextStyle(
+                      color: AppColors.foreground,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      height: 1.4,
+                    ),
+                    h5: const TextStyle(
+                      color: AppColors.foreground,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      height: 1.4,
+                    ),
+                    h6: const TextStyle(
+                      color: AppColors.foreground,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      height: 1.4,
+                    ),
+                    strong: const TextStyle(
+                      color: AppColors.foreground,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    em: const TextStyle(
+                      color: AppColors.mutedForeground,
+                      fontStyle: FontStyle.italic,
+                    ),
+                    blockquote: const TextStyle(
+                      color: AppColors.citrusAmber,
+                      fontSize: 16,
+                      fontStyle: FontStyle.italic,
+                      height: 1.6,
+                    ),
+                    blockquotePadding: const EdgeInsets.only(left: 16),
+                    listBullet: const TextStyle(
+                      color: AppColors.citrusOrange,
+                      fontSize: 16,
+                    ),
+                    code: TextStyle(
+                      color: AppColors.citrusGreen,
+                      backgroundColor: AppColors.surface2,
+                      fontSize: 14,
+                    ),
+                    codeblockDecoration: BoxDecoration(
+                      color: AppColors.surface2,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                   ),
                 )
               : const Text(
