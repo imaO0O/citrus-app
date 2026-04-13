@@ -2,6 +2,7 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../core/theme/app_colors.dart';
+import '../core/services/exercise_tracker_service.dart';
 
 class ExerciseItem {
   final String id;
@@ -442,6 +443,8 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet>
           _phaseText = '\u0423\u043F\u0440\u0430\u0436\u043D\u0435\u043D\u0438\u0435 \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043D\u043E!';
         });
         _animationController.stop();
+        // Сохраняем выполненное упражнение
+        ExerciseTrackerService().recordExercise(widget.exercise.id);
       }
     });
   }
