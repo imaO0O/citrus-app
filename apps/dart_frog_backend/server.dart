@@ -100,6 +100,11 @@ Future<Response> _handleRequest(RequestContext context) async {
     return _getThemes(context);
   }
 
+  // GET /user/theme - получить тему пользователя
+  if (path == '/user/theme' && method == HttpMethod.get) {
+    return _getUserTheme(context);
+  }
+
   // PUT /user/theme - обновить тему пользователя
   if (path == '/user/theme' && method == HttpMethod.put) {
     return _updateUserTheme(context);
@@ -708,6 +713,32 @@ Future<Response> _getThemes(RequestContext context) async {
     }).toList();
 
     return Response.json(body: themes);
+  } catch (e) {
+    return Response(statusCode: 500, body: 'Error: $e');
+  }
+}
+
+/// Получить тему пользователя
+Future<Response> _getUserTheme(RequestContext context) async {
+  final token = _extractToken(context);
+  if (token == null) {
+    return Response(statusCode: 401, body: 'Unauthorized');
+  }
+
+  try {
+    final jwt = JWT.verify(token, SecretKey(_jwtSecret));
+    final userId = jwt.payload['user_id'] as String;
+
+    final result = await _db!.query(
+      "SELECT theme_id FROM users WHERE id = '$userId'",
+    );
+
+    if (result.isEmpty) {
+      return Response(statusCode: 404, body: 'User not found');
+    }
+
+    final themeId = result.first[0] as String?;
+    return Response.json(body: {'theme_id': themeId});
   } catch (e) {
     return Response(statusCode: 500, body: 'Error: $e');
   }
