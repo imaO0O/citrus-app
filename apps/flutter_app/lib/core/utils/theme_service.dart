@@ -22,7 +22,9 @@ class ThemeService extends ChangeNotifier {
 
   /// Инициализация сервиса
   Future<void> init() async {
+    print('ThemeService.init() вызван');
     await _loadTheme();
+    print('ThemeService.init() завершён, isDarkMode=$isDarkMode, isLoaded=$_isLoaded');
   }
 
   /// Загрузка темы из файла
@@ -30,19 +32,24 @@ class ThemeService extends ChangeNotifier {
     try {
       final directory = await getApplicationDocumentsDirectory();
       final file = File('${directory.path}/$_fileName');
-      
+      print('ThemeService: загружаю тему из ${file.path}');
+
       if (await file.exists()) {
         final content = await file.readAsString();
+        print('ThemeService: содержимое файла: $content');
         final data = jsonDecode(content) as Map<String, dynamic>;
         final isDark = data['isDarkMode'] as bool? ?? false;
-        
+
         _themeMode = isDark ? ThemeMode.dark : ThemeMode.light;
+        print('ThemeService: загружена тема isDark=$isDark');
+      } else {
+        print('ThemeService: файл темы не найден, использую светлую');
       }
     } catch (e) {
-      debugPrint('Ошибка загрузки темы: $e');
+      debugPrint('ThemeService: ОШИБКА загрузки темы: $e');
       _themeMode = ThemeMode.light;
     }
-    
+
     _isLoaded = true;
     notifyListeners();
   }
@@ -72,16 +79,15 @@ class ThemeService extends ChangeNotifier {
 
   /// Переключение темы
   Future<void> toggleTheme(bool isDark) async {
-    print('ThemeService.toggleTheme(isDark=$isDark)');
     try {
+      print('ThemeService.toggleTheme(isDark=$isDark)');
       _themeMode = isDark ? ThemeMode.dark : ThemeMode.light;
       print('ThemeService: themeMode=$_themeMode, isDarkMode=$isDarkMode');
       await _saveTheme(isDark);
-      print('ThemeService: тема сохранена');
-      notifyListeners();
       print('ThemeService: notifyListeners вызван');
-    } catch (e) {
-      print('ThemeService: ОШИБКА при переключении темы: $e');
+      notifyListeners();
+    } catch (e, st) {
+      print('ThemeService: КРИТИЧЕСКАЯ ОШИБКА при переключении темы: $e\n$st');
     }
   }
 }

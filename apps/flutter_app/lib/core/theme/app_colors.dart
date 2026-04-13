@@ -7,7 +7,15 @@ import '../utils/theme_service.dart';
 /// При смене темы ThemeService вызывает notifyListeners(),
 /// и ListenableBuilder в main.dart перестраивает дерево виджетов.
 class AppColors {
-  static bool get _isDark => ThemeService().isDarkMode;
+  static bool get _isDark {
+    try {
+      final service = ThemeService();
+      return service.isDarkMode;
+    } catch (e) {
+      print('AppColors: ОШИБКА чтения темы: $e, fallback на dark');
+      return true;
+    }
+  }
 
   // === Background & surfaces ===
   static Color get background => _isDark ? const Color(0xFF0C0C14) : const Color(0xFFF9FAFB);
