@@ -110,6 +110,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         final testApi = TestApiService(token: token);
         final testResults = await testApi.getTestResults();
         testsCount = testResults.length;
+        debugPrint('Analytics: tests count = $testsCount');
       } catch (e) {
         debugPrint('Error loading test results: $e');
       }
@@ -118,6 +119,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       int exercisesCount = 0;
       try {
         exercisesCount = await _getExercisesCount();
+        debugPrint('Analytics: exercises count = $exercisesCount');
       } catch (e) {
         debugPrint('Error loading exercises count: $e');
       }
@@ -126,9 +128,12 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       int chatMessagesCount = 0;
       try {
         chatMessagesCount = await _getChatMessagesCount(token);
+        debugPrint('Analytics: chat messages count = $chatMessagesCount');
       } catch (e) {
         debugPrint('Error loading chat messages count: $e');
       }
+
+      debugPrint('Analytics: activity -> moods=${moodRecords.length}, chat=$chatMessagesCount, exercises=$exercisesCount, tests=$testsCount');
 
       // Строим данные по дням для графика
       final moodByDayMap = await moodRepo.getAverageMoodByDay(startDate: startDate, endDate: now);
