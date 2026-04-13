@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import '../../models/psychological_test.dart';
 import '../../data/tests/tests.dart';
 import '../../core/api/test_api_service.dart';
@@ -128,7 +127,12 @@ class _TestTakingScreenState extends State<TestTakingScreen> {
                         style: TextStyle(color: AppColors.mutedForeground)),
                   ),
                   TextButton(
-                    onPressed: () => context.go('/'),
+                    onPressed: () {
+                      // Закрываем диалог, потом выходим на главную
+                      Navigator.of(context).pop();
+                      // Закрываем экран прохождения теста
+                      Navigator.of(context).pop();
+                    },
                     child: Text('Выйти',
                         style: TextStyle(color: AppColors.destructive)),
                   ),

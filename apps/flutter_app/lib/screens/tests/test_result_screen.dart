@@ -35,8 +35,9 @@ class TestResultScreen extends StatelessWidget {
         leading: IconButton(
           icon: Icon(Icons.arrow_back, color: AppColors.foreground),
           onPressed: () {
-            // Возвращаемся к списку тестов (pop 2 экрана: результат -> прохождение -> список)
-            Navigator.of(context).pop();
+            // TestTakingScreen был заменён на этот экран через pushReplacement,
+            // поэтому в стеке: TestsListScreen → TestResultScreen
+            // Один pop вернёт к списку тестов
             Navigator.of(context).pop();
           },
         ),
