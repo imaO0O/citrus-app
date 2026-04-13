@@ -52,11 +52,13 @@ class ThemeService extends ChangeNotifier {
     try {
       final directory = await getApplicationDocumentsDirectory();
       final file = File('${directory.path}/$_fileName');
-      
+      print('ThemeService: сохраняю тему в ${file.path}, isDark=$isDark');
+
       final data = {'isDarkMode': isDark};
       await file.writeAsString(jsonEncode(data));
+      print('ThemeService: тема сохранена успешно');
     } catch (e) {
-      debugPrint('Ошибка сохранения темы: $e');
+      print('ThemeService: ОШИБКА сохранения темы: $e');
     }
   }
 
@@ -70,8 +72,16 @@ class ThemeService extends ChangeNotifier {
 
   /// Переключение темы
   Future<void> toggleTheme(bool isDark) async {
-    _themeMode = isDark ? ThemeMode.dark : ThemeMode.light;
-    await _saveTheme(isDark);
-    notifyListeners();
+    print('ThemeService.toggleTheme(isDark=$isDark)');
+    try {
+      _themeMode = isDark ? ThemeMode.dark : ThemeMode.light;
+      print('ThemeService: themeMode=$_themeMode, isDarkMode=$isDarkMode');
+      await _saveTheme(isDark);
+      print('ThemeService: тема сохранена');
+      notifyListeners();
+      print('ThemeService: notifyListeners вызван');
+    } catch (e) {
+      print('ThemeService: ОШИБКА при переключении темы: $e');
+    }
   }
 }
