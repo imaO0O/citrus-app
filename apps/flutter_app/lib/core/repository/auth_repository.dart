@@ -204,12 +204,16 @@ class AuthRepository {
   Future<void> _saveSession(User user) async {
     final storage = StorageService();
     print('AuthRepository: Сохраняю сессию для ${user.email}, token length=${user.token.length}');
-    await storage.setString('auth_token', user.token);
-    await storage.setString('auth_user_id', user.id);
-    await storage.setString('auth_user_email', user.email);
-    if (user.name != null) await storage.setString('auth_user_name', user.name!);
-    if (user.themeId != null) await storage.setString('auth_user_theme_id', user.themeId!);
-    print('AuthRepository: Сессия сохранена');
+    try {
+      await storage.setString('auth_token', user.token);
+      await storage.setString('auth_user_id', user.id);
+      await storage.setString('auth_user_email', user.email);
+      if (user.name != null) await storage.setString('auth_user_name', user.name!);
+      if (user.themeId != null) await storage.setString('auth_user_theme_id', user.themeId!);
+      print('AuthRepository: Сессия сохранена успешно');
+    } catch (e) {
+      print('AuthRepository: ОШИБКА сохранения сессии: $e');
+    }
   }
 
   /// Очистить сохранённую сессию
