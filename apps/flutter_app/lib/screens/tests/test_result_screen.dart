@@ -1,18 +1,20 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import '../../models/psychological_test.dart';
 import '../../core/theme/app_colors.dart';
+import 'test_taking_screen.dart';
 
 class TestResultScreen extends StatelessWidget {
   final PsychologicalTest test;
   final Map<String, int> scores;
   final Map<String, ScoreInterpretation?> interpretations;
+  final String? token;
 
   const TestResultScreen({
     super.key,
     required this.test,
     required this.scores,
     required this.interpretations,
+    this.token,
   });
 
   @override
@@ -32,7 +34,11 @@ class TestResultScreen extends StatelessWidget {
         ),
         leading: IconButton(
           icon: Icon(Icons.arrow_back, color: AppColors.foreground),
-          onPressed: () => context.go('/'),
+          onPressed: () {
+            // Возвращаемся к списку тестов (pop 2 экрана: результат -> прохождение -> список)
+            Navigator.of(context).pop();
+            Navigator.of(context).pop();
+          },
         ),
       ),
       body: SingleChildScrollView(
@@ -138,7 +144,17 @@ class TestResultScreen extends StatelessWidget {
               children: [
                 Expanded(
                   child: OutlinedButton.icon(
-                    onPressed: () => Navigator.pop(context),
+                    onPressed: () {
+                      // Пройти снова — заменяем текущий экран на TestTakingScreen
+                      Navigator.of(context).pushReplacement(
+                        MaterialPageRoute(
+                          builder: (context) => TestTakingScreen(
+                            testId: test.id,
+                            token: token,
+                          ),
+                        ),
+                      );
+                    },
                     icon: const Icon(Icons.replay),
                     label: const Text('Пройти снова'),
                     style: OutlinedButton.styleFrom(
@@ -154,7 +170,11 @@ class TestResultScreen extends StatelessWidget {
                 const SizedBox(width: 12),
                 Expanded(
                   child: ElevatedButton.icon(
-                    onPressed: () => context.go('/'),
+                    onPressed: () {
+                      // Все тесты — возвращаемся к списку тестов
+                      Navigator.of(context).pop();
+                      Navigator.of(context).pop();
+                    },
                     icon: const Icon(Icons.list),
                     label: const Text('Все тесты'),
                     style: ElevatedButton.styleFrom(

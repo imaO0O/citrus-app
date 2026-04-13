@@ -84,6 +84,7 @@ class _TestTakingScreenState extends State<TestTakingScreen> {
             test: _test,
             scores: scores,
             interpretations: interpretations,
+            token: widget.token,
           ),
         ),
       );
