@@ -32,8 +32,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   @override
   void initState() {
     super.initState();
-    // Загружаем данные с небольшой задержкой, чтобы UI успел отрисоваться
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    // Загружаем данные сразу при инициализации (период по умолчанию = неделя)
+    // Используем Future.microtask чтобы дождаться полной инициализации контекста
+    Future.microtask(() {
       if (mounted) {
         _loadReportData();
       }
