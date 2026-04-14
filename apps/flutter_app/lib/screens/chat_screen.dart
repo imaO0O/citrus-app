@@ -1,9 +1,19 @@
 ﻿import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 import '../core/theme/app_colors.dart';
 import '../services/chat_api_client.dart';
+import '../services/analytics_loader.dart';
+import '../services/diary_loader.dart';
 import '../core/config/api_config.dart';
+import '../core/repository/mood_repository.dart';
+import '../core/repository/diary_repository.dart';
+import '../core/repository/sleep_repository.dart';
+import '../core/services/storage_service.dart';
 
 class _Message {
   final String text;
@@ -33,7 +43,9 @@ class _ChatScreenState extends State<ChatScreen> {
   final _scrollController = ScrollController();
   final List<_Message> _messages = [];
   bool _isTyping = false;
-  
+  bool _isLoadingAnalytics = false;
+  bool _isLoadingDiary = false;
+
   // API клиент для общения с backend
   // TODO: Заменить URL на актуальный адрес вашего dart_frog_backend
   late final ChatApiClient _chatApiClient;
@@ -46,6 +58,113 @@ class _ChatScreenState extends State<ChatScreen> {
       baseUrl: ApiConfig.baseUrl,
       token: null, // TODO: Добавить токен авторизации, если требуется
     );
+  }
+
+  Future<void> _loadAnalytics() async {
+    if (_isLoadingAnalytics) return;
+
+    setState(() {
+      _isLoadingAnalytics = true;
+    });
+
+    try {
+      final moodRepo = context.read<MoodRepository>();
+      final sleepRepo = context.read<SleepRepository>();
+      final analyticsLoader = AnalyticsLoaderService(
+        moodRepo: moodRepo,
+        sleepRepo: sleepRepo,
+      );
+
+      // Получаем токен из хранилища
+      final storage = StorageService();
+      final token = await storage.getString('auth_token') ?? '';
+
+      // Загружаем аналитику за последние 30 дней
+      final analyticsText = await analyticsLoader.loadAndFormatAnalytics(
+        token: token,
+        userId: moodRepo.userId,
+        startDate: DateTime.now().subtract(const Duration(days: 30)),
+      );
+
+      if (!mounted) return;
+
+      // Отправляем аналитику в чат
+      await _sendMessage(text: analyticsText);
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Ошибка загрузки аналитики: $e'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoadingAnalytics = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _showDiarySelectionDialog() async {
+    if (_isLoadingDiary) return;
+
+    setState(() {
+      _isLoadingDiary = true;
+    });
+
+    try {
+      final diaryRepo = context.read<DiaryRepository>();
+      final diaryLoader = DiaryLoaderService(diaryRepo: diaryRepo);
+
+      // Загружаем записи за последние 30 дней
+      final entries = await diaryLoader.loadDiaryEntries(
+        startDate: DateTime.now().subtract(const Duration(days: 30)),
+      );
+
+      if (!mounted) return;
+
+      if (entries.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Нет записей дневника за последний месяц'),
+            backgroundColor: AppColors.citrusOrange,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        return;
+      }
+
+      // Показываем диалог выбора записей
+      final selectedEntries = await showDialog<List<DiaryEntry>>(
+        context: context,
+        builder: (context) => _DiarySelectionDialog(entries: entries),
+      );
+
+      if (selectedEntries != null && selectedEntries.isNotEmpty && mounted) {
+        final formattedText = diaryLoader.formatSelectedEntries(selectedEntries);
+        await _sendMessage(text: formattedText);
+      }
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Ошибка загрузки дневника: $e'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoadingDiary = false;
+        });
+      }
+    }
   }
 
   Future<void> _sendMessage({String? text}) async {
@@ -228,53 +347,142 @@ class _ChatScreenState extends State<ChatScreen> {
       padding: const EdgeInsets.only(top: 8),
       child: Align(
         alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
-        child: Container(
-          constraints: const BoxConstraints(maxWidth: 280),
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            gradient: isUser
-                ? const LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [AppColors.citrusOrange, AppColors.citrusAmber],
-                  )
-                : null,
-            color: isUser ? null : AppColors.surface1,
-            borderRadius: BorderRadius.circular(16),
-            border: isUser ? null : Border.all(color: Colors.white.withOpacity(0.06)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.15),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
+        child: GestureDetector(
+          onLongPress: () {
+            Clipboard.setData(ClipboardData(text: msg.text));
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: const Text('Сообщение скопировано'),
+                duration: const Duration(seconds: 1),
+                behavior: SnackBarBehavior.floating,
+                backgroundColor: AppColors.citrusOrange,
               ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-            children: [
-              if (!isUser)
-                Padding(
-                  padding: EdgeInsets.only(bottom: 4),
-                  child: Text('\u{1F34A}', style: TextStyle(fontSize: 16)),
+            );
+          },
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 280),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              gradient: isUser
+                  ? const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [AppColors.citrusOrange, AppColors.citrusAmber],
+                    )
+                  : null,
+              color: isUser ? null : AppColors.surface1,
+              borderRadius: BorderRadius.circular(16),
+              border: isUser ? null : Border.all(color: Colors.white.withOpacity(0.06)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.15),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
                 ),
-              Text(
-                msg.text,
-                style: TextStyle(
-                  color: isUser ? Colors.white : AppColors.foreground,
-                  fontSize: 14,
-                  height: 1.5,
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (!isUser)
+                      Padding(
+                        padding: EdgeInsets.only(right: 4),
+                        child: Text('\u{1F34A}', style: TextStyle(fontSize: 16)),
+                      ),
+                    if (!isUser)
+                      GestureDetector(
+                        onTap: () {
+                          Clipboard.setData(ClipboardData(text: msg.text));
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: const Text('Сообщение скопировано'),
+                              duration: const Duration(seconds: 1),
+                              behavior: SnackBarBehavior.floating,
+                              backgroundColor: AppColors.citrusOrange,
+                            ),
+                          );
+                        },
+                        child: Icon(
+                          Icons.copy_rounded,
+                          size: 14,
+                          color: (isUser ? Colors.white : AppColors.mutedForeground).withOpacity(0.5),
+                        ),
+                      ),
+                    const Spacer(),
+                    Text(
+                      msg.time,
+                      style: TextStyle(
+                        color: (isUser ? Colors.white : AppColors.mutedForeground).withOpacity(0.5),
+                        fontSize: 10,
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-              SizedBox(height: 6),
-              Text(
-                msg.time,
-                style: TextStyle(
-                  color: (isUser ? Colors.white : AppColors.mutedForeground).withOpacity(0.5),
-                  fontSize: 10,
-                ),
-              ),
-            ],
+                SizedBox(height: 4),
+                isUser
+                    ? Text(
+                        msg.text,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          height: 1.5,
+                        ),
+                      )
+                    : MarkdownBody(
+                        data: msg.text,
+                        styleSheet: MarkdownStyleSheet(
+                          p: TextStyle(
+                            color: AppColors.foreground,
+                            fontSize: 14,
+                            height: 1.5,
+                          ),
+                          strong: TextStyle(
+                            color: AppColors.foreground,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                          em: TextStyle(
+                            color: AppColors.foreground,
+                            fontStyle: FontStyle.italic,
+                            fontSize: 14,
+                          ),
+                          listBullet: TextStyle(
+                            color: AppColors.foreground,
+                            fontSize: 14,
+                          ),
+                          blockquote: TextStyle(
+                            color: AppColors.mutedForeground,
+                            fontSize: 13,
+                            fontStyle: FontStyle.italic,
+                          ),
+                          code: TextStyle(
+                            color: AppColors.citrusAmber,
+                            fontSize: 13,
+                            fontFamily: 'monospace',
+                          ),
+                          h1: TextStyle(
+                            color: AppColors.foreground,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 18,
+                          ),
+                          h2: TextStyle(
+                            color: AppColors.foreground,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                          h3: TextStyle(
+                            color: AppColors.foreground,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15,
+                          ),
+                        ),
+                        selectable: true,
+                      ),
+              ],
+            ),
           ),
         ),
       ),
@@ -345,74 +553,160 @@ class _ChatScreenState extends State<ChatScreen> {
       decoration: BoxDecoration(
         border: Border(top: BorderSide(color: AppColors.surface2)),
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.end,
+      child: Column(
         children: [
-          Expanded(
-            child: TextField(
-              controller: _controller,
-              focusNode: _focusNode,
-              style: TextStyle(color: AppColors.foreground),
-              maxLines: 4,
-              minLines: 1,
-              decoration: InputDecoration(
-                hintText: '\u0412\u0432\u0435\u0434\u0438\u0442\u0435 \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u0435...',
-                hintStyle: TextStyle(color: AppColors.mutedForeground.withOpacity(0.5)),
-                filled: true,
-                fillColor: Colors.white.withOpacity(0.04),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide(color: AppColors.surface3),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _controller,
+                  focusNode: _focusNode,
+                  style: TextStyle(color: AppColors.foreground),
+                  maxLines: 4,
+                  minLines: 1,
+                  decoration: InputDecoration(
+                    hintText: '\u0412\u0432\u0435\u0434\u0438\u0442\u0435 \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u0435...',
+                    hintStyle: TextStyle(color: AppColors.mutedForeground.withOpacity(0.5)),
+                    filled: true,
+                    fillColor: Colors.white.withOpacity(0.04),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide(color: AppColors.surface3),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide(color: AppColors.surface3),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide(color: AppColors.citrusOrange, width: 1.5),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  ),
+                  onChanged: (_) => setState(() {}),
+                  onSubmitted: (_) => _sendMessage(),
                 ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide(color: AppColors.surface3),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide(color: AppColors.citrusOrange, width: 1.5),
-                ),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               ),
-              onChanged: (_) => setState(() {}),
-              onSubmitted: (_) => _sendMessage(),
-            ),
+              SizedBox(width: 8),
+              GestureDetector(
+                onTap: hasText ? _sendMessage : null,
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    gradient: hasText
+                        ? const LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [AppColors.citrusOrange, AppColors.citrusAmber],
+                          )
+                        : null,
+                    color: hasText ? null : Colors.white.withOpacity(0.06),
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: hasText
+                        ? [
+                            BoxShadow(
+                              color: AppColors.citrusOrange.withOpacity(0.35),
+                              blurRadius: 16,
+                              offset: const Offset(0, 4),
+                            ),
+                          ]
+                        : null,
+                  ),
+                  child: Icon(
+                    Icons.send_rounded,
+                    color: hasText ? Colors.white : AppColors.mutedForeground,
+                    size: 20,
+                  ),
+                ),
+              ),
+            ],
           ),
-          SizedBox(width: 8),
-          GestureDetector(
-            onTap: hasText ? _sendMessage : null,
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                gradient: hasText
-                    ? const LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [AppColors.citrusOrange, AppColors.citrusAmber],
-                      )
-                    : null,
-                color: hasText ? null : Colors.white.withOpacity(0.06),
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: hasText
-                    ? [
-                        BoxShadow(
-                          color: AppColors.citrusOrange.withOpacity(0.35),
-                          blurRadius: 16,
-                          offset: const Offset(0, 4),
-                        ),
-                      ]
-                    : null,
-              ),
-              child: Icon(
-                Icons.send_rounded,
-                color: hasText ? Colors.white : AppColors.mutedForeground,
-                size: 20,
-              ),
+          SizedBox(height: 8),
+          SizedBox(
+            height: 36,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              children: [
+                _buildAnalyticsButton(),
+                const SizedBox(width: 8),
+                _buildDiaryButton(),
+              ],
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildAnalyticsButton() {
+    return GestureDetector(
+      onTap: _isLoadingAnalytics ? null : _loadAnalytics,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: AppColors.citrusPurple.withOpacity(_isLoadingAnalytics ? 0.05 : 0.1),
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: AppColors.citrusPurple.withOpacity(0.2)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (_isLoadingAnalytics)
+              SizedBox(
+                width: 14,
+                height: 14,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.citrusPurple),
+                ),
+              )
+            else
+              Icon(Icons.analytics_outlined, color: AppColors.citrusPurple, size: 14),
+            SizedBox(width: 6),
+            Text(
+              _isLoadingAnalytics ? 'Загрузка...' : 'Аналитика',
+              style: TextStyle(color: AppColors.citrusPurple, fontSize: 12),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDiaryButton() {
+    return GestureDetector(
+      onTap: _isLoadingDiary ? null : _showDiarySelectionDialog,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: AppColors.citrusAmber.withOpacity(_isLoadingDiary ? 0.05 : 0.1),
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: AppColors.citrusAmber.withOpacity(0.2)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (_isLoadingDiary)
+              SizedBox(
+                width: 14,
+                height: 14,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.citrusAmber),
+                ),
+              )
+            else
+              Icon(Icons.menu_book_rounded, color: AppColors.citrusAmber, size: 14),
+            SizedBox(width: 6),
+            Text(
+              _isLoadingDiary ? 'Загрузка...' : 'Дневник',
+              style: TextStyle(color: AppColors.citrusAmber, fontSize: 12),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -530,6 +824,195 @@ class _PulsingDotState extends State<_PulsingDot>
           ),
         );
       },
+    );
+  }
+}
+
+class _DiarySelectionDialog extends StatefulWidget {
+  final List<DiaryEntry> entries;
+
+  const _DiarySelectionDialog({required this.entries});
+
+  @override
+  State<_DiarySelectionDialog> createState() => _DiarySelectionDialogState();
+}
+
+class _DiarySelectionDialogState extends State<_DiarySelectionDialog> {
+  final Set<String> _selectedIds = {};
+
+  void _toggleSelection(String id) {
+    setState(() {
+      if (_selectedIds.contains(id)) {
+        _selectedIds.remove(id);
+      } else {
+        _selectedIds.add(id);
+      }
+    });
+  }
+
+  void _selectAll() {
+    setState(() {
+      if (_selectedIds.length == widget.entries.length) {
+        _selectedIds.clear();
+      } else {
+        _selectedIds.addAll(widget.entries.map((e) => e.id));
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final moodEmojis = ['😄', '🙂', '😐', '😟', '😢', '😞'];
+
+    return Dialog(
+      backgroundColor: AppColors.surface1,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Container(
+        width: double.infinity,
+        constraints: const BoxConstraints(maxWidth: 400, maxHeight: 500),
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Flexible(
+                  child: Text(
+                    'Выберите записи',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.foreground,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextButton(
+                      onPressed: _selectAll,
+                      child: Text(
+                        _selectedIds.length == widget.entries.length ? 'Снять все' : 'Выбрать все',
+                        style: TextStyle(color: AppColors.citrusOrange, fontSize: 12),
+                      ),
+                    ),
+                    IconButton(
+                      icon: Icon(Icons.close, size: 20),
+                      onPressed: () => Navigator.pop(context),
+                      color: AppColors.mutedForeground,
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '${_selectedIds.length} из ${widget.entries.length} записей выбрано',
+              style: TextStyle(color: AppColors.mutedForeground, fontSize: 12),
+            ),
+            const SizedBox(height: 12),
+            Expanded(
+              child: ListView.separated(
+                itemCount: widget.entries.length,
+                separatorBuilder: (context, index) => const SizedBox(height: 8),
+                itemBuilder: (context, index) {
+                  final entry = widget.entries[index];
+                  final isSelected = _selectedIds.contains(entry.id);
+                  final dateStr = DateFormat('dd.MM.yyyy').format(entry.entryDate);
+
+                  return GestureDetector(
+                    onTap: () => _toggleSelection(entry.id),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? AppColors.citrusOrange.withOpacity(0.15)
+                            : Colors.white.withOpacity(0.04),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: isSelected
+                              ? AppColors.citrusOrange
+                              : Colors.white.withOpacity(0.06),
+                          width: isSelected ? 2 : 1,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            isSelected ? Icons.check_circle : Icons.circle_outlined,
+                            color: isSelected ? AppColors.citrusOrange : AppColors.mutedForeground,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 8),
+                          if (entry.moodValue != null)
+                            Text(moodEmojis[entry.moodValue!.clamp(0, 5)], style: const TextStyle(fontSize: 18)),
+                          if (entry.moodValue != null) const SizedBox(width: 8),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  dateStr,
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: AppColors.mutedForeground,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  entry.content.length > 50
+                                      ? '${entry.content.substring(0, 50)}...'
+                                      : entry.content,
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: AppColors.foreground,
+                                  ),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton(
+                onPressed: _selectedIds.isEmpty
+                    ? null
+                    : () {
+                        final selected = widget.entries
+                            .where((e) => _selectedIds.contains(e.id))
+                            .toList();
+                        Navigator.pop(context, selected);
+                      },
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.citrusOrange,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: Text(
+                  'Отправить ${_selectedIds.length} ${_selectedIds.length == 1 ? 'запись' : 'записей'} в чат',
+                  style: TextStyle(fontSize: 14),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
