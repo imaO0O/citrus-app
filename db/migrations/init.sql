@@ -123,6 +123,18 @@ CREATE TABLE IF NOT EXISTS trusted_contacts (
     created_at TIMESTAMP DEFAULT NOW()
 );
 
+-- Выполненные упражнения
+CREATE TABLE IF NOT EXISTS user_exercises (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    exercise_id TEXT NOT NULL,
+    exercise_type TEXT NOT NULL,
+    title TEXT,
+    completed_at TIMESTAMP DEFAULT NOW(),
+    duration_minutes INTEGER,
+    completion_count INTEGER DEFAULT 1
+);
+
 -- Индексы для быстрого поиска
 CREATE INDEX IF NOT EXISTS idx_mood_entries_user_recorded_at ON mood_entries(user_id, recorded_at DESC);
 CREATE INDEX IF NOT EXISTS idx_diary_entries_user_date ON diary_entries(user_id, entry_date);
@@ -132,3 +144,4 @@ CREATE INDEX IF NOT EXISTS idx_chat_messages_user_id ON chat_messages(user_id);
 CREATE INDEX IF NOT EXISTS idx_chat_messages_created_at ON chat_messages(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_trusted_contacts_user_id ON trusted_contacts(user_id);
 CREATE INDEX IF NOT EXISTS idx_memory_photos_user_id ON memory_photos(user_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_user_exercises_user_id ON user_exercises(user_id, completed_at DESC);

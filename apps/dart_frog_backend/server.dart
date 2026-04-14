@@ -8,15 +8,15 @@ import 'package:crypto/crypto.dart';
 import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
 import 'package:http/http.dart' as http;
 import 'package:mime/mime.dart';
+import 'package:dotenv/dotenv.dart';
 import 'lib/services/gigachat_service.dart';
+
+final _env = DotEnv(includePlatformEnvironment: true);
 
 PostgreSQLConnection? _db;
 const _jwtSecret = 'citrus-app-secret-key-change-in-production';
 
-// GigaChat конфигурация
-// В production используйте переменные окружения!
-String? _gigachatClientId;
-String? _gigachatClientSecret;
+// GigaChat сервис
 GigaChatService? _gigachatService;
 
 // Cloudinary конфигурация
@@ -126,21 +126,22 @@ Future<Response> _handleRequest(RequestContext context) async {
 
   // Инициализация GigaChat сервиса (если ещё не инициализирован)
   if (_gigachatService == null) {
-    _gigachatClientId = Platform.environment['GIGACHAT_CLIENT_ID'];
-    _gigachatClientSecret = Platform.environment['GIGACHAT_CLIENT_SECRET'];
+    _env.load();
+    final authKey = _env['GIGACHAT_AUTHORIZATION_KEY'];
     
-    if (_gigachatClientId != null && _gigachatClientSecret != null) {
+    print('GIGACHAT_AUTHORIZATION_KEY: ${authKey != null ? "${authKey.substring(0, 20)}..." : "null"}');
+
+    if (authKey != null) {
       try {
         _gigachatService = GigaChatService(
-          clientId: _gigachatClientId!,
-          clientSecret: _gigachatClientSecret!,
+          authorizationKey: authKey,
         );
         print('GigaChat service initialized!');
       } catch (e) {
         print('Failed to initialize GigaChat service: $e');
       }
     } else {
-      print('GigaChat credentials not found. Set GIGACHAT_CLIENT_ID and GIGACHAT_CLIENT_SECRET environment variables.');
+      print('GigaChat credentials not found. Set GIGACHAT_AUTHORIZATION_KEY environment variable.');
     }
   }
 
@@ -208,6 +209,66 @@ Future<Response> _handleRequest(RequestContext context) async {
   if (path.startsWith('/sleep/records/') && method == HttpMethod.delete) {
     final id = path.substring('/sleep/records/'.length);
     return _deleteSleepRecord(context, authContext, id);
+  }
+
+  // GET /analytics/stats - статистика активности (требует авторизации)
+  if (path == '/analytics/stats' && method == HttpMethod.get) {
+    final token = _extractToken(context);
+    if (token == null) {
+      return Response(statusCode: 401, body: 'Unauthorized');
+    }
+    try {
+      final jwt = JWT.verify(token, SecretKey(_jwtSecret));
+      authContext.userId = jwt.payload['user_id'] as String;
+    } catch (e) {
+      return Response(statusCode: 401, body: 'Invalid token');
+    }
+    return _getAnalyticsStats(context, authContext);
+  }
+
+  // POST /exercises/complete - отметить упражнение как выполненное (требует авторизации)
+  if (path == '/exercises/complete' && method == HttpMethod.post) {
+    final token = _extractToken(context);
+    if (token == null) {
+      return Response(statusCode: 401, body: 'Unauthorized');
+    }
+    try {
+      final jwt = JWT.verify(token, SecretKey(_jwtSecret));
+      authContext.userId = jwt.payload['user_id'] as String;
+    } catch (e) {
+      return Response(statusCode: 401, body: 'Invalid token');
+    }
+    return _completeExercise(context, authContext);
+  }
+
+  // GET /exercises/stats - статистика упражнений (требует авторизации)
+  if (path == '/exercises/stats' && method == HttpMethod.get) {
+    final token = _extractToken(context);
+    if (token == null) {
+      return Response(statusCode: 401, body: 'Unauthorized');
+    }
+    try {
+      final jwt = JWT.verify(token, SecretKey(_jwtSecret));
+      authContext.userId = jwt.payload['user_id'] as String;
+    } catch (e) {
+      return Response(statusCode: 401, body: 'Invalid token');
+    }
+    return _getExerciseStats(context, authContext);
+  }
+
+  // GET /exercises - история упражнений (требует авторизации)
+  if (path == '/exercises' && method == HttpMethod.get) {
+    final token = _extractToken(context);
+    if (token == null) {
+      return Response(statusCode: 401, body: 'Unauthorized');
+    }
+    try {
+      final jwt = JWT.verify(token, SecretKey(_jwtSecret));
+      authContext.userId = jwt.payload['user_id'] as String;
+    } catch (e) {
+      return Response(statusCode: 401, body: 'Invalid token');
+    }
+    return _getExercises(context, authContext);
   }
 
   // Calendar endpoints (требуют авторизации)
@@ -1858,7 +1919,7 @@ Future<Response> _chatWithAI(RequestContext context) async {
       statusCode: 503,
       body: {
         'error': 'GigaChat service is not configured',
-        'message': 'Установите переменные окружения GIGACHAT_CLIENT_ID и GIGACHAT_CLIENT_SECRET',
+        'message': 'Установите переменные окружения GIGACHAT_AUTHORIZATION_KEY',
       },
     );
   }
@@ -1868,7 +1929,7 @@ Future<Response> _chatWithAI(RequestContext context) async {
     final message = body['message'] as String?;
     final systemPrompt = body['system_prompt'] as String?;
     final temperature = (body['temperature'] as num?)?.toDouble() ?? 0.7;
-    final maxTokens = body['max_tokens'] as int? ?? 1024;
+    final maxTokens = body['max_tokens'] as int? ?? 2048; // Увеличено для аналитики
 
     if (message == null || message.trim().isEmpty) {
       return Response.json(
@@ -1887,10 +1948,41 @@ Future<Response> _chatWithAI(RequestContext context) async {
       } catch (_) {}
     }
 
+    // Определяем system prompt
+    String finalSystemPrompt = systemPrompt ?? 'Ты полезный ассистент по имени Цитрус. Ты помогаешь пользователям следить за своим ментальным здоровьем, даёшь советы по улучшению настроения, борьбе с тревогой и поддержанию хорошего эмоционального состояния. Отвечай дружелюбно и поддерживающе. Используй Markdown: **жирный** для ключевых моментов, *курсив* для акцентов.';
+    
+    // Если сообщение содержит аналитику, адаптируем prompt
+    if (message.contains('📊') && message.contains('Аналитика')) {
+      finalSystemPrompt = '''Ты Цитрус — AI-ассистент для ментального здоровья. Пользователь отправил тебе свою аналитику настроения и активности. 
+Проанализируй данные, дай полезные инсайты и поддерживающий комментарий. 
+Обращай внимание на тренды, серийность дней и распределение настроения.
+Будь конкретным и давай практические рекомендации.
+Используй Markdown: **жирный текст** для ключевых выводов, *курсив* для акцентов.''';
+    } else if (message.contains('📓') && message.contains('Записи дневника')) {
+      finalSystemPrompt = '''Ты Цитрус — AI-ассистент для ментального здоровья. Пользователь отправил тебе свои записи из дневника.
+
+ВАЖНО: Проанализируй именно СОДЕРЖАНИЕ каждой записи. Обращай внимание на:
+1. Конкретные события и действия, которые описывает пользователь
+2. Эмоции и чувства, которые он выражает
+3. Повторяющиеся темы, слова или ситуации в разных записях
+4. Есть ли связь между настроением и содержанием записей
+5. Позитивные моменты и достижения
+6. Возможные источники стресса или тревоги
+
+ДАЙ КОНКРЕТНЫЙ анализ: упоминай события, детали и фразы из записей пользователя.
+НЕ пиши общие фразы типа "записи краткие" или "нет детализации" — работай с тем что есть.
+Используй Markdown: **жирный текст** для ключевых выводов, *курсив* для акцентов.
+Будь тёплым, поддерживающим и конкретным.''';
+    } else if (message.contains('😴') && message.contains('Анализ сна')) {
+      finalSystemPrompt = '''Ты Цитрус — AI-ассистент для ментального здоровья. Пользователь отправил тебе данные о своём сне.
+Проанализируй качество сна, дай рекомендации по улучшению гигиены сна и объясни как сон влияет на ментальное здоровье.
+Используй Markdown: **жирный текст** для ключевых выводов, *курсив* для акцентов.''';
+    }
+
     // Отправляем сообщение в GigaChat
     final response = await _gigachatService!.chat(
       message,
-      systemPrompt: systemPrompt ?? 'Ты полезный ассистент по имени Цитрус. Ты помогаешь пользователям следить за своим ментальным здоровьем, даёшь советы по улучшению настроения, борьбе с тревогой и поддержанию хорошего эмоционального состояния. Отвечай дружелюбно и поддерживающе.',
+      systemPrompt: finalSystemPrompt,
       temperature: temperature,
       maxTokens: maxTokens,
     );
@@ -1956,6 +2048,247 @@ Future<Response> _getChatMessages(RequestContext context) async {
   } catch (e) {
     // Если таблица ещё не создана, возвращаем пустой список
     return Response.json(body: <Map<String, dynamic>>[]);
+  }
+}
+
+/// GET /analytics/stats - полная статистика активности пользователя
+Future<Response> _getAnalyticsStats(RequestContext context, _AuthContext auth) async {
+  final userId = auth.userId;
+
+  try {
+    // Количество сообщений в чате
+    int chatMessages = 0;
+    try {
+      final chatResult = await _db!.query(
+        "SELECT COUNT(*) FROM chat_messages WHERE user_id = '$userId'",
+      );
+      chatMessages = int.parse(chatResult.first[0].toString());
+    } catch (_) {}
+
+    // Количество пройденных тестов
+    int testsCompleted = 0;
+    try {
+      final testResult = await _db!.query(
+        "SELECT COUNT(*) FROM psychological_test_results WHERE user_id = '$userId'",
+      );
+      testsCompleted = int.parse(testResult.first[0].toString());
+    } catch (_) {}
+
+    // Количество выполненных упражнений
+    int exercisesCompleted = 0;
+    try {
+      final exerciseResult = await _db!.query(
+        "SELECT COALESCE(SUM(completion_count), 0) FROM user_exercises WHERE user_id = '$userId'",
+      );
+      exercisesCompleted = int.parse(exerciseResult.first[0].toString());
+    } catch (_) {}
+
+    return Response.json(body: {
+      'chatMessages': chatMessages,
+      'testsCompleted': testsCompleted,
+      'exercisesCompleted': exercisesCompleted,
+    });
+  } catch (e) {
+    print('Error in /analytics/stats: $e');
+    return Response.json(
+      statusCode: 200,
+      body: {
+        'chatMessages': 0,
+        'testsCompleted': 0,
+        'exercisesCompleted': 0,
+      },
+    );
+  }
+}
+
+/// POST /exercises/complete - отметить упражнение как выполненное
+Future<Response> _completeExercise(RequestContext context, _AuthContext auth) async {
+  final userId = auth.userId;
+  if (userId == null) return Response(statusCode: 401, body: 'Unauthorized');
+
+  try {
+    final body = await context.request.body();
+    final data = json.decode(body);
+
+    final exerciseId = data['exercise_id'] as String?;
+    final exerciseType = data['exercise_type'] as String?;
+    final title = data['title'] as String?;
+    final durationMinutes = data['duration_minutes'] as int?;
+    final difficultyLevel = data['difficulty_level'] as int?;
+    final userNotes = data['user_notes'] as String?;
+    final moodBefore = data['mood_before'] as int?;
+    final moodAfter = data['mood_after'] as int?;
+
+    if (exerciseId == null || exerciseType == null) {
+      return Response.json(
+        statusCode: 400,
+        body: {'error': 'exercise_id and exercise_type are required'},
+      );
+    }
+
+    final id = const Uuid().v4();
+    await _db!.query(
+      """
+      INSERT INTO user_exercises 
+      (id, user_id, exercise_id, exercise_type, title, duration_minutes, difficulty_level, user_notes, mood_before, mood_after, completed_at)
+      VALUES 
+      ('$id', '$userId', '$exerciseId', '$exerciseType', ${title != null ? "'${title.replaceAll("'", "''")}'" : 'NULL'}, ${durationMinutes != null ? durationMinutes : 'NULL'}, ${difficultyLevel != null ? difficultyLevel : 'NULL'}, ${userNotes != null ? "'${userNotes.replaceAll("'", "''")}'" : 'NULL'}, ${moodBefore != null ? moodBefore : 'NULL'}, ${moodAfter != null ? moodAfter : 'NULL'}, NOW())
+      """,
+    );
+
+    return Response.json(
+      statusCode: 201,
+      body: {
+        'id': id,
+        'message': 'Exercise completed successfully',
+      },
+    );
+  } catch (e) {
+    print('Error completing exercise: $e');
+    return Response.json(
+      statusCode: 500,
+      body: {'error': 'Internal server error'},
+    );
+  }
+}
+
+/// GET /exercises/stats - расширенная статистика упражнений
+Future<Response> _getExerciseStats(RequestContext context, _AuthContext auth) async {
+  final userId = auth.userId;
+  if (userId == null) return Response(statusCode: 401, body: 'Unauthorized');
+
+  try {
+    // Общая статистика
+    int totalExercises = 0;
+    int totalMinutes = 0;
+    Map<String, int> byType = {};
+    int last7Days = 0;
+    int last30Days = 0;
+
+    // Общее количество упражнений
+    final totalResult = await _db!.query(
+      "SELECT COUNT(*) FROM user_exercises WHERE user_id = '$userId'",
+    );
+    totalExercises = int.parse(totalResult.first[0].toString());
+
+    // Общее время
+    final minutesResult = await _db!.query(
+      "SELECT COALESCE(SUM(duration_minutes), 0) FROM user_exercises WHERE user_id = '$userId'",
+    );
+    totalMinutes = int.parse(minutesResult.first[0].toString());
+
+    // Группировка по типам
+    final typeResult = await _db!.query(
+      "SELECT exercise_type, COUNT(*) FROM user_exercises WHERE user_id = '$userId' GROUP BY exercise_type",
+    );
+    for (final row in typeResult) {
+      byType[row[0].toString()] = int.parse(row[1].toString());
+    }
+
+    // За последние 7 дней
+    final last7Result = await _db!.query(
+      "SELECT COUNT(*) FROM user_exercises WHERE user_id = '$userId' AND completed_at > NOW() - INTERVAL '7 days'",
+    );
+    last7Days = int.parse(last7Result.first[0].toString());
+
+    // За последние 30 дней
+    final last30Result = await _db!.query(
+      "SELECT COUNT(*) FROM user_exercises WHERE user_id = '$userId' AND completed_at > NOW() - INTERVAL '30 days'",
+    );
+    last30Days = int.parse(last30Result.first[0].toString());
+
+    // Средняя продолжительность
+    double avgDuration = 0;
+    final avgResult = await _db!.query(
+      "SELECT AVG(duration_minutes) FROM user_exercises WHERE user_id = '$userId' AND duration_minutes IS NOT NULL",
+    );
+    if (avgResult.first[0] != null) {
+      avgDuration = double.parse(avgResult.first[0].toString());
+    }
+
+    return Response.json(body: {
+      'totalExercises': totalExercises,
+      'totalMinutes': totalMinutes,
+      'byType': byType,
+      'last7Days': last7Days,
+      'last30Days': last30Days,
+      'averageDurationMinutes': avgDuration.roundToDouble(),
+    });
+  } catch (e) {
+    print('Error in /exercises/stats: $e');
+    return Response.json(
+      statusCode: 200,
+      body: {
+        'totalExercises': 0,
+        'totalMinutes': 0,
+        'byType': {},
+        'last7Days': 0,
+        'last30Days': 0,
+        'averageDurationMinutes': 0,
+      },
+    );
+  }
+}
+
+/// GET /exercises - история выполненных упражнений
+Future<Response> _getExercises(RequestContext context, _AuthContext auth) async {
+  final userId = auth.userId;
+  if (userId == null) return Response(statusCode: 401, body: 'Unauthorized');
+
+  try {
+    final queryParameters = context.request.uri.queryParameters;
+    final limit = int.tryParse(queryParameters['limit'] ?? '50') ?? 50;
+    final offset = int.tryParse(queryParameters['offset'] ?? '0') ?? 0;
+    final exerciseType = queryParameters['type'];
+
+    String whereClause = "WHERE user_id = '$userId'";
+    if (exerciseType != null) {
+      whereClause += " AND exercise_type = '$exerciseType'";
+    }
+
+    final results = await _db!.query(
+      """
+      SELECT id, exercise_id, exercise_type, title, completed_at, duration_minutes, difficulty_level, user_notes, mood_before, mood_after
+      FROM user_exercises 
+      $whereClause
+      ORDER BY completed_at DESC
+      LIMIT $limit OFFSET $offset
+      """,
+    );
+
+    final exercises = results.map((row) {
+      return {
+        'id': row[0] is String ? row[0] : Uuid.unparse(row[0] as Uint8List),
+        'exercise_id': row[1],
+        'exercise_type': row[2],
+        'title': row[3],
+        'completed_at': row[4].toString(),
+        'duration_minutes': row[5],
+        'difficulty_level': row[6],
+        'user_notes': row[7],
+        'mood_before': row[8],
+        'mood_after': row[9],
+      };
+    }).toList();
+
+    // Получаем общее количество для пагинации
+    final countResult = await _db!.query(
+      "SELECT COUNT(*) FROM user_exercises $whereClause",
+    );
+    final total = int.parse(countResult.first[0].toString());
+
+    return Response.json(body: {
+      'exercises': exercises,
+      'total': total,
+      'limit': limit,
+      'offset': offset,
+    });
+  } catch (e) {
+    print('Error in /exercises: $e');
+    return Response.json(
+      statusCode: 500,
+      body: {'error': 'Internal server error'},
+    );
   }
 }
 

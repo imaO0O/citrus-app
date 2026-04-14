@@ -1,6 +1,15 @@
 import 'dart:convert';
-import 'package:http/http.dart' as http;
+import 'dart:io';
 import 'package:uuid/uuid.dart';
+
+// Создаем HttpClient с отключённой проверкой SSL для GigaChat API
+HttpClient _createHttpClient() {
+  final client = HttpClient();
+  client.badCertificateCallback = (X509Certificate cert, String host, int port) => true;
+  return client;
+}
+
+final _httpClient = _createHttpClient();
 
 /// Поддерживаемые модели GigaChat
 enum GigaChatModel {
@@ -29,19 +38,16 @@ class GigaChatService {
   String? _accessToken;
   DateTime? _tokenExpiryTime;
 
-  // Данные для авторизации
-  final String _clientId;
-  final String _clientSecret;
-  
+  // Authorization key из личного кабинета (уже base64)
+  final String _authorizationKey;
+
   // ID сессии для кэширования контекта
   final String _sessionId;
 
   GigaChatService({
-    required String clientId,
-    required String clientSecret,
+    required String authorizationKey,
     String? sessionId,
-  })  : _clientId = clientId,
-        _clientSecret = clientSecret,
+  })  : _authorizationKey = authorizationKey,
         _sessionId = sessionId ?? const Uuid().v4();
   
   /// Получить токен авторизации
@@ -52,42 +58,39 @@ class GigaChatService {
         return _accessToken!;
       }
     }
-    
+
     // Получаем новый токен
     try {
-      final credentials = base64Encode(utf8.encode('$_clientId:$_clientSecret'));
+      final rqUid = const Uuid().v4();
+      final body = 'scope=GIGACHAT_API_PERS';
+
+      final request = await _httpClient.postUrl(Uri.parse(_authUrl));
+      request.headers.set('Content-Type', 'application/x-www-form-urlencoded');
+      request.headers.set('Accept', 'application/json');
+      request.headers.set('Authorization', 'Basic $_authorizationKey');
+      request.headers.set('RqUID', rqUid);
+      request.headers.set('Content-Length', body.length.toString());
+      request.write(body);
       
-      final response = await http.post(
-        Uri.parse(_authUrl),
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'Accept': 'application/json',
-          'Authorization': 'Basic $credentials',
-          'RqUID': const Uuid().v4(), // UUID4 формат (обязательно!)
-        },
-        body: {
-          'scope': 'GIGACHAT_API_PERS',
-        },
-      );
-      
+      final response = await request.close();
+      final responseBody = await response.transform(utf8.decoder).join();
+
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
+        final data = jsonDecode(responseBody);
         _accessToken = data['access_token'] as String;
         final expiresIn = data['expires_at'] as int?;
-        
-        // Устанавливаем время истечения (с запасом 30 секунд)
+
         if (expiresIn != null) {
           _tokenExpiryTime = DateTime.now().add(
             Duration(seconds: expiresIn - 30),
           );
         } else {
-          // По умолчанию 30 минут
           _tokenExpiryTime = DateTime.now().add(const Duration(minutes: 29));
         }
-        
+
         return _accessToken!;
       } else {
-        throw Exception('Failed to get access token: ${response.statusCode} ${response.body}');
+        throw Exception('Failed to get access token: ${response.statusCode} $responseBody');
       }
     } catch (e) {
       throw Exception('Ошибка при получении токена GigaChat: $e');
@@ -123,19 +126,21 @@ class GigaChatService {
         'max_tokens': maxTokens,
       };
 
-      final response = await http.post(
-        Uri.parse(_chatApiUrl),
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Authorization': 'Bearer $token',
-          'X-Session-ID': _sessionId, // Для кэширования контекста
-        },
-        body: jsonEncode(requestBody),
-      );
+      final body = jsonEncode(requestBody);
+      final bodyBytes = utf8.encode(body);
+      final request = await _httpClient.postUrl(Uri.parse(_chatApiUrl));
+      request.headers.set('Content-Type', 'application/json; charset=utf-8');
+      request.headers.set('Accept', 'application/json');
+      request.headers.set('Authorization', 'Bearer $token');
+      request.headers.set('X-Session-ID', _sessionId);
+      request.headers.set('Content-Length', bodyBytes.length.toString());
+      request.add(bodyBytes);
+      
+      final response = await request.close();
+      final responseBody = await response.transform(utf8.decoder).join();
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
+        final data = jsonDecode(responseBody);
         final choices = data['choices'] as List?;
 
         if (choices != null && choices.isNotEmpty) {
@@ -146,7 +151,7 @@ class GigaChatService {
         }
       } else {
         throw Exception(
-          'GigaChat API error: ${response.statusCode} ${response.body}',
+          'GigaChat API error: ${response.statusCode} $responseBody',
         );
       }
     } catch (e) {
