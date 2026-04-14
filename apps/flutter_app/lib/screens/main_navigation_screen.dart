@@ -42,9 +42,14 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   static const _mainScreenCount = 4;
 
   // Ключ для AnalyticsScreen, чтобы вызывать refresh при навигации
-  final GlobalKey<State<AnalyticsScreen>> _analyticsKey = GlobalKey<State<AnalyticsScreen>>();
+  final GlobalKey _analyticsKey = GlobalKey();
 
   final List<Widget> _screens = [];
+
+  /// Публичный метод для навигации на аналитику (используется из MoreScreen)
+  void navigateToAnalytics() {
+    _setIndex(11);
+  }
 
   @override
   void initState() {

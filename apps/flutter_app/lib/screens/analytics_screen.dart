@@ -10,7 +10,6 @@ import '../models/sleep_record.dart';
 import '../core/repository/mood_repository.dart';
 import '../core/repository/sleep_repository.dart';
 import '../core/services/storage_service.dart';
-import '../core/api/test_api_service.dart';
 import '../core/services/exercise_tracker_service.dart';
 import '../core/services/test_tracking_service.dart';
 import '../core/config/api_config.dart';
@@ -29,17 +28,32 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   bool _isGeneratingPdf = false;
   bool _isLoading = true;
   AnalyticsReport? _report;
-  bool _initialized = false;
 
   @override
   void initState() {
     super.initState();
-    _loadReportData();
+    // Загружаем данные с небольшой задержкой, чтобы UI успел отрисоваться
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _loadReportData();
+      }
+    });
   }
 
   /// Публичный метод для принудительного обновления данных (вызывается при навигации)
   void refreshData() {
-    // Всегда обновляем данные, даже если ещё не инициализировано
+    // Сбрасываем состояние для показа индикатора загрузки
+    setState(() {
+      _isLoading = true;
+    });
+    // Всегда загружаем свежие данные из БД
+    _loadReportData();
+  }
+
+  /// Сбросить период без перезагрузки данных (для оптимизации)
+  void _setPeriod(int period) {
+    if (_selectedPeriod == period) return;
+    setState(() => _selectedPeriod = period);
     _loadReportData();
   }
 
@@ -57,13 +71,14 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   }
 
   Future<void> _loadReportData() async {
+    debugPrint('============= ANALYTICS _loadReportData CALLED =============');
     setState(() => _isLoading = true);
 
     try {
       // Используем репозитории из Provider
       final moodRepo = context.read<MoodRepository>();
       final sleepRepo = context.read<SleepRepository>();
-      
+
       final userId = moodRepo.userId;
       final isAuth = userId != 'unknown';
 
@@ -74,11 +89,12 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       if (!isAuth) {
         debugPrint('Analytics: NOT AUTHORIZED - using sample data');
         // Если не авторизован, используем демо-данные
-        setState(() {
-          _report = _createSampleReport();
-          _isLoading = false;
-          _initialized = true;
-        });
+        if (mounted) {
+          setState(() {
+            _report = _createSampleReport();
+            _isLoading = false;
+          });
+        }
         return;
       }
 
@@ -237,44 +253,46 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         ),
       ];
 
-      setState(() {
-        _report = AnalyticsReport(
-          period: ReportPeriod(
-            label: _periods[_selectedPeriod],
-            startDate: startDate,
-            endDate: now,
-          ),
-          metrics: ReportMetrics(
-            totalDays: daysBack,
-            goodDaysPercent: goodDaysPercent,
-            improvementPercent: 0, // Требуется сравнение с предыдущим периодом
-            streakDays: streak,
-            averageMood: averageMood,
-            averageSleepHours: avgSleepHours,
-            sleepQuality: avgSleepQuality,
-            sleepRecords: sleepRecordsCount,
-          ),
-          moodByDay: moodByDay,
-          moodDistribution: moodDistribution,
-          insights: _generateInsights(moodRecords, sleepRecords, averageMood, avgSleepHours),
-          activity: ActivityStats(
-            moodRecords: moodRecords.length,
-            chatMessages: chatMessagesCount,
-            exercises: exercisesCount,
-            tests: testsCount,
-            sleepRecords: sleepRecordsCount,
-          ),
-        );
-        _isLoading = false;
-        _initialized = true;
-      });
+      if (mounted) {
+        setState(() {
+          _report = AnalyticsReport(
+            period: ReportPeriod(
+              label: _periods[_selectedPeriod],
+              startDate: startDate,
+              endDate: now,
+            ),
+            metrics: ReportMetrics(
+              totalDays: daysBack,
+              goodDaysPercent: goodDaysPercent,
+              improvementPercent: 0, // Требуется сравнение с предыдущим периодом
+              streakDays: streak,
+              averageMood: averageMood,
+              averageSleepHours: avgSleepHours,
+              sleepQuality: avgSleepQuality,
+              sleepRecords: sleepRecordsCount,
+            ),
+            moodByDay: moodByDay,
+            moodDistribution: moodDistribution,
+            insights: _generateInsights(moodRecords, sleepRecords, averageMood, avgSleepHours),
+            activity: ActivityStats(
+              moodRecords: moodRecords.length,
+              chatMessages: chatMessagesCount,
+              exercises: exercisesCount,
+              tests: testsCount,
+              sleepRecords: sleepRecordsCount,
+            ),
+          );
+          _isLoading = false;
+        });
+      }
     } catch (e) {
       debugPrint('Error loading analytics: $e');
-      setState(() {
-        _report = _createSampleReport();
-        _isLoading = false;
-        _initialized = true;
-      });
+      if (mounted) {
+        setState(() {
+          _report = _createSampleReport();
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -583,10 +601,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           final isSelected = index == _selectedPeriod;
           return Expanded(
             child: GestureDetector(
-              onTap: () {
-                setState(() => _selectedPeriod = index);
-                _loadReportData();
-              },
+              onTap: () => _setPeriod(index),
               child: Container(
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 decoration: BoxDecoration(
