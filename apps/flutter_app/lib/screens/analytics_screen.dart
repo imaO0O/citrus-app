@@ -1,16 +1,20 @@
 ﻿import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:http/http.dart' as http;
 import 'package:printing/printing.dart';
 import '../core/theme/app_colors.dart';
 import '../services/pdf_report_service.dart';
 import '../models/analytics_report.dart';
+import '../models/sleep_record.dart';
 import '../core/repository/mood_repository.dart';
 import '../core/repository/sleep_repository.dart';
 import '../core/services/storage_service.dart';
 import '../core/api/test_api_service.dart';
 import '../core/services/exercise_tracker_service.dart';
+import '../core/services/test_tracking_service.dart';
 import '../core/config/api_config.dart';
+import '../services/stats_api_client.dart';
 
 class AnalyticsScreen extends StatefulWidget {
   const AnalyticsScreen({super.key});
@@ -35,8 +39,20 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
 
   /// Публичный метод для принудительного обновления данных (вызывается при навигации)
   void refreshData() {
-    if (_initialized) {
-      _loadReportData();
+    // Всегда обновляем данные, даже если ещё не инициализировано
+    _loadReportData();
+  }
+
+  /// Парсинг времени из строки "HH:MM:SS" или "HH:MM"
+  double? _parseTime(String timeStr) {
+    if (!timeStr.contains(':')) return null;
+    try {
+      final parts = timeStr.split(':');
+      final hour = int.parse(parts[0]);
+      final minute = int.parse(parts[1]);
+      return hour + minute / 60.0;
+    } catch (e) {
+      return null;
     }
   }
 
@@ -44,28 +60,27 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final storage = StorageService();
-      final userId = await storage.getString('auth_user_id');
-      final token = await storage.getString('auth_token');
+      // Используем репозитории из Provider
+      final moodRepo = context.read<MoodRepository>();
+      final sleepRepo = context.read<SleepRepository>();
+      
+      final userId = moodRepo.userId;
+      final isAuth = userId != 'unknown';
 
-      if (userId == null || userId.isEmpty) {
+      debugPrint('============= ANALYTICS LOAD START =============');
+      debugPrint('Analytics: userId=$userId, isAuth=$isAuth');
+      debugPrint('Analytics: selectedPeriod=$_selectedPeriod');
+
+      if (!isAuth) {
+        debugPrint('Analytics: NOT AUTHORIZED - using sample data');
         // Если не авторизован, используем демо-данные
         setState(() {
           _report = _createSampleReport();
           _isLoading = false;
+          _initialized = true;
         });
         return;
       }
-
-      // Загружаем реальные данные из репозиториев
-      final moodRepo = MoodRepository(
-        userId: userId,
-        token: token,
-      );
-      final sleepRepo = SleepRepository(
-        userId: userId,
-        token: token,
-      );
 
       final now = DateTime.now();
       final daysBack = _selectedPeriod == 0 ? 7 : _selectedPeriod == 1 ? 30 : _selectedPeriod == 2 ? 90 : 365;
@@ -73,6 +88,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
 
       // Загружаем записи настроения
       final moodRecords = await moodRepo.getRecords(startDate: startDate, endDate: now);
+      debugPrint('Analytics: moodRecords count = ${moodRecords.length}');
 
       // Вычисляем метрики
       final streak = await moodRepo.getStreak();
@@ -80,36 +96,31 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       final averageMood = await moodRepo.getAverageMood();
 
       // Загружаем записи сна
-      final sleepRecords = await sleepRepo.getSleepRecords(startDate: startDate, endDate: now);
-      double avgSleepHours = 0;
-      if (sleepRecords.isNotEmpty) {
-        double totalHours = 0;
-        int count = 0;
-        for (final record in sleepRecords) {
-          if (record.bedTime != null && record.wakeTime != null) {
-            final bedParts = record.bedTime!.split(':');
-            final wakeParts = record.wakeTime!.split(':');
-            final bedHour = int.tryParse(bedParts[0]) ?? 0;
-            final bedMin = int.tryParse(bedParts[1]) ?? 0;
-            final wakeHour = int.tryParse(wakeParts[0]) ?? 0;
-            final wakeMin = int.tryParse(wakeParts[1]) ?? 0;
-
-            double hours = (wakeHour + wakeMin / 60) - (bedHour + bedMin / 60);
-            if (hours < 0) hours += 24;
-
-            totalHours += hours;
-            count++;
+      List<SleepRecord> sleepRecords = [];
+      try {
+        sleepRecords = await sleepRepo.getSleepRecords(startDate: startDate, endDate: now);
+        debugPrint('Analytics: sleepRecords count = ${sleepRecords.length}');
+      } catch (e) {
+        debugPrint('Analytics: error loading sleep records: $e');
+        // Если ошибка авторизации — пробуем загрузить через StorageService
+        try {
+          final storage = StorageService();
+          final token = await storage.getString('auth_token');
+          if (token != null && token.isNotEmpty) {
+            sleepRepo.setUserId(userId, token: token);
+            debugPrint('Analytics: retrying sleepRepo with token from storage');
+            sleepRecords = await sleepRepo.getSleepRecords(startDate: startDate, endDate: now);
+            debugPrint('Analytics: sleepRecords count (retry) = ${sleepRecords.length}');
           }
+        } catch (e2) {
+          debugPrint('Analytics: retry sleep load failed: $e2');
         }
-        avgSleepHours = count > 0 ? totalHours / count : 0;
       }
 
       // Загружаем количество пройденных тестов
       int testsCount = 0;
       try {
-        final testApi = TestApiService(token: token);
-        final testResults = await testApi.getTestResults();
-        testsCount = testResults.length;
+        testsCount = await _getTestsCount();
         debugPrint('Analytics: tests count = $testsCount');
       } catch (e) {
         debugPrint('Error loading test results: $e');
@@ -127,13 +138,38 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       // Загружаем количество сообщений чата
       int chatMessagesCount = 0;
       try {
+        final storage = StorageService();
+        final token = await storage.getString('auth_token');
         chatMessagesCount = await _getChatMessagesCount(token);
         debugPrint('Analytics: chat messages count = $chatMessagesCount');
       } catch (e) {
         debugPrint('Error loading chat messages count: $e');
       }
 
-      debugPrint('Analytics: activity -> moods=${moodRecords.length}, chat=$chatMessagesCount, exercises=$exercisesCount, tests=$testsCount');
+      // Загружаем данные о сне
+      int sleepRecordsCount = sleepRecords.length;
+      double avgSleepHours = 0;
+      double avgSleepQuality = 0;
+      if (sleepRecords.isNotEmpty) {
+        final totalHours = sleepRecords.fold<double>(0, (sum, r) {
+          if (r.bedTime != null && r.wakeTime != null) {
+            final bed = _parseTime(r.bedTime!);
+            final wake = _parseTime(r.wakeTime!);
+            if (bed != null && wake != null) {
+              double hours = wake - bed;
+              if (hours < 0) hours += 24;
+              return sum + hours;
+            }
+          }
+          return sum;
+        });
+        avgSleepHours = totalHours / sleepRecords.length;
+        avgSleepQuality = sleepRecords.fold<double>(0, (sum, r) => sum + (r.quality ?? 0)) / sleepRecords.length;
+      }
+
+      debugPrint('Analytics: FINAL ACTIVITY -> moods=${moodRecords.length}, chat=$chatMessagesCount, exercises=$exercisesCount, tests=$testsCount, sleep=$sleepRecordsCount');
+      debugPrint('Analytics: FINAL SLEEP -> records=$sleepRecordsCount, avgHours=$avgSleepHours, avgQuality=$avgSleepQuality');
+      debugPrint('============= ANALYTICS LOAD SUCCESS =============');
 
       // Строим данные по дням для графика
       final moodByDayMap = await moodRepo.getAverageMoodByDay(startDate: startDate, endDate: now);
@@ -215,6 +251,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
             streakDays: streak,
             averageMood: averageMood,
             averageSleepHours: avgSleepHours,
+            sleepQuality: avgSleepQuality,
+            sleepRecords: sleepRecordsCount,
           ),
           moodByDay: moodByDay,
           moodDistribution: moodDistribution,
@@ -224,6 +262,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
             chatMessages: chatMessagesCount,
             exercises: exercisesCount,
             tests: testsCount,
+            sleepRecords: sleepRecordsCount,
           ),
         );
         _isLoading = false;
@@ -312,26 +351,75 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     }
   }
 
-  /// Получить количество выполненных упражнений из локального хранилища
-  Future<int> _getExercisesCount() async {
-    return await ExerciseTrackerService().getExercisesCount();
+  /// Получить количество пройденных тестов из БД (psychological_test_results)
+  Future<int> _getTestsCount() async {
+    try {
+      final storage = StorageService();
+      final token = await storage.getString('auth_token');
+      
+      if (token == null || token.isEmpty) {
+        // Fallback на локальное хранилище
+        return await TestTrackingService().getTestsCount();
+      }
+
+      final statsApi = StatsApiClient(
+        baseUrl: ApiConfig.baseUrl,
+        token: token,
+      );
+      
+      return await statsApi.getTestsCountFromDB();
+    } catch (e) {
+      debugPrint('Error getting tests count from DB, using local: $e');
+      return await TestTrackingService().getTestsCount();
+    }
   }
 
-  /// Получить количество сообщений чата с бэкенда
+  /// Получить количество выполненных упражнений из БД (user_exercises)
+  Future<int> _getExercisesCount() async {
+    try {
+      final storage = StorageService();
+      final token = await storage.getString('auth_token');
+      
+      if (token == null || token.isEmpty) {
+        // Fallback на локальное хранилище
+        return await ExerciseTrackerService().getExercisesCount();
+      }
+
+      final statsApi = StatsApiClient(
+        baseUrl: ApiConfig.baseUrl,
+        token: token,
+      );
+      
+      final stats = await statsApi.getExerciseStats();
+      return stats['totalExercises'] as int;
+    } catch (e) {
+      debugPrint('Error getting exercises count from DB, using local: $e');
+      return await ExerciseTrackerService().getExercisesCount();
+    }
+  }
+
+  /// Получить количество сообщений чата из БД (chat_messages)
   Future<int> _getChatMessagesCount(String? token) async {
     if (token == null || token.isEmpty) return 0;
 
-    final response = await http.get(
-      Uri.parse('${ApiConfig.baseUrl}/chat/messages'),
-      headers: {
-        'Authorization': 'Bearer $token',
-      },
-    );
+    try {
+      // Используем /analytics/stats endpoint который возвращает chatMessages
+      final url = Uri.parse('${ApiConfig.baseUrl}/analytics/stats');
+      final response = await http.get(
+        url,
+        headers: {
+          'Authorization': 'Bearer $token',
+        },
+      );
 
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body) as List;
-      return data.length;
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return data['chatMessages'] as int;
+      }
+    } catch (e) {
+      debugPrint('Error getting chat messages count from DB: $e');
     }
+    
     return 0;
   }
 
@@ -353,6 +441,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         streakDays: 7,
         averageMood: 4.1,
         averageSleepHours: 7.5,
+        sleepQuality: 4.2,
+        sleepRecords: 7,
       ),
       moodByDay: [
         MoodDayData(dayName: 'Пн', value: 4.2, date: DateTime(2026, 4, 6)),
@@ -380,6 +470,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         chatMessages: 18,
         exercises: 12,
         tests: 5,
+        sleepRecords: 7,
       ),
     );
   }
@@ -427,6 +518,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                               _buildMoodDistribution(),
                               SizedBox(height: 20),
                               _buildInsights(),
+                              SizedBox(height: 20),
+                              _buildSleepSection(),
                               SizedBox(height: 20),
                               _buildActivitySection(),
                               SizedBox(height: 20),
@@ -783,6 +876,112 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           _buildActivityBar('\u0423\u043F\u0440\u0430\u0436\u043D\u0435\u043D\u0438\u044F', a.exercises, 30, AppColors.moodGood),
           SizedBox(height: 12),
           _buildActivityBar('\u0422\u0435\u0441\u0442\u044B', a.tests, 30, AppColors.moodVeryBad),
+          SizedBox(height: 12),
+          _buildActivityBar('\u0417\u0430\u043F\u0438\u0441\u0438 \u0441\u043D\u0430', a.sleepRecords, 30, AppColors.citrusPurple),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSleepSection() {
+    if (_report == null) return const SizedBox.shrink();
+
+    final m = _report!.metrics;
+    if (m.sleepRecords == 0) return const SizedBox.shrink();
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surface1,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.subtleBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text('\u{1F4A4}', style: TextStyle(fontSize: 18)),
+              SizedBox(width: 8),
+              Text(
+                '\u0410\u043D\u0430\u043B\u0438\u0437 \u0441\u043D\u0430',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.foreground),
+              ),
+            ],
+          ),
+          SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: _buildSleepMetricCard(
+                  '\u0417\u0430\u043F\u0438\u0441\u0435\u0439',
+                  m.sleepRecords.toString(),
+                  Icons.bookmark_outline,
+                  AppColors.citrusPurple,
+                ),
+              ),
+              SizedBox(width: 12),
+              Expanded(
+                child: _buildSleepMetricCard(
+                  '\u0421\u0440\u0435\u0434\u043D\u0435\u0435 \u0432\u0440\u0435\u043C\u044F',
+                  '${m.averageSleepHours.toStringAsFixed(1)} \u0447',
+                  Icons.access_time,
+                  AppColors.citrusAmber,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _buildSleepMetricCard(
+                  '\u041A\u0430\u0447\u0435\u0441\u0442\u0432\u043E',
+                  '${m.sleepQuality.toStringAsFixed(1)}/5',
+                  Icons.star_outline,
+                  AppColors.moodGood,
+                ),
+              ),
+              SizedBox(width: 12),
+              Expanded(
+                child: _buildSleepMetricCard(
+                  '\u041E\u0446\u0435\u043D\u043A\u0430',
+                  m.averageSleepHours >= 7 && m.sleepQuality >= 4 ? '\u041E\u0442\u043B\u0438\u0447\u043D\u043E' :
+                  m.averageSleepHours >= 6 ? '\u041D\u043E\u0440\u043C\u0430' : '\u041C\u0430\u043B\u043E\u0432\u0430\u0442\u043E',
+                  Icons.check_circle_outline,
+                  m.averageSleepHours >= 7 && m.sleepQuality >= 4 ? AppColors.moodGood :
+                  m.averageSleepHours >= 6 ? AppColors.citrusOrange : AppColors.moodVeryBad,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSleepMetricCard(String label, String value, IconData icon, Color color) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.15)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 18, color: color),
+          SizedBox(height: 6),
+          Text(
+            value,
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.foreground),
+          ),
+          SizedBox(height: 2),
+          Text(
+            label,
+            style: TextStyle(fontSize: 10, color: AppColors.dimForeground),
+          ),
         ],
       ),
     );
@@ -828,10 +1027,6 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       children: [
         Expanded(
           child: _buildExportButton(icon: Icons.picture_as_pdf, label: 'PDF', onTap: _generatePdfReport),
-        ),
-        SizedBox(width: 12),
-        Expanded(
-          child: _buildExportButton(icon: Icons.table_chart, label: 'CSV', onTap: () {}),
         ),
       ],
     );
