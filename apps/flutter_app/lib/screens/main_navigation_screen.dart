@@ -1,4 +1,5 @@
 ﻿import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'dart:ui';
 import 'package:go_router/go_router.dart';
@@ -187,9 +188,16 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                 return const SizedBox.shrink(); // redirect перенаправит на /auth
               }
 
-              return SafeArea(
+              return AnnotatedRegion<SystemUiOverlayStyle>(
+                value: const SystemUiOverlayStyle(
+                  statusBarColor: Colors.transparent,
+                  statusBarIconBrightness: Brightness.light,
+                  systemNavigationBarColor: Colors.transparent,
+                  systemNavigationBarIconBrightness: Brightness.light,
+                ),
                 child: Scaffold(
-                  body: Stack(
+                  body: SafeArea(
+                    child: Stack(
                     children: [
                       Column(
                         children: [
@@ -207,6 +215,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                       if (_showEmergency)
                         EmergencyModal(onClose: () => setState(() => _showEmergency = false)),
                     ],
+                  ),
                   ),
                 ),
               );

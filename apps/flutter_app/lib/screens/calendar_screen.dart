@@ -14,9 +14,10 @@ class CalendarScreen extends StatefulWidget {
   State<CalendarScreen> createState() => _CalendarScreenState();
 }
 
-class _CalendarScreenState extends State<CalendarScreen> {
+class _CalendarScreenState extends State<CalendarScreen> with WidgetsBindingObserver {
   late DateTime _focusedMonth;
   DateTime? _selectedDay;
+  bool _hasLoadedOnce = false;
 
   final List<String> _monthNames = [
     'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
@@ -28,18 +29,34 @@ class _CalendarScreenState extends State<CalendarScreen> {
     super.initState();
     _focusedMonth = DateTime.now();
     _selectedDay = DateTime.now();
+    WidgetsBinding.instance.addObserver(this);
     _loadCalendar();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Обновляем данные при возврате в приложение
+    if (state == AppLifecycleState.resumed) {
+      _loadCalendar();
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
   }
 
   void _loadCalendar() {
     context.read<CalendarBloc>().add(LoadCalendar(month: _focusedMonth));
+    _hasLoadedOnce = true;
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     final authState = context.read<AuthBloc>().state;
-    if (authState is AuthAuthenticated) {
+    if (authState is AuthAuthenticated && !_hasLoadedOnce) {
       _loadCalendar();
     }
   }

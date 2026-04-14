@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 final lightTheme = ThemeData(
   useMaterial3: true,
@@ -17,6 +18,12 @@ final lightTheme = ThemeData(
     foregroundColor: Colors.white,
     elevation: 0,
     centerTitle: true,
+    systemOverlayStyle: const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.dark,
+      systemNavigationBarColor: Colors.transparent,
+      systemNavigationBarIconBrightness: Brightness.dark,
+    ),
   ),
   cardTheme: CardThemeData(
     elevation: 2,
@@ -61,6 +68,12 @@ final darkTheme = ThemeData(
     foregroundColor: Colors.white,
     elevation: 0,
     centerTitle: true,
+    systemOverlayStyle: const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.light,
+      systemNavigationBarColor: Colors.transparent,
+      systemNavigationBarIconBrightness: Brightness.light,
+    ),
   ),
   cardTheme: CardThemeData(
     elevation: 2,
