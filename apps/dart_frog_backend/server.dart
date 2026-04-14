@@ -1980,22 +1980,28 @@ Future<Response> _chatWithAI(RequestContext context) async {
     }
 
     // Отправляем сообщение в GigaChat
+    final startTime = DateTime.now();
     final response = await _gigachatService!.chat(
       message,
       systemPrompt: finalSystemPrompt,
       temperature: temperature,
       maxTokens: maxTokens,
     );
+    final responseTime = DateTime.now().difference(startTime).inMilliseconds;
 
     // Сохраняем сообщения в БД (если пользователь авторизован)
     if (userId != null && _db != null) {
       try {
         final msgId = const Uuid().v4();
-        final now = DateTime.now().toIso8601String();
         final escapedUser = message.replaceAll("'", "''");
         final escapedResponse = response.replaceAll("'", "''");
         await _db!.query(
-          "INSERT INTO chat_messages (id, user_id, user_message, ai_response, created_at) VALUES ('$msgId', '$userId', '$escapedUser', '$escapedResponse', '$now')",
+          """
+          INSERT INTO chat_messages 
+          (id, user_id, user_message, ai_response, created_at, response_time_ms, model_used)
+          VALUES 
+          ('$msgId', '$userId', '$escapedUser', '$escapedResponse', NOW(), $responseTime, 'GigaChat')
+          """,
         );
       } catch (e) {
         print('Warning: failed to save chat message: $e');

@@ -53,10 +53,18 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   void initState() {
     super.initState();
-    // Инициализация API клиента
+    // Инициализация API клиента с токеном
+    _initChatApiClient();
+  }
+
+  /// Инициализировать ChatApiClient с токеном авторизации
+  Future<void> _initChatApiClient() async {
+    final storage = StorageService();
+    final token = await storage.getString('auth_token');
+    
     _chatApiClient = ChatApiClient(
       baseUrl: ApiConfig.baseUrl,
-      token: null, // TODO: Добавить токен авторизации, если требуется
+      token: token,
     );
   }
 
