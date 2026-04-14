@@ -458,6 +458,46 @@ class _BreathingExerciseToyState extends State<BreathingExerciseToy>
                 child: Stack(
                   alignment: Alignment.center,
                   children: [
+                    // Внешнее пульсирующее кольцо
+                    TweenAnimationBuilder<double>(
+                      duration: const Duration(milliseconds: 1000),
+                      curve: Curves.easeInOutCubic,
+                      tween: Tween(begin: 0.9, end: 1.0),
+                      builder: (context, pulse, _) {
+                        return Container(
+                          width: 210 * pulse,
+                          height: 210 * pulse,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: phaseColor.withOpacity(0.2 * pulse),
+                              width: 2,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                    
+                    // Второе пульсирующее кольцо
+                    TweenAnimationBuilder<double>(
+                      duration: const Duration(milliseconds: 1200),
+                      curve: Curves.easeInOutCubic,
+                      tween: Tween(begin: 0.9, end: 1.0),
+                      builder: (context, pulse, _) {
+                        return Container(
+                          width: 230 * pulse,
+                          height: 230 * pulse,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: phaseColor.withOpacity(0.1 * pulse),
+                              width: 1.5,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+
                     // Outer ring
                     Container(
                       width: 192,
@@ -465,6 +505,13 @@ class _BreathingExerciseToyState extends State<BreathingExerciseToy>
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         border: Border.all(color: phaseColor, width: 4),
+                        boxShadow: _isRunning ? [
+                          BoxShadow(
+                            color: phaseColor.withOpacity(0.3),
+                            blurRadius: 20,
+                            spreadRadius: 3,
+                          ),
+                        ] : [],
                       ),
                     ),
                     // Progress ring
@@ -475,7 +522,7 @@ class _BreathingExerciseToyState extends State<BreathingExerciseToy>
                         color: phaseColor,
                       ),
                     ),
-                    // Inner circle
+                    // Inner circle с красивым градиентом
                     Transform.scale(
                       scale: _scaleAnimation.value,
                       child: Container(
@@ -485,36 +532,64 @@ class _BreathingExerciseToyState extends State<BreathingExerciseToy>
                           shape: BoxShape.circle,
                           gradient: RadialGradient(
                             colors: [
-                              phaseColor.withOpacity(0.6),
-                              phaseColor.withOpacity(0.2),
+                              phaseColor.withOpacity(0.7),
+                              phaseColor.withOpacity(0.35),
+                              phaseColor.withOpacity(0.1),
                             ],
+                            stops: const [0.0, 0.5, 1.0],
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: phaseColor.withOpacity(0.3),
-                              blurRadius: 30,
-                              spreadRadius: 5,
+                              color: phaseColor.withOpacity(0.4),
+                              blurRadius: 35,
+                              spreadRadius: 8,
+                            ),
+                            BoxShadow(
+                              color: phaseColor.withOpacity(0.25),
+                              blurRadius: 50,
+                              spreadRadius: 12,
                             ),
                           ],
                         ),
                       ),
                     ),
-                    // Text
+                    // Text с анимацией
                     Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text(
-                          _getPhaseText(),
+                        AnimatedDefaultTextStyle(
+                          duration: const Duration(milliseconds: 600),
+                          curve: Curves.easeInOutCubic,
                           style: TextStyle(
                             color: AppColors.foreground,
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
+                            fontSize: 20,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.3,
+                          ),
+                          child: Text(
+                            _getPhaseText(),
                           ),
                         ),
                         if (_isRunning)
-                          Text(
-                            '\u0426\u0438\u043A\u043B\u043E\u0432: $_cycleCount',
-                            style: TextStyle(color: AppColors.mutedForeground, fontSize: 13),
+                          AnimatedOpacity(
+                            duration: const Duration(milliseconds: 500),
+                            opacity: 0.7,
+                            child: Container(
+                              margin: const EdgeInsets.only(top: 4),
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: phaseColor.withOpacity(0.15),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Text(
+                                'Циклов: $_cycleCount',
+                                style: TextStyle(
+                                  color: phaseColor,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
                           ),
                       ],
                     ),
@@ -526,30 +601,42 @@ class _BreathingExerciseToyState extends State<BreathingExerciseToy>
           SizedBox(height: 24),
           GestureDetector(
             onTap: _isRunning ? _stopBreathing : _startBreathing,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 500),
+              curve: Curves.easeInOutCubic,
+              padding: const EdgeInsets.symmetric(horizontal: 36, vertical: 16),
               decoration: BoxDecoration(
                 gradient: _isRunning
                     ? null
-                    : const LinearGradient(colors: [AppColors.citrusOrange, AppColors.citrusAmber]),
+                    : const LinearGradient(
+                        colors: [AppColors.citrusOrange, AppColors.citrusAmber],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
                 color: _isRunning ? AppColors.surface2 : null,
-                borderRadius: BorderRadius.circular(14),
-                border: _isRunning ? Border.all(color: AppColors.citrusOrange.withOpacity(0.3)) : null,
+                borderRadius: BorderRadius.circular(16),
+                border: _isRunning ? Border.all(color: AppColors.citrusOrange.withOpacity(0.4), width: 1.5) : null,
                 boxShadow: _isRunning
-                    ? null
+                    ? []
                     : [
                         BoxShadow(
-                          color: AppColors.citrusOrange.withOpacity(0.3),
-                          blurRadius: 16,
-                          offset: const Offset(0, 4),
+                          color: AppColors.citrusOrange.withOpacity(0.4),
+                          blurRadius: 20,
+                          offset: const Offset(0, 6),
+                        ),
+                        BoxShadow(
+                          color: AppColors.citrusOrange.withOpacity(0.25),
+                          blurRadius: 35,
+                          offset: const Offset(0, 10),
                         ),
                       ],
               ),
               child: Text(
                 _isRunning ? '\u0421\u0442\u043E\u043F' : '\u0421\u0442\u0430\u0440\u0442',
                 style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.5,
                   color: _isRunning ? AppColors.citrusOrange : AppColors.background,
                 ),
               ),

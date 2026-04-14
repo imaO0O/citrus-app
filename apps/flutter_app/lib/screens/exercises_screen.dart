@@ -31,6 +31,7 @@ class ExerciseItem {
   final bool cycles; // повторять цикл фаз
   final List<Color>? phaseColors; // цвет для каждой фазы
   final List<double>? phaseScales; // масштаб круга для каждой фазы
+  final List<String>? phaseLabels; // короткие названия фаз для круга
 
   const ExerciseItem({
     required this.id,
@@ -53,6 +54,7 @@ class ExerciseItem {
     this.cycles = false,
     this.phaseColors,
     this.phaseScales,
+    this.phaseLabels,
   });
 }
 
@@ -80,6 +82,7 @@ const _exercises = [
     ],
     durationSeconds: 300,
     phaseDurations: const [4, 4, 4, 4],
+    phaseLabels: ['Вдох', 'Задержка', 'Выдох', 'Задержка'],
     phaseColors: const [
       Color(0xFF8BC34A), // Вдох — зелёный (рост, энергия)
       Color(0xFFFFD93D), // Задержка — жёлтый (внимание)
@@ -113,6 +116,7 @@ const _exercises = [
     ],
     durationSeconds: 300,
     phaseDurations: const [4, 7, 8],
+    phaseLabels: ['Вдох', 'Задержка', 'Выдох'],
     phaseColors: const [
       Color(0xFF9C88FF), // Вдох — фиолетовый (спокойствие)
       Color(0xFFFFD93D), // Задержка — жёлтый
@@ -143,6 +147,7 @@ const _exercises = [
     ],
     durationSeconds: 300,
     phaseDurations: const [2, 2],
+    phaseLabels: ['Вдох', 'Выдох'],
     phaseColors: const [
       Color(0xFFFF8C42), // Вдох — оранжевый (энергия)
       Color(0xFF5A5468), // Выдох — тёмный (освобождение)
@@ -171,6 +176,7 @@ const _exercises = [
     ],
     durationSeconds: 420,
     phaseDurations: const [5, 5],
+    phaseLabels: ['Вдох', 'Выдох'],
     phaseColors: const [
       Color(0xFF00CEC9), // Вдох — бирюзовый (свежесть)
       Color(0xFF74B9FF), // Выдох — голубой (расслабление)
@@ -1246,19 +1252,23 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
   int _currentStepIndex = 0;
   Color _currentPhaseColor = AppColors.citrusGreen;
   double _targetScale = 0.8;
+  Duration _animationDuration = const Duration(milliseconds: 1000);
   bool _isRunning = false;
   bool _isFinished = false;
+  ScrollController? _stepsScrollController;
 
   @override
   void initState() {
     super.initState();
     _remainingSeconds = widget.exercise.durationSeconds;
     _currentPhaseColor = widget.exercise.color;
+    _stepsScrollController = ScrollController();
   }
 
   @override
   void dispose() {
     _timer?.cancel();
+    _stepsScrollController?.dispose();
     super.dispose();
   }
 
@@ -1286,7 +1296,13 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
 
       if (newStepIndex != _currentStepIndex) {
         _currentStepIndex = newStepIndex;
-        _phaseText = steps[_currentStepIndex];
+
+        final phaseLabels = widget.exercise.phaseLabels;
+        if (phaseLabels != null && _currentStepIndex < phaseLabels.length) {
+          _phaseText = phaseLabels[_currentStepIndex];
+        } else {
+          _phaseText = widget.exercise.steps[_currentStepIndex];
+        }
 
         final phaseColors = widget.exercise.phaseColors;
         final phaseScales = widget.exercise.phaseScales;
@@ -1297,11 +1313,43 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
         if (phaseScales != null && _currentStepIndex < phaseScales.length) {
           _targetScale = phaseScales[_currentStepIndex];
         }
+
+        // Устанавливаем длительность анимации равной длительности фазы
+        if (phaseDurations != null && _currentStepIndex < phaseDurations.length) {
+          _animationDuration = Duration(seconds: phaseDurations[_currentStepIndex]);
+        }
+
+        // Автопрокрутка к текущему шагу
+        if (_stepsScrollController?.hasClients == true) {
+          _stepsScrollController!.animateTo(
+            _currentStepIndex * 60.0,
+            duration: const Duration(milliseconds: 500),
+            curve: Curves.easeInOutCubic,
+          );
+        }
       }
     } else {
       final stepDuration = widget.exercise.durationSeconds ~/ steps.length;
-      _currentStepIndex = (elapsed ~/ stepDuration).clamp(0, steps.length - 1);
-      _phaseText = steps[_currentStepIndex];
+      final newStepIndex = (elapsed ~/ stepDuration).clamp(0, steps.length - 1);
+      if (newStepIndex != _currentStepIndex) {
+        _currentStepIndex = newStepIndex;
+        
+        final phaseLabels = widget.exercise.phaseLabels;
+        if (phaseLabels != null && _currentStepIndex < phaseLabels.length) {
+          _phaseText = phaseLabels[_currentStepIndex];
+        } else {
+          _phaseText = widget.exercise.steps[_currentStepIndex];
+        }
+
+        // Автопрокрутка к текущему шагу
+        if (_stepsScrollController?.hasClients == true) {
+          _stepsScrollController!.animateTo(
+            _currentStepIndex * 60.0,
+            duration: const Duration(milliseconds: 500),
+            curve: Curves.easeInOutCubic,
+          );
+        }
+      }
     }
   }
 
@@ -1309,6 +1357,7 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
     setState(() {
       _isRunning = true;
       _currentStepIndex = 0;
+      _animationDuration = const Duration(milliseconds: 1000);
       _updateCurrentStep();
     });
 
@@ -1325,7 +1374,6 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
           _isFinished = true;
           _phaseText = 'Упражнение завершено!';
         });
-        _animationController.stop();
         ExerciseTrackerService().recordExercise(widget.exercise.id);
       }
     });
@@ -1341,6 +1389,7 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
       _isFinished = false;
       _currentPhaseColor = widget.exercise.color;
       _targetScale = 0.8;
+      _animationDuration = const Duration(milliseconds: 1000);
     });
   }
 
@@ -1380,136 +1429,169 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
               ),
 
               if (isBreathing) ...[
-                // === ЭКРАН ДЫХАТЕЛЬНОГО УПРАЖНЕНИЯ С ПЛАВНОЙ АНИМАЦИЕЙ ===
+                // === ЭКРАН ДЫХАТЕЛЬНОГО УПРАЖНЕНИЯ ===
                 Expanded(
                   child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
+                      const SizedBox(height: 20),
                       // Заголовок
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Text(widget.exercise.icon, style: const TextStyle(fontSize: 28)),
-                          const SizedBox(width: 10),
+                          Text(widget.exercise.icon, style: const TextStyle(fontSize: 24)),
+                          const SizedBox(width: 8),
                           Text(
                             widget.exercise.title,
                             style: TextStyle(
                               color: AppColors.foreground,
-                              fontSize: 22,
+                              fontSize: 20,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 4),
                       Text(
                         widget.exercise.description,
                         textAlign: TextAlign.center,
-                        style: TextStyle(color: AppColors.mutedForeground, fontSize: 14),
+                        style: TextStyle(color: AppColors.mutedForeground, fontSize: 13),
                       ),
-                      const SizedBox(height: 40),
+                      const SizedBox(height: 24),
 
-                      // Анимированный круг дыхания
+                      // Анимированный круг дыхания (как в Антистресс)
                       Stack(
                         alignment: Alignment.center,
                         children: [
-                          // Плавное внешнее свечение
+                          // Пульсирующие внешние кольца
                           TweenAnimationBuilder<double>(
-                            duration: const Duration(milliseconds: 800),
-                            curve: Curves.easeInOut,
-                            tween: Tween(begin: 0.6, end: _targetScale),
-                            builder: (context, scale, _) {
-                              return Container(
-                                width: 230 * scale,
-                                height: 230 * scale,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: _currentPhaseColor.withOpacity(0.12 * scale),
-                                      blurRadius: 50 * scale,
-                                      spreadRadius: 5 * scale,
-                                    ),
-                                  ],
-                                ),
-                              );
-                            },
-                          ),
-                          // Плавный анимированный круг
-                          TweenAnimationBuilder<double>(
-                            duration: const Duration(milliseconds: 800),
-                            curve: Curves.easeInOut,
-                            tween: Tween(begin: 0.6, end: _targetScale),
+                            key: ValueKey('outer_ring_${_currentStepIndex}_$_isRunning'),
+                            duration: _animationDuration,
+                            curve: Curves.easeInOutCubic,
+                            tween: Tween(begin: _isRunning ? 0.6 : 0.8, end: _targetScale),
                             builder: (context, scale, _) {
                               return Container(
                                 width: 200 * scale,
                                 height: 200 * scale,
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
-                                  gradient: RadialGradient(
-                                    colors: [
-                                      _currentPhaseColor.withOpacity(0.3 * scale),
-                                      _currentPhaseColor.withOpacity(0.1 * scale),
-                                      _currentPhaseColor.withOpacity(0.02),
-                                    ],
-                                    stops: const [0.0, 0.6, 1.0],
-                                  ),
                                   border: Border.all(
-                                    color: _currentPhaseColor.withOpacity(_isRunning ? 0.5 * scale : 0.15),
+                                    color: _currentPhaseColor.withOpacity(0.2 * scale),
                                     width: 2,
                                   ),
-                                  boxShadow: _isRunning
-                                      ? [
-                                          BoxShadow(
-                                            color: _currentPhaseColor.withOpacity(0.25 * scale),
-                                            blurRadius: 25 * scale,
-                                            spreadRadius: 3 * scale,
-                                          ),
-                                        ]
-                                      : [],
                                 ),
                               );
                             },
                           ),
-                          // Текст внутри круга
-                          Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              AnimatedDefaultTextStyle(
-                                duration: const Duration(milliseconds: 500),
-                                curve: Curves.easeInOut,
-                                style: TextStyle(
-                                  color: _isFinished
-                                      ? AppColors.citrusGreen
-                                      : _currentPhaseColor,
-                                  fontSize: _isRunning ? 24 : 56,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                                child: Text(
-                                  _isFinished
-                                      ? '✓'
-                                      : _isRunning
-                                          ? _phaseText
-                                          : widget.exercise.icon,
-                                  textAlign: TextAlign.center,
-                                ),
-                              ),
-                              if (_isRunning) ...[
-                                const SizedBox(height: 6),
-                                Text(
-                                  'Фаза ${_currentStepIndex + 1}/${widget.exercise.phaseDurations!.length}',
-                                  style: TextStyle(
-                                    color: AppColors.mutedForeground,
-                                    fontSize: 11,
+
+                          // Второе пульсирующее кольцо
+                          TweenAnimationBuilder<double>(
+                            key: ValueKey('second_ring_${_currentStepIndex}_$_isRunning'),
+                            duration: _animationDuration + const Duration(milliseconds: 200),
+                            curve: Curves.easeInOutCubic,
+                            tween: Tween(begin: _isRunning ? 0.6 : 0.8, end: _targetScale),
+                            builder: (context, scale, _) {
+                              return Container(
+                                width: 220 * scale,
+                                height: 220 * scale,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: _currentPhaseColor.withOpacity(0.1 * scale),
+                                    width: 1.5,
                                   ),
                                 ),
-                              ],
-                            ],
+                              );
+                            },
+                          ),
+
+                          // Плавное внешнее свечение
+                          TweenAnimationBuilder<double>(
+                            key: ValueKey('glow_${_currentStepIndex}_$_isRunning'),
+                            duration: _animationDuration,
+                            curve: Curves.easeInOutCubic,
+                            tween: Tween(begin: _isRunning ? 0.6 : 0.8, end: _targetScale),
+                            builder: (context, scale, _) {
+                              return Container(
+                                width: 170 * scale,
+                                height: 170 * scale,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: _currentPhaseColor.withOpacity(0.25 * scale),
+                                      blurRadius: 50 * scale,
+                                      spreadRadius: 6 * scale,
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                          ),
+
+                          // Основной круг с градиентом
+                          TweenAnimationBuilder<double>(
+                            key: ValueKey('main_circle_${_currentStepIndex}_$_isRunning'),
+                            duration: _animationDuration,
+                            curve: Curves.easeInOutCubic,
+                            tween: Tween(begin: _isRunning ? 0.6 : 0.8, end: _targetScale),
+                            builder: (context, scale, _) {
+                              return Container(
+                                width: 150 * scale,
+                                height: 150 * scale,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  gradient: RadialGradient(
+                                    colors: [
+                                      _currentPhaseColor.withOpacity(0.4 * scale),
+                                      _currentPhaseColor.withOpacity(0.2 * scale),
+                                      _currentPhaseColor.withOpacity(0.05),
+                                    ],
+                                    stops: const [0.0, 0.5, 1.0],
+                                  ),
+                                  border: Border.all(
+                                    color: _currentPhaseColor.withOpacity(_isRunning ? 0.6 : 0.2),
+                                    width: 3,
+                                  ),
+                                  boxShadow: _isRunning
+                                      ? [
+                                          BoxShadow(
+                                            color: _currentPhaseColor.withOpacity(0.35 * scale),
+                                            blurRadius: 25 * scale,
+                                            spreadRadius: 4 * scale,
+                                          ),
+                                        ]
+                                      : [],
+                                ),
+                                child: Center(
+                                  child: AnimatedDefaultTextStyle(
+                                    duration: _animationDuration > const Duration(milliseconds: 500)
+                                        ? _animationDuration - const Duration(milliseconds: 400)
+                                        : const Duration(milliseconds: 200),
+                                    curve: Curves.easeInOutCubic,
+                                    style: TextStyle(
+                                      color: _isFinished
+                                          ? AppColors.citrusGreen
+                                          : _currentPhaseColor,
+                                      fontSize: _isFinished ? 48 : (_isRunning ? 22 : 48),
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                    child: Text(
+                                      _isFinished
+                                          ? '✓'
+                                          : _isRunning
+                                              ? _phaseText
+                                              : widget.exercise.icon,
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
                           ),
                         ],
                       ),
 
-                      const SizedBox(height: 40),
+                      const SizedBox(height: 20),
 
                       // Таймер
                       Text(
@@ -1518,40 +1600,183 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
                             : widget.exercise.duration,
                         style: TextStyle(
                           color: AppColors.foreground,
-                          fontSize: 36,
+                          fontSize: 32,
                           fontWeight: FontWeight.w700,
                           letterSpacing: 2,
                         ),
                       ),
-                      const SizedBox(height: 32),
+                      
+                      const SizedBox(height: 16),
+
+                      // Список шагов с выделением текущего
+                      if (widget.exercise.steps.isNotEmpty) ...[
+                        Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 40),
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: _currentPhaseColor.withOpacity(0.05),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: _currentPhaseColor.withOpacity(0.15),
+                              width: 1,
+                            ),
+                          ),
+                          child: ListView.builder(
+                            controller: _stepsScrollController,
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: widget.exercise.steps.length,
+                            itemBuilder: (context, index) {
+                              final isActive = index == _currentStepIndex && _isRunning;
+                              final isCompleted = index < _currentStepIndex && _isRunning;
+                              
+                              return AnimatedContainer(
+                                duration: const Duration(milliseconds: 500),
+                                curve: Curves.easeInOutCubic,
+                                margin: EdgeInsets.only(bottom: index < widget.exercise.steps.length - 1 ? 8 : 0),
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                decoration: BoxDecoration(
+                                  color: isActive
+                                      ? _currentPhaseColor.withOpacity(0.15)
+                                      : (isCompleted
+                                          ? AppColors.citrusGreen.withOpacity(0.08)
+                                          : Colors.transparent),
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: isActive
+                                      ? Border.all(color: _currentPhaseColor.withOpacity(0.3), width: 1.5)
+                                      : null,
+                                ),
+                                child: Row(
+                                  children: [
+                                    // Индикатор
+                                    Container(
+                                      width: 24,
+                                      height: 24,
+                                      margin: const EdgeInsets.only(right: 10),
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: isActive
+                                            ? _currentPhaseColor
+                                            : (isCompleted
+                                                ? AppColors.citrusGreen.withOpacity(0.3)
+                                                : AppColors.mutedForeground.withOpacity(0.2)),
+                                        border: isActive
+                                            ? Border.all(color: _currentPhaseColor, width: 2)
+                                            : null,
+                                        boxShadow: isActive
+                                            ? [
+                                                BoxShadow(
+                                                  color: _currentPhaseColor.withOpacity(0.4),
+                                                  blurRadius: 8,
+                                                  spreadRadius: 1,
+                                                ),
+                                              ]
+                                            : [],
+                                      ),
+                                      child: Center(
+                                        child: isCompleted
+                                            ? const Icon(Icons.check, size: 14, color: AppColors.citrusGreen)
+                                            : (isActive
+                                                ? Container(
+                                                    width: 8,
+                                                    height: 8,
+                                                    decoration: BoxDecoration(
+                                                      shape: BoxShape.circle,
+                                                      color: Colors.white,
+                                                    ),
+                                                  )
+                                                : Text(
+                                                    '${index + 1}',
+                                                    style: TextStyle(
+                                                      fontSize: 10,
+                                                      fontWeight: FontWeight.w700,
+                                                      color: AppColors.mutedForeground.withOpacity(0.5),
+                                                    ),
+                                                  )),
+                                      ),
+                                    ),
+                                    // Текст шага
+                                    Expanded(
+                                      child: Text(
+                                        widget.exercise.steps[index],
+                                        style: TextStyle(
+                                          fontSize: 13,
+                                          fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+                                          color: isActive
+                                              ? _currentPhaseColor
+                                              : (isCompleted
+                                                  ? AppColors.citrusGreen.withOpacity(0.8)
+                                                  : AppColors.mutedForeground),
+                                        ),
+                                      ),
+                                    ),
+                                    // Длительность фазы
+                                    if (widget.exercise.phaseDurations != null && 
+                                        index < widget.exercise.phaseDurations!.length)
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                                        decoration: BoxDecoration(
+                                          color: isActive
+                                              ? _currentPhaseColor.withOpacity(0.15)
+                                              : Colors.transparent,
+                                          borderRadius: BorderRadius.circular(6),
+                                        ),
+                                        child: Text(
+                                          '${widget.exercise.phaseDurations![index]}с',
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            fontWeight: isActive ? FontWeight.w700 : FontWeight.w600,
+                                            color: isActive
+                                                ? _currentPhaseColor
+                                                : AppColors.mutedForeground,
+                                          ),
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ],
+                      
+                      const SizedBox(height: 20),
 
                       // Кнопки управления
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          // Кнопка Старт/Стоп
                           GestureDetector(
                             onTap: _isRunning ? _stopTimer : _startTimer,
-                            child: Container(
-                              width: 140,
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 500),
+                              curve: Curves.easeInOutCubic,
+                              width: 160,
                               padding: const EdgeInsets.symmetric(vertical: 16),
                               decoration: BoxDecoration(
                                 gradient: !_isRunning
                                     ? LinearGradient(
-                                        colors: [color, color.withOpacity(0.8)],
+                                        colors: [color, color.withOpacity(0.85)],
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
                                       )
                                     : null,
                                 color: _isRunning ? AppColors.surface2 : null,
-                                borderRadius: BorderRadius.circular(16),
+                                borderRadius: BorderRadius.circular(18),
                                 border: _isRunning
-                                    ? Border.all(color: color.withOpacity(0.3))
+                                    ? Border.all(color: color.withOpacity(0.4), width: 1.5)
                                     : null,
                                 boxShadow: !_isRunning
                                     ? [
                                         BoxShadow(
-                                          color: color.withOpacity(0.4),
-                                          blurRadius: 20,
-                                          offset: const Offset(0, 6),
+                                          color: color.withOpacity(0.5),
+                                          blurRadius: 24,
+                                          offset: const Offset(0, 8),
+                                        ),
+                                        BoxShadow(
+                                          color: color.withOpacity(0.3),
+                                          blurRadius: 40,
+                                          offset: const Offset(0, 12),
                                         ),
                                       ]
                                     : [],
@@ -1561,43 +1786,54 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
                                   color: _isRunning ? color : AppColors.background,
-                                  fontSize: 16,
+                                  fontSize: 17,
                                   fontWeight: FontWeight.w700,
+                                  letterSpacing: 0.5,
                                 ),
                               ),
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 16),
 
                       // Сообщение о завершении
                       if (_isFinished) ...[
-                        Container(
+                        AnimatedContainer(
+                          duration: const Duration(milliseconds: 700),
+                          curve: Curves.easeOutBack,
                           margin: const EdgeInsets.symmetric(horizontal: 40),
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
                           decoration: BoxDecoration(
-                            color: AppColors.citrusGreen.withOpacity(0.12),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: AppColors.citrusGreen.withOpacity(0.2)),
+                            color: AppColors.citrusGreen.withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: AppColors.citrusGreen.withOpacity(0.3), width: 1.5),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColors.citrusGreen.withOpacity(0.2),
+                                blurRadius: 15,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(Icons.check_circle, color: AppColors.citrusGreen, size: 18),
-                              const SizedBox(width: 6),
+                              const Icon(Icons.check_circle_outline, color: AppColors.citrusGreen, size: 20),
+                              const SizedBox(width: 8),
                               Text(
-                                'Отличная работа!',
+                                'Отличная работа! 🎉',
                                 style: TextStyle(
                                   color: AppColors.citrusGreen,
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700,
                                 ),
                               ),
                             ],
                           ),
                         ),
                       ],
+                      const SizedBox(height: 20),
                     ],
                   ),
                 ),

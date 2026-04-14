@@ -119,47 +119,147 @@ class _ExercisesPageState extends State<ExercisesPage>
             AnimatedBuilder(
               animation: _controller,
               builder: (context, _) {
-                return AnimatedContainer(
-                  duration: const Duration(milliseconds: 100),
-                  width: 160 * _circleScale,
-                  height: 160 * _circleScale,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: _isBreathing
-                        ? _phaseColor.withOpacity(0.3)
-                        : const Color.fromRGBO(255, 140, 66, 0.1),
-                    border: Border.all(
-                      color: _isBreathing
-                          ? _phaseColor
-                          : const Color.fromRGBO(255, 140, 66, 0.3),
-                      width: 2,
-                    ),
-                  ),
-                  child: Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          _isBreathing ? phases[_breathPhase] : '🌬️',
-                          style: TextStyle(
-                            fontSize: _isBreathing ? 20 : 40,
-                            fontWeight: FontWeight.w600,
-                            color: _isBreathing
-                                ? _phaseColor
-                                : const Color(0xFFEDE8E0),
-                          ),
-                        ),
-                        if (_isBreathing)
-                          Text(
-                            '${4 - (_controller.value * 4).floor()} сек',
-                            style: const TextStyle(
-                              fontSize: 14,
-                              color: Color(0xFF8A8298),
+                return Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    // Пульсирующие внешние кольца
+                    TweenAnimationBuilder<double>(
+                      duration: const Duration(milliseconds: 1000),
+                      curve: Curves.easeInOutCubic,
+                      tween: Tween(begin: 0.9, end: _isBreathing ? 1.0 : 0.9),
+                      builder: (context, pulse, _) {
+                        return Container(
+                          width: 180 * pulse,
+                          height: 180 * pulse,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: _isBreathing
+                                  ? _phaseColor.withOpacity(0.2 * pulse)
+                                  : const Color.fromRGBO(255, 140, 66, 0.15),
+                              width: 2,
                             ),
                           ),
-                      ],
+                        );
+                      },
                     ),
-                  ),
+                    
+                    // Второе кольцо
+                    TweenAnimationBuilder<double>(
+                      duration: const Duration(milliseconds: 1200),
+                      curve: Curves.easeInOutCubic,
+                      tween: Tween(begin: 0.9, end: _isBreathing ? 1.0 : 0.9),
+                      builder: (context, pulse, _) {
+                        return Container(
+                          width: 200 * pulse,
+                          height: 200 * pulse,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: _isBreathing
+                                  ? _phaseColor.withOpacity(0.1 * pulse)
+                                  : const Color.fromRGBO(255, 140, 66, 0.08),
+                              width: 1.5,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+
+                    // Основной круг
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 100),
+                      width: 160 * _circleScale,
+                      height: 160 * _circleScale,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: _isBreathing
+                            ? RadialGradient(
+                                colors: [
+                                  _phaseColor.withOpacity(0.35),
+                                  _phaseColor.withOpacity(0.15),
+                                  _phaseColor.withOpacity(0.05),
+                                ],
+                                stops: const [0.0, 0.5, 1.0],
+                              )
+                            : const RadialGradient(
+                                colors: [
+                                  Color.fromRGBO(255, 140, 66, 0.15),
+                                  Color.fromRGBO(255, 140, 66, 0.05),
+                                ],
+                              ),
+                        border: Border.all(
+                          color: _isBreathing
+                              ? _phaseColor
+                              : const Color.fromRGBO(255, 140, 66, 0.3),
+                          width: 3,
+                        ),
+                        boxShadow: _isBreathing
+                            ? [
+                                BoxShadow(
+                                  color: _phaseColor.withOpacity(0.35),
+                                  blurRadius: 30,
+                                  spreadRadius: 5,
+                                ),
+                                BoxShadow(
+                                  color: _phaseColor.withOpacity(0.2),
+                                  blurRadius: 50,
+                                  spreadRadius: 10,
+                                ),
+                              ]
+                            : [
+                                BoxShadow(
+                                  color: const Color.fromRGBO(255, 140, 66, 0.15),
+                                  blurRadius: 20,
+                                  spreadRadius: 2,
+                                ),
+                              ],
+                      ),
+                      child: Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            AnimatedDefaultTextStyle(
+                              duration: const Duration(milliseconds: 600),
+                              curve: Curves.easeInOutCubic,
+                              style: TextStyle(
+                                fontSize: _isBreathing ? 22 : 40,
+                                fontWeight: FontWeight.w800,
+                                color: _isBreathing
+                                    ? _phaseColor
+                                    : const Color(0xFFEDE8E0),
+                                letterSpacing: _isBreathing ? 0.3 : 0,
+                              ),
+                              child: Text(
+                                _isBreathing ? phases[_breathPhase] : '🌬️',
+                              ),
+                            ),
+                            if (_isBreathing)
+                              AnimatedOpacity(
+                                duration: const Duration(milliseconds: 500),
+                                opacity: 0.8,
+                                child: Container(
+                                  margin: const EdgeInsets.only(top: 6),
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    color: _phaseColor.withOpacity(0.15),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: Text(
+                                    '${4 - (_controller.value * 4).floor()} сек',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                      color: _phaseColor,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 );
               },
             ),
@@ -173,14 +273,16 @@ class _ExercisesPageState extends State<ExercisesPage>
                 label: const Text('Начать (4 цикла)'),
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 32,
-                    vertical: 16,
+                    horizontal: 36,
+                    vertical: 18,
                   ),
                   backgroundColor: const Color(0xFFFF8C42),
                   foregroundColor: const Color(0xFF0C0C14),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(18),
                   ),
+                  elevation: 8,
+                  shadowColor: const Color(0xFFFF8C42).withOpacity(0.5),
                 ),
               )
             else
@@ -190,13 +292,13 @@ class _ExercisesPageState extends State<ExercisesPage>
                 label: Text('Цикл $_breathCount / 4'),
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 32,
-                    vertical: 16,
+                    horizontal: 36,
+                    vertical: 18,
                   ),
                   foregroundColor: const Color(0xFFFF8C42),
-                  side: const BorderSide(color: Color(0xFFFF8C42)),
+                  side: BorderSide(color: const Color(0xFFFF8C42).withOpacity(0.5), width: 1.5),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(18),
                   ),
                 ),
               ),
