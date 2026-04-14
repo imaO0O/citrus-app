@@ -98,6 +98,30 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
     };
   }
 
+  /// Автоформатирование времени при вводе
+  String _formatTimeInput(String value) {
+    // Удаляем всё кроме цифр и двоеточий
+    final cleaned = value.replaceAll(RegExp(r'[^\d:]'), '');
+    
+    // Если введено только число без двоеточия
+    if (!cleaned.contains(':')) {
+      if (cleaned.length == 1) return cleaned; // "2" -> "2"
+      if (cleaned.length == 2) return cleaned; // "23" -> "23"
+      if (cleaned.length == 3) return '${cleaned[0]}:${cleaned[1]}${cleaned[2]}'; // "230" -> "2:30"
+      if (cleaned.length >= 4) return '${cleaned.substring(0, 2)}:${cleaned.substring(2, 4)}'; // "2300" -> "23:00"
+    }
+    
+    // Если уже есть двоеточие, ограничиваем длину
+    final parts = cleaned.split(':');
+    if (parts.length >= 2) {
+      final hour = parts[0].length > 2 ? parts[0].substring(0, 2) : parts[0];
+      final minute = parts[1].length > 2 ? parts[1].substring(0, 2) : parts[1];
+      return '$hour:$minute';
+    }
+    
+    return cleaned.length > 5 ? cleaned.substring(0, 5) : cleaned;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -532,6 +556,20 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
   }
 
   void _showAddSleepDialog(BuildContext context, List<SleepRecord>? records) {
+    // Проверяем есть ли запись на сегодня
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final existingToday = records?.where((r) {
+      final recordDate = DateTime(r.sleepDate.year, r.sleepDate.month, r.sleepDate.day);
+      return recordDate.isAtSameMomentAs(today);
+    }).firstOrNull;
+
+    if (existingToday != null) {
+      // Открываем редактирование существующей записи
+      _showEditSleepDialog(context, existingToday);
+      return;
+    }
+
     String bedtime = '23:00';
     String wakeup = '07:00';
     int quality = 3;
@@ -593,7 +631,7 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
                           contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                           isDense: true,
                         ),
-                        onChanged: (v) => bedtime = v,
+                        onChanged: (v) => bedtime = _formatTimeInput(v),
                       ),
                     ),
                   ],
@@ -617,7 +655,7 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
                           contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                           isDense: true,
                         ),
-                        onChanged: (v) => wakeup = v,
+                        onChanged: (v) => wakeup = _formatTimeInput(v),
                       ),
                     ),
                   ],
@@ -752,7 +790,7 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
                           contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6), isDense: true,
                         ),
-                        onChanged: (v) => bedtime = v,
+                        onChanged: (v) => bedtime = _formatTimeInput(v),
                       ),
                     ),
                   ],
@@ -771,7 +809,7 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
                           contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6), isDense: true,
                         ),
-                        onChanged: (v) => wakeup = v,
+                        onChanged: (v) => wakeup = _formatTimeInput(v),
                       ),
                     ),
                   ],
