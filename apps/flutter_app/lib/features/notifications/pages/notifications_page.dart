@@ -51,7 +51,7 @@ class _NotificationSettingsList extends StatelessWidget {
       _buildSection(context, icon: Icons.bedtime, iconColor: const Color(0xFF9C27B0), title: 'Напоминания о сне', child: _SleepSettings(enabled: p.sleepRemindersEnabled, morningTime: p.sleepMorningTime, eveningTime: p.sleepEveningTime)), const SizedBox(height: 16),
       _buildSection(context, icon: Icons.mood, iconColor: const Color(0xFF4CAF50), title: 'Напоминания о настроении', child: _MoodSettings(enabled: p.moodRemindersEnabled, reminderTimes: p.moodReminderTimes)), const SizedBox(height: 16),
       _buildSection(context, icon: Icons.book, iconColor: const Color(0xFFFF9800), title: 'Напоминания о дневнике', child: _DiarySettings(enabled: p.diaryRemindersEnabled, reminderTime: p.diaryReminderTime, includeMoodPrompt: p.diaryIncludeMoodPrompt)), const SizedBox(height: 24),
-      _buildTestSection(context),
+      // _buildTestSection(context),
     ]);
   }
 
