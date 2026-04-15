@@ -742,9 +742,16 @@ class _EmergencyModalState extends State<EmergencyModal> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: phaseColors[_breathPhase].withOpacity(0.06),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: phaseColors[_breathPhase].withOpacity(0.2)),
+        color: phaseColors[_breathPhase].withOpacity(0.08),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: phaseColors[_breathPhase].withOpacity(0.25), width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: phaseColors[_breathPhase].withOpacity(0.15),
+            blurRadius: 20,
+            spreadRadius: 3,
+          ),
+        ],
       ),
       child: Column(
         children: [
@@ -754,9 +761,10 @@ class _EmergencyModalState extends State<EmergencyModal> {
               Text(
                 'Дыхание 4-4-4',
                 style: TextStyle(
-                  fontSize: 14,
+                  fontSize: 15,
                   fontWeight: FontWeight.w700,
                   color: AppColors.foreground,
+                  letterSpacing: 0.3,
                 ),
               ),
               GestureDetector(
@@ -773,61 +781,116 @@ class _EmergencyModalState extends State<EmergencyModal> {
               ),
             ],
           ),
-          SizedBox(height: 20),
-          Container(
-            width: 120,
-            height: 120,
-            decoration: BoxDecoration(
-              color: phaseColors[_breathPhase].withOpacity(0.15),
-              shape: BoxShape.circle,
-              border: Border.all(color: phaseColors[_breathPhase].withOpacity(0.3)),
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  '$_breathSeconds',
-                  style: TextStyle(
-                    fontSize: 36,
-                    fontWeight: FontWeight.w700,
-                    color: phaseColors[_breathPhase],
+          SizedBox(height: 24),
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              // Пульсирующие кольца
+              TweenAnimationBuilder<double>(
+                duration: const Duration(milliseconds: 1000),
+                curve: Curves.easeInOutCubic,
+                tween: Tween(begin: 0.9, end: 1.0),
+                builder: (context, pulse, _) {
+                  return Container(
+                    width: 140 * pulse,
+                    height: 140 * pulse,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: phaseColors[_breathPhase].withOpacity(0.2 * pulse),
+                        width: 2,
+                      ),
+                    ),
+                  );
+                },
+              ),
+              
+              // Основной круг
+              Container(
+                width: 120,
+                height: 120,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [
+                      phaseColors[_breathPhase].withOpacity(0.3),
+                      phaseColors[_breathPhase].withOpacity(0.15),
+                      phaseColors[_breathPhase].withOpacity(0.05),
+                    ],
+                    stops: const [0.0, 0.5, 1.0],
                   ),
-                ),
-                Text(
-                  phaseNames[_breathPhase],
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: phaseColors[_breathPhase],
+                  border: Border.all(
+                    color: phaseColors[_breathPhase].withOpacity(0.4),
+                    width: 3,
                   ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: phaseColors[_breathPhase].withOpacity(0.3),
+                      blurRadius: 25,
+                      spreadRadius: 5,
+                    ),
+                  ],
                 ),
-              ],
-            ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    AnimatedDefaultTextStyle(
+                      duration: const Duration(milliseconds: 600),
+                      curve: Curves.easeInOutCubic,
+                      style: TextStyle(
+                        fontSize: 40,
+                        fontWeight: FontWeight.w800,
+                        color: phaseColors[_breathPhase],
+                      ),
+                      child: Text('$_breathSeconds'),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      phaseNames[_breathPhase],
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: phaseColors[_breathPhase],
+                        letterSpacing: 0.3,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-          SizedBox(height: 16),
+          SizedBox(height: 20),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               _buildPhaseIndicator(0, phaseColors),
-              SizedBox(width: 8),
+              SizedBox(width: 12),
               _buildPhaseIndicator(1, phaseColors),
-              SizedBox(width: 8),
+              SizedBox(width: 12),
               _buildPhaseIndicator(2, phaseColors),
             ],
           ),
-          SizedBox(height: 16),
+          SizedBox(height: 20),
           Row(
             children: [
               Expanded(
                 child: ElevatedButton(
-                  onPressed: _breathingActive ? _breathingActive ? null : null : _startBreathingExercise,
+                  onPressed: _breathingActive ? null : _startBreathingExercise,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.citrusPurple,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    elevation: _breathingActive ? 0 : 6,
+                    shadowColor: AppColors.citrusPurple.withOpacity(0.4),
                   ),
                   child: Text(
                     _breathingActive ? 'Идёт упражнение...' : 'Начать',
-                    style: TextStyle(color: Colors.white),
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 15,
+                      letterSpacing: 0.3,
+                    ),
                   ),
                 ),
               ),
@@ -840,26 +903,40 @@ class _EmergencyModalState extends State<EmergencyModal> {
 
   Widget _buildPhaseIndicator(int index, List<Color> colors) {
     final isActive = _breathPhase == index;
-    return Row(
-      children: [
-        Container(
-          width: 12,
-          height: 12,
-          decoration: BoxDecoration(
-            color: isActive ? colors[index] : colors[index].withOpacity(0.2),
-            shape: BoxShape.circle,
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 500),
+      curve: Curves.easeInOutCubic,
+      child: Row(
+        children: [
+          Container(
+            width: 14,
+            height: 14,
+            decoration: BoxDecoration(
+              color: isActive ? colors[index] : colors[index].withOpacity(0.2),
+              shape: BoxShape.circle,
+              boxShadow: isActive
+                  ? [
+                      BoxShadow(
+                        color: colors[index].withOpacity(0.4),
+                        blurRadius: 8,
+                        spreadRadius: 1,
+                      ),
+                    ]
+                  : [],
+            ),
           ),
-        ),
-        SizedBox(width: 4),
-        Text(
-          ['Вдох', 'Задержка', 'Выдох'][index],
-          style: TextStyle(
-            fontSize: 10,
-            color: isActive ? colors[index] : AppColors.mutedForeground,
-            fontWeight: isActive ? FontWeight.w700 : FontWeight.normal,
+          SizedBox(width: 6),
+          Text(
+            ['Вдох', 'Задержка', 'Выдох'][index],
+            style: TextStyle(
+              fontSize: 11,
+              color: isActive ? colors[index] : AppColors.mutedForeground,
+              fontWeight: isActive ? FontWeight.w700 : FontWeight.normal,
+              letterSpacing: 0.2,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
