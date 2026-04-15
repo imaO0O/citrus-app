@@ -679,29 +679,31 @@ class HelpScreen extends StatelessWidget {
           'Сообщить о проблеме',
           style: TextStyle(color: AppColors.foreground),
         ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'Опишите что произошло. Мы постараемся исправить это как можно скорее.',
-              style: TextStyle(color: AppColors.mutedForeground, fontSize: 13),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: controller,
-              maxLines: 4,
-              decoration: InputDecoration(
-                hintText: 'Описание проблемы...',
-                hintStyle: TextStyle(color: AppColors.mutedForeground),
-                filled: true,
-                fillColor: AppColors.surface2,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Опишите что произошло. Мы постараемся исправить это как можно скорее.',
+                style: TextStyle(color: AppColors.mutedForeground, fontSize: 13),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: controller,
+                maxLines: 4,
+                decoration: InputDecoration(
+                  hintText: 'Описание проблемы...',
+                  hintStyle: TextStyle(color: AppColors.mutedForeground),
+                  filled: true,
+                  fillColor: AppColors.surface2,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
         actions: [
           TextButton(
@@ -741,29 +743,31 @@ class HelpScreen extends StatelessWidget {
           'Предложить идею',
           style: TextStyle(color: AppColors.foreground),
         ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'Какую функцию хотели бы видеть? Расскажите подробнее!',
-              style: TextStyle(color: AppColors.mutedForeground, fontSize: 13),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: controller,
-              maxLines: 4,
-              decoration: InputDecoration(
-                hintText: 'Ваша идея...',
-                hintStyle: TextStyle(color: AppColors.mutedForeground),
-                filled: true,
-                fillColor: AppColors.surface2,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Какую функцию хотели бы видеть? Расскажите подробнее!',
+                style: TextStyle(color: AppColors.mutedForeground, fontSize: 13),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: controller,
+                maxLines: 4,
+                decoration: InputDecoration(
+                  hintText: 'Ваша идея...',
+                  hintStyle: TextStyle(color: AppColors.mutedForeground),
+                  filled: true,
+                  fillColor: AppColors.surface2,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
         actions: [
           TextButton(

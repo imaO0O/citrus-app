@@ -13,7 +13,6 @@ class AffirmationsScreen extends StatefulWidget {
 
 class _AffirmationsScreenState extends State<AffirmationsScreen> {
   late PageController _pageController;
-  int _currentIndex = 0;
   final Set<int> _favorites = {};
   String _selectedCategory = 'Все';
 
@@ -66,7 +65,6 @@ class _AffirmationsScreenState extends State<AffirmationsScreen> {
       if (mounted) {
         setState(() {
           _affirmations = newAffirmations;
-          _currentIndex = 0;
           _isGenerating = false;
         });
         _pageController.jumpToPage(0);
@@ -100,16 +98,6 @@ class _AffirmationsScreenState extends State<AffirmationsScreen> {
     }
   }
 
-  void _toggleFavorite(int index) {
-    setState(() {
-      if (_favorites.contains(index)) {
-        _favorites.remove(index);
-      } else {
-        _favorites.add(index);
-      }
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -119,119 +107,116 @@ class _AffirmationsScreenState extends State<AffirmationsScreen> {
           padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 480),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Аффирмации',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.foreground,
-                      ),
-                    ),
-                    if (_isGenerating)
-                      SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(AppColors.citrusOrange),
-                        ),
-                      )
-                    else
-                      IconButton(
-                        onPressed: _generateAffirmations,
-                        icon: Icon(Icons.auto_awesome, color: AppColors.citrusOrange),
-                        tooltip: 'Сгенерировать новые (AI)',
-                      ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Повторяйте позитивные утверждения каждый день',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: AppColors.dimForeground,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                _buildCategoryPills(),
-                const SizedBox(height: 16),
-                Expanded(
-                  child: _isLoading
-                      ? Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              CircularProgressIndicator(
-                                valueColor: AlwaysStoppedAnimation<Color>(AppColors.citrusOrange),
-                              ),
-                              const SizedBox(height: 16),
-                              Text(
-                                'Загрузка аффирмаций...',
-                                style: TextStyle(color: AppColors.mutedForeground),
-                              ),
-                            ],
-                          ),
-                        )
-                      : _filteredAffirmations.isEmpty
-                          ? Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    Icons.format_quote,
-                                    size: 64,
-                                    color: AppColors.mutedForeground.withOpacity(0.3),
-                                  ),
-                                  const SizedBox(height: 16),
-                                  Text(
-                                    'Нет аффирмаций в этой категории',
-                                    style: TextStyle(color: AppColors.mutedForeground),
-                                  ),
-                                  const SizedBox(height: 16),
-                                  ElevatedButton.icon(
-                                    onPressed: _generateAffirmations,
-                                    icon: const Icon(Icons.auto_awesome),
-                                    label: const Text('Сгенерировать (AI)'),
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: AppColors.citrusOrange,
-                                      foregroundColor: Colors.white,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            )
-                          : PageView.builder(
-                              controller: _pageController,
-                              onPageChanged: (index) => setState(() => _currentIndex = index),
-                              itemCount: _filteredAffirmations.length,
-                              itemBuilder: (context, index) {
-                                final affirmation = _filteredAffirmations[index];
-                                return _buildMainCard(affirmation, index);
-                              },
-                            ),
-                ),
-                const SizedBox(height: 16),
-                if (_filteredAffirmations.isNotEmpty) ...[
-                  _buildPageIndicator(),
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildHeader(),
                   const SizedBox(height: 16),
-                  _buildActionButtons(),
+                  _buildCategoryPills(),
+                  const SizedBox(height: 16),
+                  _buildContent(),
+                  const SizedBox(height: 16),
+                  if (_favorites.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    _buildFavoritesSection(),
+                  ],
+                  const SizedBox(height: 80),
                 ],
-                if (_favorites.isNotEmpty) ...[
-                  const SizedBox(height: 12),
-                  _buildFavoritesSection(),
-                ],
-                const SizedBox(height: 80),
-              ],
+              ),
             ),
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          'Аффирмации',
+          style: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.w700,
+            color: AppColors.foreground,
+          ),
+        ),
+        if (_isGenerating)
+          SizedBox(
+            width: 20,
+            height: 20,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              valueColor: AlwaysStoppedAnimation<Color>(AppColors.citrusOrange),
+            ),
+          )
+        else
+          IconButton(
+            onPressed: _generateAffirmations,
+            icon: Icon(Icons.auto_awesome, color: AppColors.citrusOrange),
+            tooltip: 'Сгенерировать новые (AI)',
+          ),
+      ],
+    );
+  }
+
+  Widget _buildContent() {
+    return SizedBox(
+      height: 320,
+      child: _isLoading
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(AppColors.citrusOrange),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Загрузка аффирмаций...',
+                    style: TextStyle(color: AppColors.mutedForeground),
+                  ),
+                ],
+              ),
+            )
+          : _filteredAffirmations.isEmpty
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.format_quote,
+                        size: 64,
+                        color: AppColors.mutedForeground.withOpacity(0.3),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Нет аффирмаций в этой категории',
+                        style: TextStyle(color: AppColors.mutedForeground),
+                      ),
+                      const SizedBox(height: 16),
+                      ElevatedButton.icon(
+                        onPressed: _generateAffirmations,
+                        icon: const Icon(Icons.auto_awesome),
+                        label: const Text('Сгенерировать (AI)'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.citrusOrange,
+                          foregroundColor: Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              : PageView.builder(
+                  controller: _pageController,
+                  itemCount: _filteredAffirmations.length,
+                  itemBuilder: (context, index) {
+                    final affirmation = _filteredAffirmations[index];
+                    return _buildMainCard(affirmation, index);
+                  },
+                ),
     );
   }
 
@@ -249,9 +234,8 @@ class _AffirmationsScreenState extends State<AffirmationsScreen> {
             onTap: () {
               setState(() {
                 _selectedCategory = category;
-                _currentIndex = 0;
-                _pageController.jumpToPage(0);
               });
+              _pageController.jumpToPage(0);
             },
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
@@ -275,8 +259,6 @@ class _AffirmationsScreenState extends State<AffirmationsScreen> {
   }
 
   Widget _buildMainCard(Affirmation affirmation, int index) {
-    final isFavorite = _favorites.contains(index);
-
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(24),
@@ -350,137 +332,8 @@ class _AffirmationsScreenState extends State<AffirmationsScreen> {
               ),
             ),
           ),
-          if (index > 0)
-            Positioned(
-              top: 16,
-              left: 16,
-              child: GestureDetector(
-                onTap: () => _goToPage(index - 1),
-                child: Container(
-                  width: 32,
-                  height: 32,
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.3),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Icon(Icons.chevron_left_rounded, color: Colors.white, size: 20),
-                ),
-              ),
-            ),
-          if (index < _filteredAffirmations.length - 1)
-            Positioned(
-              top: 16,
-              right: 16,
-              child: GestureDetector(
-                onTap: () => _goToPage(index + 1),
-                child: Container(
-                  width: 32,
-                  height: 32,
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.3),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Icon(Icons.chevron_right_rounded, color: Colors.white, size: 20),
-                ),
-              ),
-            ),
-          Positioned(
-            bottom: 16,
-            right: 16,
-            child: GestureDetector(
-              onTap: () => _toggleFavorite(index),
-              child: Icon(
-                isFavorite ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-                color: isFavorite ? affirmation.color : AppColors.mutedForeground,
-                size: 24,
-              ),
-            ),
-          ),
         ],
       ),
-    );
-  }
-
-  Widget _buildPageIndicator() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: List.generate(
-        _filteredAffirmations.length,
-        (index) {
-          final currentColor = _filteredAffirmations.isNotEmpty 
-              ? _filteredAffirmations[_currentIndex.clamp(0, _filteredAffirmations.length - 1)].color
-              : AppColors.citrusOrange;
-          final isSelected = _currentIndex == index;
-          return AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            margin: const EdgeInsets.symmetric(horizontal: 3),
-            width: isSelected ? 16 : 6,
-            height: 6,
-            decoration: BoxDecoration(
-              color: isSelected ? currentColor : Colors.white.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(3),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildActionButtons() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        GestureDetector(
-          onTap: () => _toggleFavorite(_currentIndex),
-          child: Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.06),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Icon(Icons.favorite_border_rounded, color: AppColors.mutedForeground, size: 20),
-          ),
-        ),
-        SizedBox(width: 12),
-        GestureDetector(
-          onTap: () {
-            final next = (_currentIndex + 1) % _filteredAffirmations.length;
-            _goToPage(next);
-          },
-          child: Container(
-            width: 56,
-            height: 56,
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(colors: [AppColors.citrusOrange, AppColors.citrusAmber]),
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.citrusOrange.withOpacity(0.35),
-                  blurRadius: 20,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Center(
-              child: Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 24),
-            ),
-          ),
-        ),
-        SizedBox(width: 12),
-        GestureDetector(
-          onTap: () {},
-          child: Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.06),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Icon(Icons.share_rounded, color: AppColors.mutedForeground, size: 20),
-          ),
-        ),
-      ],
     );
   }
 
