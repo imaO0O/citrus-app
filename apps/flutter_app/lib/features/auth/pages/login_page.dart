@@ -47,11 +47,9 @@ class _LoginPageState extends State<LoginPage> {
     if (_rememberMe) {
       await _storage.setString('saved_email', _emailController.text.trim());
       await _storage.setString('saved_password', _passwordController.text);
-      await _storage.setString('remember_me', 'true');
     } else {
       await _storage.remove('saved_email');
       await _storage.remove('saved_password');
-      await _storage.setString('remember_me', 'false');
     }
   }
 
@@ -415,13 +413,24 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  void _handleLogin() {
+  Future<void> _handleLogin() async {
     print('=== Вход ===');
     print('Email: ${_emailController.text.trim()}');
     print('Пароль: ${_passwordController.text}');
+    print('Запомнить меня: $_rememberMe');
     
     if (_formKey.currentState!.validate()) {
       print('Форма валидна, отправляем...');
+      
+      // Сохраняем флаг remember_me перед входом
+      await _storage.setString('remember_me', _rememberMe.toString());
+      
+      // Если не хотим запоминать - очищаем сохранённые credentials
+      if (!_rememberMe) {
+        await _storage.remove('saved_email');
+        await _storage.remove('saved_password');
+      }
+      
       context.read<AuthBloc>().add(AuthLogin(
             email: _emailController.text.trim(),
             password: _passwordController.text,

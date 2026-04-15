@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/services/storage_service.dart';
 import '../bloc/auth_bloc.dart';
 
 class RegisterPage extends StatefulWidget {
@@ -459,7 +460,7 @@ class _RegisterPageState extends State<RegisterPage> {
     );
   }
 
-  void _handleRegister() {
+  Future<void> _handleRegister() async {
     print('=== Регистрация ===');
     print('Email: ${_emailController.text.trim()}');
     print('Имя: ${_nameController.text.trim()}');
@@ -480,6 +481,11 @@ class _RegisterPageState extends State<RegisterPage> {
 
     if (_formKey.currentState!.validate()) {
       print('Форма валидна, отправляем...');
+      
+      // При регистрации по умолчанию запоминаем сессию
+      final storage = StorageService();
+      await storage.setString('remember_me', 'true');
+      
       context.read<AuthBloc>().add(AuthRegister(
             email: _emailController.text.trim(),
             password: _passwordController.text,
