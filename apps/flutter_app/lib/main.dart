@@ -11,6 +11,8 @@ import 'core/repository/diary_repository.dart';
 import 'core/repository/mood_repository.dart';
 import 'core/repository/memory_photo_repository.dart';
 import 'core/repository/article_repository.dart';
+import 'core/repository/notification_preferences_repository.dart';
+import 'services/notification_service.dart';
 import 'bloc/dashboard_bloc.dart';
 import 'features/auth/bloc/auth_bloc.dart';
 import 'features/sleep/bloc/sleep_bloc.dart';
@@ -23,6 +25,9 @@ void main() async {
 
   // Инициализация сервиса тем
   await ThemeService().init();
+
+  // Инициализация сервиса уведомлений
+  await NotificationService().initialize();
 
   runApp(const MyApp());
 }
@@ -40,25 +45,30 @@ class MyApp extends StatelessWidget {
     final moodRepository = MoodRepository(userId: 'unknown', token: null);
     final memoryPhotoRepository = MemoryPhotoRepository(userId: 'unknown', token: null);
     final articleRepository = ArticleRepository();
+    final notificationPreferencesRepository = NotificationPreferencesRepository();
 
     return ListenableBuilder(
       listenable: ThemeService(),
       builder: (context, _) {
         return MultiRepositoryProvider(
           providers: [
-            RepositoryProvider.value(value: authRepository),
+          RepositoryProvider.value(value: authRepository),
             RepositoryProvider.value(value: sleepRepository),
             RepositoryProvider.value(value: calendarRepository),
             RepositoryProvider.value(value: diaryRepository),
             RepositoryProvider.value(value: moodRepository),
             RepositoryProvider.value(value: memoryPhotoRepository),
             RepositoryProvider.value(value: articleRepository),
+            RepositoryProvider.value(value: notificationPreferencesRepository),
           ],
           child: MultiBlocProvider(
             providers: [
               BlocProvider(
                 create: (_) {
-                  final authBloc = AuthBloc(repository: authRepository)..add(const AuthInit());
+                  final authBloc = AuthBloc(
+                    repository: authRepository,
+                    notificationRepository: notificationPreferencesRepository,
+                  )..add(const AuthInit());
 
                   // Слушаем изменения состояния авторизации
                   authBloc.stream.listen((state) {
@@ -91,16 +101,23 @@ class MyApp extends StatelessWidget {
                 return dashboardBloc;
               }),
               BlocProvider(
-                create: (ctx) => SleepBloc(repository: ctx.read<SleepRepository>()),
+                create: (ctx) => SleepBloc(
+                  repository: ctx.read<SleepRepository>(),
+                  notificationRepository: ctx.read<NotificationPreferencesRepository>(),
+                ),
               ),
               BlocProvider(
                 create: (ctx) => CalendarBloc(
                   repository: ctx.read<CalendarEventRepository>(),
                   moodRepository: ctx.read<MoodRepository>(),
+                  notificationRepository: ctx.read<NotificationPreferencesRepository>(),
                 ),
               ),
               BlocProvider(
-                create: (ctx) => DiaryBloc(repository: ctx.read<DiaryRepository>()),
+                create: (ctx) => DiaryBloc(
+                  repository: ctx.read<DiaryRepository>(),
+                  notificationRepository: ctx.read<NotificationPreferencesRepository>(),
+                ),
               ),
               BlocProvider(
                 create: (ctx) => ArticleBloc(repository: ctx.read<ArticleRepository>()),

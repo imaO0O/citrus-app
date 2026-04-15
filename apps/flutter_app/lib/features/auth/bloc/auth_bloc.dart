@@ -1,5 +1,7 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/repository/auth_repository.dart';
+import '../../../core/repository/notification_preferences_repository.dart';
 import '../../../core/utils/theme_service.dart';
 
 // События
@@ -36,6 +38,10 @@ class AuthThemeChanged extends AuthEvent {
   const AuthThemeChanged(this.user);
 }
 
+class AuthRequestNotificationPermissions extends AuthEvent {
+  const AuthRequestNotificationPermissions();
+}
+
 // Состояния
 abstract class AuthState {
   const AuthState();
@@ -68,15 +74,20 @@ class AuthError extends AuthState {
 // BLoC
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final AuthRepository _repository;
+  final NotificationPreferencesRepository _notificationRepository;
 
-  AuthBloc({required AuthRepository repository})
-      : _repository = repository,
+  AuthBloc({
+    required AuthRepository repository,
+    NotificationPreferencesRepository? notificationRepository,
+  })  : _repository = repository,
+        _notificationRepository = notificationRepository ?? NotificationPreferencesRepository(),
         super(const AuthInitial()) {
     on<AuthInit>(_onInit);
     on<AuthLogin>(_onLogin);
     on<AuthRegister>(_onRegister);
     on<AuthLogout>(_onLogout);
     on<AuthThemeChanged>(_onThemeChanged);
+    on<AuthRequestNotificationPermissions>(_onRequestPermissions);
   }
 
   Future<void> _onInit(AuthInit event, Emitter<AuthState> emit) async {
@@ -108,6 +119,16 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         ThemeService().toggleTheme(isDark);
       }
 
+      // Запрашиваем разрешения на уведомления (не блокируем UI)
+      _requestNotificationPermissions();
+
+      // Показываем приветственное уведомление
+      await _notificationRepository.notificationService.showInstantNotification(
+        title: '👋 С возвращением!',
+        body: 'Рады видеть вас снова, ${user.name ?? user.email}',
+        channelId: 'general',
+      );
+
       emit(AuthAuthenticated(user));
     } catch (e) {
       emit(AuthError(e.toString()));
@@ -129,6 +150,16 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         ThemeService().toggleTheme(isDark);
       }
 
+      // Запрашиваем разрешения на уведомления (не блокируем UI)
+      _requestNotificationPermissions();
+
+      // Показываем приветственное уведомление для нового пользователя
+      await _notificationRepository.notificationService.showInstantNotification(
+        title: '🎉 Добро пожаловать!',
+        body: 'Спасибо за регистрацию, ${user.name ?? user.email}! Начните заботиться о себе.',
+        channelId: 'general',
+      );
+
       emit(AuthAuthenticated(user));
     } catch (e) {
       emit(AuthError(e.toString()));
@@ -138,6 +169,23 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   Future<void> _onLogout(AuthLogout event, Emitter<AuthState> emit) async {
     await _repository.logout();
     emit(const AuthUnauthenticated());
+  }
+
+  Future<void> _onRequestPermissions(
+    AuthRequestNotificationPermissions event,
+    Emitter<AuthState> emit,
+  ) async {
+    await _requestNotificationPermissions();
+  }
+
+  /// Запросить разрешения на уведомления
+  Future<void> _requestNotificationPermissions() async {
+    try {
+      final granted = await _notificationRepository.requestPermissions();
+      debugPrint('AuthBloc: разрешения на уведомления = $granted');
+    } catch (e) {
+      debugPrint('AuthBloc: ошибка запроса разрешений: $e');
+    }
   }
 
   Future<void> _onThemeChanged(AuthThemeChanged event, Emitter<AuthState> emit) async {

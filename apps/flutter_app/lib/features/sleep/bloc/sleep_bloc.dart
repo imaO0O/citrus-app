@@ -1,6 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../models/sleep_record.dart';
 import '../../../core/repository/sleep_repository.dart';
+import '../../../core/repository/notification_preferences_repository.dart';
 
 // События
 abstract class SleepEvent {
@@ -108,9 +109,13 @@ class SleepError extends SleepState {
 // BLoC
 class SleepBloc extends Bloc<SleepEvent, SleepState> {
   final SleepRepository _repository;
+  final NotificationPreferencesRepository _notificationRepository;
 
-  SleepBloc({required SleepRepository repository})
-      : _repository = repository,
+  SleepBloc({
+    required SleepRepository repository,
+    NotificationPreferencesRepository? notificationRepository,
+  })  : _repository = repository,
+        _notificationRepository = notificationRepository ?? NotificationPreferencesRepository(),
         super(const SleepInitial()) {
     on<LoadSleepRecords>(_onLoadRecords);
     on<AddSleepRecord>(_onAddRecord);
@@ -150,6 +155,14 @@ class SleepBloc extends Bloc<SleepEvent, SleepState> {
   ) async {
     try {
       final record = await _repository.createSleepRecord(event.record);
+
+      // Показываем подтверждающее уведомление
+      await _notificationRepository.notificationService.showInstantNotification(
+        title: '😴 Сон записан',
+        body: 'Запись о вашем сне сохранена. Хорошего отдыха!',
+        channelId: 'sleep',
+      );
+
       if (state is SleepLoaded) {
         final records = List<SleepRecord>.from((state as SleepLoaded).records);
         records.add(record);

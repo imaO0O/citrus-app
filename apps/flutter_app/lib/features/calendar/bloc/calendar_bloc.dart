@@ -1,7 +1,9 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../models/calendar_event.dart';
 import '../../../core/repository/calendar_event_repository.dart';
 import '../../../core/repository/mood_repository.dart';
+import '../../../core/repository/notification_preferences_repository.dart';
 
 // События
 abstract class CalendarEvent {
@@ -95,13 +97,16 @@ class CalendarError extends CalendarState {
 class CalendarBloc extends Bloc<CalendarEvent, CalendarState> {
   final CalendarEventRepository _repository;
   final MoodRepository _moodRepository;
+  final NotificationPreferencesRepository _notificationRepository;
 
   CalendarBloc({
     required CalendarEventRepository repository,
     required MoodRepository moodRepository,
+    NotificationPreferencesRepository? notificationRepository,
   })  : _repository = repository,
         _moodRepository = moodRepository,
-        super(const CalendarInitial()) {
+        _notificationRepository = notificationRepository ?? NotificationPreferencesRepository(),
+        super(CalendarInitial()) {
     on<LoadCalendar>(_onLoadCalendar);
     on<AddEvent>(_onAddEvent);
     on<UpdateEvent>(_onUpdateEvent);
@@ -168,6 +173,17 @@ class CalendarBloc extends Bloc<CalendarEvent, CalendarState> {
     try {
       final createdEvent = await _repository.createEvent(event.event);
 
+      // Планируем уведомление для события с включенными уведомлениями
+      if (createdEvent.notificationEnabled && createdEvent.startTime != null) {
+        await _notificationRepository.scheduleCalendarEventNotification(
+          eventId: createdEvent.id,
+          title: createdEvent.title,
+          description: createdEvent.description,
+          eventDate: createdEvent.eventDate,
+          eventTime: _parseTime(createdEvent.startTime),
+        );
+      }
+        
       if (state is CalendarLoaded) {
         final loadedState = state as CalendarLoaded;
         final day = DateTime(
@@ -178,7 +194,7 @@ class CalendarBloc extends Bloc<CalendarEvent, CalendarState> {
         
         final updatedEvents = Map<DateTime, List<CalendarEventModel>>.from(loadedState.events);
         updatedEvents.putIfAbsent(day, () => []).add(createdEvent);
-
+        
         emit(CalendarLoaded(
           events: updatedEvents,
           selectedDay: loadedState.selectedDay,
@@ -191,12 +207,41 @@ class CalendarBloc extends Bloc<CalendarEvent, CalendarState> {
     }
   }
 
+  /// Парсит строку времени в TimeOfDay
+  TimeOfDay? _parseTime(String? timeStr) {
+    if (timeStr == null || timeStr.isEmpty) return null;
+    try {
+      final parts = timeStr.split(':');
+      return TimeOfDay(
+        hour: int.parse(parts[0]),
+        minute: int.parse(parts[1]),
+      );
+    } catch (e) {
+      return null;
+    }
+  }
+
   Future<void> _onUpdateEvent(
     UpdateEvent event,
     Emitter<CalendarState> emit,
   ) async {
     try {
       await _repository.updateEvent(event.event);
+
+      // Обновляем уведомление для события
+      if (event.event.notificationEnabled && event.event.startTime != null) {
+        await _notificationRepository.scheduleCalendarEventNotification(
+          eventId: event.event.id,
+          title: event.event.title,
+          description: event.event.description,
+          eventDate: event.event.eventDate,
+          eventTime: _parseTime(event.event.startTime),
+        );
+      } else {
+        // Если уведомления отключены - отменяем
+        await _notificationRepository.cancelCalendarEventNotification(event.event.id);
+      }
+
       // Перезагружаем события из БД после обновления
       if (state is CalendarLoaded) {
         final loadedState = state as CalendarLoaded;
@@ -213,6 +258,9 @@ class CalendarBloc extends Bloc<CalendarEvent, CalendarState> {
   ) async {
     try {
       await _repository.deleteEvent(event.eventId);
+
+      // Отменяем уведомление для удалённого события
+      await _notificationRepository.cancelCalendarEventNotification(event.eventId);
 
       if (state is CalendarLoaded) {
         final loadedState = state as CalendarLoaded;
