@@ -175,10 +175,15 @@ class AuthRepository {
   /// Инициализация — восстанавливаем данные из хранилища
   Future<void> init() async {
     try {
+      debugPrint('AuthRepository: init start');
       final storage = StorageService();
       
       // Проверяем, было ли сохранение сессии с флагом "Запомнить меня"
-      final rememberMe = await storage.getString('remember_me');
+      final rememberMe = await storage.getString('remember_me').timeout(
+        const Duration(seconds: 5),
+        onTimeout: () => null,
+      );
+      debugPrint('AuthRepository: remember_me = $rememberMe');
       
       // Если пользователь не хотел запоминать сессию - не восстанавливаем её
       if (rememberMe != 'true') {
@@ -187,11 +192,26 @@ class AuthRepository {
         return;
       }
       
-      final savedToken = await storage.getString('auth_token');
-      final savedUserId = await storage.getString('auth_user_id');
-      final savedEmail = await storage.getString('auth_user_email');
-      final savedName = await storage.getString('auth_user_name');
-      final savedThemeId = await storage.getString('auth_user_theme_id');
+      final savedToken = await storage.getString('auth_token').timeout(
+        const Duration(seconds: 5),
+        onTimeout: () => null,
+      );
+      final savedUserId = await storage.getString('auth_user_id').timeout(
+        const Duration(seconds: 5),
+        onTimeout: () => null,
+      );
+      final savedEmail = await storage.getString('auth_user_email').timeout(
+        const Duration(seconds: 5),
+        onTimeout: () => null,
+      );
+      final savedName = await storage.getString('auth_user_name').timeout(
+        const Duration(seconds: 5),
+        onTimeout: () => null,
+      );
+      final savedThemeId = await storage.getString('auth_user_theme_id').timeout(
+        const Duration(seconds: 5),
+        onTimeout: () => null,
+      );
 
       if (savedToken != null && savedToken.isNotEmpty && savedUserId != null) {
         _currentUser = User(
@@ -201,6 +221,9 @@ class AuthRepository {
           themeId: savedThemeId,
           token: savedToken,
         );
+        debugPrint('AuthRepository: session restored, userId=$savedUserId');
+      } else {
+        debugPrint('AuthRepository: no saved session found');
       }
     } catch (e) {
       debugPrint('AuthRepository init error: $e');
