@@ -8,6 +8,8 @@ import '../core/utils/phone_formatter.dart';
 import '../core/config/api_config.dart';
 import '../features/auth/bloc/auth_bloc.dart';
 import '../core/repository/auth_repository.dart';
+import '../core/repository/notification_preferences_repository.dart';
+import '../features/notifications/pages/notifications_page.dart';
 import 'help_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -18,8 +20,6 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  bool _notificationsEnabled = true;
-  bool _dailyReminders = true;
   List<Map<String, dynamic>> _trustedContacts = [];
   String? _editingContactId;
   final TextEditingController _trustedNameController = TextEditingController();
@@ -87,17 +87,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     title: 'ПРИЛОЖЕНИЕ',
                     children: [
                       _buildThemeSelector(),
-                      _buildToggleItem(
+                      _buildSettingsItem(
                         icon: Icons.notifications_outlined,
-                        label: 'Уведомления',
-                        value: _notificationsEnabled,
-                        onChanged: (v) => setState(() => _notificationsEnabled = v),
-                      ),
-                      _buildToggleItem(
-                        icon: Icons.access_time_outlined,
-                        label: 'Ежедневные напоминания',
-                        value: _dailyReminders,
-                        onChanged: (v) => setState(() => _dailyReminders = v),
+                        label: 'Настройка уведомлений',
+                        subtitle: 'Календарь, сон, настроение, дневник',
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => const NotificationsPage(),
+                            ),
+                          );
+                        },
                       ),
                     ],
                   ),

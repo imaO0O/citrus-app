@@ -23,7 +23,6 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   void initState() {
     super.initState();
-    context.read<ProfileBloc>().add(LoadProfile());
     _loadThemes();
   }
 
@@ -43,8 +42,10 @@ class _ProfilePageState extends State<ProfilePage> {
   Widget build(BuildContext context) {
     final themeService = ThemeService();
 
-    return BlocBuilder<ProfileBloc, ProfileState>(
-      builder: (context, state) {
+    return BlocProvider(
+      create: (context) => ProfileBloc(authRepository: context.read<AuthRepository>())..add(LoadProfile()),
+      child: BlocBuilder<ProfileBloc, ProfileState>(
+        builder: (context, state) {
         auth_repo.User? user;
         if (state is ProfileLoaded) {
           user = state.user;
@@ -118,6 +119,7 @@ class _ProfilePageState extends State<ProfilePage> {
           ),
         );
       },
+      ),
     );
   }
 

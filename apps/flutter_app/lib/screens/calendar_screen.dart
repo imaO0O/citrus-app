@@ -475,10 +475,12 @@ class _CalendarScreenState extends State<CalendarScreen> with WidgetsBindingObse
     final titleController = TextEditingController();
     final descriptionController = TextEditingController();
     TimeOfDay? selectedTime;
+    bool notificationEnabled = true;
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
         backgroundColor: AppColors.surface1,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
@@ -537,9 +539,23 @@ class _CalendarScreenState extends State<CalendarScreen> with WidgetsBindingObse
                     initialTime: TimeOfDay.now(),
                   );
                   if (time != null) {
-                    setState(() => selectedTime = time);
+                    setDialogState(() => selectedTime = time);
                   }
                 },
+              ),
+              SwitchListTile(
+                secondary: Icon(
+                  notificationEnabled ? Icons.notifications_active : Icons.notifications_off,
+                  color: notificationEnabled ? AppColors.citrusOrange : AppColors.mutedForeground,
+                ),
+                title: Text('Напоминание', style: TextStyle(color: AppColors.foreground, fontSize: 14)),
+                subtitle: Text(
+                  notificationEnabled ? 'Уведомление перед событием' : 'Без уведомления',
+                  style: TextStyle(color: AppColors.mutedForeground, fontSize: 12),
+                ),
+                value: notificationEnabled,
+                activeColor: AppColors.citrusOrange,
+                onChanged: (v) => setDialogState(() => notificationEnabled = v),
               ),
             ],
           ),
@@ -578,7 +594,7 @@ class _CalendarScreenState extends State<CalendarScreen> with WidgetsBindingObse
                     ? '${selectedTime!.hour.toString().padLeft(2, '0')}:${selectedTime!.minute.toString().padLeft(2, '0')}:00'
                     : null,
                 endTime: null,
-                notificationEnabled: false,
+                notificationEnabled: notificationEnabled,
               );
 
               context.read<CalendarBloc>().add(AddEvent(event));
@@ -595,6 +611,7 @@ class _CalendarScreenState extends State<CalendarScreen> with WidgetsBindingObse
             child: Text('Сохранить'),
           ),
         ],
+        ),
       ),
     );
   }
@@ -607,6 +624,7 @@ class _CalendarScreenState extends State<CalendarScreen> with WidgetsBindingObse
       final parts = event.startTime!.split(':');
       selectedTime = TimeOfDay(hour: int.parse(parts[0]), minute: int.parse(parts[1]));
     }
+    bool notificationEnabled = event.notificationEnabled;
 
     showDialog(
       context: context,
@@ -663,6 +681,20 @@ class _CalendarScreenState extends State<CalendarScreen> with WidgetsBindingObse
                     if (time != null) setModalState(() => selectedTime = time);
                   },
                 ),
+                SwitchListTile(
+                  secondary: Icon(
+                    notificationEnabled ? Icons.notifications_active : Icons.notifications_off,
+                    color: notificationEnabled ? AppColors.citrusOrange : AppColors.mutedForeground,
+                  ),
+                  title: Text('Напоминание', style: TextStyle(color: AppColors.foreground, fontSize: 14)),
+                  subtitle: Text(
+                    notificationEnabled ? 'Уведомление перед событием' : 'Без уведомления',
+                    style: TextStyle(color: AppColors.mutedForeground, fontSize: 12),
+                  ),
+                  value: notificationEnabled,
+                  activeColor: AppColors.citrusOrange,
+                  onChanged: (v) => setModalState(() => notificationEnabled = v),
+                ),
               ],
             ),
           ),
@@ -681,7 +713,7 @@ class _CalendarScreenState extends State<CalendarScreen> with WidgetsBindingObse
                       ? '${selectedTime!.hour.toString().padLeft(2, '0')}:${selectedTime!.minute.toString().padLeft(2, '0')}:00'
                       : event.startTime,
                   endTime: event.endTime,
-                  notificationEnabled: event.notificationEnabled,
+                  notificationEnabled: notificationEnabled,
                 );
                 context.read<CalendarBloc>().add(UpdateEvent(updated));
                 Navigator.pop(context);
