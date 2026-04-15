@@ -29,7 +29,8 @@ class AuthRegister extends AuthEvent {
 }
 
 class AuthLogout extends AuthEvent {
-  const AuthLogout();
+  final bool clearRememberMe;
+  const AuthLogout({this.clearRememberMe = true});
 }
 
 class AuthThemeChanged extends AuthEvent {
@@ -167,7 +168,12 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   }
 
   Future<void> _onLogout(AuthLogout event, Emitter<AuthState> emit) async {
-    await _repository.logout();
+    if (event.clearRememberMe) {
+      await _repository.logoutComplete();
+    } else {
+      await _repository.logout();
+    }
+    ThemeService().clearUserCredentials();
     emit(const AuthUnauthenticated());
   }
 

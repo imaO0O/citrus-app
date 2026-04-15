@@ -176,6 +176,17 @@ class AuthRepository {
   Future<void> init() async {
     try {
       final storage = StorageService();
+      
+      // Проверяем, было ли сохранение сессии с флагом "Запомнить меня"
+      final rememberMe = await storage.getString('remember_me');
+      
+      // Если пользователь не хотел запоминать сессию - не восстанавливаем её
+      if (rememberMe != 'true') {
+        debugPrint('AuthRepository: remember_me is not true, skipping session restore');
+        await _clearSession();
+        return;
+      }
+      
       final savedToken = await storage.getString('auth_token');
       final savedUserId = await storage.getString('auth_user_id');
       final savedEmail = await storage.getString('auth_user_email');
@@ -200,6 +211,17 @@ class AuthRepository {
   Future<void> _saveSession(User user) async {
     try {
       final storage = StorageService();
+      
+      // Проверяем, нужно ли сохранять сессию
+      final rememberMe = await storage.getString('remember_me');
+      if (rememberMe != 'true') {
+        debugPrint('AuthRepository: remember_me is false, not saving session');
+        // Очищаем старую сессию из хранилища, если она была
+        await _clearSession();
+        // Сохраняем только в память, но не в хранилище
+        return;
+      }
+      
       await storage.setString('auth_token', user.token);
       await storage.setString('auth_user_id', user.id);
       await storage.setString('auth_user_email', user.email);
@@ -219,8 +241,27 @@ class AuthRepository {
       await storage.remove('auth_user_email');
       await storage.remove('auth_user_name');
       await storage.remove('auth_user_theme_id');
+      // Не удаляем remember_me, чтобы знать настройку пользователя
     } catch (e) {
       debugPrint('AuthRepository clear error: $e');
+    }
+  }
+
+  /// Полный выход с очисткой всех данных включая remember_me
+  Future<void> logoutComplete() async {
+    _currentUser = null;
+    try {
+      final storage = StorageService();
+      await storage.remove('auth_token');
+      await storage.remove('auth_user_id');
+      await storage.remove('auth_user_email');
+      await storage.remove('auth_user_name');
+      await storage.remove('auth_user_theme_id');
+      await storage.remove('remember_me');
+      await storage.remove('saved_email');
+      await storage.remove('saved_password');
+    } catch (e) {
+      debugPrint('AuthRepository complete logout error: $e');
     }
   }
 

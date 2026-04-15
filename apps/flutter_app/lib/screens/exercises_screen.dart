@@ -1465,7 +1465,15 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
           _isFinished = true;
           _phaseText = 'Упражнение завершено!';
         });
-        ExerciseTrackerService().recordExercise(widget.exercise.id);
+        _animationController.stop();
+        // Сохраняем выполненное упражнение
+        ExerciseTrackerService().recordExercise(
+          widget.exercise.id,
+          exerciseType: widget.exercise.type,
+          title: widget.exercise.title,
+          durationMinutes: widget.exercise.durationSeconds ~/ 60,
+          difficultyLevel: widget.exercise.difficulty == 'Легко' ? 1 : widget.exercise.difficulty == 'Средне' ? 2 : 3,
+        );
       }
     });
   }

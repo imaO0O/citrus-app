@@ -7,6 +7,10 @@ $null
 nul
 dart
 
+# Environment files
+.env
+*.env
+
 # IDE
 .vscode/
 .idea/
