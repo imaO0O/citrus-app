@@ -500,55 +500,26 @@ class _ChatScreenState extends State<ChatScreen> {
   Widget _buildSuggestions() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-      child: Column(
-        children: [
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: _suggestions.map((hint) {
-              return GestureDetector(
-                onTap: () => _sendMessage(text: hint),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: AppColors.citrusOrange.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(999),
-                    border: Border.all(color: AppColors.citrusOrange.withOpacity(0.2)),
-                  ),
-                  child: Text(
-                    hint,
-                    style: TextStyle(color: AppColors.citrusOrange, fontSize: 12),
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
-          SizedBox(height: 12),
-          GestureDetector(
-            onTap: () {
-              _sendMessage(text: '\u0417\u0430\u0433\u0440\u0443\u0436\u0430\u044E \u0434\u043D\u0435\u0432\u043D\u0438\u043A \u0434\u043B\u044F \u0430\u043D\u0430\u043B\u0438\u0437\u0430');
-            },
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: _suggestions.map((hint) {
+          return GestureDetector(
+            onTap: () => _sendMessage(text: hint),
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
               decoration: BoxDecoration(
-                color: AppColors.citrusPurple.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.citrusPurple.withOpacity(0.2)),
+                color: AppColors.citrusOrange.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(color: AppColors.citrusOrange.withOpacity(0.2)),
               ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.upload_file, color: AppColors.citrusPurple, size: 16),
-                  SizedBox(width: 8),
-                  Text(
-                    '\u0417\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044C \u0434\u043D\u0435\u0432\u043D\u0438\u043A \u0434\u043B\u044F \u0430\u043D\u0430\u043B\u0438\u0437\u0430',
-                    style: TextStyle(color: AppColors.citrusPurple, fontSize: 12),
-                  ),
-                ],
+              child: Text(
+                hint,
+                style: TextStyle(color: AppColors.citrusOrange, fontSize: 12),
               ),
             ),
-          ),
-        ],
+          );
+        }).toList(),
       ),
     );
   }
