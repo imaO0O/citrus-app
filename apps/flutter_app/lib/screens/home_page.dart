@@ -4,12 +4,12 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import '../bloc/dashboard_bloc.dart';
 import '../core/theme/app_colors.dart';
+import '../services/affirmations_service.dart';
 import 'models/mood.dart';
 import 'widgets/citrus_wheel.dart';
 import 'widgets/stats_strip.dart';
 import 'widgets/quick_links.dart';
 import 'widgets/mood_log.dart';
-import 'widgets/daily_quote.dart';
 
 class HomePage extends StatefulWidget {
   final VoidCallback? onNavigateToExercises;
@@ -32,12 +32,29 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  final AffirmationsService _affirmationsService = AffirmationsService();
+  Affirmation? _dailyAffirmation;
+  bool _isLoadingAffirmation = true;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<DashboardBloc>().add(DashboardLoad());
+      _loadDailyAffirmation();
     });
+  }
+
+  Future<void> _loadDailyAffirmation() async {
+    final affirmations = await _affirmationsService.getCachedAffirmations();
+    if (affirmations.isNotEmpty && mounted) {
+      // Выбираем одну случайную аффирмацию
+      final index = DateTime.now().day % affirmations.length;
+      setState(() {
+        _dailyAffirmation = affirmations[index];
+        _isLoadingAffirmation = false;
+      });
+    }
   }
 
   String _formatDate(DateTime date) {
@@ -53,6 +70,79 @@ class _HomePageState extends State<HomePage> {
 
     context.read<DashboardBloc>().add(
       MoodSelected(moodId: moodId, timestamp: DateTime.now()),
+    );
+  }
+
+  Widget _buildDailyAffirmation() {
+    if (_isLoadingAffirmation || _dailyAffirmation == null) {
+      return const SizedBox.shrink();
+    }
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              _dailyAffirmation!.color.withOpacity(0.15),
+              _dailyAffirmation!.color.withOpacity(0.05),
+            ],
+          ),
+          border: Border.all(
+            color: _dailyAffirmation!.color.withOpacity(0.2),
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.format_quote,
+                  color: _dailyAffirmation!.color,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Аффирмация дня',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: _dailyAffirmation!.color,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Text(
+                  _dailyAffirmation!.emoji,
+                  style: const TextStyle(fontSize: 32),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    '"${_dailyAffirmation!.text}"',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.foreground,
+                      height: 1.4,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -197,8 +287,8 @@ class _HomePageState extends State<HomePage> {
                     // ─── Today's Mood Log ───
                     MoodLog(entries: state.todayLog),
 
-                    // ─── Daily Quote ───
-                    const DailyQuote(),
+                    // ─── Daily Affirmation ───
+                    _buildDailyAffirmation(),
                   ],
                 ),
               ),
