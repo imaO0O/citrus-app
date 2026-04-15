@@ -1,5 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/repository/diary_repository.dart';
+import '../../../core/repository/notification_preferences_repository.dart';
 
 abstract class DiaryEvent {
   const DiaryEvent();
@@ -61,9 +62,13 @@ class DiaryError extends DiaryState {
 
 class DiaryBloc extends Bloc<DiaryEvent, DiaryState> {
   final DiaryRepository _repository;
+  final NotificationPreferencesRepository _notificationRepository;
 
-  DiaryBloc({required DiaryRepository repository})
-      : _repository = repository,
+  DiaryBloc({
+    required DiaryRepository repository,
+    NotificationPreferencesRepository? notificationRepository,
+  })  : _repository = repository,
+        _notificationRepository = notificationRepository ?? NotificationPreferencesRepository(),
         super(const DiaryInitial()) {
     on<LoadDiaryEntries>(_onLoadEntries);
     on<CreateDiaryEntry>(_onCreateEntry);
@@ -98,6 +103,14 @@ class DiaryBloc extends Bloc<DiaryEvent, DiaryState> {
         moodValue: event.moodValue,
         entryDate: event.entryDate,
       );
+
+      // Показываем подтверждающее уведомление
+      await _notificationRepository.notificationService.showInstantNotification(
+        title: '✅ Запись сохранена',
+        body: 'Ваша запись в дневнике успешно добавлена',
+        channelId: 'diary',
+      );
+
       // Перезагружаем записи
       if (state is DiaryLoaded) add(const LoadDiaryEntries());
     } catch (e) {

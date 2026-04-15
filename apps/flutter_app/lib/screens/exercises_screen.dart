@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
@@ -7,6 +8,7 @@ import 'package:webview_flutter/webview_flutter.dart';
 import 'package:just_audio/just_audio.dart';
 import '../core/theme/app_colors.dart';
 import '../core/services/exercise_tracker_service.dart';
+import '../core/config/api_config.dart';
 
 class ExerciseItem {
   final String id;
@@ -24,7 +26,13 @@ class ExerciseItem {
   final String? videoEmbedUrl;
   final String? audioUrl;
   final String? audioTitle;
-  final String? audioEmbedUrl; // Яндекс Музыка embed iframe
+  final String? audioEmbedUrl;
+  // Для дыхательных упражнений
+  final List<int>? phaseDurations; // длительность каждой фазы (сек)
+  final bool cycles; // повторять цикл фаз
+  final List<Color>? phaseColors; // цвет для каждой фазы
+  final List<double>? phaseScales; // масштаб круга для каждой фазы
+  final List<String>? phaseLabels; // короткие названия фаз для круга
 
   const ExerciseItem({
     required this.id,
@@ -43,137 +51,240 @@ class ExerciseItem {
     this.audioUrl,
     this.audioTitle,
     this.audioEmbedUrl,
+    this.phaseDurations,
+    this.cycles = false,
+    this.phaseColors,
+    this.phaseScales,
+    this.phaseLabels,
   });
 }
 
-const _categories = ['Все', 'Дыхание', 'Расслабление', 'Фокус', 'Энергия', 'Видео', 'Аудио'];
+const _categories = ['Все', 'Дыхание', 'Видео', 'Аудио'];
 
 const _exercises = [
-  // Дыхательные упражнения
+  // === САМЫЕ ПОПУЛЯРНЫЕ ДЫХАТЕЛЬНЫЕ УПРАЖНЕНИЯ ===
+
+  // 1. Квадратное дыхание — Navy SEALs, фокус и концентрация
   ExerciseItem(
     id: 'box_breathing',
-    icon: '🌬️',
+    icon: '⬜',
     title: 'Квадратное дыхание',
-    description: 'Техника 4-4-4-4 для снятия стресса и улучшения концентрации',
+    description: 'Техника 4-4-4-4. Используют Navy SEALs для контроля в стрессе',
     duration: '5 мин',
     difficulty: 'Легко',
     type: 'Дыхание',
     category: 'Дыхание',
     color: AppColors.citrusGreen,
     steps: [
-      'Вдохните через нос на 4 счёта',
-      'Задержите дыхание на 4 счёта',
-      'Выдохните через рот на 4 счёта',
-      'Задержите дыхание на 4 счёта',
-      'Повторяйте цикл 5 минут',
+      'Вдох через нос',
+      'Задержка дыхания',
+      'Выдох через рот',
+      'Задержка дыхания',
     ],
     durationSeconds: 300,
+    phaseDurations: const [4, 4, 4, 4],
+    phaseLabels: ['Вдох', 'Задержка', 'Выдох', 'Задержка'],
+    phaseColors: const [
+      Color(0xFF8BC34A), // Вдох — зелёный (рост, энергия)
+      Color(0xFFFFD93D), // Задержка — жёлтый (внимание)
+      Color(0xFF74B9FF), // Выдох — голубой (расслабление)
+      Color(0xFFFFD93D), // Задержка — жёлтый
+    ],
+    phaseScales: const [
+      1.0,  // Вдох — круг полный
+      1.0,  // Задержка — круг полный, замирание
+      0.6,  // Выдох — круг пустой
+      0.6,  // Задержка — круг пустой, замирание
+    ],
+    cycles: true,
   ),
-  // Расслабление
+
+  // 2. Дыхание 4-7-8 — для сна и глубокого расслабления (доктор Вейл)
   ExerciseItem(
-    id: 'progressive_relaxation',
-    icon: '🧘',
-    title: 'Прогрессивная релаксация',
-    description: 'Последовательное напряжение и расслабление мышц тела',
-    duration: '10 мин',
+    id: 'relax_breathing',
+    icon: '🌙',
+    title: 'Дыхание 4-7-8',
+    description: 'Метод доктора Вейла. Лучшее упражнение для сна и снятия тревоги',
+    duration: '5 мин',
     difficulty: 'Средне',
-    type: 'Расслабление',
-    category: 'Расслабление',
+    type: 'Дыхание',
+    category: 'Дыхание',
     color: Color(0xFF9C88FF),
     steps: [
-      'Напрягите мышцы ног на 5 секунд, затем расслабьте',
-      'Перейдите к икрам, бёдрам, животу',
-      'Напрягите руки и плечи',
-      'Сожмите и расслабьте мышцы лица',
-      'Почувствуйте разницу между напряжением и расслаблением',
+      'Вдох через нос',
+      'Задержка дыхания',
+      'Медленный выдох через рот',
     ],
-    durationSeconds: 600,
+    durationSeconds: 300,
+    phaseDurations: const [4, 7, 8],
+    phaseLabels: ['Вдох', 'Задержка', 'Выдох'],
+    phaseColors: const [
+      Color(0xFF9C88FF), // Вдох — фиолетовый (спокойствие)
+      Color(0xFFFFD93D), // Задержка — жёлтый
+      Color(0xFF74B9FF), // Выдох — голубой (глубокое расслабление)
+    ],
+    phaseScales: const [
+      1.0,  // Вдох — полный
+      1.0,  // Задержка — полный, замирание
+      0.6,  // Выдох — пустой (долгий)
+    ],
+    cycles: true,
   ),
+
+  // 3. Метод Вима Хофа — энергия и бодрость
   ExerciseItem(
-    id: 'visualization',
-    icon: '🌊',
-    title: 'Визуализация',
-    description: 'Погрузитесь в спокойное мысленное путешествие',
-    duration: '8 мин',
-    difficulty: 'Легко',
-    type: 'Расслабление',
-    category: 'Расслабление',
-    color: Color(0xFF74B9FF),
+    id: 'wimhof_breathing',
+    icon: '❄️',
+    title: 'Дыхание Вима Хофа',
+    description: 'Мощная техника для энергии, иммунитета и ясности ума',
+    duration: '5 мин',
+    difficulty: 'Сложно',
+    type: 'Дыхание',
+    category: 'Дыхание',
+    color: AppColors.citrusOrange,
     steps: [
-      'Закройте глаза и сделайте глубокий вдох',
-      'Представьте спокойное место — пляж, лес или горы',
-      'Ощутите звуки, запахи и ощущения этого места',
-      'Позвольте себе полностью погрузиться',
-      'Медленно вернитесь в настоящее',
+      'Глубокий мощный вдох',
+      'Полный выдох',
     ],
-    durationSeconds: 480,
+    durationSeconds: 300,
+    phaseDurations: const [2, 2],
+    phaseLabels: ['Вдох', 'Выдох'],
+    phaseColors: const [
+      Color(0xFFFF8C42), // Вдох — оранжевый (энергия)
+      Color(0xFF5A5468), // Выдох — тёмный (освобождение)
+    ],
+    phaseScales: const [
+      1.0,  // Вдох — полный
+      0.5,  // Выдох — пустой
+    ],
+    cycles: true,
   ),
-  // Фокус
+
+  // 4. Диафрагмальное дыхание — основа, снятие напряжения
   ExerciseItem(
-    id: 'morning_meditation',
-    icon: '🌅',
-    title: 'Утренняя медитация',
-    description: 'Начните день с осознанности и спокойствия',
+    id: 'diaphragm_breathing',
+    icon: '🫁',
+    title: 'Дыхание животом',
+    description: 'Базовая техника диафрагмы. Снижает кортизол и давление',
     duration: '7 мин',
     difficulty: 'Легко',
-    type: 'Фокус',
-    category: 'Фокус',
-    color: Color(0xFFFFEAA7),
-    steps: [
-      'Сядьте удобно с прямой спиной',
-      'Сосредоточьтесь на дыхании',
-      'Наблюдайте за мыслями без оценки',
-      'Мягко возвращайте внимание к дыханию',
-      'Начните день с ясным умом',
-    ],
-    durationSeconds: 420,
-  ),
-  // Энергия
-  ExerciseItem(
-    id: 'yoga_beginners',
-    icon: '🧘',
-    title: 'Йога для начинающих',
-    description: 'Простые позы для гибкости и равновесия',
-    duration: '15 мин',
-    difficulty: 'Средне',
-    type: 'Энергия',
-    category: 'Энергия',
-    color: Color(0xFFFD79A8),
-    steps: [
-      'Встаньте прямо, ноги на ширине плеч',
-      'Медленно поднимите руки вверх',
-      'Наклонитесь вперёд, почувствуйте растяжение',
-      'Выполните позу кошки и коровы',
-      'Двигайтесь плавно, дышите глубоко',
-    ],
-    durationSeconds: 900,
-  ),
-  ExerciseItem(
-    id: 'technique_54321',
-    icon: '⚡',
-    title: 'Техника 5-4-3-2-1',
-    description: 'Заземление через органы чувств для снятия тревоги',
-    duration: '3 мин',
-    difficulty: 'Легко',
-    type: 'Фокус',
-    category: 'Фокус',
+    type: 'Дыхание',
+    category: 'Дыхание',
     color: Color(0xFF00CEC9),
     steps: [
-      'Найдите 5 вещей, которые вы видите',
-      'Найдите 4 вещи, которые можно потрогать',
-      'Обратите внимание на 3 вещи, которые вы слышите',
-      'Найдите 2 вещи, которые можно понюхать',
-      'Найдите 1 вещь, которую можно попробовать на вкус',
+      'Глубокий вдох животом',
+      'Медленный выдох',
+    ],
+    durationSeconds: 420,
+    phaseDurations: const [5, 5],
+    phaseLabels: ['Вдох', 'Выдох'],
+    phaseColors: const [
+      Color(0xFF00CEC9), // Вдох — бирюзовый (свежесть)
+      Color(0xFF74B9FF), // Выдох — голубой (расслабление)
+    ],
+    phaseScales: const [
+      1.0,  // Вдох — полный
+      0.6,  // Выдох — пустой
+    ],
+    cycles: true,
+  ),
+
+  // 5. Кохерентное дыхание — баланс нервной системы
+  ExerciseItem(
+    id: 'coherent_breathing',
+    icon: '🧘',
+    title: 'Кохерентное дыхание',
+    description: 'Ритм 5-5. Синхронизирует сердце и мозг для гармонии',
+    duration: '5 мин',
+    difficulty: 'Легко',
+    type: 'Дыхание',
+    category: 'Дыхание',
+    color: Color(0xFF9B59B6),
+    steps: [
+      'Плавный вдох через нос',
+      'Мягкий выдох через нос',
+    ],
+    durationSeconds: 300,
+    phaseDurations: const [5, 5],
+    phaseLabels: ['Вдох', 'Выдох'],
+    phaseColors: const [
+      Color(0xFF9B59B6), // Вдох — фиолетовый (баланс)
+      Color(0xFFBB8FCE), // Выдох — светло-фиолетовый
+    ],
+    phaseScales: const [
+      1.0,  // Вдох — полный
+      0.6,  // Выдох — пустой
+    ],
+    cycles: true,
+  ),
+
+  // 6. Энергетическое дыхание — бодрость
+  ExerciseItem(
+    id: 'energy_breathing',
+    icon: '⚡',
+    title: 'Энергия за 3 минуты',
+    description: 'Техника 6-2-6. Быстро взбодрит и наполнит силой',
+    duration: '3 мин',
+    difficulty: 'Средне',
+    type: 'Дыхание',
+    category: 'Дыхание',
+    color: Color(0xFFFF6B6B),
+    steps: [
+      'Глубокий активный вдох',
+      'Короткая задержка',
+      'Мощный выдох',
     ],
     durationSeconds: 180,
+    phaseDurations: const [6, 2, 6],
+    phaseLabels: ['Вдох', 'Задержка', 'Выдох'],
+    phaseColors: const [
+      Color(0xFFFF6B6B), // Вдох — красный (энергия)
+      Color(0xFFFFD93D), // Задержка — жёлтый
+      Color(0xFF74B9FF), // Выдох — голубой
+    ],
+    phaseScales: const [
+      1.0,  // Вдох — полный
+      1.0,  // Задержка — полный
+      0.5,  // Выдох — пустой
+    ],
+    cycles: true,
   ),
-  
-  // === ВИДЕО УПРАЖНЕНИЯ (RuTube и VK Video) ===
+
+  // 7. Дыхание перед сном — глубокое расслабление
+  ExerciseItem(
+    id: 'sleep_breathing',
+    icon: '🌙',
+    title: 'Подготовка ко сну',
+    description: 'Техника 4-8. Медленный выдох активирует парасимпатику',
+    duration: '5 мин',
+    difficulty: 'Легко',
+    type: 'Дыхание',
+    category: 'Дыхание',
+    color: Color(0xFF5DADE2),
+    steps: [
+      'Спокойный вдох',
+      'Длинный медленный выдох',
+    ],
+    durationSeconds: 300,
+    phaseDurations: const [4, 8],
+    phaseLabels: ['Вдох', 'Выдох'],
+    phaseColors: const [
+      Color(0xFF5DADE2), // Вдох — голубой (ночное небо)
+      Color(0xFF2C3E50), // Выдох — тёмно-синий (сон)
+    ],
+    phaseScales: const [
+      1.0,  // Вдох — полный
+      0.5,  // Выдох — пустой (медленный)
+    ],
+    cycles: true,
+  ),
+
+  // === ВИДЕО УПРАЖНЕНИЯ ===
   ExerciseItem(
     id: 'video_breathing_guided',
     icon: '🎬',
     title: 'Дыхательная медитация с гидом',
-    description: 'Видео с управляемой дыхательной медитацией для начинающих',
+    description: 'Управляемая дыхательная медитация для начинающих',
     duration: '10 мин',
     difficulty: 'Легко',
     type: 'Видео',
@@ -182,19 +293,19 @@ const _exercises = [
     videoUrl: 'https://vk.com/video-224098011_456239907',
     videoEmbedUrl: 'https://vk.com/video_ext.php?oid=-224098011&id=456239907&hd=2',
     steps: [
-      'Найдите удобное положение сидя или лёжа',
-      'Следуйте инструкциям в видео',
-      'Дышите в ритме, показанном на экране',
-      'Сосредоточьтесь на ощущениях в теле',
-      'Завершите упражнение мягко',
+      'Сядьте или лягте удобно',
+      'Следуйте подсказкам в видео',
+      'Дышите в показанном ритме',
+      'Сосредоточьтесь на ощущениях',
+      'Мягко завершите практику',
     ],
     durationSeconds: 600,
   ),
   ExerciseItem(
     id: 'video_body_scan',
     icon: '🎬',
-    title: 'Шавасана - медитация расслабления',
-    description: 'Видео медитация для глубокого расслабления тела',
+    title: 'Шавасана — расслабление тела',
+    description: 'Медитация сканирования тела для глубокого расслабления',
     duration: '15 мин',
     difficulty: 'Легко',
     type: 'Видео',
@@ -203,18 +314,18 @@ const _exercises = [
     videoUrl: 'https://vk.com/video-27408214_456239760',
     videoEmbedUrl: 'https://vk.com/video_ext.php?oid=-27408214&id=456239760&hd=2',
     steps: [
-      'Лягте удобно на спину',
+      'Лягте на спину, руки вдоль тела',
       'Следуйте голосу в видео',
-      'Перемещайте внимание по частям тела',
-      'Осознавайте ощущения без оценки',
-      'Расслабьтесь полностью к концу упражнения',
+      'Перемещайте внимание от стоп к макушке',
+      'Замечайте ощущения без оценки',
+      'Расслабьтесь полностью к концу',
     ],
     durationSeconds: 900,
   ),
   ExerciseItem(
     id: 'video_meditation_relax',
     icon: '🎬',
-    title: 'Медитация для снятия стресса',
+    title: 'Медитация от стресса',
     description: 'Управляемая медитация для восстановления нервной системы',
     duration: '20 мин',
     difficulty: 'Легко',
@@ -224,19 +335,19 @@ const _exercises = [
     videoUrl: 'https://vk.com/video-211495377_456239108',
     videoEmbedUrl: 'https://vk.com/video_ext.php?oid=-211495377&id=456239108&hd=2',
     steps: [
-      'Подготовьте тихое место',
-      'Сядьте или лягте удобно',
-      'Следуйте инструкциям гида',
+      'Подготовьте тихое удобное место',
+      'Сядьте или лягте, закройте глаза',
+      'Следуйте подсказкам гида',
       'Дышите глубоко и ровно',
-      'Позвольте себе расслабиться',
+      'Позвольте себе полностью расслабиться',
     ],
     durationSeconds: 1200,
   ),
   ExerciseItem(
     id: 'video_nature_sounds',
     icon: '🎬',
-    title: 'Звуки природы для медитации',
-    description: 'Видео с звуками леса для релаксации и сна',
+    title: 'Звуки леса',
+    description: 'Видео с звуками природы для релаксации и сна',
     duration: '30 мин',
     difficulty: 'Легко',
     type: 'Видео',
@@ -246,15 +357,15 @@ const _exercises = [
     videoEmbedUrl: 'https://rutube.ru/play/embed/7d00a214d5ed9f96ee136201ffa37618/',
     steps: [
       'Устройтесь удобно',
-      'Включите видео на полном экране',
+      'Включите видео на полный экран',
       'Слушайте звуки природы',
       'Представьте, что вы в лесу',
       'Позвольте себе расслабиться',
     ],
     durationSeconds: 1800,
   ),
-  
-  // === АУДИО УПРАЖНЕНИЯ (Archive.org - бесплатно, без VPN, работает) ===
+
+  // === АУДИО УПРАЖНЕНИЯ ===
   ExerciseItem(
     id: 'audio_rain_sounds',
     icon: '🌧️',
@@ -269,10 +380,10 @@ const _exercises = [
     audioTitle: 'Звуки дождя',
     steps: [
       'Найдите удобное положение',
-      'Нажмите "Играть" для воспроизведения',
+      'Нажмите ▶ для воспроизведения',
       'Закройте глаза и слушайте',
       'Сосредоточьтесь на звуках дождя',
-      'Позвольте мыслям течь свободно',
+      'Позвольте мыслям свободно течь',
     ],
     durationSeconds: 180,
   ),
@@ -290,9 +401,9 @@ const _exercises = [
     audioTitle: 'Океанские волны',
     steps: [
       'Лягте или сядьте удобно',
-      'Нажмите "Играть" для воспроизведения',
-      'Слушайте ритм волн',
-      'Дышите в такт океану',
+      'Нажмите ▶ для воспроизведения',
+      'Дышите в ритме волн',
+      'Представьте морской бриз',
       'Погрузитесь в спокойствие',
     ],
     durationSeconds: 300,
@@ -310,8 +421,8 @@ const _exercises = [
     audioUrl: 'https://archive.org/download/forest_birds_nature_2019/forest_birds_nature_2019.mp3',
     audioTitle: 'Звуки леса',
     steps: [
-      'Устройтесь в удобном месте',
-      'Нажмите "Играть" для воспроизведения',
+      'Устройтесь в тихом месте',
+      'Нажмите ▶ для воспроизведения',
       'Представьте себя в лесу',
       'Слушайте пение птиц',
       'Ощутите спокойствие природы',
@@ -322,7 +433,7 @@ const _exercises = [
     id: 'audio_meditation_calm',
     icon: '🎵',
     title: 'Музыка для медитации',
-    description: 'Расслабляющая музыка для практики осознанности',
+    description: 'Расслабляющая мелодия для практики осознанности',
     duration: '~10 мин',
     difficulty: 'Легко',
     type: 'Аудио',
@@ -332,7 +443,7 @@ const _exercises = [
     audioTitle: 'Музыка для медитации',
     steps: [
       'Сядьте в тихом месте',
-      'Нажмите "Играть" для воспроизведения',
+      'Нажмите ▶ для воспроизведения',
       'Дышите глубоко и ровно',
       'Позвольте музыке вести вас',
       'Мягко возвращайте внимание к дыханию',
@@ -352,9 +463,9 @@ const _exercises = [
     audioUrl: 'https://archive.org/download/meditation-gong-sound/meditation-gong-sound.mp3',
     audioTitle: 'Медитационный гонг',
     steps: [
-      'Обязательно используйте наушники',
+      'Наденьте наушники',
       'Лягте удобно',
-      'Нажмите "Играть" для воспроизведения',
+      'Нажмите ▶ для воспроизведения',
       'Позвольте звукам воздействовать на вас',
       'Не мешайте естественному расслаблению',
     ],
@@ -591,7 +702,7 @@ class _ExercisesScreenState extends State<ExercisesScreen> {
                           Expanded(
                             child: Text(
                               exercise.title,
-                              style: const TextStyle(color: AppColors.foreground, fontSize: 15, fontWeight: FontWeight.w600),
+                              style: TextStyle(color: AppColors.foreground, fontSize: 15, fontWeight: FontWeight.w600),
                             ),
                           ),
                           Container(
@@ -614,31 +725,23 @@ class _ExercisesScreenState extends State<ExercisesScreen> {
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(color: AppColors.mutedForeground, fontSize: 12),
                       ),
+                      SizedBox(height: 8),
+                      GestureDetector(
+                        onTap: () => _showExerciseDetail(exercise),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                          decoration: BoxDecoration(
+                            color: exercise.color.withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            exercise.type == 'Видео' ? '▶ Смотреть' :
+                            exercise.type == 'Аудио' ? '🎧 Слушать' : 'Открыть',
+                            style: TextStyle(color: exercise.color, fontSize: 12, fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                      ),
                     ],
-                  ),
-                ),
-              ],
-            ),
-            SizedBox(height: 12),
-            Row(
-              children: [
-                Text(exercise.duration, style: const TextStyle(color: AppColors.dimForeground, fontSize: 11)),
-                const SizedBox(width: 10),
-                Text(exercise.difficulty, style: const TextStyle(color: AppColors.dimForeground, fontSize: 11)),
-                const Spacer(),
-                GestureDetector(
-                  onTap: () => _showExerciseDetail(exercise),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-                    decoration: BoxDecoration(
-                      color: exercise.color.withOpacity(0.15),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      exercise.type == 'Видео' ? '▶ Смотреть' : 
-                      exercise.type == 'Аудио' ? '🎧 Слушать' : 'Открыть',
-                      style: TextStyle(color: exercise.color, fontSize: 12, fontWeight: FontWeight.w600),
-                    ),
                   ),
                 ),
               ],
@@ -696,12 +799,12 @@ class _VideoExerciseScreenState extends State<VideoExerciseScreen> {
         backgroundColor: AppColors.background,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.foreground),
+          icon: Icon(Icons.arrow_back, color: AppColors.foreground),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
           widget.exercise.title,
-          style: const TextStyle(color: AppColors.foreground, fontSize: 16, fontWeight: FontWeight.w600),
+          style: TextStyle(color: AppColors.foreground, fontSize: 16, fontWeight: FontWeight.w600),
         ),
         actions: [
           IconButton(
@@ -737,24 +840,10 @@ class _VideoExerciseScreenState extends State<VideoExerciseScreen> {
                 children: [
                   Text(
                     widget.exercise.description,
-                    style: const TextStyle(color: AppColors.mutedForeground, fontSize: 14),
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Text(
-                        '⏱ ${widget.exercise.duration}',
-                        style: const TextStyle(color: AppColors.dimForeground, fontSize: 12),
-                      ),
-                      const SizedBox(width: 12),
-                      Text(
-                        '📊 ${widget.exercise.difficulty}',
-                        style: const TextStyle(color: AppColors.dimForeground, fontSize: 12),
-                      ),
-                    ],
+                    style: TextStyle(color: AppColors.mutedForeground, fontSize: 14),
                   ),
                   const SizedBox(height: 16),
-                  const Text(
+                  Text(
                     'Шаги выполнения',
                     style: TextStyle(
                       color: AppColors.foreground,
@@ -794,7 +883,7 @@ class _VideoExerciseScreenState extends State<VideoExerciseScreen> {
                               Expanded(
                                 child: Text(
                                   widget.exercise.steps[index],
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     color: AppColors.mutedForeground,
                                     fontSize: 13,
                                     height: 1.5,
@@ -817,7 +906,7 @@ class _VideoExerciseScreenState extends State<VideoExerciseScreen> {
   }
 }
 
-// Экран для аудио упражнений - Archive.org API
+// Экран для аудио упражнений - Freesound API
 class AudioExerciseScreen extends StatefulWidget {
   final ExerciseItem exercise;
   const AudioExerciseScreen({super.key, required this.exercise});
@@ -833,7 +922,11 @@ class _AudioExerciseScreenState extends State<AudioExerciseScreen> {
   bool _isPlaying = false;
   bool _isLoaded = false;
   bool _isSearching = true;
+  bool _isCompleted = false;
   String? _error;
+  StreamSubscription? _durationSub;
+  StreamSubscription? _positionSub;
+  StreamSubscription? _playerStateSub;
 
   @override
   void initState() {
@@ -841,9 +934,51 @@ class _AudioExerciseScreenState extends State<AudioExerciseScreen> {
     _searchAndPlay();
   }
 
+  void _setupListeners() {
+    _cancelListeners();
+
+    _durationSub = _audioPlayer.durationStream.listen((d) {
+      if (d != null) setState(() => _duration = d);
+    });
+
+    _positionSub = _audioPlayer.positionStream.listen((p) {
+      if (mounted) setState(() => _position = p);
+    });
+
+    _playerStateSub = _audioPlayer.playerStateStream.listen((state) {
+      if (!mounted) return;
+
+      setState(() {
+        _isPlaying = state.playing;
+        _isLoaded = true;
+        _isSearching = false;
+      });
+
+      // Трек закончился — НЕ запускаем заново, ждём нажатия кнопки
+      if (state.processingState == ProcessingState.completed) {
+        setState(() {
+          _isCompleted = true;
+          _isPlaying = false;
+          _position = Duration.zero;
+        });
+      }
+    });
+  }
+
+  void _cancelListeners() {
+    _durationSub?.cancel();
+    _positionSub?.cancel();
+    _playerStateSub?.cancel();
+  }
+
   Future<void> _searchAndPlay() async {
+    setState(() {
+      _isSearching = true;
+      _error = null;
+      _isCompleted = false;
+    });
+
     try {
-      // Ключевые слова для каждого упражнения
       final queries = {
         'audio_rain_sounds': 'rain sounds nature water',
         'audio_ocean_waves': 'ocean waves sea water nature',
@@ -853,122 +988,173 @@ class _AudioExerciseScreenState extends State<AudioExerciseScreen> {
       };
 
       final query = queries[widget.exercise.id] ?? 'nature sounds meditation';
+      final mp3Url = await _searchFreesound(query);
 
-      // Поиск через Archive.org
-      final searchUrl = 'https://archive.org/advancedsearch.php'
-          '?q=$query+mediatype:audio'
-          '&fl[]=identifier,title'
-          '&sort[]=-downloads'
-          '&rows=10'
-          '&output=json';
+      if (mp3Url == null) throw Exception('Аудио не найдено на Freesound');
 
-      final searchResp = await http.get(Uri.parse(searchUrl));
-      if (searchResp.statusCode != 200) throw Exception('Search failed');
-
-      final searchData = jsonDecode(searchResp.body);
-      final docs = searchData['response']['docs'] as List;
-      if (docs.isEmpty) throw Exception('Аудио не найдено');
-
-      // Фильтруем результаты — исключаем речь
-      String? mp3Url;
-      for (final doc in docs) {
-        final identifier = doc['identifier'] as String?;
-        final title = (doc['title'] as String?)?.toLowerCase() ?? '';
-
-        // Пропускаем файлы с речью
-        if (_containsSpeech(title)) continue;
-        if (identifier == null) continue;
-
-        // Получаем metadata и ищем аудио файл
-        final metadataUrl = 'https://archive.org/metadata/$identifier';
-        final metaResp = await http.get(Uri.parse(metadataUrl));
-        if (metaResp.statusCode != 200) continue;
-
-        final metaData = jsonDecode(metaResp.body);
-        mp3Url = _findAudioFile(metaData, identifier);
-        if (mp3Url != null) break;
-      }
-
-      if (mp3Url == null) throw Exception('Подходящие аудио файлы не найдены');
-
-      // Загружаем и воспроизводим
       await _audioPlayer.setUrl(mp3Url);
-
-      _audioPlayer.durationStream.listen((d) {
-        if (d != null) setState(() => _duration = d);
-      });
-
-      _audioPlayer.positionStream.listen((p) {
-        setState(() => _position = p);
-      });
-
-      _audioPlayer.playerStateStream.listen((state) {
-        setState(() {
-          _isPlaying = state.playing;
-          _isLoaded = true;
-          _isSearching = false;
-        });
-      });
+      _setupListeners();
+      await _audioPlayer.play();
     } catch (e) {
-      setState(() {
-        _isSearching = false;
-        _error = 'Ошибка: $e';
-      });
-    }
-  }
-
-  bool _containsSpeech(String title) {
-    final speechWords = [
-      'podcast', 'interview', 'talk', 'speech', 'audiobook',
-      'reading', 'librivox', 'story', 'lecture', 'sermon',
-      'radio', 'news', 'discussion', 'debate', 'comedy',
-      'spoken', 'word', 'narration', 'narrated', 'voice'
-    ];
-    return speechWords.any((word) => title.contains(word));
-  }
-
-  String? _findAudioFile(Map<String, dynamic> metaData, String identifier) {
-    final files = metaData['files'] as List?;
-    if (files == null) return null;
-
-    final title = (metaData['metadata']['title'] as String?)?.toLowerCase() ?? '';
-    if (_containsSpeech(title)) return null;
-
-    // Ищем MP3
-    for (final file in files) {
-      final name = file['name'] as String?;
-      if (name != null && name.endsWith('.mp3')) {
-        // Пропускаем большие файлы (> 50MB) — скорее всего аудиокниги
-        final sizeStr = file['size']?.toString();
-        if (sizeStr != null) {
-          final size = int.tryParse(sizeStr);
-          if (size != null && size > 50 * 1024 * 1024) continue;
-        }
-        return 'https://archive.org/download/$identifier/$name';
+      if (mounted) {
+        setState(() {
+          _isSearching = false;
+          _error = 'Ошибка: $e';
+        });
       }
     }
+  }
 
-    // Или OGG
-    for (final file in files) {
-      final name = file['name'] as String?;
-      if (name != null && name.endsWith('.ogg')) {
-        final sizeStr = file['size']?.toString();
-        if (sizeStr != null) {
-          final size = int.tryParse(sizeStr);
-          if (size != null && size > 50 * 1024 * 1024) continue;
-        }
-        return 'https://archive.org/download/$identifier/$name';
+  /// Поиск через Freesound API
+  Future<String?> _searchFreesound(String query) async {
+    final apiKey = ApiConfig.freesoundApiKey;
+    if (apiKey == 'YOUR_FREESOUND_API_KEY') {
+      throw Exception('API ключ Freesound не настроен');
+    }
+
+    final searchUrl = '${ApiConfig.freesoundBaseUrl}/search/text/'
+        '?query=$query'
+        '&fields=id,name,previews,license'
+        '&filter=type:(wav OR mp3)'
+        '&sort=downloads_desc'
+        '&page_size=10'
+        '&token=$apiKey';
+
+    final resp = await http.get(Uri.parse(searchUrl));
+    if (resp.statusCode != 200) throw Exception('Ошибка Freesound API: ${resp.statusCode}');
+
+    final data = jsonDecode(resp.body);
+    final results = data['results'] as List?;
+    if (results == null || results.isEmpty) return null;
+
+    for (final sound in results) {
+      final previews = sound['previews'] as Map<String, dynamic>?;
+      if (previews != null) {
+        final hqMp3 = previews['preview-hq-mp3'] as String?;
+        if (hqMp3 != null && hqMp3.isNotEmpty) return hqMp3;
+
+        final lqMp3 = previews['preview-lq-mp3'] as String?;
+        if (lqMp3 != null && lqMp3.isNotEmpty) return lqMp3;
       }
     }
 
     return null;
   }
 
-  Future<void> _play() async => await _audioPlayer.play();
+  Future<void> _refreshAudio() async {
+    if (!mounted) return;
+
+    // Полностью останавливаем плеер
+    await _audioPlayer.stop();
+    _cancelListeners();
+
+    if (!mounted) return;
+    setState(() {
+      _isSearching = true;
+      _isLoaded = false;
+      _error = null;
+      _position = Duration.zero;
+      _duration = Duration.zero;
+      _isCompleted = false;
+      _isPlaying = false;
+    });
+
+    try {
+      final mp3Url = await _searchFreesoundRandom();
+
+      if (mp3Url == null) throw Exception('Аудио не найдено на Freesound');
+
+      await _audioPlayer.setUrl(mp3Url);
+      _setupListeners();
+
+      if (mounted) {
+        await _audioPlayer.play();
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isSearching = false;
+          _error = 'Ошибка: $e';
+        });
+      }
+    }
+  }
+
+  /// Ищем случайное аудио через Freesound API
+  Future<String?> _searchFreesoundRandom() async {
+    final apiKey = ApiConfig.freesoundApiKey;
+    if (apiKey == 'YOUR_FREESOUND_API_KEY') {
+      throw Exception('API ключ Freesound не настроен');
+    }
+
+    final queries = {
+      'audio_rain_sounds': 'rain sounds nature water',
+      'audio_ocean_waves': 'ocean waves sea water nature',
+      'audio_forest_sounds': 'forest birds nature sounds',
+      'audio_meditation_calm': 'ambient meditation peaceful music',
+      'audio_binaural_relax': 'singing bowl meditation gong sound',
+    };
+
+    final query = queries[widget.exercise.id] ?? 'nature sounds meditation';
+
+    // Случайная страница для разных результатов при обновлении
+    final randomPage = 1 + (DateTime.now().millisecondsSinceEpoch % 5);
+
+    final searchUrl = '${ApiConfig.freesoundBaseUrl}/search/text/'
+        '?query=$query'
+        '&fields=id,name,previews,license'
+        '&filter=type:(wav OR mp3)'
+        '&sort=random'
+        '&page=$randomPage'
+        '&page_size=15'
+        '&token=$apiKey';
+
+    final resp = await http.get(Uri.parse(searchUrl));
+    if (resp.statusCode != 200) throw Exception('Ошибка Freesound API: ${resp.statusCode}');
+
+    final data = jsonDecode(resp.body);
+    final results = data['results'] as List?;
+    if (results == null || results.isEmpty) return null;
+
+    for (final sound in results) {
+      final previews = sound['previews'] as Map<String, dynamic>?;
+      if (previews != null) {
+        final hqMp3 = previews['preview-hq-mp3'] as String?;
+        if (hqMp3 != null && hqMp3.isNotEmpty) return hqMp3;
+
+        final lqMp3 = previews['preview-lq-mp3'] as String?;
+        if (lqMp3 != null && lqMp3.isNotEmpty) return lqMp3;
+      }
+    }
+
+    return null;
+  }
+
+  Future<void> _play() async {
+    if (_isCompleted) {
+      await _audioPlayer.seek(Duration.zero);
+    }
+    setState(() {
+      _isCompleted = false;
+    });
+    await _audioPlayer.play();
+  }
 
   Future<void> _stop() async {
     await _audioPlayer.stop();
-    setState(() => _position = Duration.zero);
+    setState(() {
+      _position = Duration.zero;
+      _isPlaying = false;
+    });
+  }
+
+  Future<void> _restart() async {
+    setState(() {
+      _isCompleted = false;
+      _position = Duration.zero;
+    });
+    await _audioPlayer.seek(Duration.zero);
+    await _audioPlayer.play();
   }
 
   Future<void> _seekBack() async {
@@ -988,6 +1174,7 @@ class _AudioExerciseScreenState extends State<AudioExerciseScreen> {
 
   @override
   void dispose() {
+    _cancelListeners();
     _audioPlayer.dispose();
     super.dispose();
   }
@@ -1000,34 +1187,24 @@ class _AudioExerciseScreenState extends State<AudioExerciseScreen> {
         backgroundColor: AppColors.background,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.foreground),
+          icon: Icon(Icons.arrow_back, color: AppColors.foreground),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
           widget.exercise.audioTitle ?? widget.exercise.title,
-          style: const TextStyle(color: AppColors.foreground, fontSize: 16, fontWeight: FontWeight.w600),
+          style: TextStyle(color: AppColors.foreground, fontSize: 16, fontWeight: FontWeight.w600),
         ),
         actions: [
           if (!_isSearching && _isLoaded)
             IconButton(
               icon: const Icon(Icons.refresh, color: AppColors.citrusOrange),
-              onPressed: () {
-                setState(() {
-                  _isSearching = true;
-                  _isLoaded = false;
-                  _error = null;
-                  _position = Duration.zero;
-                  _duration = Duration.zero;
-                });
-                _audioPlayer.stop();
-                _searchAndPlay();
-              },
+              onPressed: _refreshAudio,
               tooltip: 'Найти другое аудио',
             ),
         ],
       ),
       body: _isSearching
-          ? const Center(
+          ? Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -1046,7 +1223,7 @@ class _AudioExerciseScreenState extends State<AudioExerciseScreen> {
                       const SizedBox(height: 16),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 32),
-                        child: Text(_error!, textAlign: TextAlign.center, style: const TextStyle(color: AppColors.mutedForeground)),
+                        child: Text(_error!, textAlign: TextAlign.center, style: TextStyle(color: AppColors.mutedForeground)),
                       ),
                       const SizedBox(height: 16),
                       ElevatedButton(
@@ -1090,7 +1267,7 @@ class _AudioExerciseScreenState extends State<AudioExerciseScreen> {
                       const SizedBox(height: 40),
                       Text(
                         '${_fmt(_position)} / ${_fmt(_duration)}',
-                        style: const TextStyle(color: AppColors.foreground, fontSize: 20, fontWeight: FontWeight.w600),
+                        style: TextStyle(color: AppColors.foreground, fontSize: 20, fontWeight: FontWeight.w600),
                       ),
                       const SizedBox(height: 40),
                       Row(
@@ -1103,27 +1280,34 @@ class _AudioExerciseScreenState extends State<AudioExerciseScreen> {
                           ),
                           const SizedBox(width: 24),
                           GestureDetector(
-                            onTap: _isPlaying ? _stop : _play,
+                            onTap: _isCompleted ? _restart : (_isPlaying ? _stop : _play),
                             child: Container(
                               width: 100,
                               height: 100,
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
                                 gradient: LinearGradient(
-                                  colors: _isPlaying
-                                      ? [AppColors.destructive, const Color(0xFFE74C3C)]
-                                      : [AppColors.citrusOrange, AppColors.citrusAmber],
+                                  colors: _isCompleted
+                                      ? [AppColors.citrusGreen, const Color(0xFF6BCB77)]
+                                      : _isPlaying
+                                          ? [AppColors.destructive, const Color(0xFFE74C3C)]
+                                          : [AppColors.citrusOrange, AppColors.citrusAmber],
                                 ),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: (_isPlaying ? AppColors.destructive : AppColors.citrusOrange).withOpacity(0.4),
+                                    color: (_isCompleted
+                                            ? AppColors.citrusGreen
+                                            : _isPlaying
+                                                ? AppColors.destructive
+                                                : AppColors.citrusOrange)
+                                        .withOpacity(0.4),
                                     blurRadius: 30,
                                     spreadRadius: 5,
                                   ),
                                 ],
                               ),
                               child: Icon(
-                                _isPlaying ? Icons.stop : Icons.play_arrow,
+                                _isCompleted ? Icons.replay : (_isPlaying ? Icons.stop : Icons.play_arrow),
                                 size: 60,
                                 color: Colors.white,
                               ),
@@ -1152,64 +1336,127 @@ class ExerciseDetailSheet extends StatefulWidget {
   State<ExerciseDetailSheet> createState() => _ExerciseDetailSheetState();
 }
 
-class _ExerciseDetailSheetState extends State<ExerciseDetailSheet>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _animationController;
-  late Animation<double> _scaleAnimation;
+class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
   Timer? _timer;
   int _remainingSeconds = 0;
-  int _currentCycle = 0;
   String _phaseText = '';
+  int _currentStepIndex = 0;
+  Color _currentPhaseColor = AppColors.citrusGreen;
+  double _targetScale = 0.8;
+  Duration _animationDuration = const Duration(milliseconds: 1000);
   bool _isRunning = false;
   bool _isFinished = false;
+  ScrollController? _stepsScrollController;
 
   @override
   void initState() {
     super.initState();
     _remainingSeconds = widget.exercise.durationSeconds;
-
-    _animationController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 4),
-    );
-
-    _scaleAnimation = Tween<double>(begin: 0.6, end: 1.0).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
-    );
-
-    if (widget.exercise.id == 'box_breathing') {
-      _animationController.repeat(reverse: true);
-    }
+    _currentPhaseColor = widget.exercise.color;
+    _stepsScrollController = ScrollController();
   }
 
   @override
   void dispose() {
     _timer?.cancel();
-    _animationController.dispose();
+    _stepsScrollController?.dispose();
     super.dispose();
+  }
+
+  /// Рассчитываем текущий шаг на основе прошедшего времени
+  void _updateCurrentStep() {
+    final steps = widget.exercise.steps;
+    if (steps.isEmpty) return;
+
+    final elapsed = widget.exercise.durationSeconds - _remainingSeconds;
+    final phaseDurations = widget.exercise.phaseDurations;
+
+    if (phaseDurations != null && phaseDurations.isNotEmpty) {
+      final totalCycle = phaseDurations.fold<int>(0, (a, b) => a + b);
+      final elapsedInCycle = elapsed % totalCycle;
+
+      int accumulated = 0;
+      int newStepIndex = 0;
+      for (int i = 0; i < phaseDurations.length; i++) {
+        accumulated += phaseDurations[i];
+        if (elapsedInCycle < accumulated) {
+          newStepIndex = i;
+          break;
+        }
+      }
+
+      if (newStepIndex != _currentStepIndex) {
+        _currentStepIndex = newStepIndex;
+
+        final phaseLabels = widget.exercise.phaseLabels;
+        if (phaseLabels != null && _currentStepIndex < phaseLabels.length) {
+          _phaseText = phaseLabels[_currentStepIndex];
+        } else {
+          _phaseText = widget.exercise.steps[_currentStepIndex];
+        }
+
+        final phaseColors = widget.exercise.phaseColors;
+        final phaseScales = widget.exercise.phaseScales;
+
+        if (phaseColors != null && _currentStepIndex < phaseColors.length) {
+          _currentPhaseColor = phaseColors[_currentStepIndex];
+        }
+        if (phaseScales != null && _currentStepIndex < phaseScales.length) {
+          _targetScale = phaseScales[_currentStepIndex];
+        }
+
+        // Устанавливаем длительность анимации равной длительности фазы
+        if (phaseDurations != null && _currentStepIndex < phaseDurations.length) {
+          _animationDuration = Duration(seconds: phaseDurations[_currentStepIndex]);
+        }
+
+        // Автопрокрутка к текущему шагу
+        if (_stepsScrollController?.hasClients == true) {
+          _stepsScrollController!.animateTo(
+            _currentStepIndex * 60.0,
+            duration: const Duration(milliseconds: 500),
+            curve: Curves.easeInOutCubic,
+          );
+        }
+      }
+    } else {
+      final stepDuration = widget.exercise.durationSeconds ~/ steps.length;
+      final newStepIndex = (elapsed ~/ stepDuration).clamp(0, steps.length - 1);
+      if (newStepIndex != _currentStepIndex) {
+        _currentStepIndex = newStepIndex;
+        
+        final phaseLabels = widget.exercise.phaseLabels;
+        if (phaseLabels != null && _currentStepIndex < phaseLabels.length) {
+          _phaseText = phaseLabels[_currentStepIndex];
+        } else {
+          _phaseText = widget.exercise.steps[_currentStepIndex];
+        }
+
+        // Автопрокрутка к текущему шагу
+        if (_stepsScrollController?.hasClients == true) {
+          _stepsScrollController!.animateTo(
+            _currentStepIndex * 60.0,
+            duration: const Duration(milliseconds: 500),
+            curve: Curves.easeInOutCubic,
+          );
+        }
+      }
+    }
   }
 
   void _startTimer() {
     setState(() {
       _isRunning = true;
-      _phaseText = 'Вдох...';
+      _currentStepIndex = 0;
+      _animationDuration = const Duration(milliseconds: 1000);
+      _updateCurrentStep();
     });
-
-    if (widget.exercise.id == 'box_breathing') {
-      _startBreathingCycle();
-    }
 
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (_remainingSeconds > 0) {
         setState(() {
           _remainingSeconds--;
-          if (widget.exercise.id == 'box_breathing') {
-            final cyclePos = _currentCycle % 4;
-            _phaseText = cyclePos == 0 ? 'Вдох...'
-                : cyclePos == 1 ? 'Задержка...'
-                : cyclePos == 2 ? 'Выдох...'
-                : 'Задержка...';
-          }
+          _updateCurrentStep();
         });
       } else {
         _timer?.cancel();
@@ -1231,29 +1478,18 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet>
     });
   }
 
-  void _startBreathingCycle() {
-    Timer.periodic(const Duration(seconds: 4), (timer) {
-      if (!_isRunning || _isFinished) {
-        timer.cancel();
-        return;
-      }
-      setState(() => _currentCycle++);
-    });
-  }
-
   void _stopTimer() {
     _timer?.cancel();
     setState(() {
       _isRunning = false;
       _remainingSeconds = widget.exercise.durationSeconds;
-      _currentCycle = 0;
+      _currentStepIndex = 0;
       _phaseText = '';
       _isFinished = false;
+      _currentPhaseColor = widget.exercise.color;
+      _targetScale = 0.8;
+      _animationDuration = const Duration(milliseconds: 1000);
     });
-    if (widget.exercise.id == 'box_breathing') {
-      _animationController.reset();
-      _animationController.repeat(reverse: true);
-    }
   }
 
   String _formatTime(int seconds) {
@@ -1262,24 +1498,79 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet>
     return '${mins.toString().padLeft(2, '0')}:${secs.toString().padLeft(2, '0')}';
   }
 
+  /// Получает оставшиеся секунды текущей фазы
+  int _getCurrentPhaseRemainingSeconds() {
+    final phaseDurations = widget.exercise.phaseDurations;
+    if (phaseDurations == null || phaseDurations.isEmpty) return 0;
+    
+    final elapsed = widget.exercise.durationSeconds - _remainingSeconds;
+    final totalCycle = phaseDurations.fold<int>(0, (a, b) => a + b);
+    final elapsedInCycle = elapsed % totalCycle;
+    
+    int accumulated = 0;
+    for (int i = 0; i < phaseDurations.length; i++) {
+      accumulated += phaseDurations[i];
+      if (elapsedInCycle < accumulated) {
+        return accumulated - elapsedInCycle;
+      }
+    }
+    return phaseDurations.last;
+  }
+
+  /// Получает прогресс текущей фазы (0.0 - 1.0)
+  double _getCurrentPhaseProgress() {
+    final phaseDurations = widget.exercise.phaseDurations;
+    if (phaseDurations == null || phaseDurations.isEmpty) return 0.0;
+    
+    final elapsed = widget.exercise.durationSeconds - _remainingSeconds;
+    final totalCycle = phaseDurations.fold<int>(0, (a, b) => a + b);
+    final elapsedInCycle = elapsed % totalCycle;
+    
+    int accumulated = 0;
+    for (int i = 0; i < phaseDurations.length; i++) {
+      final prevAccumulated = accumulated;
+      accumulated += phaseDurations[i];
+      if (elapsedInCycle < accumulated) {
+        final elapsedInPhase = elapsedInCycle - prevAccumulated;
+        return elapsedInPhase / phaseDurations[i];
+      }
+    }
+    return 1.0;
+  }
+
+  /// Получает иконку для текущей фазы
+  IconData _getPhaseIcon() {
+    final phaseLabels = widget.exercise.phaseLabels;
+    if (phaseLabels == null || _currentStepIndex >= phaseLabels.length) {
+      return Icons.air;
+    }
+    
+    final label = phaseLabels[_currentStepIndex].toLowerCase();
+    if (label.contains('вдох')) return Icons.arrow_upward;
+    if (label.contains('выдох')) return Icons.arrow_downward;
+    if (label.contains('задержка') || label.contains('пауза')) return Icons.pause;
+    return Icons.air;
+  }
+
   @override
   Widget build(BuildContext context) {
-    final isBreathingExercise = widget.exercise.id == 'box_breathing';
+    final isBreathing = widget.exercise.phaseDurations != null && widget.exercise.phaseDurations!.isNotEmpty;
     final color = widget.exercise.color;
 
     return DraggableScrollableSheet(
-      initialChildSize: 0.85,
+      initialChildSize: 0.9,
       minChildSize: 0.5,
       maxChildSize: 0.95,
       builder: (context, scrollController) {
         return Container(
           decoration: BoxDecoration(
             color: AppColors.background,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-            border: Border(top: BorderSide(color: Color(0xFF2A2830), width: 1)),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+            border: Border(top: BorderSide(color: AppColors.subtleBorder, width: 1)),
           ),
           child: Column(
             children: [
+              // Handle
               Container(
                 margin: const EdgeInsets.only(top: 12),
                 width: 40,
@@ -1289,71 +1580,416 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet>
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
-              Expanded(
-                child: ListView(
-                  controller: scrollController,
-                  padding: const EdgeInsets.all(20),
-                  children: [
-                    Row(
-                      children: [
-                        Text(widget.exercise.icon, style: TextStyle(fontSize: 28)),
-                        SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            widget.exercise.title,
-                            style: const TextStyle(
-                              color: AppColors.foreground,
-                              fontSize: 18,
-                              fontWeight: FontWeight.w700,
-                            ),
+
+              if (isBreathing) ...[
+                // === НОВЫЙ ЭКРАН ДЫХАТЕЛЬНОГО УПРАЖНЕНИЯ ===
+                Expanded(
+                  child: Column(
+                    children: [
+                      const SizedBox(height: 24),
+
+                      // Индикаторы фаз (точки)
+                      if (widget.exercise.phaseLabels != null)
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: List.generate(
+                            widget.exercise.phaseLabels!.length,
+                            (index) {
+                              final isActive = index == _currentStepIndex && _isRunning;
+                              final isCompleted = index < _currentStepIndex && _isRunning;
+                              final phaseColor = widget.exercise.phaseColors != null && 
+                                  index < widget.exercise.phaseColors!.length
+                                  ? widget.exercise.phaseColors![index]
+                                  : color;
+                              
+                              return AnimatedContainer(
+                                duration: const Duration(milliseconds: 400),
+                                curve: Curves.easeInOutCubic,
+                                margin: const EdgeInsets.symmetric(horizontal: 6),
+                                width: isActive ? 32 : 8,
+                                height: 8,
+                                decoration: BoxDecoration(
+                                  color: isActive
+                                      ? phaseColor 
+                                      : (isCompleted
+                                          ? phaseColor.withOpacity(0.4)
+                                          : AppColors.mutedForeground.withOpacity(0.2)),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                              );
+                            },
                           ),
                         ),
-                      ],
-                    ),
-                    SizedBox(height: 20),
-                    if (isBreathingExercise)
-                      Center(
-                        child: AnimatedBuilder(
-                          animation: _scaleAnimation,
-                          builder: (context, child) {
-                            return Transform.scale(
-                              scale: _scaleAnimation.value,
-                              child: Container(
-                                width: 160,
-                                height: 160,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  gradient: RadialGradient(
-                                    colors: [
-                                      AppColors.citrusGreen.withOpacity(0.4),
-                                      AppColors.citrusGreen.withOpacity(0.1),
-                                      AppColors.citrusGreen.withOpacity(0.05),
+                      
+                      const SizedBox(height: 16),
+
+                      // Название текущей фазы
+                      AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 500),
+                        child: Text(
+                          _isFinished 
+                              ? 'Готово!'
+                              : _isRunning 
+                                  ? _phaseText 
+                                  : 'Начните дыхание',
+                          key: ValueKey(_phaseText),
+                          style: TextStyle(
+                            color: _isFinished 
+                                ? AppColors.citrusGreen
+                                : _isRunning 
+                                    ? _currentPhaseColor 
+                                    : AppColors.foreground,
+                            fontSize: 28,
+                            fontWeight: FontWeight.w300,
+                            letterSpacing: 1,
+                          ),
+                        ),
+                      ),
+                      
+                      const SizedBox(height: 8),
+                      
+                      // Подсказка
+                      Text(
+                        _isRunning && !_isFinished
+                            ? '${_getCurrentPhaseRemainingSeconds()} секунд'
+                            : widget.exercise.description,
+                        style: TextStyle(
+                          color: AppColors.mutedForeground,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+
+                      const Spacer(),
+
+                      // Главный круг дыхания
+                      SizedBox(
+                        width: 280,
+                        height: 280,
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            // Внешнее свечение (blur)
+                            TweenAnimationBuilder<double>(
+                              duration: _animationDuration,
+                              curve: Curves.easeInOutSine,
+                              tween: Tween(end: _targetScale),
+                              builder: (context, scale, _) {
+                                return Container(
+                                  width: 240 * scale,
+                                  height: 240 * scale,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    gradient: RadialGradient(
+                                      colors: [
+                                        _currentPhaseColor.withOpacity(0.3),
+                                        _currentPhaseColor.withOpacity(0.0),
+                                      ],
+                                      stops: const [0.0, 1.0],
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                            
+                            // Кольцо прогресса
+                            TweenAnimationBuilder<double>(
+                              duration: _animationDuration,
+                              curve: Curves.easeInOutSine,
+                              tween: Tween(end: _targetScale),
+                              builder: (context, scale, _) {
+                                return Container(
+                                  width: 200 * scale,
+                                  height: 200 * scale,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: _currentPhaseColor.withOpacity(0.3),
+                                      width: 1,
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+
+                            // Основной круг
+                            TweenAnimationBuilder<double>(
+                              duration: _animationDuration,
+                              curve: Curves.easeInOutSine,
+                              tween: Tween(end: _targetScale),
+                              builder: (context, scale, _) {
+                                return Container(
+                                  width: 180 * scale,
+                                  height: 180 * scale,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    gradient: LinearGradient(
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                      colors: [
+                                        _currentPhaseColor.withOpacity(0.9),
+                                        _currentPhaseColor.withOpacity(0.5),
+                                      ],
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: _currentPhaseColor.withOpacity(0.4),
+                                        blurRadius: 40,
+                                        spreadRadius: 5,
+                                      ),
                                     ],
                                   ),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: AppColors.citrusGreen.withOpacity(0.3),
-                                      blurRadius: 30,
-                                      spreadRadius: 5,
+                                  child: Center(
+                                    child: Icon(
+                                      _getPhaseIcon(),
+                                      color: Colors.white,
+                                      size: 48,
                                     ),
-                                  ],
+                                  ),
+                                );
+                              },
+                            ),
+
+                            // Иконка в центре (статичная)
+                            if (!_isRunning)
+                              Container(
+                                width: 180,
+                                height: 180,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: AppColors.surface1,
+                                  border: Border.all(
+                                    color: color.withOpacity(0.3),
+                                    width: 2,
+                                  ),
                                 ),
                                 child: Center(
                                   child: Text(
-                                    _isRunning ? _phaseText : '🌬️',
-                                    style: TextStyle(
-                                      color: AppColors.citrusGreen,
-                                      fontSize: _isRunning ? 16 : 48,
-                                      fontWeight: FontWeight.w600,
-                                    ),
+                                    widget.exercise.icon,
+                                    style: const TextStyle(fontSize: 64),
                                   ),
                                 ),
                               ),
-                            );
-                          },
+                          ],
                         ),
-                      )
-                    else
+                      ),
+
+                      const Spacer(),
+
+                      // Общий таймер
+                      Text(
+                        _formatTime(_remainingSeconds),
+                        style: TextStyle(
+                          color: AppColors.foreground.withOpacity(0.6),
+                          fontSize: 18,
+                          fontWeight: FontWeight.w500,
+                          fontFeatures: [const FontFeature.tabularFigures()],
+                        ),
+                      ),
+
+                      const SizedBox(height: 32),
+
+                      // Кнопка управления
+                      GestureDetector(
+                        onTap: _isRunning ? _stopTimer : _startTimer,
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 300),
+                          width: 200,
+                          height: 56,
+                          decoration: BoxDecoration(
+                            color: _isFinished 
+                                ? AppColors.citrusGreen
+                                : _isRunning 
+                                    ? Colors.transparent 
+                                    : color,
+                            borderRadius: BorderRadius.circular(28),
+                            border: _isRunning && !_isFinished
+                                ? Border.all(color: color, width: 2)
+                                : null,
+                          ),
+                          child: Center(
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  _isFinished 
+                                      ? Icons.replay
+                                      : _isRunning 
+                                          ? Icons.stop 
+                                          : Icons.play_arrow,
+                                  color: _isRunning && !_isFinished ? color : Colors.white,
+                                  size: 24,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  _isFinished 
+                                      ? 'Заново'
+                                      : _isRunning 
+                                          ? 'Стоп' 
+                                          : 'Начать',
+                                  style: TextStyle(
+                                    color: _isRunning && !_isFinished ? color : Colors.white,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 24),
+
+                      // Карточка с шагами (компактная)
+                      if (widget.exercise.steps.isNotEmpty && !_isFinished)
+                        Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 24),
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: AppColors.surface1,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Последовательность',
+                                style: TextStyle(
+                                  color: AppColors.mutedForeground,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              Row(
+                                children: List.generate(
+                                  widget.exercise.steps.length * 2 - 1,
+                                  (index) {
+                                    if (index.isOdd) {
+                                      return Padding(
+                                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                                        child: Icon(
+                                          Icons.arrow_forward_ios,
+                                          size: 12,
+                                          color: AppColors.mutedForeground.withOpacity(0.3),
+                                        ),
+                                      );
+                                    }
+                                    final stepIndex = index ~/ 2;
+                                    final isActive = stepIndex == _currentStepIndex && _isRunning;
+                                    final stepColor = widget.exercise.phaseColors != null && 
+                                        stepIndex < widget.exercise.phaseColors!.length
+                                        ? widget.exercise.phaseColors![stepIndex]
+                                        : color;
+                                    
+                                    return Expanded(
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                                        decoration: BoxDecoration(
+                                          color: isActive 
+                                              ? stepColor.withOpacity(0.15)
+                                              : Colors.transparent,
+                                          borderRadius: BorderRadius.circular(8),
+                                          border: isActive
+                                              ? Border.all(color: stepColor.withOpacity(0.3))
+                                              : null,
+                                        ),
+                                        child: Column(
+                                          children: [
+                                            Text(
+                                              widget.exercise.steps[stepIndex],
+                                              textAlign: TextAlign.center,
+                                              style: TextStyle(
+                                                color: isActive ? stepColor : AppColors.mutedForeground,
+                                                fontSize: 11,
+                                                fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
+                                              ),
+                                            ),
+                                            if (widget.exercise.phaseDurations != null && 
+                                                stepIndex < widget.exercise.phaseDurations!.length)
+                                              Text(
+                                                '${widget.exercise.phaseDurations![stepIndex]}с',
+                                                style: TextStyle(
+                                                  color: isActive 
+                                                      ? stepColor.withOpacity(0.7)
+                                                      : AppColors.mutedForeground.withOpacity(0.5),
+                                                  fontSize: 10,
+                                                ),
+                                              ),
+                                          ],
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                      // Сообщение о завершении
+                      if (_isFinished)
+                        Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 24),
+                          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+                          decoration: BoxDecoration(
+                            color: AppColors.citrusGreen.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: AppColors.citrusGreen.withOpacity(0.2),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.check_circle,
+                                color: AppColors.citrusGreen,
+                                size: 20,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Упражнение завершено',
+                                style: TextStyle(
+                                  color: AppColors.citrusGreen,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                      const SizedBox(height: 24),
+                    ],
+                  ),
+                ),
+              ] else ...[
+                // === ЭКРАН ДЛЯ ВИДЕО/АУДИО/ОБЫЧНЫХ УПРАЖНЕНИЙ ===
+                Expanded(
+                  child: ListView(
+                    controller: scrollController,
+                    padding: const EdgeInsets.all(20),
+                    children: [
+                      Row(
+                        children: [
+                          Text(widget.exercise.icon, style: const TextStyle(fontSize: 28)),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              widget.exercise.title,
+                              style: TextStyle(
+                                color: AppColors.foreground,
+                                fontSize: 18,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
                       Center(
                         child: Container(
                           width: 120,
@@ -1364,157 +2000,160 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet>
                             border: Border.all(color: color.withOpacity(0.3)),
                           ),
                           child: Center(
-                            child: Text(widget.exercise.icon, style: TextStyle(fontSize: 56)),
+                            child: Text(widget.exercise.icon, style: const TextStyle(fontSize: 56)),
                           ),
                         ),
                       ),
-                    SizedBox(height: 20),
-                    Center(
-                      child: Text(
-                        _isRunning || _isFinished ? _formatTime(_remainingSeconds) : widget.exercise.duration,
-                        style: TextStyle(
-                          color: AppColors.foreground,
-                          fontSize: 32,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                    if (_phaseText.isNotEmpty && _isRunning) ...[
-                      SizedBox(height: 8),
+                      const SizedBox(height: 20),
                       Center(
                         child: Text(
-                          _phaseText,
+                          _isRunning || _isFinished ? _formatTime(_remainingSeconds) : widget.exercise.title,
                           style: TextStyle(
-                            color: AppColors.citrusGreen,
-                            fontSize: 15,
-                            fontWeight: FontWeight.w500,
+                            color: AppColors.foreground,
+                            fontSize: 32,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
                       ),
-                    ],
-                    const SizedBox(height: 20),
-                    const Text(
-                      'Шаги выполнения',
-                      style: TextStyle(
-                        color: AppColors.foreground,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
+                      if (_phaseText.isNotEmpty && _isRunning) ...[
+                        const SizedBox(height: 8),
+                        Center(
+                          child: Text(
+                            _phaseText,
+                            style: TextStyle(
+                              color: color,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 20),
+                      Text(
+                        'Шаги выполнения',
+                        style: TextStyle(
+                          color: AppColors.foreground,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
-                    ),
-                    SizedBox(height: 12),
-                    ...widget.exercise.steps.asMap().entries.map((entry) {
-                      final index = entry.key;
-                      final step = entry.value;
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Container(
-                              width: 24,
-                              height: 24,
-                              decoration: BoxDecoration(
-                                color: AppColors.citrusOrange.withOpacity(0.15),
-                                shape: BoxShape.circle,
+                      const SizedBox(height: 12),
+                      ...widget.exercise.steps.asMap().entries.map((entry) {
+                        final index = entry.key;
+                        final step = entry.value;
+                        final isCurrentStep = _isRunning && index == _currentStepIndex;
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Container(
+                                width: 24,
+                                height: 24,
+                                decoration: BoxDecoration(
+                                  color: isCurrentStep ? color : AppColors.citrusOrange.withOpacity(0.15),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    '${index + 1}',
+                                    style: TextStyle(
+                                      color: isCurrentStep ? Colors.white : AppColors.citrusOrange,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
                               ),
-                              child: Center(
+                              const SizedBox(width: 12),
+                              Expanded(
                                 child: Text(
-                                  '${index + 1}',
-                                  style: const TextStyle(
-                                    color: AppColors.citrusOrange,
-                                    fontSize: 12,
+                                  step,
+                                  style: TextStyle(
+                                    color: isCurrentStep ? color : AppColors.mutedForeground,
+                                    fontSize: 13,
+                                    height: 1.5,
+                                    fontWeight: isCurrentStep ? FontWeight.w600 : FontWeight.normal,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }),
+                      if (_isFinished) ...[
+                        const SizedBox(height: 16),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: AppColors.citrusGreen.withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.check_circle, color: AppColors.citrusGreen, size: 20),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Отличная работа!',
+                                style: TextStyle(
+                                  color: AppColors.citrusGreen,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                      ],
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: GestureDetector(
+                              onTap: _isRunning ? _stopTimer : _startTimer,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                decoration: BoxDecoration(
+                                  gradient: _isRunning
+                                      ? null
+                                      : const LinearGradient(
+                                          colors: [AppColors.citrusOrange, AppColors.citrusAmber],
+                                        ),
+                                  color: _isRunning ? AppColors.surface2 : null,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: _isRunning
+                                      ? Border.all(color: AppColors.citrusOrange.withOpacity(0.3))
+                                      : null,
+                                  boxShadow: _isRunning
+                                      ? null
+                                      : [
+                                          BoxShadow(
+                                            color: AppColors.citrusOrange.withOpacity(0.3),
+                                            blurRadius: 16,
+                                            offset: const Offset(0, 4),
+                                          ),
+                                        ],
+                                ),
+                                child: Text(
+                                  _isRunning ? 'Стоп' : 'Старт',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    color: _isRunning ? AppColors.citrusOrange : AppColors.background,
+                                    fontSize: 15,
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
                               ),
                             ),
-                            SizedBox(width: 12),
-                            Expanded(
-                              child: Text(
-                                step,
-                                style: const TextStyle(
-                                  color: AppColors.mutedForeground,
-                                  fontSize: 13,
-                                  height: 1.5,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    }),
-                    if (_isFinished) ...[
-                      SizedBox(height: 16),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                        decoration: BoxDecoration(
-                          color: AppColors.citrusGreen.withOpacity(0.15),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.check_circle, color: AppColors.citrusGreen, size: 20),
-                            SizedBox(width: 8),
-                            Text(
-                              'Отличная работа!',
-                              style: TextStyle(
-                                color: AppColors.citrusGreen,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      SizedBox(height: 12),
-                    ],
-                    SizedBox(height: 16),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: GestureDetector(
-                            onTap: _isRunning ? _stopTimer : _startTimer,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                              decoration: BoxDecoration(
-                                gradient: _isRunning
-                                    ? null
-                                    : const LinearGradient(
-                                        colors: [AppColors.citrusOrange, AppColors.citrusAmber],
-                                      ),
-                                color: _isRunning ? AppColors.surface2 : null,
-                                borderRadius: BorderRadius.circular(12),
-                                border: _isRunning
-                                    ? Border.all(color: AppColors.citrusOrange.withOpacity(0.3))
-                                    : null,
-                                boxShadow: _isRunning
-                                    ? null
-                                    : [
-                                        BoxShadow(
-                                          color: AppColors.citrusOrange.withOpacity(0.3),
-                                          blurRadius: 16,
-                                          offset: const Offset(0, 4),
-                                        ),
-                                      ],
-                              ),
-                              child: Text(
-                                _isRunning ? 'Стоп' : 'Старт',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  color: _isRunning ? AppColors.citrusOrange : AppColors.background,
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
                           ),
-                        ),
-                      ],
-                    ),
-                  ],
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
-              ),
+              ],
             ],
           ),
         );

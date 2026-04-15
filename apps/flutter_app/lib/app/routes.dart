@@ -6,6 +6,7 @@ import '../screens/main_navigation_screen.dart';
 import '../features/auth/pages/login_page.dart';
 import '../features/auth/pages/register_page.dart';
 import '../features/auth/bloc/auth_bloc.dart';
+import '../features/notifications/pages/notifications_debug_page.dart';
 
 class AppRouter {
   final GoRouter router = GoRouter(
@@ -61,6 +62,12 @@ class AppRouter {
         path: '/',
         name: 'home',
         builder: (context, state) => const MainNavigationScreen(),
+      ),
+      // Отладка уведомлений (только для разработки)
+      GoRoute(
+        path: '/debug/notifications',
+        name: 'notifications_debug',
+        builder: (context, state) => const NotificationsDebugPage(),
       ),
     ],
   );
