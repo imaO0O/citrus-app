@@ -98,6 +98,16 @@ class _AffirmationsScreenState extends State<AffirmationsScreen> {
     }
   }
 
+  void _toggleFavorite(int index) {
+    setState(() {
+      if (_favorites.contains(index)) {
+        _favorites.remove(index);
+      } else {
+        _favorites.add(index);
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -259,6 +269,8 @@ class _AffirmationsScreenState extends State<AffirmationsScreen> {
   }
 
   Widget _buildMainCard(Affirmation affirmation, int index) {
+    final isFavorite = _favorites.contains(index);
+
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(24),
@@ -329,6 +341,18 @@ class _AffirmationsScreenState extends State<AffirmationsScreen> {
                     const SizedBox(height: 8),
                   ],
                 ),
+              ),
+            ),
+          ),
+          Positioned(
+            bottom: 16,
+            right: 16,
+            child: GestureDetector(
+              onTap: () => _toggleFavorite(index),
+              child: Icon(
+                isFavorite ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                color: isFavorite ? affirmation.color : AppColors.mutedForeground,
+                size: 24,
               ),
             ),
           ),
