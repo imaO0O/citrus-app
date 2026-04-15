@@ -6,6 +6,7 @@ import '../screens/main_navigation_screen.dart';
 import '../features/auth/pages/login_page.dart';
 import '../features/auth/pages/register_page.dart';
 import '../features/auth/bloc/auth_bloc.dart';
+import '../features/notifications/pages/notifications_page.dart';
 import '../features/notifications/pages/notifications_debug_page.dart';
 
 class AppRouter {
@@ -62,6 +63,12 @@ class AppRouter {
         path: '/',
         name: 'home',
         builder: (context, state) => const MainNavigationScreen(),
+      ),
+      // Настройки уведомлений
+      GoRoute(
+        path: '/notifications',
+        name: 'notifications',
+        builder: (context, state) => const NotificationsPage(),
       ),
       // Отладка уведомлений (только для разработки)
       GoRoute(
