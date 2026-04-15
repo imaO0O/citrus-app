@@ -541,12 +541,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                         final featureIndex = int.parse(feature['path']!);
                         final isActive = _currentIndex == featureIndex;
                         return GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              _currentIndex = featureIndex;
-                              _showMenu = false;
-                            });
-                          },
+                        onTap: () {
+                          _setIndex(featureIndex);
+                        },
                           child: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
                             decoration: BoxDecoration(

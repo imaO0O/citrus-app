@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:http/http.dart' as http;
 import 'package:printing/printing.dart';
+import 'package:visibility_detector/visibility_detector.dart';
 import '../core/theme/app_colors.dart';
 import '../services/pdf_report_service.dart';
 import '../models/analytics_report.dart';
@@ -496,94 +497,88 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: SafeArea(
-        child: _isLoading
-            ? Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(AppColors.citrusOrange),
-                    ),
-                    SizedBox(height: 16),
-                    Text(
-                      'Загрузка аналитики...',
-                      style: TextStyle(color: AppColors.mutedForeground, fontSize: 14),
-                    ),
-                  ],
-                ),
-              )
-            : CustomScrollView(
-                slivers: [
-                  SliverToBoxAdapter(
-                    child: Center(
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 480),
-                        child: Padding(
-                          padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              _buildHeader(),
-                              SizedBox(height: 16),
-                              _buildPeriodSelector(),
-                              SizedBox(height: 20),
-                              _buildOverviewCards(),
-                              SizedBox(height: 20),
-                              _buildMoodChart(),
-                              SizedBox(height: 20),
-                              _buildMoodDistribution(),
-                              SizedBox(height: 20),
-                              _buildInsights(),
-                              SizedBox(height: 20),
-                              _buildSleepSection(),
-                              SizedBox(height: 20),
-                              _buildActivitySection(),
-                              SizedBox(height: 20),
-                              _buildExportButtons(),
-                            ],
+    return VisibilityDetector(
+      key: const Key('analytics_screen'),
+      onVisibilityChanged: (info) {
+        // Обновляем данные когда экран становится полностью видимым
+        if (info.visibleFraction == 1.0 && !_isLoading) {
+          debugPrint('Analytics: screen became fully visible, refreshing data...');
+          _loadReportData();
+        }
+      },
+      child: Scaffold(
+        backgroundColor: AppColors.background,
+        body: SafeArea(
+          child: _isLoading
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(AppColors.citrusOrange),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Загрузка аналитики...',
+                        style: TextStyle(color: AppColors.mutedForeground, fontSize: 14),
+                      ),
+                    ],
+                  ),
+                )
+              : CustomScrollView(
+                  slivers: [
+                    SliverToBoxAdapter(
+                      child: Center(
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 480),
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _buildHeader(),
+                                const SizedBox(height: 16),
+                                _buildPeriodSelector(),
+                                const SizedBox(height: 20),
+                                _buildOverviewCards(),
+                                const SizedBox(height: 20),
+                                _buildMoodChart(),
+                                const SizedBox(height: 20),
+                                _buildMoodDistribution(),
+                                const SizedBox(height: 20),
+                                _buildInsights(),
+                                const SizedBox(height: 20),
+                                _buildSleepSection(),
+                                const SizedBox(height: 20),
+                                _buildActivitySection(),
+                                const SizedBox(height: 20),
+                                _buildExportButtons(),
+                              ],
+                            ),
                           ),
                         ),
                       ),
                     ),
-                  ),
-                  SliverPadding(padding: EdgeInsets.only(bottom: 80)),
-                ],
-              ),
+                    const SliverPadding(padding: EdgeInsets.only(bottom: 80)),
+                  ],
+                ),
+        ),
       ),
     );
   }
 
   Widget _buildHeader() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              '\u0410\u043D\u0430\u043B\u0438\u0442\u0438\u043A\u0430',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700, color: AppColors.foreground),
-            ),
-            SizedBox(height: 4),
-            Text(
-              '\u041E\u0442\u0441\u043B\u0435\u0436\u0438\u0432\u0430\u0439\u0442\u0435 \u0441\u0432\u043E\u0439 \u043F\u0440\u043E\u0433\u0440\u0435\u0441\u0441',
-              style: TextStyle(fontSize: 13, color: AppColors.dimForeground),
-            ),
-          ],
+        Text(
+          '\u0410\u043D\u0430\u043B\u0438\u0442\u0438\u043A\u0430',
+          style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700, color: AppColors.foreground),
         ),
-        GestureDetector(
-          onTap: () {},
-          child: Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.06),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(Icons.download_outlined, color: AppColors.citrusOrange, size: 20),
-          ),
+        SizedBox(height: 4),
+        Text(
+          '\u041E\u0442\u0441\u043B\u0435\u0436\u0438\u0432\u0430\u0439\u0442\u0435 \u0441\u0432\u043E\u0439 \u043F\u0440\u043E\u0433\u0440\u0435\u0441\u0441',
+          style: TextStyle(fontSize: 13, color: AppColors.dimForeground),
         ),
       ],
     );
