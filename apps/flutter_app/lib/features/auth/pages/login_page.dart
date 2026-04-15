@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../../core/services/storage_service.dart';
 import '../bloc/auth_bloc.dart';
 import 'register_page.dart';
 
@@ -16,6 +18,40 @@ class _LoginPageState extends State<LoginPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
+  bool _rememberMe = false;
+  final StorageService _storage = StorageService();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSavedCredentials();
+  }
+
+  Future<void> _loadSavedCredentials() async {
+    final savedEmail = await _storage.getString('saved_email');
+    final savedPassword = await _storage.getString('saved_password');
+    final rememberMe = await _storage.getString('remember_me');
+    
+    if (savedEmail != null && rememberMe == 'true') {
+      setState(() {
+        _emailController.text = savedEmail;
+        if (savedPassword != null) {
+          _passwordController.text = savedPassword;
+        }
+        _rememberMe = true;
+      });
+    }
+  }
+
+  Future<void> _saveCredentials() async {
+    if (_rememberMe) {
+      await _storage.setString('saved_email', _emailController.text.trim());
+      await _storage.setString('saved_password', _passwordController.text);
+    } else {
+      await _storage.remove('saved_email');
+      await _storage.remove('saved_password');
+    }
+  }
 
   @override
   void dispose() {
@@ -31,6 +67,7 @@ class _LoginPageState extends State<LoginPage> {
         print('LoginPage BlocListener: state = $state');
         if (state is AuthAuthenticated) {
           print('LoginPage: Успешный вход, переходим на главную');
+          _saveCredentials();
           // После успешного входа переходим на главную
           WidgetsBinding.instance.addPostFrameCallback((_) {
             context.go('/');
@@ -40,77 +77,109 @@ class _LoginPageState extends State<LoginPage> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(state.message),
-              backgroundColor: Colors.red,
+              backgroundColor: AppColors.destructive,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppColors.radius),
+              ),
             ),
           );
         }
       },
       child: Scaffold(
+        backgroundColor: AppColors.background,
         body: SafeArea(
           child: Center(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(24),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    const Icon(
-                      Icons.auto_stories,
-                      size: 80,
-                      color: Colors.orange,
-                    ),
-                    const SizedBox(height: 16),
-                    const Text(
-                      'Citrus',
-                      style: TextStyle(
-                        fontSize: 32,
-                        fontWeight: FontWeight.bold,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 400),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // Logo
+                      Container(
+                        width: 80,
+                        height: 80,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(24),
+                          gradient: const LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [AppColors.citrusOrange, AppColors.citrusAmber],
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.glowOrange,
+                              blurRadius: 30,
+                              offset: const Offset(0, 8),
+                            ),
+                          ],
+                        ),
+                        child: const Center(
+                          child: Text(
+                            '🍊',
+                            style: TextStyle(fontSize: 40),
+                          ),
+                        ),
                       ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Ваш персональный помощник',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.grey[600],
+                      const SizedBox(height: 24),
+                      Text(
+                        'Цитрус',
+                        style: TextStyle(
+                          fontSize: 32,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.foreground,
+                        ),
+                        textAlign: TextAlign.center,
                       ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 48),
-                    TextFormField(
-                      controller: _emailController,
-                      keyboardType: TextInputType.emailAddress,
-                      decoration: const InputDecoration(
-                        labelText: 'Email',
-                        prefixIcon: Icon(Icons.email_outlined),
-                        border: OutlineInputBorder(),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Ваш персональный помощник',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: AppColors.mutedForeground,
+                        ),
+                        textAlign: TextAlign.center,
                       ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Введите email';
-                        }
-                        if (!value.contains('@')) {
-                          return 'Введите корректный email';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _passwordController,
-                      obscureText: _obscurePassword,
-                      decoration: InputDecoration(
-                        labelText: 'Пароль',
-                        prefixIcon: const Icon(Icons.lock_outlined),
-                        border: const OutlineInputBorder(),
+                      const SizedBox(height: 48),
+                      
+                      // Email field
+                      _buildTextField(
+                        controller: _emailController,
+                        label: 'Email',
+                        hint: 'Введите ваш email',
+                        prefixIcon: Icons.email_outlined,
+                        keyboardType: TextInputType.emailAddress,
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Введите email';
+                          }
+                          if (!value.contains('@')) {
+                            return 'Введите корректный email';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      
+                      // Password field
+                      _buildTextField(
+                        controller: _passwordController,
+                        label: 'Пароль',
+                        hint: 'Введите ваш пароль',
+                        prefixIcon: Icons.lock_outlined,
+                        obscureText: _obscurePassword,
                         suffixIcon: IconButton(
                           icon: Icon(
                             _obscurePassword
                                 ? Icons.visibility_outlined
                                 : Icons.visibility_off_outlined,
+                            color: AppColors.mutedForeground,
+                            size: 20,
                           ),
                           onPressed: () {
                             setState(() {
@@ -118,52 +187,145 @@ class _LoginPageState extends State<LoginPage> {
                             });
                           },
                         ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Введите пароль';
+                          }
+                          if (value.length < 6) {
+                            return 'Пароль должен быть не менее 6 символов';
+                          }
+                          return null;
+                        },
                       ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Введите пароль';
-                        }
-                        if (value.length < 6) {
-                          return 'Пароль должен быть не менее 6 символов';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 24),
-                    BlocBuilder<AuthBloc, AuthState>(
-                      builder: (context, state) {
-                        print('LoginPage BlocBuilder: state = $state');
-                        if (state is AuthLoading) {
-                          return const CircularProgressIndicator();
-                        }
-                        return ElevatedButton(
-                          onPressed: _handleLogin,
-                          style: ElevatedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                      const SizedBox(height: 16),
+                      
+                      // Remember me checkbox
+                      Row(
+                        children: [
+                          SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: Checkbox(
+                              value: _rememberMe,
+                              onChanged: (value) {
+                                setState(() {
+                                  _rememberMe = value ?? false;
+                                });
+                              },
+                              activeColor: AppColors.citrusOrange,
+                              checkColor: Colors.white,
+                              side: BorderSide(color: AppColors.mutedForeground),
                             ),
                           ),
-                          child: const Text(
-                            'Войти',
-                            style: TextStyle(fontSize: 16),
+                          const SizedBox(width: 8),
+                          GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                _rememberMe = !_rememberMe;
+                              });
+                            },
+                            child: Text(
+                              'Запомнить меня',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: AppColors.foreground,
+                              ),
+                            ),
                           ),
-                        );
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    TextButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const RegisterPage(),
+                        ],
+                      ),
+                      const SizedBox(height: 24),
+                      
+                      // Login button
+                      BlocBuilder<AuthBloc, AuthState>(
+                        builder: (context, state) {
+                          print('LoginPage BlocBuilder: state = $state');
+                          if (state is AuthLoading) {
+                            return Container(
+                              height: 56,
+                              decoration: BoxDecoration(
+                                color: AppColors.citrusOrange.withOpacity(0.3),
+                                borderRadius: BorderRadius.circular(AppColors.radius),
+                              ),
+                              child: const Center(
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 2,
+                                ),
+                              ),
+                            );
+                          }
+                          return Container(
+                            height: 56,
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                colors: [AppColors.citrusOrange, AppColors.citrusAmber],
+                              ),
+                              borderRadius: BorderRadius.circular(AppColors.radius),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: AppColors.glowOrange,
+                                  blurRadius: 20,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: ElevatedButton(
+                              onPressed: _handleLogin,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.transparent,
+                                shadowColor: Colors.transparent,
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(AppColors.radius),
+                                ),
+                              ),
+                              child: const Text(
+                                'Войти',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 24),
+                      
+                      // Register link
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            'Нет аккаунта? ',
+                            style: TextStyle(
+                              color: AppColors.mutedForeground,
+                              fontSize: 14,
+                            ),
                           ),
-                        );
-                      },
-                      child: const Text('Нет аккаунта? Зарегистрироваться'),
-                    ),
-                  ],
+                          GestureDetector(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const RegisterPage(),
+                                ),
+                              );
+                            },
+                            child: Text(
+                              'Зарегистрироваться',
+                              style: TextStyle(
+                                color: AppColors.citrusOrange,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -173,13 +335,102 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  void _handleLogin() {
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String label,
+    required String hint,
+    required IconData prefixIcon,
+    TextInputType? keyboardType,
+    bool obscureText = false,
+    Widget? suffixIcon,
+    String? Function(String?)? validator,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            color: AppColors.foreground,
+          ),
+        ),
+        const SizedBox(height: 8),
+        TextFormField(
+          controller: controller,
+          keyboardType: keyboardType,
+          obscureText: obscureText,
+          style: TextStyle(
+            color: AppColors.foreground,
+            fontSize: 14,
+          ),
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: TextStyle(
+              color: AppColors.mutedForeground,
+              fontSize: 14,
+            ),
+            prefixIcon: Icon(
+              prefixIcon,
+              color: AppColors.mutedForeground,
+              size: 20,
+            ),
+            suffixIcon: suffixIcon,
+            filled: true,
+            fillColor: AppColors.surface1,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppColors.radius),
+              borderSide: BorderSide.none,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppColors.radius),
+              borderSide: BorderSide(
+                color: AppColors.subtleBorder,
+              ),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppColors.radius),
+              borderSide: const BorderSide(
+                color: AppColors.citrusOrange,
+                width: 1.5,
+              ),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppColors.radius),
+              borderSide: BorderSide(
+                color: AppColors.destructive,
+              ),
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 16,
+            ),
+          ),
+          validator: validator,
+        ),
+      ],
+    );
+  }
+
+  Future<void> _handleLogin() async {
     print('=== Вход ===');
     print('Email: ${_emailController.text.trim()}');
     print('Пароль: ${_passwordController.text}');
+    print('Запомнить меня: $_rememberMe');
     
     if (_formKey.currentState!.validate()) {
       print('Форма валидна, отправляем...');
+      
+      // Сохраняем флаг remember_me перед входом
+      await _storage.setString('remember_me', _rememberMe.toString());
+      
+      // Если не хотим запоминать - очищаем сохранённые credentials
+      if (!_rememberMe) {
+        await _storage.remove('saved_email');
+        await _storage.remove('saved_password');
+      }
+      
       context.read<AuthBloc>().add(AuthLogin(
             email: _emailController.text.trim(),
             password: _passwordController.text,

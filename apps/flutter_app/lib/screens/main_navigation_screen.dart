@@ -1,4 +1,5 @@
 ﻿import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'dart:ui';
 import 'package:go_router/go_router.dart';
@@ -41,9 +42,14 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   static const _mainScreenCount = 4;
 
   // Ключ для AnalyticsScreen, чтобы вызывать refresh при навигации
-  final GlobalKey<State<AnalyticsScreen>> _analyticsKey = GlobalKey<State<AnalyticsScreen>>();
+  final GlobalKey _analyticsKey = GlobalKey();
 
   final List<Widget> _screens = [];
+
+  /// Публичный метод для навигации на аналитику (используется из MoreScreen)
+  void navigateToAnalytics() {
+    _setIndex(11);
+  }
 
   @override
   void initState() {
@@ -187,9 +193,16 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                 return const SizedBox.shrink(); // redirect перенаправит на /auth
               }
 
-              return SafeArea(
+              return AnnotatedRegion<SystemUiOverlayStyle>(
+                value: const SystemUiOverlayStyle(
+                  statusBarColor: Colors.transparent,
+                  statusBarIconBrightness: Brightness.light,
+                  systemNavigationBarColor: Colors.transparent,
+                  systemNavigationBarIconBrightness: Brightness.light,
+                ),
                 child: Scaffold(
-                  body: Stack(
+                  body: SafeArea(
+                    child: Stack(
                     children: [
                       Column(
                         children: [
@@ -207,6 +220,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                       if (_showEmergency)
                         EmergencyModal(onClose: () => setState(() => _showEmergency = false)),
                     ],
+                  ),
                   ),
                 ),
               );
@@ -527,12 +541,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                         final featureIndex = int.parse(feature['path']!);
                         final isActive = _currentIndex == featureIndex;
                         return GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              _currentIndex = featureIndex;
-                              _showMenu = false;
-                            });
-                          },
+                        onTap: () {
+                          _setIndex(featureIndex);
+                        },
                           child: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
                             decoration: BoxDecoration(

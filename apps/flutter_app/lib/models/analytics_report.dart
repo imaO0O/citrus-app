@@ -49,7 +49,9 @@ class ReportMetrics {
   final int streakDays;
   final double averageMood;
   final double averageSleepHours;
-  
+  final double sleepQuality;
+  final int sleepRecords;
+
   const ReportMetrics({
     this.totalDays = 0,
     this.goodDaysPercent = 0,
@@ -57,6 +59,8 @@ class ReportMetrics {
     this.streakDays = 0,
     this.averageMood = 0,
     this.averageSleepHours = 0,
+    this.sleepQuality = 0,
+    this.sleepRecords = 0,
   });
 }
 
@@ -96,11 +100,13 @@ class ActivityStats {
   final int chatMessages;
   final int exercises;
   final int tests;
-  
+  final int sleepRecords;
+
   const ActivityStats({
     this.moodRecords = 0,
     this.chatMessages = 0,
     this.exercises = 0,
     this.tests = 0,
+    this.sleepRecords = 0,
   });
 }

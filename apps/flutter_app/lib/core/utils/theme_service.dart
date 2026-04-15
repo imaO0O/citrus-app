@@ -32,6 +32,12 @@ class ThemeService extends ChangeNotifier {
     _userId = userId;
   }
 
+  /// Очистить данные пользователя при выходе
+  void clearUserCredentials() {
+    _userToken = null;
+    _userId = null;
+  }
+
   /// Инициализация сервиса
   Future<void> init() async {
     // Сначала пытаемся загрузить тему с сервера (если есть токен)

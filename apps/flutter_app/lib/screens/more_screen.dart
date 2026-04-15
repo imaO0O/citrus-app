@@ -37,10 +37,33 @@ class MoreScreen extends StatelessWidget {
 
   void _openFeature(BuildContext context, _FeatureItem feature) {
     if (feature.screen != null) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => feature.screen!),
-      );
+      // Для аналитики просто переключаемся на индекс 11
+      // MainNavigationScreen сам вызовет refreshData
+      if (feature.screen is AnalyticsScreen) {
+        Navigator.of(context).pop(); // Закрываем MoreScreen
+        // Используем回调 к MainNavigationScreen
+        _navigateToAnalytics(context);
+      } else {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => feature.screen!),
+        );
+      }
+    }
+  }
+
+  /// Навигация на аналитику через поиск MainNavigationScreen
+  void _navigateToAnalytics(BuildContext context) {
+    // Находим State от MainNavigationScreen и вызываем метод
+    final navState = context.findAncestorStateOfType<State>();
+    if (navState != null) {
+      // Пытаемся вызвать navigateToAnalytics
+      try {
+        (navState as dynamic).navigateToAnalytics();
+      } catch (e) {
+        // Если не получилось - просто игнорируем
+        debugPrint('Failed to navigate to analytics: $e');
+      }
     }
   }
 

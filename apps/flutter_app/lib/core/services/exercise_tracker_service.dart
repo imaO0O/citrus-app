@@ -1,13 +1,24 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'storage_service.dart';
+import '../config/api_config.dart';
 
 /// Сервис для отслеживания выполненных упражнений
 class ExerciseTrackerService {
   static const String _storageKey = 'exercise_completions';
 
-  /// Сохранить выполненное упражнение
-  Future<void> recordExercise(String exerciseId) async {
+  /// Сохранить выполненное упражнение (локально + на сервере)
+  Future<void> recordExercise(
+    String exerciseId, {
+    String? exerciseType,
+    String? title,
+    int? durationMinutes,
+    int? difficultyLevel,
+    String? userNotes,
+    int? moodBefore,
+    int? moodAfter,
+  }) async {
     try {
       final storage = StorageService();
       final now = DateTime.now().toIso8601String();
@@ -29,9 +40,72 @@ class ExerciseTrackerService {
 
       // Сохраняем обратно
       await storage.setString(_storageKey, jsonEncode(completions));
-      debugPrint('Exercise recorded: $exerciseId at $now');
+      debugPrint('Exercise recorded locally: $exerciseId at $now');
+
+      // Отправляем на сервер
+      await _sendToServer(
+        exerciseId: exerciseId,
+        exerciseType: exerciseType,
+        title: title,
+        durationMinutes: durationMinutes,
+        difficultyLevel: difficultyLevel,
+        userNotes: userNotes,
+        moodBefore: moodBefore,
+        moodAfter: moodAfter,
+      );
     } catch (e) {
       debugPrint('Error recording exercise: $e');
+    }
+  }
+
+  /// Отправить данные о выполнении упражнения на сервер
+  Future<void> _sendToServer({
+    required String exerciseId,
+    String? exerciseType,
+    String? title,
+    int? durationMinutes,
+    int? difficultyLevel,
+    String? userNotes,
+    int? moodBefore,
+    int? moodAfter,
+  }) async {
+    try {
+      final storage = StorageService();
+      final token = await storage.getString('auth_token');
+
+      if (token == null || token.isEmpty) {
+        debugPrint('No auth token, skipping server sync for exercise');
+        return;
+      }
+
+      final url = Uri.parse('${ApiConfig.baseUrl}/exercises/complete');
+      final body = jsonEncode({
+        'exercise_id': exerciseId,
+        'exercise_type': exerciseType ?? 'breathing',
+        if (title != null) 'title': title,
+        if (durationMinutes != null) 'duration_minutes': durationMinutes,
+        if (difficultyLevel != null) 'difficulty_level': difficultyLevel,
+        if (userNotes != null) 'user_notes': userNotes,
+        if (moodBefore != null) 'mood_before': moodBefore,
+        if (moodAfter != null) 'mood_after': moodAfter,
+      });
+
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: body,
+      );
+
+      if (response.statusCode == 201) {
+        debugPrint('Exercise synced to server: $exerciseId');
+      } else {
+        debugPrint('Failed to sync exercise to server: ${response.statusCode} ${response.body}');
+      }
+    } catch (e) {
+      debugPrint('Error syncing exercise to server: $e');
     }
   }
 
