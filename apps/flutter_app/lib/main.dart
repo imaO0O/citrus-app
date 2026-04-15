@@ -35,11 +35,21 @@ void main() async {
   );
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
 
-  // Инициализация сервиса тем
-  await ThemeService().init();
+  // Инициализация сервиса тем (с таймаутом)
+  debugPrint('main: init ThemeService...');
+  await ThemeService().init().timeout(
+    const Duration(seconds: 5),
+    onTimeout: () => debugPrint('main: ThemeService init timeout'),
+  );
+  debugPrint('main: ThemeService initialized');
 
-  // Инициализация сервиса уведомлений
-  await NotificationService().initialize();
+  // Инициализация сервиса уведомлений (с таймаутом, не блокируем запуск)
+  debugPrint('main: init NotificationService...');
+  NotificationService().initialize().timeout(
+    const Duration(seconds: 10),
+    onTimeout: () => debugPrint('main: NotificationService init timeout'),
+  ).catchError((e) => debugPrint('main: NotificationService error: $e'));
+  debugPrint('main: NotificationService started (non-blocking)');
 
   runApp(const MyApp());
 }

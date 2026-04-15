@@ -1465,7 +1465,6 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
           _isFinished = true;
           _phaseText = 'Упражнение завершено!';
         });
-        _animationController.stop();
         // Сохраняем выполненное упражнение
         ExerciseTrackerService().recordExercise(
           widget.exercise.id,
