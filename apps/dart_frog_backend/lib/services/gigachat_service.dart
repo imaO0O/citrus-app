@@ -97,6 +97,13 @@ class GigaChatService {
     }
   }
   
+  /// Принудительно обновить токен (сбросить кэш и получить новый)
+  Future<void> _refreshToken() async {
+    _accessToken = null;
+    _tokenExpiryTime = null;
+    await _getAccessToken();
+  }
+
   /// Отправить сообщение в GigaChat и получить ответ
   ///
   /// [messages] - список сообщений в формате:
@@ -110,11 +117,13 @@ class GigaChatService {
   /// [model] - модель для генерации ответа (по умолчанию GigaChat)
   /// [temperature] - креативность ответов (0.0 - 1.0)
   /// [maxTokens] - максимальное количество токенов в ответе
+  /// [retryOnAuthError] - повторить запрос при ошибке 401 (внутренний параметр)
   Future<String> sendMessage(
     List<Map<String, dynamic>> messages, {
     GigaChatModel model = GigaChatModel.gigachat,
     double temperature = 0.7,
     int maxTokens = 1024,
+    bool retryOnAuthError = true,
   }) async {
     try {
       final token = await _getAccessToken();
@@ -148,6 +157,23 @@ class GigaChatService {
           return message['content'] as String;
         } else {
           throw Exception('Нет ответа от GigaChat');
+        }
+      } else if (response.statusCode == 401) {
+        // Токен истёк, пробуем обновить и повторить запрос
+        if (retryOnAuthError) {
+          print('GigaChat: токен истёк (401), обновляем...');
+          await _refreshToken();
+          print('GigaChat: токен обновлён, повторяем запрос...');
+          // Рекурсивный вызов без retry, чтобы избежать бесконечного цикла
+          return sendMessage(
+            messages,
+            model: model,
+            temperature: temperature,
+            maxTokens: maxTokens,
+            retryOnAuthError: false,
+          );
+        } else {
+          throw Exception('GigaChat API error: 401 - Token has expired (повторная попытка не удалась)');
         }
       } else {
         throw Exception(
