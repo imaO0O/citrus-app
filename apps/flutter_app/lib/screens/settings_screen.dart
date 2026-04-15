@@ -8,6 +8,7 @@ import '../core/utils/phone_formatter.dart';
 import '../core/config/api_config.dart';
 import '../features/auth/bloc/auth_bloc.dart';
 import '../core/repository/auth_repository.dart';
+import 'help_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -120,7 +121,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       _buildSettingsItem(
                         icon: Icons.help_outline,
                         label: 'Помощь',
-                        onTap: () {},
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => const HelpScreen()),
+                          );
+                        },
                       ),
                     ],
                   ),
