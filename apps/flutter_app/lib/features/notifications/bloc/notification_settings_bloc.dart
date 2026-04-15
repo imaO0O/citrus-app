@@ -234,7 +234,6 @@ class NotificationSettingsBloc
   ) async {
     if (state is! NotificationSettingsLoaded) return;
 
-    final currentState = state as NotificationSettingsLoaded;
     final notificationService = _repository.notificationService;
 
     try {
@@ -246,4 +245,29 @@ class NotificationSettingsBloc
           );
           break;
         case 'sleep':
-          await notificationService.showInstant
+          await notificationService.showInstantNotification(
+            title: '😴 Тест: Напоминание о сне',
+            body: 'Не забудьте отметить время пробуждения',
+            channelId: 'sleep',
+          );
+          break;
+        case 'mood':
+          await notificationService.showInstantNotification(
+            title: '😊 Тест: Как настроение?',
+            body: 'Отметьте своё текущее настроение',
+            channelId: 'mood',
+          );
+          break;
+        case 'diary':
+          await notificationService.showInstantNotification(
+            title: '📝 Тест: Время для дневника',
+            body: 'Запишите свои мысли о прошедшем дне',
+            channelId: 'diary',
+          );
+          break;
+      }
+    } catch (e) {
+      debugPrint('Ошибка тестового уведомления: $e');
+    }
+  }
+}

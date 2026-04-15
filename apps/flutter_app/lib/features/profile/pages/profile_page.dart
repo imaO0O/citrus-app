@@ -5,6 +5,7 @@ import '../../../core/repository/auth_repository.dart';
 import '../../../core/utils/theme_service.dart';
 import '../../auth/bloc/auth_bloc.dart';
 import '../bloc/profile_bloc.dart';
+import '../../notifications/pages/notifications_page.dart';
 import '../../articles/pages/articles_page.dart';
 import '../../articles/pages/create_edit_article_page.dart';
 
@@ -81,7 +82,13 @@ class _ProfilePageState extends State<ProfilePage> {
                 leading: const Icon(Icons.notifications_outlined),
                 title: const Text('Настройка уведомлений'),
                 trailing: const Icon(Icons.chevron_right),
-                onTap: () {},
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const NotificationsPage(),
+                    ),
+                  );
+                },
               ),
               ListTile(
                 leading: const Icon(Icons.download_outlined),
