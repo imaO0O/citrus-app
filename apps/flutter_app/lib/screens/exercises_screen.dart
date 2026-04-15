@@ -1464,10 +1464,10 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
                         children: [
                           // Пульсирующие внешние кольца
                           TweenAnimationBuilder<double>(
-                            key: ValueKey('outer_ring_${_currentStepIndex}_$_isRunning'),
+                            key: ValueKey('outer_ring_$_isRunning'),
                             duration: _animationDuration,
                             curve: Curves.easeInOutCubic,
-                            tween: Tween(begin: _isRunning ? 0.6 : 0.8, end: _targetScale),
+                            tween: Tween(end: _targetScale),
                             builder: (context, scale, _) {
                               return Container(
                                 width: 200 * scale,
@@ -1485,10 +1485,10 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
 
                           // Второе пульсирующее кольцо
                           TweenAnimationBuilder<double>(
-                            key: ValueKey('second_ring_${_currentStepIndex}_$_isRunning'),
+                            key: ValueKey('second_ring_$_isRunning'),
                             duration: _animationDuration + const Duration(milliseconds: 200),
                             curve: Curves.easeInOutCubic,
-                            tween: Tween(begin: _isRunning ? 0.6 : 0.8, end: _targetScale),
+                            tween: Tween(end: _targetScale),
                             builder: (context, scale, _) {
                               return Container(
                                 width: 220 * scale,
@@ -1506,10 +1506,10 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
 
                           // Плавное внешнее свечение
                           TweenAnimationBuilder<double>(
-                            key: ValueKey('glow_${_currentStepIndex}_$_isRunning'),
+                            key: ValueKey('glow_$_isRunning'),
                             duration: _animationDuration,
                             curve: Curves.easeInOutCubic,
-                            tween: Tween(begin: _isRunning ? 0.6 : 0.8, end: _targetScale),
+                            tween: Tween(end: _targetScale),
                             builder: (context, scale, _) {
                               return Container(
                                 width: 170 * scale,
@@ -1530,10 +1530,10 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
 
                           // Основной круг с градиентом
                           TweenAnimationBuilder<double>(
-                            key: ValueKey('main_circle_${_currentStepIndex}_$_isRunning'),
+                            key: ValueKey('main_circle_$_isRunning'),
                             duration: _animationDuration,
                             curve: Curves.easeInOutCubic,
-                            tween: Tween(begin: _isRunning ? 0.6 : 0.8, end: _targetScale),
+                            tween: Tween(end: _targetScale),
                             builder: (context, scale, _) {
                               return Container(
                                 width: 150 * scale,
