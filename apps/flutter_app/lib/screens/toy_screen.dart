@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../core/theme/app_colors.dart';
+import '../core/services/casino_coins_service.dart';
 
 class ToyScreen extends StatefulWidget {
   const ToyScreen({super.key});
@@ -39,6 +40,7 @@ class _ToyScreenState extends State<ToyScreen> {
                       SandboxToy(),
                       RainToy(),
                       OrbsToy(),
+                      CasinoToy(),
                     ],
                   ),
                 ),
@@ -52,14 +54,14 @@ class _ToyScreenState extends State<ToyScreen> {
   }
 
   Widget _buildBottomTabs() {
-    const emojis = ['🍊', '🫧', '🏖️', '🌧️', '🔮'];
-    const labels = ['Цитрус', 'Пузыри', 'Песок', 'Дождь', 'Шарики'];
+    const emojis = ['🍊', '🫧', '🏖️', '🌧️', '🔮', '🎰'];
+    const labels = ['Цитрус', 'Пузыри', 'Песок', 'Дождь', 'Шарики', 'Казино'];
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 16),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: Row(
-          children: List.generate(5, (i) {
+          children: List.generate(6, (i) {
             final isActive = _activeTab == i;
             return GestureDetector(
               onTap: () => setState(() => _activeTab = i),
@@ -1485,4 +1487,639 @@ class _OrbsPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_OrbsPainter oldDelegate) => true;
+}
+
+// ============================================================
+// 6. Casino — игровой автомат (слоты) с ежедневными заданиями
+// ============================================================
+class CasinoToy extends StatefulWidget {
+  const CasinoToy({super.key});
+
+  @override
+  State<CasinoToy> createState() => _CasinoToyState();
+}
+
+class _CasinoToyState extends State<CasinoToy> with TickerProviderStateMixin {
+  static const _symbols = ['🍒', '🍋', '🍊', '🍇', '💎', '7️⃣', '🔔', '⭐'];
+  static const _symbolPay = {
+    '🍒': 2,
+    '🍋': 3,
+    '🍊': 4,
+    '🍇': 5,
+    '💎': 10,
+    '7️⃣': 15,
+    '🔔': 8,
+    '⭐': 7,
+  };
+
+  late List<String> _reelResults;
+  late List<AnimationController> _reelControllers;
+  late List<Animation<double>> _reelAnimations;
+  late List<CurvedAnimation> _reelCurves;
+
+  bool _isSpinning = false;
+  int _coins = 0;
+  int _bet = 10;
+  String _resultMessage = '';
+  Color _resultColor = AppColors.mutedForeground;
+  int _totalWins = 0;
+  int _totalSpins = 0;
+  int _biggestWin = 0;
+  Set<String> _questsDone = {};
+  bool _isLoading = true;
+
+  final _coinsService = CasinoCoinsService();
+
+  // Для анимации «вращения» каждого барабана
+  late List<List<String>> _reelStrips;
+
+  @override
+  void initState() {
+    super.initState();
+    _reelResults = List.generate(3, (_) => _symbols[Random().nextInt(_symbols.length)]);
+    _reelControllers = List.generate(3, (i) {
+      final c = AnimationController(
+        vsync: this,
+        duration: Duration(milliseconds: 1200 + i * 400),
+      );
+      return c;
+    });
+    _reelCurves = _reelControllers.map((c) => CurvedAnimation(parent: c, curve: Curves.easeOutCubic)).toList();
+    _reelAnimations = _reelCurves.map((c) => c.drive(Tween<double>(begin: 0, end: 1))).toList();
+    _reelStrips = List.generate(3, (_) => _generateStrip());
+    _loadState();
+  }
+
+  Future<void> _loadState() async {
+    await _coinsService.ensureDailyCoins();
+    final coins = await _coinsService.getCoins();
+    final questsDone = await _coinsService.getQuestsDone();
+    if (mounted) {
+      setState(() {
+        _coins = coins;
+        _questsDone = questsDone;
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _refreshCoins() async {
+    final coins = await _coinsService.getCoins();
+    final questsDone = await _coinsService.getQuestsDone();
+    if (mounted) {
+      setState(() {
+        _coins = coins;
+        _questsDone = questsDone;
+      });
+    }
+  }
+
+  List<String> _generateStrip() {
+    final rng = Random();
+    return List.generate(20, (_) => _symbols[rng.nextInt(_symbols.length)]);
+  }
+
+  void _spin() async {
+    if (_isSpinning) return;
+    if (_coins < _bet) {
+      setState(() {
+        _resultMessage = 'Недостаточно монет! Выполни задания ниже.';
+        _resultColor = AppColors.destructive;
+      });
+      return;
+    }
+
+    HapticFeedback.mediumImpact();
+    final spent = await _coinsService.spendCoins(_bet);
+    if (!spent) {
+      setState(() {
+        _resultMessage = 'Недостаточно монет!';
+        _resultColor = AppColors.destructive;
+      });
+      return;
+    }
+
+    setState(() {
+      _isSpinning = true;
+      _coins -= _bet;
+      _resultMessage = '';
+      _totalSpins++;
+    });
+
+    // Генерируем новые ленты и результаты
+    _reelStrips = List.generate(3, (_) => _generateStrip());
+    _reelResults = List.generate(3, (_) => _symbols[Random().nextInt(_symbols.length)]);
+
+    // Запускаем барабаны по очереди
+    for (int i = 0; i < 3; i++) {
+      _reelControllers[i].reset();
+      Future.delayed(Duration(milliseconds: i * 200), () {
+        if (mounted) _reelControllers[i].forward();
+      });
+    }
+
+    // Подсчёт результата после остановки всех барабанов
+    final totalDuration = 1200 + 2 * 200 + 2 * 400 + 100;
+    Future.delayed(Duration(milliseconds: totalDuration), () {
+      if (!mounted) return;
+      _calculateResult();
+    });
+  }
+
+  void _calculateResult() async {
+    final r = _reelResults;
+    int winAmount = 0;
+    String msg = '';
+
+    if (r[0] == r[1] && r[1] == r[2]) {
+      final pay = _symbolPay[r[0]]!;
+      winAmount = _bet * pay;
+      msg = '🎉 ДЖЕКПОТ! ${r[0]}${r[1]}${r[2]} — ×$pay!';
+      HapticFeedback.heavyImpact();
+    } else if (r[0] == r[1] || r[1] == r[2] || r[0] == r[2]) {
+      winAmount = (_bet * 1.5).round();
+      msg = '✨ Два совпадения! +$winAmount монет';
+      HapticFeedback.lightImpact();
+    } else {
+      msg = '😔 Не повезло... Крути ещё!';
+    }
+
+    if (winAmount > 0) {
+      await _coinsService.addCoins(winAmount);
+    }
+
+    setState(() {
+      _isSpinning = false;
+      _coins += winAmount;
+      _resultMessage = msg;
+      _resultColor = winAmount > 0 ? AppColors.citrusGreen : AppColors.mutedForeground;
+      if (winAmount > 0) _totalWins++;
+      if (winAmount > _biggestWin) _biggestWin = winAmount;
+    });
+  }
+
+  void _changeBet(int delta) {
+    setState(() {
+      _bet = (_bet + delta).clamp(5, 50);
+    });
+  }
+
+  @override
+  void dispose() {
+    for (final c in _reelControllers) {
+      c.dispose();
+    }
+    super.dispose();
+  }
+
+  int get _questCoinsEarned => _questsDone.length * CasinoCoinsService.questReward;
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator(color: AppColors.citrusAmber));
+    }
+
+    return SingleChildScrollView(
+      child: Column(
+      children: [
+        // Верхняя панель: монеты и статистика
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: AppColors.citrusAmber.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text('🪙', style: TextStyle(fontSize: 16)),
+                  SizedBox(width: 6),
+                  Text('$_coins',
+                      style: TextStyle(color: AppColors.citrusAmber, fontSize: 16, fontWeight: FontWeight.w700)),
+                ],
+              ),
+            ),
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: AppColors.citrusGreen.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text('🏆 $_totalWins/$_totalSpins',
+                      style: TextStyle(color: AppColors.citrusGreen, fontSize: 11, fontWeight: FontWeight.w600)),
+                ),
+                SizedBox(width: 6),
+                if (_biggestWin > 0)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppColors.citrusPurple.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text('💰 Макс: $_biggestWin',
+                        style: TextStyle(color: AppColors.citrusPurple, fontSize: 11, fontWeight: FontWeight.w600)),
+                  ),
+              ],
+            ),
+          ],
+        ),
+
+        SizedBox(height: 12),
+
+        // Корпус автомата
+        Container(
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [Color(0xFF1A1428), Color(0xFF0E0A18)],
+            ),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: AppColors.citrusAmber.withOpacity(0.3), width: 2),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.citrusAmber.withOpacity(0.15),
+                blurRadius: 30,
+                spreadRadius: 2,
+              ),
+            ],
+          ),
+          child: Column(
+            children: [
+              // Заголовок автомата
+              Container(
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [AppColors.citrusAmber.withOpacity(0.2), Colors.transparent],
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                  ),
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(18),
+                    topRight: Radius.circular(18),
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text('★ ', style: TextStyle(color: AppColors.citrusAmber, fontSize: 14)),
+                    Text('LUCKY SLOTS',
+                        style: TextStyle(
+                          color: AppColors.citrusAmber,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 3,
+                        )),
+                    Text(' ★', style: TextStyle(color: AppColors.citrusAmber, fontSize: 14)),
+                  ],
+                ),
+              ),
+
+              // Барабаны
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(3, (i) {
+                    return _buildReel(i);
+                  }),
+                ),
+              ),
+
+              // Линия выигрыша
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Container(
+                  height: 2,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        Colors.transparent,
+                        AppColors.citrusAmber.withOpacity(0.6),
+                        Colors.transparent,
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+
+              // Результат
+              Container(
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                constraints: const BoxConstraints(minHeight: 40),
+                child: _resultMessage.isEmpty
+                    ? Text('Крути барабаны!',
+                        style: TextStyle(color: AppColors.dimForeground, fontSize: 13))
+                    : Text(_resultMessage,
+                        style: TextStyle(color: _resultColor, fontSize: 13, fontWeight: FontWeight.w700),
+                        textAlign: TextAlign.center),
+              ),
+            ],
+          ),
+        ),
+
+        SizedBox(height: 12),
+
+        // Управление ставкой
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text('Ставка: ', style: TextStyle(color: AppColors.mutedForeground, fontSize: 13)),
+            GestureDetector(
+              onTap: _isSpinning ? null : () => _changeBet(-5),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: AppColors.citrusOrange.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text('−', style: TextStyle(color: AppColors.citrusOrange, fontSize: 18, fontWeight: FontWeight.w700)),
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+              child: Text('$_bet 🪙',
+                  style: TextStyle(color: AppColors.citrusAmber, fontSize: 16, fontWeight: FontWeight.w700)),
+            ),
+            GestureDetector(
+              onTap: _isSpinning ? null : () => _changeBet(5),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: AppColors.citrusOrange.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text('+', style: TextStyle(color: AppColors.citrusOrange, fontSize: 18, fontWeight: FontWeight.w700)),
+              ),
+            ),
+          ],
+        ),
+
+        SizedBox(height: 12),
+
+        // Кнопка SPIN
+        GestureDetector(
+          onTap: _spin,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 14),
+            decoration: BoxDecoration(
+              gradient: _isSpinning
+                  ? null
+                  : const LinearGradient(
+                      colors: [AppColors.citrusOrange, Color(0xFFFF6020)],
+                    ),
+              color: _isSpinning ? AppColors.mutedForeground.withOpacity(0.3) : null,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: _isSpinning
+                  ? null
+                  : [
+                      BoxShadow(
+                        color: AppColors.citrusOrange.withOpacity(0.4),
+                        blurRadius: 16,
+                        spreadRadius: 1,
+                      ),
+                    ],
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  _isSpinning ? '⏳' : '🎰',
+                  style: TextStyle(fontSize: 20),
+                ),
+                SizedBox(width: 8),
+                Text(
+                  _isSpinning ? 'Крутится...' : 'КРУТИТЬ',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+
+        SizedBox(height: 16),
+
+        // ─── Панель ежедневных заданий ───
+        Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.03),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: Colors.white.withOpacity(0.06)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Text('📋', style: TextStyle(fontSize: 16)),
+                  SizedBox(width: 8),
+                  Text('Ежедневные задания',
+                      style: TextStyle(color: AppColors.foreground, fontSize: 14, fontWeight: FontWeight.w700)),
+                  Spacer(),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: AppColors.citrusAmber.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text('+${CasinoCoinsService.dailyFreeLimit}/день',
+                        style: TextStyle(color: AppColors.citrusAmber, fontSize: 10, fontWeight: FontWeight.w600)),
+                  ),
+                ],
+              ),
+              SizedBox(height: 4),
+              Text('Ежедневно ${CasinoCoinsService.dailyFreeLimit} монет + задания по ${CasinoCoinsService.questReward} 🪙',
+                  style: TextStyle(color: AppColors.dimForeground, fontSize: 10)),
+              SizedBox(height: 10),
+
+              // Список заданий
+              ...CasinoCoinsService.quests.map((quest) {
+                final done = _questsDone.contains(quest.id);
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: done
+                        ? AppColors.citrusGreen.withOpacity(0.08)
+                        : Colors.white.withOpacity(0.03),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: done
+                          ? AppColors.citrusGreen.withOpacity(0.2)
+                          : Colors.white.withOpacity(0.05),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Text(quest.emoji, style: TextStyle(fontSize: 20)),
+                      SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(quest.title,
+                                style: TextStyle(
+                                  color: done ? AppColors.citrusGreen : AppColors.foreground,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  decoration: done ? TextDecoration.lineThrough : null,
+                                )),
+                            SizedBox(height: 2),
+                            Text(quest.description,
+                                style: TextStyle(color: AppColors.dimForeground, fontSize: 10)),
+                          ],
+                        ),
+                      ),
+                      SizedBox(width: 8),
+                      if (done)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: AppColors.citrusGreen.withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text('✓ +${quest.reward}',
+                              style: TextStyle(color: AppColors.citrusGreen, fontSize: 11, fontWeight: FontWeight.w700)),
+                        )
+                      else
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: AppColors.citrusAmber.withOpacity(0.12),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text('+${quest.reward} 🪙',
+                              style: TextStyle(color: AppColors.citrusAmber, fontSize: 11, fontWeight: FontWeight.w600)),
+                        ),
+                    ],
+                  ),
+                );
+              }),
+
+              // Прогресс заданий
+              SizedBox(height: 4),
+              Row(
+                children: [
+                  Text('${_questsDone.length}/${CasinoCoinsService.quests.length} заданий',
+                      style: TextStyle(color: AppColors.dimForeground, fontSize: 10)),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(4),
+                      child: LinearProgressIndicator(
+                        value: _questsDone.length / CasinoCoinsService.quests.length,
+                        minHeight: 4,
+                        backgroundColor: AppColors.citrusGreen.withOpacity(0.1),
+                        valueColor: AlwaysStoppedAnimation<Color>(AppColors.citrusGreen),
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: 8),
+                  Text('+$_questCoinsEarned 🪙',
+                      style: TextStyle(color: AppColors.citrusAmber, fontSize: 10, fontWeight: FontWeight.w600)),
+                ],
+              ),
+            ],
+          ),
+        ),
+
+        SizedBox(height: 8),
+
+        // Таблица выплат
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.03),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: Colors.white.withOpacity(0.05)),
+          ),
+          child: Column(
+            children: [
+              Text('Таблица выплат', style: TextStyle(color: AppColors.dimForeground, fontSize: 10, fontWeight: FontWeight.w600)),
+              SizedBox(height: 4),
+              Wrap(
+                spacing: 8,
+                runSpacing: 4,
+                alignment: WrapAlignment.center,
+                children: _symbolPay.entries.map((e) {
+                  return Text('${e.key} ×${e.value}',
+                      style: TextStyle(color: AppColors.mutedForeground, fontSize: 10));
+                }).toList(),
+              ),
+              SizedBox(height: 2),
+              Text('Два совпадения — ×1.5 к ставке',
+                  style: TextStyle(color: AppColors.dimForeground, fontSize: 9)),
+            ],
+          ),
+        ),
+      ],
+    ),
+    );
+  }
+
+  Widget _buildReel(int index) {
+    return Container(
+      width: 80,
+      height: 90,
+      margin: const EdgeInsets.symmetric(horizontal: 6),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0A0618),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.citrusAmber.withOpacity(0.2), width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.5),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: AnimatedBuilder(
+        animation: _reelControllers[index],
+        builder: (context, child) {
+          String displaySymbol;
+          if (_isSpinning && !_reelControllers[index].isAnimating) {
+            displaySymbol = _reelResults[index];
+          } else if (_isSpinning && _reelControllers[index].isAnimating) {
+            final progress = _reelAnimations[index].value;
+            final stripPos = (progress * _reelStrips[index].length).floor();
+            final strip = _reelStrips[index];
+            displaySymbol = stripPos < strip.length ? strip[stripPos] : _reelResults[index];
+          } else {
+            displaySymbol = _reelResults[index];
+          }
+
+          final isLanded = _isSpinning && !_reelControllers[index].isAnimating;
+
+          return Center(
+            child: AnimatedScale(
+              scale: isLanded ? 1.1 : 1.0,
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.elasticOut,
+              child: Text(
+                displaySymbol,
+                style: TextStyle(
+                  fontSize: isLanded ? 44 : 38,
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
 }

@@ -2,6 +2,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import '../core/theme/app_colors.dart';
+import '../core/services/casino_coins_service.dart';
 import '../features/diary/bloc/diary_bloc.dart';
 import '../core/repository/diary_repository.dart';
 
@@ -376,8 +377,9 @@ class _DiaryScreenState extends State<DiaryScreen> {
                   entryDate: selectedDate,
                 ));
                 Navigator.pop(context);
+                CasinoCoinsService().completeQuest('diary');
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Запись добавлена'), backgroundColor: Colors.green),
+                  const SnackBar(content: Text('Запись добавлена +25 🪙'), backgroundColor: Colors.green),
                 );
               },
               style: FilledButton.styleFrom(backgroundColor: AppColors.citrusOrange),

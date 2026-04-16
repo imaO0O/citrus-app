@@ -1,6 +1,7 @@
 ﻿import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../core/theme/app_colors.dart';
+import '../core/services/casino_coins_service.dart';
 
 // ─── Mood Data ────────────────────────────────────────────────────────────────────
 class _MoodData {
@@ -166,6 +167,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       _todayLog.add({'time': time, 'id': id});
       _showFeedback = true;
     });
+    // Начисляем монеты за отметку настроения
+    CasinoCoinsService().completeQuest('mood');
     _feedbackController.forward(from: 0);
     Future.delayed(const Duration(milliseconds: 1800), () {
       if (!mounted) return;
