@@ -130,10 +130,11 @@ class DiaryRepository {
     DateTime? endDate,
     String? search,
   }) async {
+    final query = (search != null && search.trim().isNotEmpty) ? search.trim() : null;
     final data = await _apiService.getEntries(
       startDate: startDate != null ? DateFormat('yyyy-MM-dd').format(startDate) : null,
       endDate: endDate != null ? DateFormat('yyyy-MM-dd').format(endDate) : null,
-      search: search,
+      search: query,
     );
     return data.map((e) => DiaryEntry.fromJson(e)).toList();
   }

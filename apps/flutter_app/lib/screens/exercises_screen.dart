@@ -7,6 +7,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:just_audio/just_audio.dart';
 import '../core/theme/app_colors.dart';
+import '../core/services/casino_coins_service.dart';
 import '../core/services/exercise_tracker_service.dart';
 import '../core/config/api_config.dart';
 
@@ -1473,6 +1474,8 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
           durationMinutes: widget.exercise.durationSeconds ~/ 60,
           difficultyLevel: widget.exercise.difficulty == 'Легко' ? 1 : widget.exercise.difficulty == 'Средне' ? 2 : 3,
         );
+        // Начисляем монеты за задание
+        CasinoCoinsService().completeQuest('exercise');
       }
     });
   }

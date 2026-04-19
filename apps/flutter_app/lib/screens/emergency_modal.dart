@@ -1,5 +1,4 @@
 ﻿import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -23,11 +22,7 @@ class _EmergencyModalState extends State<EmergencyModal> {
   final TextEditingController _phoneController = TextEditingController();
 
   // Состояния для техник
-  bool _showBreathingExercise = false;
   bool _showGroundingExercise = false;
-  int _breathPhase = 0; // 0: вдох, 1: задержка, 2: выдох
-  int _breathSeconds = 0;
-  bool _breathingActive = false;
 
   // Доверенные контакты из БД
   List<Map<String, dynamic>> _trustedContacts = [];
@@ -165,22 +160,6 @@ class _EmergencyModalState extends State<EmergencyModal> {
     }
   }
 
-  void _startBreathingExercise() {
-    setState(() {
-      _showBreathingExercise = true;
-      _breathPhase = 0;
-      _breathSeconds = 0;
-      _breathingActive = true;
-    });
-  }
-
-  void _stopBreathingExercise() {
-    setState(() {
-      _showBreathingExercise = false;
-      _breathingActive = false;
-    });
-  }
-
   void _startGroundingExercise() {
     setState(() {
       _showGroundingExercise = true;
@@ -227,9 +206,7 @@ class _EmergencyModalState extends State<EmergencyModal> {
                           children: [
                             _buildAlertMessage(),
                             SizedBox(height: 16),
-                            if (_showBreathingExercise)
-                              _buildBreathingExercise()
-                            else if (_showGroundingExercise)
+                            if (_showGroundingExercise)
                               _buildGroundingExercise()
                             else ...[
                               _buildContacts(),
@@ -654,30 +631,13 @@ class _EmergencyModalState extends State<EmergencyModal> {
   }
 
   Widget _buildQuickTechniques() {
-    final techniques = [
-      {
-        'icon': Icons.air,
-        'label': 'Дыхание 4-4-4',
-        'desc': 'Вдох 4с · Пауза 4с · Выдох 4с',
-        'color': AppColors.citrusPurple,
-        'action': _startBreathingExercise,
-      },
-      {
-        'icon': Icons.favorite,
-        'label': '5-4-3-2-1',
-        'desc': '5 видишь · 4 потрогать · 3 слышишь',
-        'color': AppColors.citrusGreen,
-        'action': _startGroundingExercise,
-      },
-    ];
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
           padding: EdgeInsets.only(bottom: 8),
           child: Text(
-            'БЫСТРЫЕ ТЕХНИКИ САМОПОМОЩИ',
+            'БЫСТРАЯ ТЕХНИКА САМОПОМОЩИ',
             style: TextStyle(
               fontSize: 10,
               fontWeight: FontWeight.w700,
@@ -686,257 +646,54 @@ class _EmergencyModalState extends State<EmergencyModal> {
             ),
           ),
         ),
-        GridView.count(
-          shrinkWrap: true,
-          crossAxisCount: 2,
-          physics: const NeverScrollableScrollPhysics(),
-          mainAxisSpacing: 8,
-          crossAxisSpacing: 8,
-          childAspectRatio: 1.4,
-          children: techniques.map((t) {
-            return GestureDetector(
-              onTap: t['action'] as VoidCallback,
-              child: Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: (t['color'] as Color).withOpacity(0.06),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: (t['color'] as Color).withOpacity(0.12)),
+        GestureDetector(
+          onTap: _startGroundingExercise,
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: AppColors.citrusGreen.withOpacity(0.06),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: AppColors.citrusGreen.withOpacity(0.12)),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: AppColors.citrusGreen.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(Icons.favorite, color: AppColors.citrusGreen, size: 22),
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Icon(t['icon'] as IconData, color: t['color'] as Color, size: 20),
-                    SizedBox(height: 6),
-                    Text(
-                      t['label'] as String,
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.foreground,
+                SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '5-4-3-2-1',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.foreground,
+                        ),
                       ),
-                    ),
-                    SizedBox(height: 2),
-                    Text(
-                      t['desc'] as String,
-                      style: TextStyle(fontSize: 10, color: AppColors.mutedForeground),
-                    ),
-                  ],
+                      SizedBox(height: 2),
+                      Text(
+                        '5 видишь · 4 потрогать · 3 слышишь',
+                        style: TextStyle(fontSize: 10, color: AppColors.mutedForeground),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            );
-          }).toList(),
+                Icon(Icons.chevron_right, color: AppColors.mutedForeground, size: 20),
+              ],
+            ),
+          ),
         ),
       ],
-    );
-  }
-
-  Widget _buildBreathingExercise() {
-    final phaseNames = ['Вдох', 'Задержка', 'Выдох'];
-    final phaseColors = [
-      AppColors.citrusPurple,
-      AppColors.citrusOrange,
-      AppColors.citrusGreen,
-    ];
-
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: phaseColors[_breathPhase].withOpacity(0.08),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: phaseColors[_breathPhase].withOpacity(0.25), width: 1.5),
-        boxShadow: [
-          BoxShadow(
-            color: phaseColors[_breathPhase].withOpacity(0.15),
-            blurRadius: 20,
-            spreadRadius: 3,
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Дыхание 4-4-4',
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.foreground,
-                  letterSpacing: 0.3,
-                ),
-              ),
-              GestureDetector(
-                onTap: _stopBreathingExercise,
-                child: Container(
-                  width: 28,
-                  height: 28,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.07),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Icon(Icons.close, size: 16, color: AppColors.mutedForeground),
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: 24),
-          Stack(
-            alignment: Alignment.center,
-            children: [
-              // Пульсирующие кольца
-              TweenAnimationBuilder<double>(
-                duration: const Duration(milliseconds: 1000),
-                curve: Curves.easeInOutCubic,
-                tween: Tween(begin: 0.9, end: 1.0),
-                builder: (context, pulse, _) {
-                  return Container(
-                    width: 140 * pulse,
-                    height: 140 * pulse,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: phaseColors[_breathPhase].withOpacity(0.2 * pulse),
-                        width: 2,
-                      ),
-                    ),
-                  );
-                },
-              ),
-              
-              // Основной круг
-              Container(
-                width: 120,
-                height: 120,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: RadialGradient(
-                    colors: [
-                      phaseColors[_breathPhase].withOpacity(0.3),
-                      phaseColors[_breathPhase].withOpacity(0.15),
-                      phaseColors[_breathPhase].withOpacity(0.05),
-                    ],
-                    stops: const [0.0, 0.5, 1.0],
-                  ),
-                  border: Border.all(
-                    color: phaseColors[_breathPhase].withOpacity(0.4),
-                    width: 3,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: phaseColors[_breathPhase].withOpacity(0.3),
-                      blurRadius: 25,
-                      spreadRadius: 5,
-                    ),
-                  ],
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    AnimatedDefaultTextStyle(
-                      duration: const Duration(milliseconds: 600),
-                      curve: Curves.easeInOutCubic,
-                      style: TextStyle(
-                        fontSize: 40,
-                        fontWeight: FontWeight.w800,
-                        color: phaseColors[_breathPhase],
-                      ),
-                      child: Text('$_breathSeconds'),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      phaseNames[_breathPhase],
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: phaseColors[_breathPhase],
-                        letterSpacing: 0.3,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: 20),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _buildPhaseIndicator(0, phaseColors),
-              SizedBox(width: 12),
-              _buildPhaseIndicator(1, phaseColors),
-              SizedBox(width: 12),
-              _buildPhaseIndicator(2, phaseColors),
-            ],
-          ),
-          SizedBox(height: 20),
-          Row(
-            children: [
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: _breathingActive ? null : _startBreathingExercise,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.citrusPurple,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                    elevation: _breathingActive ? 0 : 6,
-                    shadowColor: AppColors.citrusPurple.withOpacity(0.4),
-                  ),
-                  child: Text(
-                    _breathingActive ? 'Идёт упражнение...' : 'Начать',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 15,
-                      letterSpacing: 0.3,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPhaseIndicator(int index, List<Color> colors) {
-    final isActive = _breathPhase == index;
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 500),
-      curve: Curves.easeInOutCubic,
-      child: Row(
-        children: [
-          Container(
-            width: 14,
-            height: 14,
-            decoration: BoxDecoration(
-              color: isActive ? colors[index] : colors[index].withOpacity(0.2),
-              shape: BoxShape.circle,
-              boxShadow: isActive
-                  ? [
-                      BoxShadow(
-                        color: colors[index].withOpacity(0.4),
-                        blurRadius: 8,
-                        spreadRadius: 1,
-                      ),
-                    ]
-                  : [],
-            ),
-          ),
-          SizedBox(width: 6),
-          Text(
-            ['Вдох', 'Задержка', 'Выдох'][index],
-            style: TextStyle(
-              fontSize: 11,
-              color: isActive ? colors[index] : AppColors.mutedForeground,
-              fontWeight: isActive ? FontWeight.w700 : FontWeight.normal,
-              letterSpacing: 0.2,
-            ),
-          ),
-        ],
-      ),
     );
   }
 
