@@ -41,13 +41,13 @@ class GigaChatService {
   // Authorization key из личного кабинета (уже base64)
   final String _authorizationKey;
 
-  // ID сессии для кэширования контекта
+  // ID сессии для кэширования контекста
   final String _sessionId;
 
   GigaChatService({
-    required String authorizationKey,
+    String? authorizationKey,
     String? sessionId,
-  })  : _authorizationKey = authorizationKey,
+  })  : _authorizationKey = authorizationKey ?? 'MDE5ZDhiMjEtZDVhOC03MTNlLWEzZGMtNjA1OGQ1Yjc5MGVmOjgzZTUyZDBiLWZhZGItNGZiNi04M2U3LTAxNjBhMDRlODlmZg==',
         _sessionId = sessionId ?? const Uuid().v4();
   
   /// Получить токен авторизации

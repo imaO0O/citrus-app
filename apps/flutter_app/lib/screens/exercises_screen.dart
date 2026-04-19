@@ -1586,386 +1586,387 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
               if (isBreathing) ...[
                 // === НОВЫЙ ЭКРАН ДЫХАТЕЛЬНОГО УПРАЖНЕНИЯ ===
                 Expanded(
-                  child: Column(
-                    children: [
-                      const SizedBox(height: 24),
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: Column(
+                      children: [
+                        const SizedBox(height: 24),
 
-                      // Индикаторы фаз (точки)
-                      if (widget.exercise.phaseLabels != null)
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: List.generate(
-                            widget.exercise.phaseLabels!.length,
-                            (index) {
-                              final isActive = index == _currentStepIndex && _isRunning;
-                              final isCompleted = index < _currentStepIndex && _isRunning;
-                              final phaseColor = widget.exercise.phaseColors != null && 
-                                  index < widget.exercise.phaseColors!.length
-                                  ? widget.exercise.phaseColors![index]
-                                  : color;
-                              
-                              return AnimatedContainer(
-                                duration: const Duration(milliseconds: 400),
-                                curve: Curves.easeInOutCubic,
-                                margin: const EdgeInsets.symmetric(horizontal: 6),
-                                width: isActive ? 32 : 8,
-                                height: 8,
-                                decoration: BoxDecoration(
-                                  color: isActive
-                                      ? phaseColor 
-                                      : (isCompleted
-                                          ? phaseColor.withOpacity(0.4)
-                                          : AppColors.mutedForeground.withOpacity(0.2)),
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                              );
-                            },
+                        // Индикаторы фаз (точки)
+                        if (widget.exercise.phaseLabels != null)
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: List.generate(
+                              widget.exercise.phaseLabels!.length,
+                              (index) {
+                                final isActive = index == _currentStepIndex && _isRunning;
+                                final isCompleted = index < _currentStepIndex && _isRunning;
+                                final phaseColor = widget.exercise.phaseColors != null && 
+                                    index < widget.exercise.phaseColors!.length
+                                    ? widget.exercise.phaseColors![index]
+                                    : color;
+                                
+                                return AnimatedContainer(
+                                  duration: const Duration(milliseconds: 400),
+                                  curve: Curves.easeInOutCubic,
+                                  margin: const EdgeInsets.symmetric(horizontal: 6),
+                                  width: isActive ? 32 : 8,
+                                  height: 8,
+                                  decoration: BoxDecoration(
+                                    color: isActive
+                                        ? phaseColor 
+                                        : (isCompleted
+                                            ? phaseColor.withOpacity(0.4)
+                                            : AppColors.mutedForeground.withOpacity(0.2)),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                );
+                              },
+                            ),
                           ),
-                        ),
-                      
-                      const SizedBox(height: 16),
+                        
+                        const SizedBox(height: 16),
 
-                      // Название текущей фазы
-                      AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 500),
-                        child: Text(
-                          _isFinished 
-                              ? 'Готово!'
-                              : _isRunning 
-                                  ? _phaseText 
-                                  : 'Начните дыхание',
-                          key: ValueKey(_phaseText),
-                          style: TextStyle(
-                            color: _isFinished 
-                                ? AppColors.citrusGreen
+                        // Название текущей фазы
+                        AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 500),
+                          child: Text(
+                            _isFinished 
+                                ? 'Готово!'
                                 : _isRunning 
-                                    ? _currentPhaseColor 
-                                    : AppColors.foreground,
-                            fontSize: 28,
-                            fontWeight: FontWeight.w300,
-                            letterSpacing: 1,
+                                    ? _phaseText 
+                                    : 'Начните дыхание',
+                            key: ValueKey(_phaseText),
+                            style: TextStyle(
+                              color: _isFinished 
+                                  ? AppColors.citrusGreen
+                                  : _isRunning 
+                                      ? _currentPhaseColor 
+                                      : AppColors.foreground,
+                              fontSize: 28,
+                              fontWeight: FontWeight.w300,
+                              letterSpacing: 1,
+                            ),
                           ),
                         ),
-                      ),
-                      
-                      const SizedBox(height: 8),
-                      
-                      // Подсказка
-                      Text(
-                        _isRunning && !_isFinished
-                            ? '${_getCurrentPhaseRemainingSeconds()} секунд'
-                            : widget.exercise.description,
-                        style: TextStyle(
-                          color: AppColors.mutedForeground,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w400,
+                        
+                        const SizedBox(height: 8),
+                        
+                        // Подсказка
+                        Text(
+                          _isRunning && !_isFinished
+                              ? '${_getCurrentPhaseRemainingSeconds()} секунд'
+                              : widget.exercise.description,
+                          style: TextStyle(
+                            color: AppColors.mutedForeground,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w400,
+                          ),
                         ),
-                      ),
 
-                      const Spacer(),
+                        const SizedBox(height: 32),
 
-                      // Главный круг дыхания
-                      SizedBox(
-                        width: 280,
-                        height: 280,
-                        child: Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            // Внешнее свечение (blur)
-                            TweenAnimationBuilder<double>(
-                              duration: _animationDuration,
-                              curve: Curves.easeInOutSine,
-                              tween: Tween(end: _targetScale),
-                              builder: (context, scale, _) {
-                                return Container(
-                                  width: 240 * scale,
-                                  height: 240 * scale,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    gradient: RadialGradient(
-                                      colors: [
-                                        _currentPhaseColor.withOpacity(0.3),
-                                        _currentPhaseColor.withOpacity(0.0),
-                                      ],
-                                      stops: const [0.0, 1.0],
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
-                            
-                            // Кольцо прогресса
-                            TweenAnimationBuilder<double>(
-                              duration: _animationDuration,
-                              curve: Curves.easeInOutSine,
-                              tween: Tween(end: _targetScale),
-                              builder: (context, scale, _) {
-                                return Container(
-                                  width: 200 * scale,
-                                  height: 200 * scale,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    border: Border.all(
-                                      color: _currentPhaseColor.withOpacity(0.3),
-                                      width: 1,
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
-
-                            // Основной круг
-                            TweenAnimationBuilder<double>(
-                              duration: _animationDuration,
-                              curve: Curves.easeInOutSine,
-                              tween: Tween(end: _targetScale),
-                              builder: (context, scale, _) {
-                                return Container(
-                                  width: 180 * scale,
-                                  height: 180 * scale,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    gradient: LinearGradient(
-                                      begin: Alignment.topLeft,
-                                      end: Alignment.bottomRight,
-                                      colors: [
-                                        _currentPhaseColor.withOpacity(0.9),
-                                        _currentPhaseColor.withOpacity(0.5),
-                                      ],
-                                    ),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: _currentPhaseColor.withOpacity(0.4),
-                                        blurRadius: 40,
-                                        spreadRadius: 5,
+                        // Главный круг дыхания
+                        SizedBox(
+                          width: 280,
+                          height: 280,
+                          child: Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              // Внешнее свечение (blur)
+                              TweenAnimationBuilder<double>(
+                                duration: _animationDuration,
+                                curve: Curves.easeInOutSine,
+                                tween: Tween(end: _targetScale),
+                                builder: (context, scale, _) {
+                                  return Container(
+                                    width: 240 * scale,
+                                    height: 240 * scale,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      gradient: RadialGradient(
+                                        colors: [
+                                          _currentPhaseColor.withOpacity(0.3),
+                                          _currentPhaseColor.withOpacity(0.0),
+                                        ],
+                                        stops: const [0.0, 1.0],
                                       ),
-                                    ],
+                                    ),
+                                  );
+                                },
+                              ),
+                              
+                              // Кольцо прогресса
+                              TweenAnimationBuilder<double>(
+                                duration: _animationDuration,
+                                curve: Curves.easeInOutSine,
+                                tween: Tween(end: _targetScale),
+                                builder: (context, scale, _) {
+                                  return Container(
+                                    width: 200 * scale,
+                                    height: 200 * scale,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: _currentPhaseColor.withOpacity(0.3),
+                                        width: 1,
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+
+                              // Основной круг
+                              TweenAnimationBuilder<double>(
+                                duration: _animationDuration,
+                                curve: Curves.easeInOutSine,
+                                tween: Tween(end: _targetScale),
+                                builder: (context, scale, _) {
+                                  return Container(
+                                    width: 180 * scale,
+                                    height: 180 * scale,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      gradient: LinearGradient(
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                        colors: [
+                                          _currentPhaseColor.withOpacity(0.9),
+                                          _currentPhaseColor.withOpacity(0.5),
+                                        ],
+                                      ),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: _currentPhaseColor.withOpacity(0.4),
+                                          blurRadius: 40,
+                                          spreadRadius: 5,
+                                        ),
+                                      ],
+                                    ),
+                                    child: Center(
+                                      child: Icon(
+                                        _getPhaseIcon(),
+                                        color: Colors.white,
+                                        size: 48,
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+
+                              // Иконка в центре (статичная)
+                              if (!_isRunning)
+                                Container(
+                                  width: 180,
+                                  height: 180,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: AppColors.surface1,
+                                    border: Border.all(
+                                      color: color.withOpacity(0.3),
+                                      width: 2,
+                                    ),
                                   ),
                                   child: Center(
-                                    child: Icon(
-                                      _getPhaseIcon(),
-                                      color: Colors.white,
-                                      size: 48,
+                                    child: Text(
+                                      widget.exercise.icon,
+                                      style: const TextStyle(fontSize: 64),
                                     ),
                                   ),
-                                );
-                              },
-                            ),
-
-                            // Иконка в центре (статичная)
-                            if (!_isRunning)
-                              Container(
-                                width: 180,
-                                height: 180,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: AppColors.surface1,
-                                  border: Border.all(
-                                    color: color.withOpacity(0.3),
-                                    width: 2,
-                                  ),
                                 ),
-                                child: Center(
-                                  child: Text(
-                                    widget.exercise.icon,
-                                    style: const TextStyle(fontSize: 64),
-                                  ),
-                                ),
-                              ),
-                          ],
-                        ),
-                      ),
-
-                      const Spacer(),
-
-                      // Общий таймер
-                      Text(
-                        _formatTime(_remainingSeconds),
-                        style: TextStyle(
-                          color: AppColors.foreground.withOpacity(0.6),
-                          fontSize: 18,
-                          fontWeight: FontWeight.w500,
-                          fontFeatures: [const FontFeature.tabularFigures()],
-                        ),
-                      ),
-
-                      const SizedBox(height: 32),
-
-                      // Кнопка управления
-                      GestureDetector(
-                        onTap: _isRunning ? _stopTimer : _startTimer,
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 300),
-                          width: 200,
-                          height: 56,
-                          decoration: BoxDecoration(
-                            color: _isFinished 
-                                ? AppColors.citrusGreen
-                                : _isRunning 
-                                    ? Colors.transparent 
-                                    : color,
-                            borderRadius: BorderRadius.circular(28),
-                            border: _isRunning && !_isFinished
-                                ? Border.all(color: color, width: 2)
-                                : null,
+                            ],
                           ),
-                          child: Center(
+                        ),
+
+                        const SizedBox(height: 32),
+
+                        // Общий таймер
+                        Text(
+                          _formatTime(_remainingSeconds),
+                          style: TextStyle(
+                            color: AppColors.foreground.withOpacity(0.6),
+                            fontSize: 18,
+                            fontWeight: FontWeight.w500,
+                            fontFeatures: [const FontFeature.tabularFigures()],
+                          ),
+                        ),
+
+                        const SizedBox(height: 32),
+
+                        // Кнопка управления
+                        GestureDetector(
+                          onTap: _isRunning ? _stopTimer : _startTimer,
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 300),
+                            width: 200,
+                            height: 56,
+                            decoration: BoxDecoration(
+                              color: _isFinished 
+                                  ? AppColors.citrusGreen
+                                  : _isRunning 
+                                      ? Colors.transparent 
+                                      : color,
+                              borderRadius: BorderRadius.circular(28),
+                              border: _isRunning && !_isFinished
+                                  ? Border.all(color: color, width: 2)
+                                  : null,
+                            ),
+                            child: Center(
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    _isFinished 
+                                        ? Icons.replay
+                                        : _isRunning 
+                                            ? Icons.stop 
+                                            : Icons.play_arrow,
+                                    color: _isRunning && !_isFinished ? color : Colors.white,
+                                    size: 24,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    _isFinished 
+                                        ? 'Заново'
+                                        : _isRunning 
+                                            ? 'Стоп' 
+                                            : 'Начать',
+                                    style: TextStyle(
+                                      color: _isRunning && !_isFinished ? color : Colors.white,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 24),
+
+                        // Карточка с шагами (компактная)
+                        if (widget.exercise.steps.isNotEmpty && !_isFinished)
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: AppColors.surface1,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Последовательность',
+                                  style: TextStyle(
+                                    color: AppColors.mutedForeground,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                                Row(
+                                  children: List.generate(
+                                    widget.exercise.steps.length * 2 - 1,
+                                    (index) {
+                                      if (index.isOdd) {
+                                        return Padding(
+                                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                                          child: Icon(
+                                            Icons.arrow_forward_ios,
+                                            size: 12,
+                                            color: AppColors.mutedForeground.withOpacity(0.3),
+                                          ),
+                                        );
+                                      }
+                                      final stepIndex = index ~/ 2;
+                                      final isActive = stepIndex == _currentStepIndex && _isRunning;
+                                      final stepColor = widget.exercise.phaseColors != null && 
+                                          stepIndex < widget.exercise.phaseColors!.length
+                                          ? widget.exercise.phaseColors![stepIndex]
+                                          : color;
+                                      
+                                      return Expanded(
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                                          decoration: BoxDecoration(
+                                            color: isActive 
+                                                ? stepColor.withOpacity(0.15)
+                                                : Colors.transparent,
+                                            borderRadius: BorderRadius.circular(8),
+                                            border: isActive
+                                                ? Border.all(color: stepColor.withOpacity(0.3))
+                                                : null,
+                                          ),
+                                          child: Column(
+                                            children: [
+                                              Text(
+                                                widget.exercise.steps[stepIndex],
+                                                textAlign: TextAlign.center,
+                                                style: TextStyle(
+                                                  color: isActive ? stepColor : AppColors.mutedForeground,
+                                                  fontSize: 11,
+                                                  fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
+                                                ),
+                                              ),
+                                              if (widget.exercise.phaseDurations != null && 
+                                                  stepIndex < widget.exercise.phaseDurations!.length)
+                                                Text(
+                                                  '${widget.exercise.phaseDurations![stepIndex]}с',
+                                                  style: TextStyle(
+                                                    color: isActive 
+                                                        ? stepColor.withOpacity(0.7)
+                                                        : AppColors.mutedForeground.withOpacity(0.5),
+                                                    fontSize: 10,
+                                                  ),
+                                                ),
+                                            ],
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+
+                        // Сообщение о завершении
+                        if (_isFinished)
+                          Container(
+                            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+                            decoration: BoxDecoration(
+                              color: AppColors.citrusGreen.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: AppColors.citrusGreen.withOpacity(0.2),
+                              ),
+                            ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Icon(
-                                  _isFinished 
-                                      ? Icons.replay
-                                      : _isRunning 
-                                          ? Icons.stop 
-                                          : Icons.play_arrow,
-                                  color: _isRunning && !_isFinished ? color : Colors.white,
-                                  size: 24,
+                                  Icons.check_circle,
+                                  color: AppColors.citrusGreen,
+                                  size: 20,
                                 ),
                                 const SizedBox(width: 8),
                                 Text(
-                                  _isFinished 
-                                      ? 'Заново'
-                                      : _isRunning 
-                                          ? 'Стоп' 
-                                          : 'Начать',
+                                  'Упражнение завершено',
                                   style: TextStyle(
-                                    color: _isRunning && !_isFinished ? color : Colors.white,
-                                    fontSize: 16,
+                                    color: AppColors.citrusGreen,
+                                    fontSize: 14,
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
                               ],
                             ),
                           ),
-                        ),
-                      ),
 
-                      const SizedBox(height: 24),
-
-                      // Карточка с шагами (компактная)
-                      if (widget.exercise.steps.isNotEmpty && !_isFinished)
-                        Container(
-                          margin: const EdgeInsets.symmetric(horizontal: 24),
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: AppColors.surface1,
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Последовательность',
-                                style: TextStyle(
-                                  color: AppColors.mutedForeground,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w500,
-                                  letterSpacing: 0.5,
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                              Row(
-                                children: List.generate(
-                                  widget.exercise.steps.length * 2 - 1,
-                                  (index) {
-                                    if (index.isOdd) {
-                                      return Padding(
-                                        padding: const EdgeInsets.symmetric(horizontal: 8),
-                                        child: Icon(
-                                          Icons.arrow_forward_ios,
-                                          size: 12,
-                                          color: AppColors.mutedForeground.withOpacity(0.3),
-                                        ),
-                                      );
-                                    }
-                                    final stepIndex = index ~/ 2;
-                                    final isActive = stepIndex == _currentStepIndex && _isRunning;
-                                    final stepColor = widget.exercise.phaseColors != null && 
-                                        stepIndex < widget.exercise.phaseColors!.length
-                                        ? widget.exercise.phaseColors![stepIndex]
-                                        : color;
-                                    
-                                    return Expanded(
-                                      child: Container(
-                                        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-                                        decoration: BoxDecoration(
-                                          color: isActive 
-                                              ? stepColor.withOpacity(0.15)
-                                              : Colors.transparent,
-                                          borderRadius: BorderRadius.circular(8),
-                                          border: isActive
-                                              ? Border.all(color: stepColor.withOpacity(0.3))
-                                              : null,
-                                        ),
-                                        child: Column(
-                                          children: [
-                                            Text(
-                                              widget.exercise.steps[stepIndex],
-                                              textAlign: TextAlign.center,
-                                              style: TextStyle(
-                                                color: isActive ? stepColor : AppColors.mutedForeground,
-                                                fontSize: 11,
-                                                fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
-                                              ),
-                                            ),
-                                            if (widget.exercise.phaseDurations != null && 
-                                                stepIndex < widget.exercise.phaseDurations!.length)
-                                              Text(
-                                                '${widget.exercise.phaseDurations![stepIndex]}с',
-                                                style: TextStyle(
-                                                  color: isActive 
-                                                      ? stepColor.withOpacity(0.7)
-                                                      : AppColors.mutedForeground.withOpacity(0.5),
-                                                  fontSize: 10,
-                                                ),
-                                              ),
-                                          ],
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-
-                      // Сообщение о завершении
-                      if (_isFinished)
-                        Container(
-                          margin: const EdgeInsets.symmetric(horizontal: 24),
-                          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
-                          decoration: BoxDecoration(
-                            color: AppColors.citrusGreen.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: AppColors.citrusGreen.withOpacity(0.2),
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.check_circle,
-                                color: AppColors.citrusGreen,
-                                size: 20,
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                'Упражнение завершено',
-                                style: TextStyle(
-                                  color: AppColors.citrusGreen,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-
-                      const SizedBox(height: 24),
-                    ],
+                        const SizedBox(height: 24),
+                      ],
+                    ),
                   ),
                 ),
               ] else ...[
