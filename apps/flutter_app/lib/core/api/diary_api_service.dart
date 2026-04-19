@@ -31,7 +31,9 @@ class DiaryApiService {
     final params = <String, String>{};
     if (startDate != null) params['start_date'] = startDate;
     if (endDate != null) params['end_date'] = endDate;
-    if (search != null) params['search'] = search;
+    if (search != null && search.isNotEmpty) {
+      params['search'] = search;
+    }
 
     final uri = Uri.parse('$baseUrl/diary/entries').replace(queryParameters: params);
     final response = await _client.get(uri, headers: _headers);
@@ -53,6 +55,7 @@ class DiaryApiService {
       if (moodValue != null) 'mood_value': moodValue,
       if (entryDate != null) 'entry_date': entryDate,
     };
+    print('DiaryAPI createEntry body: $body');
 
     final response = await _client.post(
       Uri.parse('$baseUrl/diary/entries'),
