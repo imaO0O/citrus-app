@@ -126,22 +126,11 @@ Future<Response> _handleRequest(RequestContext context) async {
 
   // Инициализация GigaChat сервиса (если ещё не инициализирован)
   if (_gigachatService == null) {
-    _env.load();
-    final authKey = _env['GIGACHAT_AUTHORIZATION_KEY'];
-    
-    print('GIGACHAT_AUTHORIZATION_KEY: ${authKey != null ? "${authKey.substring(0, 20)}..." : "null"}');
-
-    if (authKey != null) {
-      try {
-        _gigachatService = GigaChatService(
-          authorizationKey: authKey,
-        );
-        print('GigaChat service initialized!');
-      } catch (e) {
-        print('Failed to initialize GigaChat service: $e');
-      }
-    } else {
-      print('GigaChat credentials not found. Set GIGACHAT_AUTHORIZATION_KEY environment variable.');
+    try {
+      _gigachatService = GigaChatService();
+      print('GigaChat service initialized!');
+    } catch (e) {
+      print('Failed to initialize GigaChat service: $e');
     }
   }
 
@@ -293,18 +282,18 @@ Future<Response> _handleRequest(RequestContext context) async {
   if (path == '/calendar/events' && method == HttpMethod.get) {
     return _getEvents(context, authContext);
   }
-  
+
   // POST /calendar/events
   if (path == '/calendar/events' && method == HttpMethod.post) {
     return _createEvent(context, authContext);
   }
-  
+
   // PUT /calendar/events/{id}
   if (path.startsWith('/calendar/events/') && method == HttpMethod.put) {
     final id = path.substring('/calendar/events/'.length);
     return _updateEvent(context, authContext, id);
   }
-  
+
   // DELETE /calendar/events/{id}
   if (path.startsWith('/calendar/events/') && method == HttpMethod.delete) {
     final id = path.substring('/calendar/events/'.length);
