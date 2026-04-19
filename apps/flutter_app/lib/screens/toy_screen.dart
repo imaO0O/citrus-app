@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -14,6 +14,10 @@ class ToyScreen extends StatefulWidget {
 
 class _ToyScreenState extends State<ToyScreen> {
   int _activeTab = 0;
+
+  void _onTabChanged(int index) {
+    setState(() => _activeTab = index);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -64,7 +68,7 @@ class _ToyScreenState extends State<ToyScreen> {
           children: List.generate(6, (i) {
             final isActive = _activeTab == i;
             return GestureDetector(
-              onTap: () => setState(() => _activeTab = i),
+              onTap: () => _onTabChanged(i),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
                 margin: const EdgeInsets.symmetric(horizontal: 4),
@@ -1499,7 +1503,7 @@ class CasinoToy extends StatefulWidget {
   State<CasinoToy> createState() => _CasinoToyState();
 }
 
-class _CasinoToyState extends State<CasinoToy> with TickerProviderStateMixin {
+class _CasinoToyState extends State<CasinoToy> with TickerProviderStateMixin, WidgetsBindingObserver {
   static const _symbols = ['🍒', '🍋', '🍊', '🍇', '💎', '7️⃣', '🔔', '⭐'];
   static const _symbolPay = {
     '🍒': 2,
@@ -1536,6 +1540,8 @@ class _CasinoToyState extends State<CasinoToy> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _startPeriodicRefresh();
     _reelResults = List.generate(3, (_) => _symbols[Random().nextInt(_symbols.length)]);
     _reelControllers = List.generate(3, (i) {
       final c = AnimationController(
@@ -1669,7 +1675,30 @@ class _CasinoToyState extends State<CasinoToy> with TickerProviderStateMixin {
     for (final c in _reelControllers) {
       c.dispose();
     }
+    WidgetsBinding.instance.removeObserver(this);
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _refreshCoins();
+    }
+  }
+
+  @override
+  void deactivate() {
+    _refreshTimer?.cancel();
+    super.deactivate();
+  }
+
+  Timer? _refreshTimer;
+
+  void _startPeriodicRefresh() {
+    _refreshTimer?.cancel();
+    _refreshTimer = Timer.periodic(const Duration(seconds: 3), (_) {
+      if (mounted) _refreshCoins();
+    });
   }
 
   int get _questCoinsEarned => _questsDone.length * CasinoCoinsService.questReward;

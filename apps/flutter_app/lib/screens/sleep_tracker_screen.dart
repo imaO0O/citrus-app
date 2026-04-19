@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../core/theme/app_colors.dart';
 import '../core/services/casino_coins_service.dart';
@@ -718,17 +718,18 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
                 );
 
                 context.read<SleepBloc>().add(AddSleepRecord(record));
-                Navigator.pop(context);
-                CasinoCoinsService().completeQuest('sleep');
-
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Запись о сне добавлена +25 🪙'),
-                    backgroundColor: Colors.green,
-                  ),
-                );
+                CasinoCoinsService().completeQuest('sleep').then((_) {
+                  if (!context.mounted) return;
+                  Navigator.pop(context);
+                  if (!context.mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Запись о сне добавлена +25 🪙'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                });
               },
-              style: FilledButton.styleFrom(backgroundColor: AppColors.citrusPurple),
               child: Text('Сохранить'),
             ),
           ],

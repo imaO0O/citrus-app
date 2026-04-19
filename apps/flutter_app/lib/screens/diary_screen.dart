@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import '../core/theme/app_colors.dart';
@@ -377,10 +377,12 @@ class _DiaryScreenState extends State<DiaryScreen> {
                   entryDate: selectedDate,
                 ));
                 Navigator.pop(context);
-                CasinoCoinsService().completeQuest('diary');
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Запись добавлена +25 🪙'), backgroundColor: Colors.green),
-                );
+                CasinoCoinsService().completeQuest('diary').then((_) {
+                  if (!context.mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Запись добавлена +25 🪙'), backgroundColor: Colors.green),
+                  );
+                });
               },
               style: FilledButton.styleFrom(backgroundColor: AppColors.citrusOrange),
               child: Text('Сохранить'),
