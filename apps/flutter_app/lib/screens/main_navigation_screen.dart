@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'dart:ui';
@@ -9,7 +9,6 @@ import '../screens/home_page.dart';
 import '../screens/calendar_screen.dart';
 import '../screens/chat_screen.dart';
 import '../screens/diary_screen.dart';
-import '../screens/media_screen.dart';
 import '../screens/affirmations_screen.dart';
 import '../screens/photo_gallery_screen.dart';
 import '../screens/toy_screen.dart';
@@ -56,25 +55,24 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     super.initState();
     _screens.addAll([
       HomePage(                 // 0 — homepage из test_fornt
-        onNavigateToExercises: () => _setIndex(10),
+        onNavigateToExercises: () => _setIndex(9),
         onNavigateToChat: () => _setIndex(2),
         onNavigateToDiary: () => _setIndex(3),
-        onNavigateToSleep: () => _setIndex(8),
-        onNavigateToTests: () => _setIndex(9),
+        onNavigateToSleep: () => _setIndex(7),
+        onNavigateToTests: () => _setIndex(8),
       ),
       CalendarScreen(),            // 1
       ChatScreen(),                // 2
       DiaryScreen(),               // 3
-      MediaScreen(),               // 4
-      AffirmationsScreen(),        // 5
-      PhotoGalleryScreen(),        // 6
-      ToyScreen(),                 // 7
-      SleepTrackerScreen(),        // 8
-      TestsScreen(),               // 9
-      ExercisesScreen(),           // 10
-      AnalyticsScreen(key: _analyticsKey),           // 11
-      SettingsScreen(),            // 12
-      const ArticlesPage(showBackButton: false),  // 13
+      AffirmationsScreen(),        // 4
+      PhotoGalleryScreen(),        // 5
+      ToyScreen(),                 // 6
+      SleepTrackerScreen(),        // 7
+      TestsScreen(),               // 8
+      ExercisesScreen(),           // 9
+      AnalyticsScreen(key: _analyticsKey),           // 10
+      SettingsScreen(),            // 11
+      const ArticlesPage(showBackButton: false),  // 12
     ]);
 
     // Инициализация BLoC при старте
@@ -95,16 +93,15 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   }
 
   final List<Map<String, String>> _allFeatures = const [
-    {'path': '4',  'label': 'Медиа',         'icon': '🎬', 'desc': 'Видео и аудио'},
-    {'path': '5',  'label': 'Аффирмации',    'icon': '💫', 'desc': 'Позитивные установки'},
-    {'path': '6',  'label': 'Галерея',       'icon': '📸', 'desc': 'Счастливые моменты'},
-    {'path': '7',  'label': 'Антистресс',    'icon': '🎮', 'desc': 'Снять напряжение'},
-    {'path': '8',  'label': 'Сон',           'icon': '🌙', 'desc': 'Трекер сна'},
-    {'path': '9',  'label': 'Тесты',         'icon': '📋', 'desc': 'Психотесты'},
-    {'path': '10', 'label': 'Упражнения',    'icon': '🧘', 'desc': 'Практики'},
-    {'path': '11', 'label': 'Аналитика',     'icon': '📊', 'desc': 'Статистика'},
-    {'path': '12', 'label': 'Настройки',     'icon': '⚙️', 'desc': 'Параметры'},
-    {'path': '13', 'label': 'Статьи',        'icon': '📖', 'desc': 'Самопомощь'},
+    {'path': '4',  'label': 'Аффирмации',    'icon': '💫', 'desc': 'Позитивные установки'},
+    {'path': '5',  'label': 'Галерея',       'icon': '📸', 'desc': 'Счастливые моменты'},
+    {'path': '6',  'label': 'Антистресс',    'icon': '🎮', 'desc': 'Снять напряжение'},
+    {'path': '7',  'label': 'Сон',           'icon': '🌙', 'desc': 'Трекер сна'},
+    {'path': '8',  'label': 'Тесты',         'icon': '📋', 'desc': 'Психотесты'},
+    {'path': '9',  'label': 'Упражнения',    'icon': '🧘', 'desc': 'Практики'},
+    {'path': '10', 'label': 'Аналитика',     'icon': '📊', 'desc': 'Статистика'},
+    {'path': '11', 'label': 'Настройки',     'icon': '⚙️', 'desc': 'Параметры'},
+    {'path': '12', 'label': 'Статьи',        'icon': '📖', 'desc': 'Самопомощь'},
   ];
 
   void _setIndex(int index) {

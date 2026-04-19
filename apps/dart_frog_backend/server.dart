@@ -1278,13 +1278,15 @@ Future<Response> _getDiaryEntries(RequestContext context, _AuthContext auth) asy
     if (startDate != null) whereClause += " AND entry_date >= '$startDate'";
     if (endDate != null) whereClause += " AND entry_date <= '$endDate'";
     if (search != null && search.isNotEmpty) {
-      whereClause += " AND (content ILIKE '%$search%' OR title ILIKE '%$search%')";
+      final escapedSearch = search.replaceAll("'", "''");
+      whereClause += " AND content ILIKE '%$escapedSearch%'";
     }
 
     final results = await _db!.query(
       "SELECT id, user_id, content, mood_value, entry_date::text, created_at::text "
       "FROM diary_entries $whereClause ORDER BY entry_date DESC, created_at DESC",
     );
+    print('DB entry_date values: ${results.map((r) => r[4]).toList()}');
 
     final entries = results.map((row) => {
       'id': row[0] is String ? row[0] : Uuid.unparse(row[0] as Uint8List),
@@ -1317,8 +1319,10 @@ Future<Response> _createDiaryEntry(RequestContext context, _AuthContext auth) as
     }
 
     final recordId = const Uuid().v4();
-    final dateStr = entryDate != null ? entryDate.split('T').first : null;
-    final dateSql = dateStr != null ? "'$dateStr'" : 'CURRENT_DATE';
+    print('Backend received entryDate: $entryDate');
+    final dateStr = entryDate != null ? entryDate : DateTime.now().toIso8601String();
+    print('Backend using dateStr: $dateStr');
+    final dateSql = "'$dateStr'";
     final contentSql = "'${content.replaceAll("'", "''")}'";
     final moodSql = moodValue != null ? moodValue.toString() : 'NULL';
 
@@ -1327,7 +1331,7 @@ Future<Response> _createDiaryEntry(RequestContext context, _AuthContext auth) as
       "VALUES ('$recordId', '$userId', $contentSql, $moodSql, $dateSql)",
     );
 
-    final returnedDate = dateStr ?? DateTime.now().toIso8601String().split('T').first;
+    final returnedDate = dateStr;
     return Response.json(statusCode: 201, body: {
       'id': recordId,
       'user_id': userId,
