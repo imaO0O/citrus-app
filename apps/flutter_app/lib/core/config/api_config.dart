@@ -6,7 +6,7 @@
 ///   .\scripts\set-ip.ps1 -Ip 192.168.0.100 - конкретный IP
 class ApiConfig {
   /// Базовый URL backend.
-  static const String baseUrl = 'http://192.168.0.100:8081';
+  static const String baseUrl = 'http://192.168.0.101:8081';
 
   /// Freesound API
   /// Получить API ключ: https://freesound.org/help/developer/
