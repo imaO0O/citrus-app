@@ -167,8 +167,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       _todayLog.add({'time': time, 'id': id});
       _showFeedback = true;
     });
-    // Начисляем монеты за отметку настроения
-    CasinoCoinsService().completeQuest('mood');
+    CasinoCoinsService().completeQuest('mood').then((_) {
+      CasinoCoinsService().refreshStatus();
+    });
     _feedbackController.forward(from: 0);
     Future.delayed(const Duration(milliseconds: 1800), () {
       if (!mounted) return;

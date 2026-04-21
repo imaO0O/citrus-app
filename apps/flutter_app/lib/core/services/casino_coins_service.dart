@@ -1,8 +1,8 @@
-import 'dart:convert';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'storage_service.dart';
+import '../api/casino_api_service.dart';
 
-/// Задание для получения монет
 class CasinoQuest {
   final String id;
   final String emoji;
@@ -19,28 +19,39 @@ class CasinoQuest {
   });
 }
 
-/// Сервис для управления монетами казино:
-/// - ежедневный лимит 100 монет
-/// - выполнение заданий для получения дополнительных монет
+class SpinResult {
+  final bool success;
+  final int newBalance;
+
+  const SpinResult({
+    required this.success,
+    required this.newBalance,
+  });
+
+  factory SpinResult.fromJson(Map<String, dynamic> json) {
+    return SpinResult(
+      success: json['success'] as bool? ?? false,
+      newBalance: json['new_balance'] as int? ?? 0,
+    );
+  }
+}
+
 class CasinoCoinsService {
   static final CasinoCoinsService _instance = CasinoCoinsService._internal();
   factory CasinoCoinsService() => _instance;
   CasinoCoinsService._internal();
 
   final _storage = StorageService();
+  CasinoApiService? _api;
+  CasinoStatus? _cachedStatus;
+  bool _initialized = false;
+  final _statusController = StreamController<CasinoStatus>.broadcast();
 
-  // Ключи хранилища
-  static const _coinsKey = 'casino_coins';
-  static const _dailyKey = 'casino_daily_limit';
-  static const _questsKey = 'casino_quests_done';
+  Stream<CasinoStatus> get statusStream => _statusController.stream;
 
-  /// Ежедневный лимит бесплатных монет
   static const int dailyFreeLimit = 100;
-
-  /// Награда за каждое задание
   static const int questReward = 25;
 
-  /// Доступные задания
   static const quests = [
     CasinoQuest(
       id: 'diary',
@@ -72,126 +83,138 @@ class CasinoCoinsService {
     ),
   ];
 
-  /// Получить текущий баланс монет
+  Future<CasinoApiService> _getApi() async {
+    if (_api != null) return _api!;
+    final token = await _storage.getString('auth_token');
+    _api = CasinoApiService(token: token);
+    return _api!;
+  }
+
+Future<void> initialize() async {
+    if (_initialized) return;
+    await _refreshStatus(force: true);
+    _initialized = true;
+  }
+
+  Future<void> refreshStatus() async {
+    await _refreshStatus(force: true);
+  }
+
+  Future<void> _refreshStatus({bool force = false}) async {
+    try {
+      final api = await _getApi();
+      final newStatus = await api.getStatus();
+      _cachedStatus = newStatus;
+      _statusController.add(newStatus);
+    } catch (e) {
+      debugPrint('Casino status refresh failed: $e');
+    }
+  }
+
+  int get currentCoins => _cachedStatus?.coins ?? 0;
+  Set<String> get questsDone => _cachedStatus?.questsDone.toSet() ?? {};
+  bool get dailyClaimed => _cachedStatus?.dailyClaimed ?? false;
+
   Future<int> getCoins() async {
-    final raw = await _storage.getString(_coinsKey);
-    return int.tryParse(raw ?? '0') ?? 0;
+    if (_cachedStatus == null) {
+      await _refreshStatus(force: true);
+    }
+    return _cachedStatus?.coins ?? 0;
   }
 
-  /// Установить баланс монет
   Future<void> setCoins(int amount) async {
-    await _storage.setString(_coinsKey, amount.toString());
+    debugPrint('setCoins not supported on server-based service');
   }
 
-  /// Добавить монеты (с проверкой лимитов)
-  /// Возвращает реально добавленное количество
   Future<int> addCoins(int amount, {bool isQuestReward = false}) async {
-    final coins = await getCoins();
-    final newAmount = coins + amount;
-    await setCoins(newAmount);
+    debugPrint('addCoins not supported on server-based service');
     return amount;
   }
 
-  /// Списать монеты. Возвращает false если недостаточно.
-  Future<bool> spendCoins(int amount) async {
+  Future<bool> canAfford(int amount) async {
     final coins = await getCoins();
-    if (coins < amount) return false;
-    await setCoins(coins - amount);
-    return true;
+    return coins >= amount;
   }
 
-  /// Получить дату последнего обновления дневного лимита
-  Future<String?> _getDailyDate() async {
-    return await _storage.getString(_dailyKey);
-  }
-
-  /// Получить текущую дату как строку YYYY-MM-DD
-  String _todayStr() {
-    final now = DateTime.now();
-    return '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
-  }
-
-  /// Проверить, наступил ли новый день, и сбросить лимит если нужно
-  Future<void> _checkDailyReset() async {
-    final lastDate = await _getDailyDate();
-    final today = _todayStr();
-
-    if (lastDate != today) {
-      // Новый день — сбрасываем лимит и выдаем бесплатные монеты
-      await _storage.setString(_dailyKey, today);
-      await _clearQuestsDone();
-      // Начисляем ежедневный лимит
-      final coins = await getCoins();
-      await setCoins(coins + dailyFreeLimit);
-    }
-  }
-
-  /// Инициализация при первом запуске дня
-  Future<void> ensureDailyCoins() async {
-    await _checkDailyReset();
-  }
-
-  /// Получить сколько бесплатных монет уже получено сегодня
-  Future<int> getDailyFreeReceived() async {
-    final lastDate = await _getDailyDate();
-    if (lastDate != _todayStr()) return 0;
-    // Если дата совпадает — лимит уже выдан
-    return dailyFreeLimit;
-  }
-
-  /// Получить список выполненных сегодня заданий
-  Future<Set<String>> getQuestsDone() async {
-    final lastDate = await _getDailyDate();
-    if (lastDate != _todayStr()) return {};
-
-    final raw = await _storage.getString(_questsKey);
-    if (raw == null || raw.isEmpty) return {};
+  Future<SpinResult?> spin(int bet, List<String> symbols, int win) async {
     try {
-      final list = jsonDecode(raw) as List;
-      return list.cast<String>().toSet();
-    } catch (_) {
-      return {};
+      final api = await _getApi();
+      final result = await api.spin(bet, symbols, win);
+      _cachedStatus = CasinoStatus(
+        coins: result.newBalance,
+        dailyClaimed: _cachedStatus?.dailyClaimed ?? false,
+        questsDone: _cachedStatus?.questsDone ?? [],
+        totalSpins: (_cachedStatus?.totalSpins ?? 0) + 1,
+        totalWins: _cachedStatus?.totalWins ?? 0,
+      );
+      _statusController.add(_cachedStatus!);
+      return SpinResult(
+        success: result.success,
+        newBalance: result.newBalance,
+      );
+    } catch (e) {
+      debugPrint('Spin failed: $e');
+      return null;
     }
   }
 
-  /// Очистить выполненные задания (при смене дня)
-  Future<void> _clearQuestsDone() async {
-    await _storage.setString(_questsKey, '[]');
+  Future<bool> spendCoins(int amount) async {
+    return canAfford(amount);
   }
 
-  /// Отметить задание как выполненное и начислить награду
-  /// Возвращает true если задание было отмечено (первый раз за день)
+  Future<void> ensureDailyCoins() async {
+    await initialize();
+  }
+
+  Future<int> getDailyFreeReceived() async {
+    await initialize();
+    if (_cachedStatus?.dailyClaimed == true) return dailyFreeLimit;
+    return 0;
+  }
+
+  Future<Set<String>> getQuestsDone() async {
+    await initialize();
+    return _cachedStatus?.questsDone.toSet() ?? {};
+  }
+
   Future<bool> completeQuest(String questId) async {
-    await _checkDailyReset();
-
-    final done = await getQuestsDone();
-    if (done.contains(questId)) return false; // Уже выполнено
-
-    // Находим награду за задание
-    final quest = quests.firstWhere(
-      (q) => q.id == questId,
-      orElse: () => const CasinoQuest(id: '', emoji: '', title: '', description: '', reward: 0),
-    );
-    if (quest.id.isEmpty) return false;
-
-    // Отмечаем задание и начисляем монеты
-    done.add(questId);
-    await _storage.setString(_questsKey, jsonEncode(done.toList()));
-    await addCoins(quest.reward, isQuestReward: true);
-    debugPrint('Casino quest completed: $questId, +${quest.reward} coins');
-    return true;
+    try {
+      final api = await _getApi();
+      _cachedStatus = await api.completeQuest(questId);
+      _statusController.add(_cachedStatus!);
+      debugPrint('Quest completed: $questId');
+      return true;
+    } catch (e) {
+      debugPrint('Complete quest failed: $e');
+      return false;
+    }
   }
 
-  /// Проверить, выполнено ли конкретное задание сегодня
   Future<bool> isQuestDone(String questId) async {
     final done = await getQuestsDone();
     return done.contains(questId);
   }
 
-  /// Полный сброс (для отладки)
+  Future<bool> claimDaily() async {
+    try {
+      final api = await _getApi();
+      _cachedStatus = await api.claimDaily();
+      _statusController.add(_cachedStatus!);
+      debugPrint('Daily claimed');
+      return true;
+    } catch (e) {
+      debugPrint('Claim daily failed: $e');
+      return false;
+    }
+  }
+
   Future<void> resetAll() async {
-    await _storage.remove(_coinsKey);
-    await _storage.remove(_dailyKey);
-    await _storage.remove(_questsKey);
+    debugPrint('resetAll not supported on server-based service');
+  }
+
+  void clearCache() {
+    _cachedStatus = null;
+    _api = null;
+    _initialized = false;
   }
 }
