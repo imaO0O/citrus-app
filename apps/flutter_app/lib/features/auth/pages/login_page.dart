@@ -5,6 +5,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/services/storage_service.dart';
 import '../bloc/auth_bloc.dart';
 import 'register_page.dart';
+import 'forgot_password_page.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({Key? key}) : super(key: key);
@@ -229,6 +230,25 @@ class _LoginPageState extends State<LoginPage> {
                               style: TextStyle(
                                 fontSize: 14,
                                 color: AppColors.foreground,
+                              ),
+                            ),
+                          ),
+                          const Spacer(),
+                          GestureDetector(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const ForgotPasswordPage(),
+                                ),
+                              );
+                            },
+                            child: Text(
+                              'Забыли пароль?',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: AppColors.citrusOrange,
+                                fontWeight: FontWeight.w500,
                               ),
                             ),
                           ),
