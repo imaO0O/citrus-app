@@ -10,6 +10,7 @@ import 'package:http/http.dart' as http;
 import 'package:mime/mime.dart';
 import 'package:dotenv/dotenv.dart';
 import 'lib/services/gigachat_service.dart';
+import 'lib/services/email_service.dart';
 
 final _env = DotEnv(includePlatformEnvironment: true);
 
@@ -134,6 +135,17 @@ Future<Response> _handleRequest(RequestContext context) async {
     }
   }
 
+  // Инициализация Email сервиса (Yandex SMTP)
+  if (!EmailService.isConfigured) {
+    final yandexEmail = _env['YANDEX_EMAIL'];
+    final yandexAppPassword = _env['YANDEX_APP_PASSWORD'];
+    if (yandexEmail != null && yandexAppPassword != null) {
+      EmailService.init(yandexEmail, yandexAppPassword);
+    } else {
+      print('EmailService: YANDEX_EMAIL / YANDEX_APP_PASSWORD not set, email sending disabled');
+    }
+  }
+
   final path = context.request.uri.path;
   final method = context.request.method;
 
@@ -143,6 +155,12 @@ Future<Response> _handleRequest(RequestContext context) async {
   }
   if (path == '/auth/login' && method == HttpMethod.post) {
     return _login(context);
+  }
+  if (path == '/auth/forgot-password' && method == HttpMethod.post) {
+    return _forgotPassword(context);
+  }
+  if (path == '/auth/reset-password' && method == HttpMethod.post) {
+    return _resetPassword(context);
   }
 
   // GET /themes - получить список тем
@@ -158,6 +176,21 @@ Future<Response> _handleRequest(RequestContext context) async {
   // PUT /user/theme - обновить тему пользователя
   if (path == '/user/theme' && method == HttpMethod.put) {
     return _updateUserTheme(context);
+  }
+
+  // GET /user/profile - получить профиль пользователя
+  if (path == '/user/profile' && method == HttpMethod.get) {
+    return _getUserProfile(context);
+  }
+
+  // PUT /user/profile - обновить профиль пользователя
+  if (path == '/user/profile' && method == HttpMethod.put) {
+    return _updateUserProfile(context);
+  }
+
+  // POST /user/avatar - загрузить аватар
+  if (path == '/user/avatar' && method == HttpMethod.post) {
+    return _uploadUserAvatar(context);
   }
 
   // Sleep endpoints (требуют авторизации)
@@ -597,6 +630,8 @@ Future<Response> _register(RequestContext context) async {
         'email': email,
         'name': name,
         'theme_id': '00000000-0000-0000-0000-000000000001',
+        'avatar_url': null,
+        'phone': null,
         'token': token,
       },
     );
@@ -616,7 +651,7 @@ Future<Response> _login(RequestContext context) async {
     }
 
     final results = await _db!.query(
-      "SELECT id, email, name, theme_id, password_hash FROM users WHERE email = '$email'",
+      "SELECT id, email, name, theme_id, password_hash, avatar_url, phone FROM users WHERE email = '$email'",
     );
 
     if (results.isEmpty) {
@@ -642,8 +677,122 @@ Future<Response> _login(RequestContext context) async {
       'email': row[1] as String,
       'name': row[2] as String?,
       'theme_id': row[3] as String?,
+      'avatar_url': row[5] as String?,
+      'phone': row[6] as String?,
       'token': token,
     });
+  } catch (e) {
+    return Response(statusCode: 500, body: 'Error: $e');
+  }
+}
+
+/// Запросить сброс пароля — отправить код на email
+Future<Response> _forgotPassword(RequestContext context) async {
+  try {
+    final body = await context.request.json();
+    final email = body['email'] as String?;
+
+    if (email == null || email.isEmpty) {
+      return Response(statusCode: 400, body: 'email is required');
+    }
+
+    // Проверяем, существует ли пользователь
+    final results = await _db!.query(
+      "SELECT id FROM users WHERE email = '$email'",
+    );
+
+    if (results.isEmpty) {
+      // В целях безопасности всегда возвращаем 200, чтобы не раскрывать существование email
+      return Response.json(body: {'message': 'Если аккаунт с таким email существует, код отправлен'});
+    }
+
+    final userId = results.first[0] as String;
+
+    // Инвалидируем старые коды
+    await _db!.query(
+      "UPDATE password_reset_tokens SET used = true WHERE user_id = '$userId' AND used = false",
+    );
+
+    // Генерируем 6-значный код
+    final code = (100000 + DateTime.now().millisecondsSinceEpoch % 900000).toString();
+
+    // Сохраняем код (действителен 15 минут)
+    final expiresAt = DateTime.now().add(const Duration(minutes: 15));
+    final tokenId = const Uuid().v4();
+
+    await _db!.query(
+      "INSERT INTO password_reset_tokens (id, user_id, code, expires_at) VALUES ('$tokenId', '$userId', '$code', '${expiresAt.toIso8601String()}')",
+    );
+
+    // Отправляем email
+    final sent = await EmailService.sendPasswordResetCode(email, code);
+    if (!sent) {
+      print('Failed to send reset email to $email, but code is stored');
+    }
+
+    return Response.json(body: {'message': 'Если аккаунт с таким email существует, код отправлен'});
+  } catch (e) {
+    return Response(statusCode: 500, body: 'Error: $e');
+  }
+}
+
+/// Сбросить пароль по коду
+Future<Response> _resetPassword(RequestContext context) async {
+  try {
+    final body = await context.request.json();
+    final email = body['email'] as String?;
+    final code = body['code'] as String?;
+    final newPassword = body['new_password'] as String?;
+
+    if (email == null || code == null || newPassword == null) {
+      return Response(statusCode: 400, body: 'email, code and new_password are required');
+    }
+
+    if (newPassword.length < 6) {
+      return Response(statusCode: 400, body: 'Password must be at least 6 characters');
+    }
+
+    // Находим пользователя
+    final userResults = await _db!.query(
+      "SELECT id FROM users WHERE email = '$email'",
+    );
+
+    if (userResults.isEmpty) {
+      return Response(statusCode: 400, body: 'Invalid or expired code');
+    }
+
+    final userId = userResults.first[0] as String;
+
+    // Проверяем код
+    final tokenResults = await _db!.query(
+      "SELECT id, expires_at FROM password_reset_tokens WHERE user_id = '$userId' AND code = '$code' AND used = false ORDER BY created_at DESC LIMIT 1",
+    );
+
+    if (tokenResults.isEmpty) {
+      return Response(statusCode: 400, body: 'Invalid or expired code');
+    }
+
+    final expiresAt = tokenResults.first[1] as DateTime;
+    if (DateTime.now().isAfter(expiresAt)) {
+      // Код просрочен
+      await _db!.query(
+        "UPDATE password_reset_tokens SET used = true WHERE id = '${tokenResults.first[0]}'",
+      );
+      return Response(statusCode: 400, body: 'Code has expired');
+    }
+
+    // Помечаем код как использованный
+    await _db!.query(
+      "UPDATE password_reset_tokens SET used = true WHERE id = '${tokenResults.first[0]}'",
+    );
+
+    // Обновляем пароль
+    final passwordHash = _hashPassword(newPassword);
+    await _db!.query(
+      "UPDATE users SET password_hash = '$passwordHash' WHERE id = '$userId'",
+    );
+
+    return Response.json(body: {'message': 'Password has been reset successfully'});
   } catch (e) {
     return Response(statusCode: 500, body: 'Error: $e');
   }
@@ -917,6 +1066,123 @@ Future<Response> _updateUserTheme(RequestContext context) async {
     );
 
     return Response.json(body: {'theme_id': themeId});
+  } catch (e) {
+    return Response(statusCode: 500, body: 'Error: $e');
+  }
+}
+
+/// Получить профиль пользователя
+Future<Response> _getUserProfile(RequestContext context) async {
+  final token = _extractToken(context);
+  if (token == null) {
+    return Response(statusCode: 401, body: 'Unauthorized');
+  }
+
+  try {
+    final jwt = JWT.verify(token, SecretKey(_jwtSecret));
+    final userId = jwt.payload['user_id'] as String;
+
+    final result = await _db!.query(
+      "SELECT id, email, name, theme_id, avatar_url, phone FROM users WHERE id = '$userId'",
+    );
+
+    if (result.isEmpty) {
+      return Response(statusCode: 404, body: 'User not found');
+    }
+
+    final row = result.first;
+    return Response.json(body: {
+      'id': row[0] as String,
+      'email': row[1] as String,
+      'name': row[2] as String?,
+      'theme_id': row[3] as String?,
+      'avatar_url': row[4] as String?,
+      'phone': row[5] as String?,
+    });
+  } catch (e) {
+    return Response(statusCode: 500, body: 'Error: $e');
+  }
+}
+
+/// Обновить профиль пользователя (имя, телефон)
+Future<Response> _updateUserProfile(RequestContext context) async {
+  final token = _extractToken(context);
+  if (token == null) {
+    return Response(statusCode: 401, body: 'Unauthorized');
+  }
+
+  try {
+    final jwt = JWT.verify(token, SecretKey(_jwtSecret));
+    final userId = jwt.payload['user_id'] as String;
+    final body = await context.request.json();
+
+    final name = body['name'] as String?;
+    final phone = body['phone'] as String?;
+
+    final nameSql = name != null && name.isNotEmpty ? "'${name.replaceAll("'", "''")}'" : 'NULL';
+    final phoneSql = phone != null && phone.isNotEmpty ? "'${phone.replaceAll("'", "''")}'" : 'NULL';
+
+    await _db!.query(
+      "UPDATE users SET name = $nameSql, phone = $phoneSql WHERE id = '$userId'",
+    );
+
+    // Возвращаем обновлённый профиль
+    final result = await _db!.query(
+      "SELECT id, email, name, theme_id, avatar_url, phone FROM users WHERE id = '$userId'",
+    );
+
+    if (result.isEmpty) {
+      return Response(statusCode: 404, body: 'User not found');
+    }
+
+    final row = result.first;
+    return Response.json(body: {
+      'id': row[0] as String,
+      'email': row[1] as String,
+      'name': row[2] as String?,
+      'theme_id': row[3] as String?,
+      'avatar_url': row[4] as String?,
+      'phone': row[5] as String?,
+    });
+  } catch (e) {
+    return Response(statusCode: 500, body: 'Error: $e');
+  }
+}
+
+/// Загрузить аватар пользователя
+Future<Response> _uploadUserAvatar(RequestContext context) async {
+  final token = _extractToken(context);
+  if (token == null) {
+    return Response(statusCode: 401, body: 'Unauthorized');
+  }
+
+  try {
+    final jwt = JWT.verify(token, SecretKey(_jwtSecret));
+    final userId = jwt.payload['user_id'] as String;
+
+    // Multipart upload
+    final formData = await context.request.formData();
+    final file = formData.files['file'];
+
+    if (file == null) {
+      return Response(statusCode: 400, body: 'file is required');
+    }
+
+    final fileBytes = Uint8List.fromList(await file.readAsBytes());
+    final fileName = file.name;
+    final mimeType = lookupMimeType(fileName) ?? file.contentType.mimeType;
+
+    // Загружаем в Cloudinary
+    final cloudinaryUrl = await _uploadToCloudinary(fileBytes, fileName, mimeType);
+
+    // Обновляем аватар в БД
+    await _db!.query(
+      "UPDATE users SET avatar_url = '$cloudinaryUrl' WHERE id = '$userId'",
+    );
+
+    return Response.json(body: {
+      'avatar_url': cloudinaryUrl,
+    });
   } catch (e) {
     return Response(statusCode: 500, body: 'Error: $e');
   }
