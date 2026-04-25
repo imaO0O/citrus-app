@@ -7,20 +7,23 @@ import 'package:mailer/smtp_server.dart';
 /// https://mail.yandex.ru/#setup/client — включить «Пароли приложений»
 /// Создать пароль приложения для «Почта» и использовать его вместо обычного пароля.
 ///
-/// Переменные окружения:
-///   YANDEX_EMAIL     — адрес вида user@yandex.ru
-///   YANDEX_APP_PASSWORD — пароль приложения (16 символов без пробелов)
+/// Захардкоженные учётные данные Yandex SMTP
+///   _defaultEmail       — адрес вида user@yandex.ru
+///   _defaultAppPassword — пароль приложения (16 символов без пробелов)
 class EmailService {
+  static const String _defaultEmail = 'noreply-citrus@yandex.ru';
+  static const String _defaultAppPassword = 'svjgapqjmdavtvwz';
+
   static String? _email;
   static String? _appPassword;
   static bool _initialized = false;
 
-  /// Инициализация из переменных окружения
-  static void init(String email, String appPassword) {
-    _email = email;
-    _appPassword = appPassword;
+  /// Инициализация с захардкоженными значениями (можно переопределить через аргументы)
+  static void init([String? email, String? appPassword]) {
+    _email = email ?? _defaultEmail;
+    _appPassword = appPassword ?? _defaultAppPassword;
     _initialized = true;
-    print('EmailService: initialized for $email');
+    print('EmailService: initialized for $_email');
   }
 
   static bool get isConfigured => _initialized && _email != null && _appPassword != null;

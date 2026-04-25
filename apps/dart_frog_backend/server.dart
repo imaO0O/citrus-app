@@ -135,13 +135,9 @@ Future<Response> _handleRequest(RequestContext context) async {
     }
   }
 
-  // Инициализация Email сервиса (Yandex SMTP)
+  // Инициализация Email сервиса (Yandex SMTP) — учётные данные захардкожены в EmailService
   if (!EmailService.isConfigured) {
-    const defaultYandexEmail = 'noreply-citrus@yandex.ru';
-    const defaultYandexAppPassword = 'svjgapqjmdavtvwz';
-    final yandexEmail = _env['YANDEX_EMAIL'] ?? defaultYandexEmail;
-    final yandexAppPassword = _env['YANDEX_APP_PASSWORD'] ?? defaultYandexAppPassword;
-    EmailService.init(yandexEmail, yandexAppPassword);
+    EmailService.init();
   }
 
   final path = context.request.uri.path;
@@ -2641,7 +2637,7 @@ Future<Response> _getArticles(RequestContext context, _AuthContext auth) async {
   try {
     // Загружаем статьи из БД
     final results = await _db!.query(
-      "SELECT id, user_id, title, content, category, is_custom, created_at FROM articles WHERE user_id = '$userId' OR user_id IS NULL ORDER BY created_at DESC",
+      "SELECT id, user_id, title, content, category, is_custom, source, tags, created_at FROM articles WHERE user_id = '$userId' OR user_id IS NULL ORDER BY created_at DESC",
     );
 
     final articles = results.map((row) {
@@ -2652,9 +2648,9 @@ Future<Response> _getArticles(RequestContext context, _AuthContext auth) async {
         'content': row[3],
         'category': row[4],
         'is_custom': row[5],
-        'created_at': row[6].toString(),
-        'source': 'app',
-        'tags': row.length > 7 ? row[7] : null,
+        'source': row[6],
+        'tags': row[7],
+        'created_at': row[8].toString(),
       };
     }).toList();
 
@@ -3120,7 +3116,7 @@ Future<Response> _createArticle(RequestContext context, _AuthContext auth) async
     final categorySql = category.replaceAll("'", "''");
 
     final result = await _db!.query(
-      "INSERT INTO articles (id, user_id, title, content, category, is_custom) VALUES ('$articleId', '$userId', '$titleSql', '$contentSql', '$categorySql', true) RETURNING id, user_id, title, content, category, is_custom, created_at",
+      "INSERT INTO articles (id, user_id, title, content, category, is_custom) VALUES ('$articleId', '$userId', '$titleSql', '$contentSql', '$categorySql', true) RETURNING id, user_id, title, content, category, is_custom, source, tags, created_at",
     );
 
     final row = result.first;
@@ -3133,7 +3129,9 @@ Future<Response> _createArticle(RequestContext context, _AuthContext auth) async
         'content': row[3],
         'category': row[4],
         'is_custom': row[5],
-        'created_at': row[6].toString(),
+        'source': row[6],
+        'tags': row[7],
+        'created_at': row[8].toString(),
       },
     );
   } catch (e) {
@@ -3175,7 +3173,7 @@ Future<Response> _updateArticle(RequestContext context, _AuthContext auth, Strin
     final finalCategory = categorySql ?? "'${(currentRow[2] as String).replaceAll("'", "''")}'";
 
     final result = await _db!.query(
-      "UPDATE articles SET title = $finalTitle, content = $finalContent, category = $finalCategory WHERE id = '$id' AND user_id = '$userId' RETURNING id, user_id, title, content, category, is_custom, created_at",
+      "UPDATE articles SET title = $finalTitle, content = $finalContent, category = $finalCategory WHERE id = '$id' AND user_id = '$userId' RETURNING id, user_id, title, content, category, is_custom, source, tags, created_at",
     );
 
     final row = result.first;
@@ -3186,7 +3184,9 @@ Future<Response> _updateArticle(RequestContext context, _AuthContext auth, Strin
       'content': row[3],
       'category': row[4],
       'is_custom': row[5],
-      'created_at': row[6].toString(),
+      'source': row[6],
+      'tags': row[7],
+      'created_at': row[8].toString(),
     });
   } catch (e) {
     return Response(statusCode: 500, body: 'Error: $e');
