@@ -140,6 +140,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
   int? _selected;
   final List<Map<String, dynamic>> _todayLog = [];
+  int _logCounter = 0;
   bool _showFeedback = false;
   final int streak = 7;
   late final AnimationController _feedbackController;
@@ -164,7 +165,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     final time = '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
     setState(() {
       _selected = id;
-      _todayLog.add({'time': time, 'id': id});
+      _logCounter++;
+      _todayLog.add({'time': time, 'id': id, 'key': _logCounter});
       _showFeedback = true;
     });
     // Начисляем монеты за отметку настроения
@@ -361,7 +363,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         },
         child: _selected != null
             ? Container(
-                key: ValueKey('hs_selected'),
+                key: ValueKey('hs_selected_$_selected'),
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                 decoration: BoxDecoration(
                   color: Colors.white.withOpacity(0.06),
@@ -502,6 +504,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           ..._todayLog.reversed.take(4).map((entry) {
             final mood = moods.firstWhere((m) => m.id == entry['id']);
             return Container(
+              key: ValueKey('mood_log_${entry['key']}'),
               margin: const EdgeInsets.only(bottom: 8),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
