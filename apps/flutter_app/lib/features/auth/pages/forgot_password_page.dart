@@ -45,20 +45,31 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
       );
 
       if (response.statusCode == 200) {
-        setState(() => _codeSent = true);
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Код отправлен на ваш email'),
-              backgroundColor: AppColors.citrusGreen,
-            ),
-          );
-          // Переходим на экран ввода кода
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (_) => ResetPasswordPage(email: email),
-            ),
-          );
+        final data = jsonDecode(response.body);
+        if (data['error'] != null) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(data['error'].toString()),
+                backgroundColor: AppColors.destructive,
+              ),
+            );
+          }
+        } else {
+          setState(() => _codeSent = true);
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Код отправлен на ваш email'),
+                backgroundColor: AppColors.citrusGreen,
+              ),
+            );
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => ResetPasswordPage(email: email),
+              ),
+            );
+          }
         }
       } else {
         if (mounted) {
