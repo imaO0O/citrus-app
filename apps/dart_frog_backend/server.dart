@@ -137,13 +137,11 @@ Future<Response> _handleRequest(RequestContext context) async {
 
   // Инициализация Email сервиса (Yandex SMTP)
   if (!EmailService.isConfigured) {
-    final yandexEmail = _env['YANDEX_EMAIL'];
-    final yandexAppPassword = _env['YANDEX_APP_PASSWORD'];
-    if (yandexEmail != null && yandexAppPassword != null) {
-      EmailService.init(yandexEmail, yandexAppPassword);
-    } else {
-      print('EmailService: YANDEX_EMAIL / YANDEX_APP_PASSWORD not set, email sending disabled');
-    }
+    const defaultYandexEmail = 'noreply-citrus@yandex.ru';
+    const defaultYandexAppPassword = 'svjgapqjmdavtvwz';
+    final yandexEmail = _env['YANDEX_EMAIL'] ?? defaultYandexEmail;
+    final yandexAppPassword = _env['YANDEX_APP_PASSWORD'] ?? defaultYandexAppPassword;
+    EmailService.init(yandexEmail, yandexAppPassword);
   }
 
   final path = context.request.uri.path;
@@ -702,8 +700,7 @@ Future<Response> _forgotPassword(RequestContext context) async {
     );
 
     if (results.isEmpty) {
-      // В целях безопасности всегда возвращаем 200, чтобы не раскрывать существование email
-      return Response.json(body: {'message': 'Если аккаунт с таким email существует, код отправлен'});
+      return Response.json(body: {'error': 'Пользователь с таким email не найден'});
     }
 
     final userId = results.first[0] as String;
@@ -731,7 +728,9 @@ Future<Response> _forgotPassword(RequestContext context) async {
     }
 
     return Response.json(body: {'message': 'Если аккаунт с таким email существует, код отправлен'});
-  } catch (e) {
+  } catch (e, stackTrace) {
+    print('ERROR in _forgotPassword: $e');
+    print('Stack trace: $stackTrace');
     return Response(statusCode: 500, body: 'Error: $e');
   }
 }
