@@ -141,6 +141,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   int? _selected;
   final List<Map<String, dynamic>> _todayLog = [];
   int _logCounter = 0;
+  int _selectionKey = 0;
   bool _showFeedback = false;
   final int streak = 7;
   late final AnimationController _feedbackController;
@@ -166,6 +167,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     setState(() {
       _selected = id;
       _logCounter++;
+      _selectionKey++;
       _todayLog.add({'time': time, 'id': id, 'key': _logCounter});
       _showFeedback = true;
     });
@@ -363,7 +365,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         },
         child: _selected != null
             ? Container(
-                key: ValueKey('hs_selected_$_selected'),
+                key: ValueKey('hs_selected_${_selected}_$_selectionKey'),
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                 decoration: BoxDecoration(
                   color: Colors.white.withOpacity(0.06),
