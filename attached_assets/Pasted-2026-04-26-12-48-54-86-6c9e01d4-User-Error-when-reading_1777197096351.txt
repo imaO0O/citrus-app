@@ -1,0 +1,85 @@
+2026-04-26 12:48:54.86
+6c9e01d4
+User
+Error when reading 'main.dart': No such file or directory.
+2026-04-26 12:48:54.87
+6c9e01d4
+System
+command finished with error [sh -c /nix/store/r2iafqg97imxff90j0sdxi3lkzp3kwjw-dart-3.10.4/bin/dart main.dart]: exit status 254
+
+2026-04-26 12:48:54.95
+6c9e01d4
+User
+Error when reading 'main.dart': No such file or directory.
+2026-04-26 12:48:54.96
+6c9e01d4
+System
+command finished with error [sh -c /nix/store/r2iafqg97imxff90j0sdxi3lkzp3kwjw-dart-3.10.4/bin/dart main.dart]: exit status 254
+2026-04-26 12:48:55.11
+6c9e01d4
+User
+Error when reading 'main.dart': No such file or directory.
+2026-04-26 12:48:55.12
+6c9e01d4
+System
+command finished with error [sh -c /nix/store/r2iafqg97imxff90j0sdxi3lkzp3kwjw-dart-3.10.4/bin/dart main.dart]: exit status 254
+2026-04-26 12:48:55.24
+6c9e01d4
+User
+Error when reading 'main.dart': No such file or directory.
+2026-04-26 12:48:55.25
+6c9e01d4
+System
+command finished with error [sh -c /nix/store/r2iafqg97imxff90j0sdxi3lkzp3kwjw-dart-3.10.4/bin/dart main.dart]: exit status 254
+2026-04-26 12:48:55.85
+6c9e01d4
+User
+Error when reading 'main.dart': No such file or directory.
+2026-04-26 12:48:55.86
+6c9e01d4
+System
+command finished with error [sh -c /nix/store/r2iafqg97imxff90j0sdxi3lkzp3kwjw-dart-3.10.4/bin/dart main.dart]: exit status 254
+2026-04-26 12:48:57.32
+6c9e01d4
+User
+Error when reading 'main.dart': No such file or directory.
+2026-04-26 12:48:57.33
+6c9e01d4
+System
+command finished with error [sh -c /nix/store/r2iafqg97imxff90j0sdxi3lkzp3kwjw-dart-3.10.4/bin/dart main.dart]: exit status 254
+2026-04-26 12:48:59.06
+6c9e01d4
+User
+Error when reading 'main.dart': No such file or directory.
+2026-04-26 12:48:59.07
+6c9e01d4
+System
+command finished with error [sh -c /nix/store/r2iafqg97imxff90j0sdxi3lkzp3kwjw-dart-3.10.4/bin/dart main.dart]: exit status 254
+2026-04-26 12:49:04.51
+6c9e01d4
+User
+Error when reading 'main.dart': No such file or directory.
+2026-04-26 12:49:04.52
+6c9e01d4
+System
+command finished with error [sh -c /nix/store/r2iafqg97imxff90j0sdxi3lkzp3kwjw-dart-3.10.4/bin/dart main.dart]: exit status 254
+2026-04-26 12:49:12.57
+6c9e01d4
+User
+Error when reading 'main.dart': No such file or directory.
+2026-04-26 12:49:12.58
+6c9e01d4
+System
+command finished with error [sh -c /nix/store/r2iafqg97imxff90j0sdxi3lkzp3kwjw-dart-3.10.4/bin/dart main.dart]: exit status 254
+2026-04-26 12:49:21.22
+6c9e01d4
+User
+Error when reading 'main.dart': No such file or directory.
+2026-04-26 12:49:21.22
+6c9e01d4
+System
+command finished with error [sh -c /nix/store/r2iafqg97imxff90j0sdxi3lkzp3kwjw-dart-3.10.4/bin/dart main.dart]: exit status 254
+2026-04-26 12:49:26.13
+6c9e01d4
+System
+crash loop detected
