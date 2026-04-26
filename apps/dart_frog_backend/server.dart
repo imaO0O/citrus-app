@@ -3005,14 +3005,16 @@ Future<Response> _getCasinoStatus(RequestContext context, _AuthContext auth) asy
     }
     final row = result.first;
     final lastDaily = row[1] as DateTime?;
-    final questsDone = row[2] as List? ?? [];
+    var questsDone = row[2] as List? ?? [];
     final totalSpins = row[3] as int? ?? 0;
     final totalWins = row[4] as int? ?? 0;
     final now = DateTime.now();
     bool dailyClaimed = lastDaily != null && lastDaily.year == now.year && lastDaily.month == now.month && lastDaily.day == now.day;
     if (!dailyClaimed) {
-      await _db!.query("UPDATE casino_users SET coins = coins + 100, last_daily_claim = NOW() WHERE user_id = '$userId'");
+      // Новый день: начисляем ежедневные монеты и сбрасываем выполненные задания
+      await _db!.query("UPDATE casino_users SET coins = coins + 100, last_daily_claim = NOW(), quests_done = '{}' WHERE user_id = '$userId'");
       dailyClaimed = true;
+      questsDone = [];
     }
     final updated = await _db!.query("SELECT coins FROM casino_users WHERE user_id = '$userId'");
     final coins = updated.isNotEmpty ? (updated.first[0] as int? ?? 0) : 0;

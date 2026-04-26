@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../core/repository/mood_repository.dart';
 import '../core/repository/sleep_repository.dart';
 import '../core/repository/notification_preferences_repository.dart';
+import '../core/services/casino_coins_service.dart';
 import '../screens/models/mood.dart';
 
 abstract class DashboardEvent {}
@@ -192,6 +195,9 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
       // Сохраняем на сервере в фоне
       await _moodRepository.createRecord(event.moodId, timestamp: event.timestamp);
       debugPrint('DashboardBloc: настроение сохранено');
+
+      // Начисляем монеты за ежедневное задание «дольки»
+      unawaited(CasinoCoinsService().completeQuest('mood'));
 
       // Показываем подтверждающее уведомление
       await _notificationRepository.notificationService.showInstantNotification(
