@@ -37,3 +37,8 @@ waitForPort = 5000
 [[ports]]
 localPort = 5000
 externalPort = 80
+
+[deployment]
+deploymentTarget = "vm"
+run = ["bash", "-c", "cd apps/dart_frog_backend && dart run server.dart"]
+build = ["bash", "-c", "cd apps/dart_frog_backend && dart pub get"]

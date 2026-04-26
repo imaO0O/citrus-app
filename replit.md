@@ -50,10 +50,10 @@ cd apps/dart_frog_backend && dart run server.dart
 ## Развёртывание (publish)
 
 Настроено как `vm` deployment:
-- **Build:** `cd apps/dart_frog_backend && dart_frog build`
-- **Run:** `cd apps/dart_frog_backend && PORT=5000 dart build/bin/server.dart`
+- **Build:** `cd apps/dart_frog_backend && dart pub get`
+- **Run:** `cd apps/dart_frog_backend && dart run server.dart`
 
-> Команда сборки осталась с предыдущей dart_frog-структуры; для текущего одностраничного `server.dart` достаточно `dart run server.dart`. При необходимости развёртывание можно перенастроить.
+`PORT=5000` и `DB_*` (Supabase) подтягиваются из Secrets автоматически и в development, и в production.
 
 ## Известные нюансы
 
