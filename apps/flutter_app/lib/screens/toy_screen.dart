@@ -1533,6 +1533,7 @@ class _CasinoToyState extends State<CasinoToy> with TickerProviderStateMixin, Wi
   bool _isLoading = true;
 
   final _coinsService = CasinoCoinsService();
+  StreamSubscription? _statusSubscription;
 
   // Для анимации «вращения» каждого барабана
   late List<List<String>> _reelStrips;
@@ -1541,13 +1542,13 @@ class _CasinoToyState extends State<CasinoToy> with TickerProviderStateMixin, Wi
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _startPeriodicRefresh();
     _reelResults = List.generate(3, (_) => _symbols[Random().nextInt(_symbols.length)]);
     _reelControllers = List.generate(3, (i) {
       final c = AnimationController(
         vsync: this,
-        duration: Duration(milliseconds: 1200 + i * 400),
+        duration: Duration(milliseconds: 1500 + i * 200),
       );
+      c.addListener(() => setState(() {}));
       return c;
     });
     _reelCurves = _reelControllers.map((c) => CurvedAnimation(parent: c, curve: Curves.easeOutCubic)).toList();
@@ -1557,25 +1558,42 @@ class _CasinoToyState extends State<CasinoToy> with TickerProviderStateMixin, Wi
   }
 
   Future<void> _loadState() async {
-    await _coinsService.ensureDailyCoins();
-    final coins = await _coinsService.getCoins();
-    final questsDone = await _coinsService.getQuestsDone();
-    if (mounted) {
-      setState(() {
-        _coins = coins;
-        _questsDone = questsDone;
-        _isLoading = false;
-      });
+    await _coinsService.initialize();
+    await _refreshFromServer();
+    _statusSubscription = _coinsService.statusStream.listen((status) {
+      if (mounted) {
+        setState(() {
+          _coins = status.coins;
+          _questsDone = status.questsDone.toSet();
+        });
+      }
+    });
+    setState(() {
+      _coins = _coinsService.currentCoins;
+      _questsDone = _coinsService.questsDone;
+      _isLoading = false;
+    });
+  }
+
+  Future<void> _refreshFromServer() async {
+    try {
+      await _coinsService.refreshStatus();
+      if (mounted) {
+        setState(() {
+          _coins = _coinsService.currentCoins;
+          _questsDone = _coinsService.questsDone;
+        });
+      }
+    } catch (e) {
+      debugPrint('Failed to refresh casino status: $e');
     }
   }
 
   Future<void> _refreshCoins() async {
-    final coins = await _coinsService.getCoins();
-    final questsDone = await _coinsService.getQuestsDone();
     if (mounted) {
       setState(() {
-        _coins = coins;
-        _questsDone = questsDone;
+        _coins = _coinsService.currentCoins;
+        _questsDone = _coinsService.questsDone;
       });
     }
   }
@@ -1596,71 +1614,61 @@ class _CasinoToyState extends State<CasinoToy> with TickerProviderStateMixin, Wi
     }
 
     HapticFeedback.mediumImpact();
-    final spent = await _coinsService.spendCoins(_bet);
-    if (!spent) {
-      setState(() {
-        _resultMessage = 'Недостаточно монет!';
-        _resultColor = AppColors.destructive;
-      });
-      return;
-    }
+
+    _reelResults = List.generate(3, (_) => _symbols[Random().nextInt(_symbols.length)]);
 
     setState(() {
       _isSpinning = true;
-      _coins -= _bet;
       _resultMessage = '';
-      _totalSpins++;
+      for (int i = 0; i < 3; i++) {
+        _reelStrips[i] = _generateStrip();
+      }
     });
 
-    // Генерируем новые ленты и результаты
-    _reelStrips = List.generate(3, (_) => _generateStrip());
-    _reelResults = List.generate(3, (_) => _symbols[Random().nextInt(_symbols.length)]);
-
-    // Запускаем барабаны по очереди
     for (int i = 0; i < 3; i++) {
       _reelControllers[i].reset();
-      Future.delayed(Duration(milliseconds: i * 200), () {
-        if (mounted) _reelControllers[i].forward();
-      });
+      _reelControllers[i].forward();
     }
 
-    // Подсчёт результата после остановки всех барабанов
-    final totalDuration = 1200 + 2 * 200 + 2 * 400 + 100;
-    Future.delayed(Duration(milliseconds: totalDuration), () {
-      if (!mounted) return;
-      _calculateResult();
-    });
-  }
+    await Future.delayed(const Duration(milliseconds: 2000));
 
-  void _calculateResult() async {
     final r = _reelResults;
-    int winAmount = 0;
+    int displayWin = 0;
     String msg = '';
 
     if (r[0] == r[1] && r[1] == r[2]) {
       final pay = _symbolPay[r[0]]!;
-      winAmount = _bet * pay;
-      msg = '🎉 ДЖЕКПОТ! ${r[0]}${r[1]}${r[2]} — ×$pay!';
+      displayWin = _bet * pay;
+      msg = '🎉 ДЖЕКПОТ! ${r[0]}${r[1]}${r[2]} — ×$pay! +$displayWin';
       HapticFeedback.heavyImpact();
     } else if (r[0] == r[1] || r[1] == r[2] || r[0] == r[2]) {
-      winAmount = (_bet * 1.5).round();
-      msg = '✨ Два совпадения! +$winAmount монет';
+      displayWin = (_bet * 1.5).round();
+      msg = '✨ Два совпадения! +$displayWin монет';
       HapticFeedback.lightImpact();
     } else {
       msg = '😔 Не повезло... Крути ещё!';
     }
 
-    if (winAmount > 0) {
-      await _coinsService.addCoins(winAmount);
+    final spinResult = await _coinsService.spin(_bet, _reelResults, displayWin);
+    if (spinResult == null) {
+      setState(() {
+        _isSpinning = false;
+        _resultMessage = 'Ошибка! Попробуй ещё.';
+        _resultColor = AppColors.destructive;
+      });
+      return;
     }
 
+    final newBalance = spinResult.newBalance;
+    _totalSpins++;
+    
     setState(() {
       _isSpinning = false;
-      _coins += winAmount;
+      _coins = newBalance;
       _resultMessage = msg;
-      _resultColor = winAmount > 0 ? AppColors.citrusGreen : AppColors.mutedForeground;
-      if (winAmount > 0) _totalWins++;
-      if (winAmount > _biggestWin) _biggestWin = winAmount;
+      _resultColor = displayWin > 0 ? AppColors.citrusGreen : AppColors.mutedForeground;
+      if (displayWin > 0) _totalWins++;
+      if (displayWin > _biggestWin) _biggestWin = displayWin;
     });
   }
 
@@ -1675,6 +1683,7 @@ class _CasinoToyState extends State<CasinoToy> with TickerProviderStateMixin, Wi
     for (final c in _reelControllers) {
       c.dispose();
     }
+    _statusSubscription?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -1684,21 +1693,6 @@ class _CasinoToyState extends State<CasinoToy> with TickerProviderStateMixin, Wi
     if (state == AppLifecycleState.resumed) {
       _refreshCoins();
     }
-  }
-
-  @override
-  void deactivate() {
-    _refreshTimer?.cancel();
-    super.deactivate();
-  }
-
-  Timer? _refreshTimer;
-
-  void _startPeriodicRefresh() {
-    _refreshTimer?.cancel();
-    _refreshTimer = Timer.periodic(const Duration(seconds: 3), (_) {
-      if (mounted) _refreshCoins();
-    });
   }
 
   int get _questCoinsEarned => _questsDone.length * CasinoCoinsService.questReward;
