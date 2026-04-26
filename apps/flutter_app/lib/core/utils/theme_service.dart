@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 
@@ -15,6 +16,8 @@ class ThemeService extends ChangeNotifier {
   factory ThemeService() => _instance;
 
   static const String _fileName = 'theme_config.json';
+  static const _iconChannel = MethodChannel('com.citrus.app/dynamic_icon');
+
   ThemeMode _themeMode = ThemeMode.light;
   bool _isLoaded = false;
 
@@ -49,6 +52,9 @@ class ThemeService extends ChangeNotifier {
 
     _isLoaded = true;
     notifyListeners();
+
+    // Устанавливаем иконку в соответствии с загруженной темой
+    await _updateAppIcon(isDarkMode);
   }
 
   /// Загрузка темы с сервера. Возвращает true, если тема загружена успешно.
@@ -148,5 +154,17 @@ class ThemeService extends ChangeNotifier {
     notifyListeners();
     await _saveTheme(isDark);
     await _saveThemeToDb(isDark);
+    await _updateAppIcon(isDark);
+  }
+
+  /// Обновление иконки приложения в зависимости от темы
+  Future<void> _updateAppIcon(bool isDark) async {
+    // Android: переключение activity-alias через MethodChannel
+    // iOS: переключение alternate app icon через MethodChannel
+    try {
+      await _iconChannel.invokeMethod('setIcon', {'isDark': isDark});
+    } catch (e) {
+      debugPrint('Ошибка смены иконки: $e');
+    }
   }
 }
