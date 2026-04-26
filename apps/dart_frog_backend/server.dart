@@ -115,7 +115,7 @@ Future<Response> _handleRequest(RequestContext context) async {
   // Инициализация БД при первом запросе
   if (_db == null || _db!.isClosed) {
     try {
-      _env.load('.env'); // загружаем .env если ещё не загружен
+      _env.load(); // загружаем .env если ещё не загружен (defaults to ['.env'])
       _db = PostgreSQLConnection(
         _dbHost,
         _dbPort,
@@ -1644,7 +1644,8 @@ Future<Response> _deleteDiaryEntry(RequestContext context, _AuthContext auth, St
 }
 
 void main() async {
-  final server = await serve(_handleRequest, InternetAddress.anyIPv4, 8081);
+  final port = int.tryParse(Platform.environment['PORT'] ?? '8081') ?? 8081;
+  final server = await serve(_handleRequest, InternetAddress.anyIPv4, port);
   print('Server running on http://${server.address.host}:${server.port}');
 }
 
