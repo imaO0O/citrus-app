@@ -170,21 +170,21 @@ class _DiaryScreenState extends State<DiaryScreen> with SingleTickerProviderStat
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(40),
-        child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+        child: Column(mainAxisAlignment: MainAxisAlignment.center, mainAxisSize: MainAxisSize.min, children: [
           Container(
-            width: 140, height: 140,
+            width: 120, height: 120,
             decoration: BoxDecoration(
               gradient: LinearGradient(colors: [AppColors.citrusOrange.withAlpha(38), AppColors.citrusAmber.withAlpha(25)], begin: Alignment.topLeft, end: Alignment.bottomRight),
               shape: BoxShape.circle,
             ),
-            child: const Center(child: Text('📔', style: TextStyle(fontSize: 64))),
+            child: const Center(child: Text('📔', style: TextStyle(fontSize: 52))),
           ),
-          const SizedBox(height: 28),
-          Text('Начните свой дневник', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: AppColors.foreground)),
-          const SizedBox(height: 10),
+          const SizedBox(height: 20),
+          Text('Начните свой дневник', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: AppColors.foreground)),
+          const SizedBox(height: 8),
           Text('Записывайте мысли, эмоции и события.\nЭто поможет лучше понять себя.', textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 14, color: AppColors.mutedForeground, height: 1.6)),
-          const SizedBox(height: 32),
+            style: TextStyle(fontSize: 14, color: AppColors.mutedForeground, height: 1.5)),
+          const SizedBox(height: 24),
           ElevatedButton.icon(
             onPressed: () => _showAddDialog(),
             icon: Icon(Icons.add_rounded),
@@ -192,7 +192,7 @@ class _DiaryScreenState extends State<DiaryScreen> with SingleTickerProviderStat
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.citrusOrange,
               foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
             ),
           ),

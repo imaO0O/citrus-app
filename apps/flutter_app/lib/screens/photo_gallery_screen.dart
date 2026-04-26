@@ -31,6 +31,7 @@ class _PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
   }
 
   Future<void> _loadPhotos() async {
+    if (!mounted) return;
     setState(() {
       _isLoading = true;
       _error = null;
@@ -39,11 +40,13 @@ class _PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
     try {
       final repo = context.read<MemoryPhotoRepository>();
       final photos = await repo.getPhotos();
+      if (!mounted) return;
       setState(() {
         _photos = photos;
         _isLoading = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _error = 'Ошибка загрузки: $e';
         _isLoading = false;
@@ -55,6 +58,7 @@ class _PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
     try {
       final repo = context.read<MemoryPhotoRepository>();
       final newFavorite = await repo.toggleFavorite(photo.id);
+      if (!mounted) return;
       setState(() {
         final index = _photos.indexWhere((p) => p.id == photo.id);
         if (index != -1) {
@@ -101,6 +105,7 @@ class _PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
         photoDate: DateTime.now(),
       );
 
+      if (!mounted) return;
       setState(() => _isUploading = false);
 
       if (mounted) {
@@ -113,7 +118,7 @@ class _PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
         await _loadPhotos();
       }
     } catch (e) {
-      setState(() => _isUploading = false);
+      if (mounted) setState(() => _isUploading = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

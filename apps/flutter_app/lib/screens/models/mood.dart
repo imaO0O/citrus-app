@@ -64,19 +64,23 @@ class Mood {
 class MoodLogEntry {
   final DateTime timestamp;
   final int moodId;
+  final String entryKey;
 
-  const MoodLogEntry({
+  MoodLogEntry({
     required this.timestamp,
     required this.moodId,
-  });
+    String? entryKey,
+  }) : entryKey = entryKey ?? '${timestamp.millisecondsSinceEpoch}_$moodId';
 
   Map<String, dynamic> toJson() => {
     'timestamp': timestamp.toIso8601String(),
     'moodId': moodId,
+    'entryKey': entryKey,
   };
 
   factory MoodLogEntry.fromJson(Map<String, dynamic> json) => MoodLogEntry(
     timestamp: DateTime.parse(json['timestamp'] as String),
     moodId: json['moodId'] as int,
+    entryKey: json['entryKey'] as String?,
   );
 }

@@ -37,7 +37,7 @@ class _EmergencyModalState extends State<EmergencyModal> {
   Future<void> _loadCuratorPhone() async {
     final storage = StorageService();
     final saved = await storage.getString('curator_phone');
-    if (saved != null && saved.isNotEmpty) {
+    if (saved != null && saved.isNotEmpty && mounted) {
       setState(() {
         curatorPhone = saved;
         inputValue = saved;

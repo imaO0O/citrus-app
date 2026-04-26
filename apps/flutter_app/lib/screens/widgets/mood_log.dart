@@ -36,6 +36,7 @@ class MoodLog extends StatelessWidget {
     final mood = Mood.all.firstWhere((m) => m.id == entry.moodId);
 
     return Padding(
+      key: ValueKey(entry.entryKey),
       padding: const EdgeInsets.only(bottom: 8),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),

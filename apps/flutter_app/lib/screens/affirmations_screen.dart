@@ -34,6 +34,7 @@ class _AffirmationsScreenState extends State<AffirmationsScreen> {
   }
 
   Future<void> _loadAffirmations() async {
+    if (!mounted) return;
     setState(() => _isLoading = true);
     
     final affirmations = await _service.getCachedAffirmations();

@@ -11,6 +11,9 @@ dart
 .env
 *.env
 
+# Deployment instructions
+DEPLOY_REPLIT_SUPABASE.md
+
 # IDE
 .vscode/
 .idea/

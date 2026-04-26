@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../core/theme/app_colors.dart';
@@ -140,7 +141,10 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
   int? _selected;
   final List<Map<String, dynamic>> _todayLog = [];
+  int _logCounter = 0;
+  int _selectionKey = 0;
   bool _showFeedback = false;
+  Timer? _resetTimer;
   final int streak = 7;
   late final AnimationController _feedbackController;
 
@@ -155,28 +159,34 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
   @override
   void dispose() {
+    _resetTimer?.cancel();
     _feedbackController.dispose();
     super.dispose();
   }
 
   void _handleSelect(int id) {
+    // Отменяем предыдущий таймер сброса, чтобы избежать гонки при быстрых кликах
+    _resetTimer?.cancel();
+
     final now = DateTime.now();
     final time = '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
     setState(() {
       _selected = id;
-      _todayLog.add({'time': time, 'id': id});
+      _logCounter++;
+      _selectionKey++;
+      _todayLog.add({'time': time, 'id': id, 'key': _logCounter});
       _showFeedback = true;
     });
     CasinoCoinsService().completeQuest('mood').then((_) {
       CasinoCoinsService().refreshStatus();
     });
     _feedbackController.forward(from: 0);
-    Future.delayed(const Duration(milliseconds: 1800), () {
+    _resetTimer = Timer(const Duration(milliseconds: 1800), () {
       if (!mounted) return;
       _feedbackController.reverse().then((_) {
         if (!mounted) return;
         setState(() => _showFeedback = false);
-        Future.delayed(const Duration(milliseconds: 400), () {
+        _resetTimer = Timer(const Duration(milliseconds: 400), () {
           if (mounted) setState(() => _selected = null);
         });
       });
@@ -362,7 +372,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         },
         child: _selected != null
             ? Container(
-                key: ValueKey('hs_selected'),
+                key: ValueKey('hs_selected_${_selected}_$_selectionKey'),
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                 decoration: BoxDecoration(
                   color: Colors.white.withOpacity(0.06),
@@ -503,6 +513,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           ..._todayLog.reversed.take(4).map((entry) {
             final mood = moods.firstWhere((m) => m.id == entry['id']);
             return Container(
+              key: ValueKey('mood_log_${entry['key']}'),
               margin: const EdgeInsets.only(bottom: 8),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
