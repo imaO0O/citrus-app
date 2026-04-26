@@ -6,7 +6,7 @@
 ///   .\scripts\set-ip.ps1 -Ip 192.168.0.100 - конкретный IP
 class ApiConfig {
   /// Базовый URL backend.
-  static const String baseUrl = 'http://192.168.0.110:8081';
+  static const String baseUrl = 'https://citrus-app--sahsashishkov.replit.app';
 
   /// Freesound API
   /// Получить API ключ: https://freesound.org/help/developer/
