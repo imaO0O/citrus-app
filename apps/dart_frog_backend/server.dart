@@ -17,6 +17,13 @@ final _env = DotEnv(includePlatformEnvironment: true);
 PostgreSQLConnection? _db;
 const _jwtSecret = 'citrus-app-secret-key-change-in-production';
 
+// Параметры БД из .env (с fallback на локальную БД для разработки)
+String get _dbHost => _env['DB_HOST'] ?? 'localhost';
+int get _dbPort => int.tryParse(_env['DB_PORT'] ?? '5432') ?? 5432;
+String get _dbName => _env['DB_NAME'] ?? 'citrus';
+String get _dbUser => _env['DB_USER'] ?? 'citrus';
+String get _dbPassword => _env['DB_PASSWORD'] ?? 'citrus123';
+
 // GigaChat сервис
 GigaChatService? _gigachatService;
 
@@ -108,15 +115,16 @@ Future<Response> _handleRequest(RequestContext context) async {
   // Инициализация БД при первом запросе
   if (_db == null || _db!.isClosed) {
     try {
+      _env.load('.env'); // загружаем .env если ещё не загружен
       _db = PostgreSQLConnection(
-        'localhost',
-        5432,
-        'citrus',
-        username: 'citrus',
-        password: 'citrus123',
+        _dbHost,
+        _dbPort,
+        _dbName,
+        username: _dbUser,
+        password: _dbPassword,
       );
       await _db!.open();
-      print('Database connected!');
+      print('Database connected to $_dbHost:$_dbPort/$_dbName!');
     } catch (e) {
       return Response(
         statusCode: 500,
