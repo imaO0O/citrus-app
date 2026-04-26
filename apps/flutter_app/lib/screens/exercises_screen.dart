@@ -775,10 +775,10 @@ class _VideoExerciseScreenState extends State<VideoExerciseScreen> {
       ..setNavigationDelegate(
         NavigationDelegate(
           onPageStarted: (url) {
-            setState(() => _isLoading = true);
+            if (mounted) setState(() => _isLoading = true);
           },
           onPageFinished: (url) {
-            setState(() => _isLoading = false);
+            if (mounted) setState(() => _isLoading = false);
           },
         ),
       )
