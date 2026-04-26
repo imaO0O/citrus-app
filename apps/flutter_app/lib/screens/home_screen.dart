@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../core/theme/app_colors.dart';
@@ -143,6 +144,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   int _logCounter = 0;
   int _selectionKey = 0;
   bool _showFeedback = false;
+  Timer? _resetTimer;
   final int streak = 7;
   late final AnimationController _feedbackController;
 
@@ -157,11 +159,15 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
   @override
   void dispose() {
+    _resetTimer?.cancel();
     _feedbackController.dispose();
     super.dispose();
   }
 
   void _handleSelect(int id) {
+    // Отменяем предыдущий таймер сброса, чтобы избежать гонки при быстрых кликах
+    _resetTimer?.cancel();
+
     final now = DateTime.now();
     final time = '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
     setState(() {
@@ -174,12 +180,12 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     // Начисляем монеты за отметку настроения
     CasinoCoinsService().completeQuest('mood');
     _feedbackController.forward(from: 0);
-    Future.delayed(const Duration(milliseconds: 1800), () {
+    _resetTimer = Timer(const Duration(milliseconds: 1800), () {
       if (!mounted) return;
       _feedbackController.reverse().then((_) {
         if (!mounted) return;
         setState(() => _showFeedback = false);
-        Future.delayed(const Duration(milliseconds: 400), () {
+        _resetTimer = Timer(const Duration(milliseconds: 400), () {
           if (mounted) setState(() => _selected = null);
         });
       });

@@ -31,6 +31,7 @@ class DashboardLoaded extends DashboardState {
   final String sleepHours;
   final List<MoodLogEntry> todayLog;
   final int? selectedMoodId;
+  final int selectionKey;
   final MoodRecord? lastEntry;
   final double averageMood;
 
@@ -40,6 +41,7 @@ class DashboardLoaded extends DashboardState {
     this.sleepHours = '—',
     this.todayLog = const [],
     this.selectedMoodId,
+    this.selectionKey = 0,
     this.lastEntry,
     this.averageMood = 0,
   });
@@ -50,6 +52,7 @@ class DashboardLoaded extends DashboardState {
     String? sleepHours,
     List<MoodLogEntry>? todayLog,
     int? selectedMoodId,
+    bool incrementSelectionKey = false,
     MoodRecord? lastEntry,
     double? averageMood,
   }) {
@@ -59,6 +62,7 @@ class DashboardLoaded extends DashboardState {
       sleepHours: sleepHours ?? this.sleepHours,
       todayLog: todayLog ?? this.todayLog,
       selectedMoodId: selectedMoodId,
+      selectionKey: incrementSelectionKey ? this.selectionKey + 1 : this.selectionKey,
       lastEntry: lastEntry,
       averageMood: averageMood ?? this.averageMood,
     );
@@ -69,6 +73,7 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
   final MoodRepository _moodRepository = MoodRepository(userId: 'unknown', token: null);
   final NotificationPreferencesRepository _notificationRepository = NotificationPreferencesRepository();
   SleepRepository? _sleepRepository;
+  int _logCounter = 0;
 
   DashboardBloc() : super(DashboardInitial()) {
     on<DashboardLoad>(_onLoad);
@@ -178,15 +183,18 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
       }
 
       // Оптимистичное обновление: сразу добавляем запись в начало списка
+      _logCounter++;
       final newEntry = MoodLogEntry(
         timestamp: event.timestamp,
         moodId: event.moodId,
+        entryKey: 'mood_log_${_logCounter}',
       );
       final updatedTodayLog = [newEntry, ...current.todayLog].take(4).toList();
 
       emit(current.copyWith(
         selectedMoodId: event.moodId,
         todayLog: updatedTodayLog,
+        incrementSelectionKey: true,
       ));
 
       // Сохраняем на сервере в фоне
