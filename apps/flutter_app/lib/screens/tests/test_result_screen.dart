@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../models/psychological_test.dart';
 import '../../core/theme/app_colors.dart';
 import 'test_taking_screen.dart';
+import '../../core/utils/app_size.dart';
 
 class TestResultScreen extends StatelessWidget {
   final PsychologicalTest test;
@@ -9,7 +10,7 @@ class TestResultScreen extends StatelessWidget {
   final Map<String, ScoreInterpretation?> interpretations;
   final String? token;
 
-  const TestResultScreen({
+  TestResultScreen({
     super.key,
     required this.test,
     required this.scores,
@@ -28,7 +29,7 @@ class TestResultScreen extends StatelessWidget {
           'Результаты',
           style: TextStyle(
             color: AppColors.foreground,
-            fontSize: 20,
+            fontSize: AppSize.s(20),
             fontWeight: FontWeight.w700,
           ),
         ),
@@ -43,7 +44,7 @@ class TestResultScreen extends StatelessWidget {
         ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
+        padding: AppSize.padding(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -53,23 +54,23 @@ class TestResultScreen extends StatelessWidget {
                 children: [
                   Text(
                     test.icon,
-                    style: const TextStyle(fontSize: 64),
+                    style: TextStyle(fontSize: AppSize.s(64)),
                   ),
-                  const SizedBox(height: 16),
+                  AppSize.gapH(16),
                   Text(
                     test.title,
                     style: TextStyle(
-                      fontSize: 24,
+                      fontSize: AppSize.s(24),
                       fontWeight: FontWeight.w700,
                       color: AppColors.foreground,
                     ),
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 8),
+                  AppSize.gapH(8),
                   Text(
                     'Завершено ${_formatDate(DateTime.now())}',
                     style: TextStyle(
-                      fontSize: 12,
+                      fontSize: AppSize.s(12),
                       color: AppColors.dimForeground,
                     ),
                   ),
@@ -77,26 +78,26 @@ class TestResultScreen extends StatelessWidget {
               ),
             ),
 
-            const SizedBox(height: 32),
+            AppSize.gapH(32),
 
             // Результаты по шкалам
             Text(
               'Ваши результаты',
               style: TextStyle(
-                fontSize: 18,
+                fontSize: AppSize.s(18),
                 fontWeight: FontWeight.w600,
                 color: AppColors.foreground,
               ),
             ),
-            const SizedBox(height: 16),
+            AppSize.gapH(16),
 
             ...scores.entries.map((entry) {
               final scale = test.scoringScales[entry.key];
               final interpretation = interpretations[entry.key];
-              if (scale == null) return const SizedBox.shrink();
+              if (scale == null) return SizedBox.shrink();
 
               return Padding(
-                padding: const EdgeInsets.only(bottom: 16),
+                padding: AppSize.paddingOnly(bottom: 16),
                 child: _ScaleResultCard(
                   scale: scale,
                   score: entry.value,
@@ -105,14 +106,14 @@ class TestResultScreen extends StatelessWidget {
               );
             }).toList(),
 
-            const SizedBox(height: 24),
+            AppSize.gapH(24),
 
             // Дисклеймер
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: AppSize.padding(16),
               decoration: BoxDecoration(
                 color: AppColors.card,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: AppSize.radius(12),
                 border: Border.all(
                   color: AppColors.citrusOrange.withOpacity(0.3),
                 ),
@@ -124,12 +125,12 @@ class TestResultScreen extends StatelessWidget {
                     color: AppColors.citrusOrange,
                     size: 24,
                   ),
-                  const SizedBox(width: 12),
+                  AppSize.gapW(12),
                   Expanded(
                     child: Text(
                       'Этот тест носит информационный характер. Для профессиональной консультации обратитесь к специалисту.',
                       style: TextStyle(
-                        fontSize: 12,
+                        fontSize: AppSize.s(12),
                         color: AppColors.mutedForeground,
                       ),
                     ),
@@ -138,7 +139,7 @@ class TestResultScreen extends StatelessWidget {
               ),
             ),
 
-            const SizedBox(height: 24),
+            AppSize.gapH(24),
 
             // Кнопки
             Row(
@@ -156,19 +157,19 @@ class TestResultScreen extends StatelessWidget {
                         ),
                       );
                     },
-                    icon: const Icon(Icons.replay),
-                    label: const Text('Пройти снова'),
+                    icon: Icon(Icons.replay),
+                    label: Text('Пройти снова'),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: AppColors.foreground,
                       side: BorderSide(color: AppColors.dimForeground),
-                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      padding: AppSize.paddingH(0, 16),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: AppSize.radius(12),
                       ),
                     ),
                   ),
                 ),
-                const SizedBox(width: 12),
+                AppSize.gapW(12),
                 Expanded(
                   child: ElevatedButton.icon(
                     onPressed: () {
@@ -176,14 +177,14 @@ class TestResultScreen extends StatelessWidget {
                       Navigator.of(context).pop();
                       Navigator.of(context).pop();
                     },
-                    icon: const Icon(Icons.list),
-                    label: const Text('Все тесты'),
+                    icon: Icon(Icons.list),
+                    label: Text('Все тесты'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.citrusOrange,
                       foregroundColor: AppColors.primaryForeground,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      padding: AppSize.paddingH(0, 16),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: AppSize.radius(12),
                       ),
                     ),
                   ),
@@ -210,7 +211,7 @@ class _ScaleResultCard extends StatelessWidget {
   final int score;
   final ScoreInterpretation? interpretation;
 
-  const _ScaleResultCard({
+  _ScaleResultCard({
     required this.scale,
     required this.score,
     required this.interpretation,
@@ -227,10 +228,10 @@ class _ScaleResultCard extends StatelessWidget {
       case 'low':
       case 'normal':
       case 'minimal':
-        return const Color(0xFF8BC34A);
+        return Color(0xFF8BC34A);
       case 'medium':
       case 'mild':
-        return const Color(0xFFFFD93D);
+        return Color(0xFFFFD93D);
       case 'moderate':
         return AppColors.citrusOrange;
       case 'high':
@@ -246,10 +247,10 @@ class _ScaleResultCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: AppSize.padding(16),
       decoration: BoxDecoration(
         color: AppColors.card,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: AppSize.radius(16),
         border: Border.all(
           color: AppColors.foreground.withOpacity(0.05),
         ),
@@ -265,7 +266,7 @@ class _ScaleResultCard extends StatelessWidget {
                 child: Text(
                   scale.label,
                   style: TextStyle(
-                    fontSize: 16,
+                    fontSize: AppSize.s(16),
                     fontWeight: FontWeight.w600,
                     color: AppColors.foreground,
                   ),
@@ -274,18 +275,18 @@ class _ScaleResultCard extends StatelessWidget {
               Text(
                 '$score / ${scale.maxScore}',
                 style: TextStyle(
-                  fontSize: 14,
+                  fontSize: AppSize.s(14),
                   fontWeight: FontWeight.w600,
                   color: AppColors.mutedForeground,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          AppSize.gapH(12),
 
           // Прогресс-бар
           ClipRRect(
-            borderRadius: BorderRadius.circular(4),
+            borderRadius: AppSize.radius(4),
             child: LinearProgressIndicator(
               value: _progress.clamp(0.0, 1.0),
               backgroundColor: AppColors.muted,
@@ -293,30 +294,30 @@ class _ScaleResultCard extends StatelessWidget {
               minHeight: 8,
             ),
           ),
-          const SizedBox(height: 12),
+          AppSize.gapH(12),
 
           // Уровень
           if (interpretation != null) ...[
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              padding: AppSize.paddingH(10, 4),
               decoration: BoxDecoration(
                 color: _levelColor.withOpacity(0.15),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: AppSize.radius(8),
               ),
               child: Text(
                 interpretation!.label,
                 style: TextStyle(
-                  fontSize: 12,
+                  fontSize: AppSize.s(12),
                   fontWeight: FontWeight.w600,
                   color: _levelColor,
                 ),
               ),
             ),
-            const SizedBox(height: 8),
+            AppSize.gapH(8),
             Text(
               interpretation!.description,
               style: TextStyle(
-                fontSize: 12,
+                fontSize: AppSize.s(12),
                 color: AppColors.mutedForeground,
                 height: 1.4,
               ),

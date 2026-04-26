@@ -5,11 +5,12 @@ import '../../../models/article.dart';
 import '../bloc/article_bloc.dart';
 import 'article_detail_page.dart';
 import 'create_edit_article_page.dart';
+import '../../../core/utils/app_size.dart';
 
 class ArticlesPage extends StatefulWidget {
   final bool showBackButton;
 
-  const ArticlesPage({super.key, this.showBackButton = true});
+  ArticlesPage({super.key, this.showBackButton = true});
 
   @override
   State<ArticlesPage> createState() => _ArticlesPageState();
@@ -76,17 +77,17 @@ class _ArticlesPageState extends State<ArticlesPage> {
               'Статьи самопомощи',
               style: TextStyle(
                 color: AppColors.foreground,
-                fontSize: 22,
+                fontSize: AppSize.s(22),
                 fontWeight: FontWeight.bold,
               ),
             ),
             actions: [
               IconButton(
-                icon: const Icon(Icons.add, color: AppColors.citrusOrange),
+                icon: Icon(Icons.add, color: AppColors.citrusOrange),
                 onPressed: () {
                   Navigator.of(context).push(
                     MaterialPageRoute(
-                      builder: (_) => const CreateEditArticlePage(),
+                      builder: (_) => CreateEditArticlePage(),
                     ),
                   );
                 },
@@ -97,13 +98,13 @@ class _ArticlesPageState extends State<ArticlesPage> {
             children: [
               // Поисковая строка
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: AppSize.paddingH(16, 8),
                 child: TextField(
                   controller: _searchController,
-                  style: TextStyle(color: AppColors.foreground, fontSize: 14),
+                  style: TextStyle(color: AppColors.foreground, fontSize: AppSize.s(14)),
                   decoration: InputDecoration(
                     hintText: 'Поиск статей...',
-                    hintStyle: TextStyle(color: AppColors.mutedForeground, fontSize: 14),
+                    hintStyle: TextStyle(color: AppColors.mutedForeground, fontSize: AppSize.s(14)),
                     prefixIcon: Icon(Icons.search, color: AppColors.mutedForeground, size: 20),
                     suffixIcon: _searchQuery.isNotEmpty
                         ? IconButton(
@@ -119,10 +120,10 @@ class _ArticlesPageState extends State<ArticlesPage> {
                     filled: true,
                     fillColor: AppColors.inputFieldBackground,
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(AppColors.radiusMd),
+                      borderRadius: BorderRadius.circular(AppSize.s(AppColors.radiusMd)),
                       borderSide: BorderSide.none,
                     ),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    contentPadding: AppSize.paddingH(12, 8),
                     isDense: true,
                   ),
                   onChanged: (value) {
@@ -136,23 +137,23 @@ class _ArticlesPageState extends State<ArticlesPage> {
                 height: 42,
                 child: ListView.builder(
                   scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  padding: AppSize.paddingH(16, 0),
                   itemCount: _categories.length,
                   itemBuilder: (context, index) {
                     final cat = _categories[index];
                     final isSelected = _selectedCategory == cat['value'];
                     return Padding(
-                      padding: const EdgeInsets.only(right: 8),
+                      padding: AppSize.paddingOnly(right: 8),
                       child: InkWell(
                         onTap: () => setState(() => _selectedCategory = cat['value'] as String),
-                        borderRadius: BorderRadius.circular(20),
+                        borderRadius: AppSize.radius(20),
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                          padding: AppSize.paddingH(14, 8),
                           decoration: BoxDecoration(
                             color: isSelected
                                 ? AppColors.citrusOrange.withOpacity(0.2)
                                 : AppColors.surface2,
-                            borderRadius: BorderRadius.circular(20),
+                            borderRadius: AppSize.radius(20),
                             border: Border.all(
                               color: isSelected
                                   ? AppColors.citrusOrange
@@ -168,12 +169,12 @@ class _ArticlesPageState extends State<ArticlesPage> {
                                 size: 14,
                                 color: isSelected ? AppColors.citrusOrange : AppColors.mutedForeground,
                               ),
-                              const SizedBox(width: 6),
+                              AppSize.gapW(6),
                               Text(
                                 cat['label'] as String,
                                 style: TextStyle(
                                   color: isSelected ? AppColors.citrusOrange : AppColors.mutedForeground,
-                                  fontSize: 13,
+                                  fontSize: AppSize.s(13),
                                   fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
                                 ),
                               ),
@@ -186,7 +187,7 @@ class _ArticlesPageState extends State<ArticlesPage> {
                 ),
               ),
 
-              const SizedBox(height: 8),
+              AppSize.gapH(8),
 
               // Список статей
               Expanded(
@@ -214,20 +215,20 @@ class _ArticlesPageState extends State<ArticlesPage> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(Icons.error_outline, size: 64, color: AppColors.destructive),
-            const SizedBox(height: 16),
+            AppSize.gapH(16),
             Text(
               state.message,
               style: TextStyle(color: AppColors.mutedForeground),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 16),
+            AppSize.gapH(16),
             ElevatedButton(
-              onPressed: () => context.read<ArticleBloc>().add(const LoadArticles()),
+              onPressed: () => context.read<ArticleBloc>().add(LoadArticles()),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.citrusOrange,
                 foregroundColor: AppColors.primaryForeground,
               ),
-              child: const Text('Повторить'),
+              child: Text('Повторить'),
             ),
           ],
         ),
@@ -248,16 +249,16 @@ class _ArticlesPageState extends State<ArticlesPage> {
                 size: 64,
                 color: AppColors.mutedForeground,
               ),
-              const SizedBox(height: 16),
+              AppSize.gapH(16),
               Text(
                 hasFilters ? 'Ничего не найдено' : 'Статей пока нет',
                 style: TextStyle(
                   color: AppColors.mutedForeground,
-                  fontSize: 18,
+                  fontSize: AppSize.s(18),
                   fontWeight: FontWeight.w500,
                 ),
               ),
-              const SizedBox(height: 8),
+              AppSize.gapH(8),
               Text(
                 hasFilters
                     ? 'Попробуйте изменить фильтры'
@@ -265,21 +266,21 @@ class _ArticlesPageState extends State<ArticlesPage> {
                 style: TextStyle(color: AppColors.mutedForeground),
               ),
               if (!hasFilters) ...[
-                const SizedBox(height: 24),
+                AppSize.gapH(24),
                 ElevatedButton.icon(
                   onPressed: () {
                     Navigator.of(context).push(
                       MaterialPageRoute(
-                        builder: (_) => const CreateEditArticlePage(),
+                        builder: (_) => CreateEditArticlePage(),
                       ),
                     );
                   },
-                  icon: const Icon(Icons.add),
-                  label: const Text('Создать статью'),
+                  icon: Icon(Icons.add),
+                  label: Text('Создать статью'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.citrusOrange,
                     foregroundColor: AppColors.primaryForeground,
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    padding: AppSize.paddingH(24, 12),
                   ),
                 ),
               ],
@@ -299,18 +300,18 @@ class _ArticlesPageState extends State<ArticlesPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.only(left: 16, bottom: 8),
+            padding: AppSize.paddingOnly(left: 16, bottom: 8),
             child: Text(
               'Найдено: ${filteredArticles.length}',
               style: TextStyle(
                 color: AppColors.dimForeground,
-                fontSize: 13,
+                fontSize: AppSize.s(13),
               ),
             ),
           ),
           Expanded(
             child: ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              padding: AppSize.paddingH(16, 0),
               itemCount: articlesByCategory.length,
               itemBuilder: (context, index) {
                 final category = articlesByCategory.keys.elementAt(index);
@@ -320,7 +321,7 @@ class _ArticlesPageState extends State<ArticlesPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Padding(
-                      padding: const EdgeInsets.only(bottom: 8, top: 8),
+                      padding: AppSize.paddingOnly(top: 8, bottom: 8),
                       child: Row(
                         children: [
                           Icon(
@@ -328,27 +329,27 @@ class _ArticlesPageState extends State<ArticlesPage> {
                             color: AppColors.citrusAmber,
                             size: 20,
                           ),
-                          const SizedBox(width: 8),
+                          AppSize.gapW(8),
                           Text(
                             _getCategoryName(category),
                             style: TextStyle(
                               color: AppColors.accent,
-                              fontSize: 16,
+                              fontSize: AppSize.s(16),
                               fontWeight: FontWeight.w600,
                             ),
                           ),
-                          const SizedBox(width: 8),
+                          AppSize.gapW(8),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            padding: AppSize.paddingH(8, 2),
                             decoration: BoxDecoration(
                               color: AppColors.muted,
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: AppSize.radius(12),
                             ),
                             child: Text(
                               '${articles.length}',
                               style: TextStyle(
                                 color: AppColors.mutedForeground,
-                                fontSize: 12,
+                                fontSize: AppSize.s(12),
                               ),
                             ),
                           ),
@@ -377,7 +378,7 @@ class _ArticlesPageState extends State<ArticlesPage> {
                                 }
                               : null,
                         )),
-                    const SizedBox(height: 8),
+                    AppSize.gapH(8),
                   ],
                 );
               },
@@ -387,7 +388,7 @@ class _ArticlesPageState extends State<ArticlesPage> {
       );
     }
 
-    return const SizedBox.shrink();
+    return SizedBox.shrink();
   }
 
   void _confirmDelete(BuildContext context, Article article) {
@@ -411,7 +412,7 @@ class _ArticlesPageState extends State<ArticlesPage> {
               context.read<ArticleBloc>().add(DeleteArticle(article.id));
             },
             style: TextButton.styleFrom(foregroundColor: AppColors.destructive),
-            child: const Text('Удалить'),
+            child: Text('Удалить'),
           ),
         ],
       ),
@@ -441,7 +442,7 @@ class _ArticleCard extends StatelessWidget {
   final VoidCallback? onDelete;
   final VoidCallback? onEdit;
 
-  const _ArticleCard({
+  _ArticleCard({
     required this.article,
     required this.onTap,
     this.onDelete,
@@ -452,16 +453,16 @@ class _ArticleCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       color: AppColors.card,
-      margin: const EdgeInsets.only(bottom: 8),
+      margin: AppSize.paddingOnly(bottom: 8),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppColors.radiusMd),
+        borderRadius: BorderRadius.circular(AppSize.s(AppColors.radiusMd)),
         side: BorderSide(color: AppColors.border, width: 0.5),
       ),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(AppColors.radiusMd),
+        borderRadius: BorderRadius.circular(AppSize.s(AppColors.radiusMd)),
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: AppSize.padding(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -472,21 +473,21 @@ class _ArticleCard extends StatelessWidget {
                 children: [
                   if (article.source == 'wikipedia')
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      padding: AppSize.paddingH(6, 2),
                       decoration: BoxDecoration(
                         color: AppColors.citrusPurple.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: AppSize.radius(8),
                       ),
-                      child: const Row(
+                      child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(Icons.language, size: 10, color: AppColors.citrusPurple),
-                          SizedBox(width: 3),
+                          AppSize.gapW(3),
                           Text(
                             'Wikipedia',
                             style: TextStyle(
                               color: AppColors.citrusPurple,
-                              fontSize: 10,
+                              fontSize: AppSize.s(10),
                               fontWeight: FontWeight.w500,
                             ),
                           ),
@@ -495,21 +496,21 @@ class _ArticleCard extends StatelessWidget {
                     ),
                   if (article.isCustom)
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      padding: AppSize.paddingH(6, 2),
                       decoration: BoxDecoration(
                         color: AppColors.citrusOrange.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: AppSize.radius(8),
                       ),
-                      child: const Row(
+                      child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(Icons.edit, size: 10, color: AppColors.citrusOrange),
-                          SizedBox(width: 3),
+                          AppSize.gapW(3),
                           Text(
                             'Пользовательская',
                             style: TextStyle(
                               color: AppColors.citrusOrange,
-                              fontSize: 10,
+                              fontSize: AppSize.s(10),
                               fontWeight: FontWeight.w500,
                             ),
                           ),
@@ -518,23 +519,23 @@ class _ArticleCard extends StatelessWidget {
                     ),
                   if (article.tags != null && article.tags!.isNotEmpty)
                     ...article.tags!.map((tag) => Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          padding: AppSize.paddingH(6, 2),
                           decoration: BoxDecoration(
                             color: AppColors.accent.withOpacity(0.15),
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: AppSize.radius(8),
                           ),
                           child: Text(
                             _getCategoryName(tag),
-                            style: const TextStyle(
+                            style: TextStyle(
                               color: AppColors.accent,
-                              fontSize: 10,
+                              fontSize: AppSize.s(10),
                               fontWeight: FontWeight.w500,
                             ),
                           ),
                         )),
                 ],
               ),
-              const SizedBox(height: 8),
+              AppSize.gapH(8),
 
               // Заголовок
               Row(
@@ -544,7 +545,7 @@ class _ArticleCard extends StatelessWidget {
                       article.title,
                       style: TextStyle(
                         color: AppColors.foreground,
-                        fontSize: 16,
+                        fontSize: AppSize.s(16),
                         fontWeight: FontWeight.w600,
                       ),
                       maxLines: 2,
@@ -554,42 +555,42 @@ class _ArticleCard extends StatelessWidget {
                   if (article.isCustom) ...[
                     if (onEdit != null)
                       IconButton(
-                        icon: const Icon(Icons.edit, size: 20),
+                        icon: Icon(Icons.edit, size: 20),
                         onPressed: onEdit,
                         color: AppColors.mutedForeground,
                         padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
+                        constraints: BoxConstraints(),
                       ),
-                    const SizedBox(width: 12),
+                    AppSize.gapW(12),
                     if (onDelete != null)
                       IconButton(
-                        icon: const Icon(Icons.delete_outline, size: 20),
+                        icon: Icon(Icons.delete_outline, size: 20),
                         onPressed: onDelete,
                         color: AppColors.destructive,
                         padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
+                        constraints: BoxConstraints(),
                       ),
                   ],
                 ],
               ),
-              const SizedBox(height: 8),
+              AppSize.gapH(8),
               Text(
                 article.content.length > 120
                     ? '${article.content.substring(0, 120)}...'
                     : article.content,
                 style: TextStyle(
                   color: AppColors.mutedForeground,
-                  fontSize: 14,
+                  fontSize: AppSize.s(14),
                 ),
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
               ),
-              const SizedBox(height: 8),
+              AppSize.gapH(8),
               Text(
                 'Создано: ${_formatDate(article.createdAt)}',
                 style: TextStyle(
                   color: AppColors.dimForeground,
-                  fontSize: 12,
+                  fontSize: AppSize.s(12),
                 ),
               ),
             ],

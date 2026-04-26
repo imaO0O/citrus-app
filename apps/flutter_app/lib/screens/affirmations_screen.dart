@@ -1,11 +1,12 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import '../core/theme/app_colors.dart';
 import '../services/affirmations_service.dart';
+import '../core/utils/app_size.dart';
 
 const _categories = ['Все', 'Уверенность', 'Спокойствие', 'Сила', 'Любовь'];
 
 class AffirmationsScreen extends StatefulWidget {
-  const AffirmationsScreen({super.key});
+  AffirmationsScreen({super.key});
 
   @override
   State<AffirmationsScreen> createState() => _AffirmationsScreenState();
@@ -93,7 +94,7 @@ class _AffirmationsScreenState extends State<AffirmationsScreen> {
     if (index >= 0 && index < _filteredAffirmations.length) {
       _pageController.animateToPage(
         index,
-        duration: const Duration(milliseconds: 300),
+        duration: Duration(milliseconds: 300),
         curve: Curves.easeInOut,
       );
     }
@@ -115,24 +116,24 @@ class _AffirmationsScreenState extends State<AffirmationsScreen> {
       backgroundColor: AppColors.background,
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+          padding: EdgeInsets.fromLTRB(20, 20, 20, 0),
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 480),
+            constraints: BoxConstraints(maxWidth: 480),
             child: SingleChildScrollView(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildHeader(),
-                  const SizedBox(height: 16),
+                  AppSize.gapH(16),
                   _buildCategoryPills(),
-                  const SizedBox(height: 16),
+                  AppSize.gapH(16),
                   _buildContent(),
-                  const SizedBox(height: 16),
+                  AppSize.gapH(16),
                   if (_favorites.isNotEmpty) ...[
-                    const SizedBox(height: 12),
+                    AppSize.gapH(12),
                     _buildFavoritesSection(),
                   ],
-                  const SizedBox(height: 80),
+                  AppSize.gapH(80),
                 ],
               ),
             ),
@@ -149,7 +150,7 @@ class _AffirmationsScreenState extends State<AffirmationsScreen> {
         Text(
           'Аффирмации',
           style: TextStyle(
-            fontSize: 24,
+            fontSize: AppSize.s(24),
             fontWeight: FontWeight.w700,
             color: AppColors.foreground,
           ),
@@ -184,7 +185,7 @@ class _AffirmationsScreenState extends State<AffirmationsScreen> {
                   CircularProgressIndicator(
                     valueColor: AlwaysStoppedAnimation<Color>(AppColors.citrusOrange),
                   ),
-                  const SizedBox(height: 16),
+                  AppSize.gapH(16),
                   Text(
                     'Загрузка аффирмаций...',
                     style: TextStyle(color: AppColors.mutedForeground),
@@ -202,16 +203,16 @@ class _AffirmationsScreenState extends State<AffirmationsScreen> {
                         size: 64,
                         color: AppColors.mutedForeground.withOpacity(0.3),
                       ),
-                      const SizedBox(height: 16),
+                      AppSize.gapH(16),
                       Text(
                         'Нет аффирмаций в этой категории',
                         style: TextStyle(color: AppColors.mutedForeground),
                       ),
-                      const SizedBox(height: 16),
+                      AppSize.gapH(16),
                       ElevatedButton.icon(
                         onPressed: _generateAffirmations,
-                        icon: const Icon(Icons.auto_awesome),
-                        label: const Text('Сгенерировать (AI)'),
+                        icon: Icon(Icons.auto_awesome),
+                        label: Text('Сгенерировать (AI)'),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.citrusOrange,
                           foregroundColor: Colors.white,
@@ -237,7 +238,7 @@ class _AffirmationsScreenState extends State<AffirmationsScreen> {
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         itemCount: _categories.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        separatorBuilder: (_, __) => AppSize.gapW(8),
         itemBuilder: (context, index) {
           final category = _categories[index];
           final isSelected = category == _selectedCategory;
@@ -249,16 +250,16 @@ class _AffirmationsScreenState extends State<AffirmationsScreen> {
               _pageController.jumpToPage(0);
             },
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+              padding: AppSize.paddingH(16, 6),
               decoration: BoxDecoration(
                 color: isSelected ? AppColors.citrusOrange.withOpacity(0.15) : Colors.white.withOpacity(0.06),
-                borderRadius: BorderRadius.circular(999),
+                borderRadius: AppSize.radius(999),
               ),
               child: Text(
                 category,
                 style: TextStyle(
                   color: isSelected ? AppColors.citrusOrange : AppColors.mutedForeground,
-                  fontSize: 12,
+                  fontSize: AppSize.s(12),
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -274,7 +275,7 @@ class _AffirmationsScreenState extends State<AffirmationsScreen> {
 
     return Container(
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: AppSize.radius(24),
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -296,26 +297,26 @@ class _AffirmationsScreenState extends State<AffirmationsScreen> {
                   center: Alignment.topCenter,
                   radius: 1.2,
                   colors: [affirmation.color.withOpacity(0.25), affirmation.color.withOpacity(0)],
-                  stops: const [0.0, 0.7],
+                  stops: [0.0, 0.7],
                 ),
               ),
             ),
           ),
           Padding(
-            padding: const EdgeInsets.all(24),
+            padding: AppSize.padding(24),
             child: Center(
               child: SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
+                physics: BouncingScrollPhysics(),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Text(affirmation.emoji, style: const TextStyle(fontSize: 56)),
-                    const SizedBox(height: 16),
+                    Text(affirmation.emoji, style: TextStyle(fontSize: AppSize.s(56))),
+                    AppSize.gapH(16),
                     Text(
                       '"${affirmation.text}"',
                       style: TextStyle(
-                        fontSize: 16,
+                        fontSize: AppSize.s(16),
                         fontWeight: FontWeight.w600,
                         color: AppColors.foreground,
                         height: 1.4,
@@ -323,23 +324,23 @@ class _AffirmationsScreenState extends State<AffirmationsScreen> {
                       ),
                       textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: 8),
+                    AppSize.gapH(8),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                      padding: AppSize.paddingH(12, 4),
                       decoration: BoxDecoration(
                         color: affirmation.color.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: AppSize.radius(12),
                       ),
                       child: Text(
                         affirmation.category,
                         style: TextStyle(
-                          fontSize: 11,
+                          fontSize: AppSize.s(11),
                           color: affirmation.color,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    AppSize.gapH(8),
                   ],
                 ),
               ),
@@ -363,14 +364,14 @@ class _AffirmationsScreenState extends State<AffirmationsScreen> {
   }
 
   Widget _buildFavoritesSection() {
-    if (_favorites.isEmpty) return const SizedBox.shrink();
+    if (_favorites.isEmpty) return SizedBox.shrink();
     final favoriteList = _favorites.toList()..sort();
 
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: AppSize.padding(12),
       decoration: BoxDecoration(
         color: AppColors.surface1,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: AppSize.radius(16),
         border: Border.all(color: AppColors.subtleBorder),
       ),
       child: Column(
@@ -379,23 +380,23 @@ class _AffirmationsScreenState extends State<AffirmationsScreen> {
           Text(
             'ИЗБРАННОЕ',
             style: TextStyle(
-              fontSize: 10,
+              fontSize: AppSize.s(10),
               fontWeight: FontWeight.w700,
               letterSpacing: 2.4,
               color: AppColors.dimForeground,
             ),
           ),
-          const SizedBox(height: 8),
+          AppSize.gapH(8),
           SizedBox(
             height: 56,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               itemCount: favoriteList.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 8),
+              separatorBuilder: (_, __) => AppSize.gapW(8),
               itemBuilder: (context, index) {
                 final favIndex = favoriteList[index];
                 if (favIndex >= _filteredAffirmations.length) {
-                  return const SizedBox.shrink();
+                  return SizedBox.shrink();
                 }
                 final affirmation = _filteredAffirmations[favIndex];
                 return GestureDetector(
@@ -404,11 +405,11 @@ class _AffirmationsScreenState extends State<AffirmationsScreen> {
                     width: 56,
                     decoration: BoxDecoration(
                       color: affirmation.color.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: AppSize.radius(12),
                       border: Border.all(color: affirmation.color.withOpacity(0.2)),
                     ),
                     child: Center(
-                      child: Text(affirmation.emoji, style: const TextStyle(fontSize: 20)),
+                      child: Text(affirmation.emoji, style: TextStyle(fontSize: AppSize.s(20))),
                     ),
                   ),
                 );

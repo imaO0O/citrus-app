@@ -2,11 +2,12 @@ import 'package:flutter/material.dart';
 import '../../core/api/test_api_service.dart';
 import '../../core/theme/app_colors.dart';
 import 'test_taking_screen.dart';
+import '../../core/utils/app_size.dart';
 
 class TestsListScreen extends StatefulWidget {
   final String? token;
 
-  const TestsListScreen({super.key, this.token});
+  TestsListScreen({super.key, this.token});
 
   @override
   State<TestsListScreen> createState() => _TestsListScreenState();
@@ -63,13 +64,13 @@ class _TestsListScreenState extends State<TestsListScreen> {
           'Психологические тесты',
           style: TextStyle(
             color: AppColors.foreground,
-            fontSize: 20,
+            fontSize: AppSize.s(20),
             fontWeight: FontWeight.w700,
           ),
         ),
       ),
       body: _isLoading
-          ? const Center(
+          ? Center(
               child: CircularProgressIndicator(color: AppColors.citrusOrange),
             )
           : _error != null
@@ -90,11 +91,11 @@ class _TestsListScreenState extends State<TestsListScreen> {
       height: 50,
       child: ListView(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+        padding: AppSize.paddingH(20, 8),
         children: _categories.entries.map((entry) {
           final isSelected = _selectedCategory == entry.key;
           return Padding(
-            padding: const EdgeInsets.only(right: 8),
+            padding: AppSize.paddingOnly(right: 8),
             child: FilterChip(
               label: Text(entry.value),
               selected: isSelected,
@@ -119,14 +120,14 @@ class _TestsListScreenState extends State<TestsListScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.error_outline, size: 48, color: AppColors.destructive),
-          const SizedBox(height: 16),
+          Icon(Icons.error_outline, size: 48, color: AppColors.destructive),
+          AppSize.gapH(16),
           Text('Ошибка: $_error',
               style: TextStyle(color: AppColors.foreground)),
-          const SizedBox(height: 16),
+          AppSize.gapH(16),
           ElevatedButton(
             onPressed: _loadTests,
-            child: const Text('Повторить'),
+            child: Text('Повторить'),
           ),
         ],
       ),
@@ -145,7 +146,7 @@ class _TestsListScreenState extends State<TestsListScreen> {
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.all(20),
+      padding: AppSize.padding(20),
       itemCount: tests.length,
       itemBuilder: (context, index) {
         final test = tests[index];
@@ -156,9 +157,9 @@ class _TestsListScreenState extends State<TestsListScreen> {
 
   Widget _buildTestCard(Map<String, dynamic> test) {
     final categoryColors = {
-      'personality': const Color(0xFF8BC34A),
-      'clinical': const Color(0xFFFF5B5B),
-      'behavioral': const Color(0xFF2196F3),
+      'personality': Color(0xFF8BC34A),
+      'clinical': Color(0xFFFF5B5B),
+      'behavioral': Color(0xFF2196F3),
     };
 
     final categoryLabels = {
@@ -171,10 +172,10 @@ class _TestsListScreenState extends State<TestsListScreen> {
     final categoryLabel = categoryLabels[test['category']] ?? 'Тест';
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: AppSize.paddingOnly(bottom: 12),
       child: Material(
         color: AppColors.card,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: AppSize.radius(16),
         child: InkWell(
           onTap: () {
             Navigator.push(
@@ -187,9 +188,9 @@ class _TestsListScreenState extends State<TestsListScreen> {
               ),
             );
           },
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: AppSize.radius(16),
           child: Container(
-            padding: const EdgeInsets.all(16),
+            padding: AppSize.padding(16),
             child: Row(
               children: [
                 // Иконка
@@ -198,16 +199,16 @@ class _TestsListScreenState extends State<TestsListScreen> {
                   height: 56,
                   decoration: BoxDecoration(
                     color: accentColor.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: AppSize.radius(12),
                   ),
                   child: Center(
                     child: Text(
                       test['icon'] as String,
-                      style: const TextStyle(fontSize: 28),
+                      style: TextStyle(fontSize: AppSize.s(28)),
                     ),
                   ),
                 ),
-                const SizedBox(width: 12),
+                AppSize.gapW(12),
                 // Информация
                 Expanded(
                   child: Column(
@@ -216,50 +217,47 @@ class _TestsListScreenState extends State<TestsListScreen> {
                       Text(
                         test['title'] as String,
                         style: TextStyle(
-                          fontSize: 16,
+                          fontSize: AppSize.s(16),
                           fontWeight: FontWeight.w600,
                           color: AppColors.foreground,
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      AppSize.gapH(4),
                       Text(
                         test['description'] as String,
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: AppSize.s(12),
                           color: AppColors.mutedForeground,
                         ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 8),
+                      AppSize.gapH(8),
                       Row(
                         children: [
                           // Бейдж категории
                           Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 2,
-                            ),
+                            padding: AppSize.paddingH(8, 2),
                             decoration: BoxDecoration(
                               color: accentColor.withOpacity(0.2),
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: AppSize.radius(8),
                             ),
                             child: Text(
                               categoryLabel,
                               style: TextStyle(
-                                fontSize: 10,
+                                fontSize: AppSize.s(10),
                                 fontWeight: FontWeight.w600,
                                 color: accentColor,
                               ),
                             ),
                           ),
-                          const SizedBox(width: 8),
+                          AppSize.gapW(8),
                           // Количество вопросов и время — занимают оставшееся место
                           Expanded(
                             child: Text(
                               '${test['questionsCount']} вопр. · ~${test['durationMinutes']} мин',
                               style: TextStyle(
-                                fontSize: 10,
+                                fontSize: AppSize.s(10),
                                 color: AppColors.dimForeground,
                               ),
                               overflow: TextOverflow.ellipsis,

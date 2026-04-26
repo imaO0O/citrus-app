@@ -1,4 +1,4 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:http/http.dart' as http;
@@ -15,9 +15,10 @@ import '../core/services/exercise_tracker_service.dart';
 import '../core/services/test_tracking_service.dart';
 import '../core/config/api_config.dart';
 import '../services/stats_api_client.dart';
+import '../core/utils/app_size.dart';
 
 class AnalyticsScreen extends StatefulWidget {
-  const AnalyticsScreen({super.key});
+  AnalyticsScreen({super.key});
 
   @override
   State<AnalyticsScreen> createState() => _AnalyticsScreenState();
@@ -446,7 +447,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   /// Создать тестовый отчёт (заглушка - заменить данными из репозиториев)
   AnalyticsReport _createSampleReport() {
     final now = DateTime.now();
-    final startDate = now.subtract(const Duration(days: 7));
+    final startDate = now.subtract(Duration(days: 7));
 
     return AnalyticsReport(
       period: ReportPeriod(
@@ -498,7 +499,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   @override
   Widget build(BuildContext context) {
     return VisibilityDetector(
-      key: const Key('analytics_screen'),
+      key: Key('analytics_screen'),
       onVisibilityChanged: (info) {
         // Обновляем данные когда экран становится полностью видимым
         if (info.visibleFraction == 1.0 && !_isLoading) {
@@ -517,10 +518,10 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                       CircularProgressIndicator(
                         valueColor: AlwaysStoppedAnimation<Color>(AppColors.citrusOrange),
                       ),
-                      const SizedBox(height: 16),
+                      AppSize.gapH(16),
                       Text(
                         'Загрузка аналитики...',
-                        style: TextStyle(color: AppColors.mutedForeground, fontSize: 14),
+                        style: TextStyle(color: AppColors.mutedForeground, fontSize: AppSize.s(14)),
                       ),
                     ],
                   ),
@@ -530,28 +531,28 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                     SliverToBoxAdapter(
                       child: Center(
                         child: ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: 480),
+                          constraints: BoxConstraints(maxWidth: 480),
                           child: Padding(
-                            padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
+                            padding: EdgeInsets.fromLTRB(20, 20, 20, 20),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 _buildHeader(),
-                                const SizedBox(height: 16),
+                                AppSize.gapH(16),
                                 _buildPeriodSelector(),
-                                const SizedBox(height: 20),
+                                AppSize.gapH(20),
                                 _buildOverviewCards(),
-                                const SizedBox(height: 20),
+                                AppSize.gapH(20),
                                 _buildMoodChart(),
-                                const SizedBox(height: 20),
+                                AppSize.gapH(20),
                                 _buildMoodDistribution(),
-                                const SizedBox(height: 20),
+                                AppSize.gapH(20),
                                 _buildInsights(),
-                                const SizedBox(height: 20),
+                                AppSize.gapH(20),
                                 _buildSleepSection(),
-                                const SizedBox(height: 20),
+                                AppSize.gapH(20),
                                 _buildActivitySection(),
-                                const SizedBox(height: 20),
+                                AppSize.gapH(20),
                                 _buildExportButtons(),
                               ],
                             ),
@@ -559,7 +560,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                         ),
                       ),
                     ),
-                    const SliverPadding(padding: EdgeInsets.only(bottom: 80)),
+                    SliverPadding(padding: AppSize.paddingOnly(bottom: 80)),
                   ],
                 ),
         ),
@@ -573,12 +574,12 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       children: [
         Text(
           '\u0410\u043D\u0430\u043B\u0438\u0442\u0438\u043A\u0430',
-          style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700, color: AppColors.foreground),
+          style: TextStyle(fontSize: AppSize.s(24), fontWeight: FontWeight.w700, color: AppColors.foreground),
         ),
-        SizedBox(height: 4),
+        AppSize.gapH(4),
         Text(
           '\u041E\u0442\u0441\u043B\u0435\u0436\u0438\u0432\u0430\u0439\u0442\u0435 \u0441\u0432\u043E\u0439 \u043F\u0440\u043E\u0433\u0440\u0435\u0441\u0441',
-          style: TextStyle(fontSize: 13, color: AppColors.dimForeground),
+          style: TextStyle(fontSize: AppSize.s(13), color: AppColors.dimForeground),
         ),
       ],
     );
@@ -586,10 +587,10 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
 
   Widget _buildPeriodSelector() {
     return Container(
-      padding: const EdgeInsets.all(4),
+      padding: AppSize.padding(4),
       decoration: BoxDecoration(
         color: AppColors.surface1,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppSize.radius(12),
         border: Border.all(color: AppColors.subtleBorder),
       ),
       child: Row(
@@ -599,16 +600,16 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
             child: GestureDetector(
               onTap: () => _setPeriod(index),
               child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 8),
+                padding: AppSize.paddingH(0, 8),
                 decoration: BoxDecoration(
                   color: isSelected ? AppColors.citrusOrange.withOpacity(0.15) : Colors.transparent,
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: AppSize.radius(10),
                 ),
                 child: Text(
                   _periods[index],
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontSize: 12,
+                    fontSize: AppSize.s(12),
                     fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
                     color: isSelected ? AppColors.citrusOrange : AppColors.mutedForeground,
                   ),
@@ -622,7 +623,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   }
 
   Widget _buildOverviewCards() {
-    if (_report == null) return const SizedBox.shrink();
+    if (_report == null) return SizedBox.shrink();
 
     final m = _report!.metrics;
     final cards = [
@@ -634,8 +635,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
 
     return GridView.builder(
       shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+      physics: NeverScrollableScrollPhysics(),
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
         mainAxisSpacing: 12,
         crossAxisSpacing: 12,
@@ -645,10 +646,10 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       itemBuilder: (context, index) {
         final card = cards[index];
         return Container(
-          padding: const EdgeInsets.all(14),
+          padding: AppSize.padding(14),
           decoration: BoxDecoration(
             color: AppColors.surface1,
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: AppSize.radius(14),
             border: Border.all(color: AppColors.subtleBorder),
           ),
           child: Column(
@@ -657,12 +658,12 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
             children: [
               Text(
                 card['value'] as String,
-                style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: AppColors.foreground),
+                style: TextStyle(fontSize: AppSize.s(22), fontWeight: FontWeight.w700, color: AppColors.foreground),
               ),
-              SizedBox(height: 4),
+              AppSize.gapH(4),
               Text(
                 card['label'] as String,
-                style: TextStyle(fontSize: 10, color: AppColors.dimForeground),
+                style: TextStyle(fontSize: AppSize.s(10), color: AppColors.dimForeground),
               ),
             ],
           ),
@@ -672,22 +673,22 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   }
 
   Widget _buildMoodChart() {
-    if (_report == null) return const SizedBox.shrink();
+    if (_report == null) return SizedBox.shrink();
 
     final moodByDay = _report!.moodByDay;
     
     if (moodByDay.isEmpty) {
       return Container(
-        padding: const EdgeInsets.all(16),
+        padding: AppSize.padding(16),
         decoration: BoxDecoration(
           color: AppColors.surface1,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: AppSize.radius(16),
           border: Border.all(color: AppColors.subtleBorder),
         ),
         child: Center(
           child: Text(
             'Нет данных о настроении за выбранный период',
-            style: TextStyle(color: AppColors.mutedForeground, fontSize: 14),
+            style: TextStyle(color: AppColors.mutedForeground, fontSize: AppSize.s(14)),
           ),
         ),
       );
@@ -697,10 +698,10 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     final values = moodByDay.map((d) => d.value).toList();
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: AppSize.padding(16),
       decoration: BoxDecoration(
         color: AppColors.surface1,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: AppSize.radius(16),
         border: Border.all(color: AppColors.subtleBorder),
       ),
       child: Column(
@@ -708,9 +709,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         children: [
           Text(
             '\u0413\u0440\u0430\u0444\u0438\u043A \u043D\u0430\u0441\u0442\u0440\u043E\u0435\u043D\u0438\u044F (${moodByDay.length} \u0434\u043D\u0435\u0439)',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.foreground),
+            style: TextStyle(fontSize: AppSize.s(16), fontWeight: FontWeight.w600, color: AppColors.foreground),
           ),
-          SizedBox(height: 16),
+          AppSize.gapH(16),
           SizedBox(
             height: 150,
             child: SingleChildScrollView(
@@ -720,7 +721,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                 children: List.generate(days.length, (index) {
                   final value = values[index];
                   return Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    padding: AppSize.paddingH(4, 0),
                     child: SizedBox(
                       width: 36,
                       child: Column(
@@ -730,14 +731,14 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                             height: value > 0 ? 110 * (value / 5) : 4,
                             decoration: BoxDecoration(
                               color: value > 0 ? _getMoodBarColor(value) : AppColors.surface3,
-                              borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
+                              borderRadius: BorderRadius.vertical(top: Radius.circular(6)),
                             ),
                           ),
-                          SizedBox(height: 8),
+                          AppSize.gapH(8),
                           Text(
                             days[index],
                             textAlign: TextAlign.center,
-                            style: TextStyle(fontSize: 10, color: AppColors.dimForeground),
+                            style: TextStyle(fontSize: AppSize.s(10), color: AppColors.dimForeground),
                           ),
                         ],
                       ),
@@ -753,15 +754,15 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   }
 
   Widget _buildMoodDistribution() {
-    if (_report == null) return const SizedBox.shrink();
+    if (_report == null) return SizedBox.shrink();
 
     final distributions = _report!.moodDistribution;
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: AppSize.padding(16),
       decoration: BoxDecoration(
         color: AppColors.surface1,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: AppSize.radius(16),
         border: Border.all(color: AppColors.subtleBorder),
       ),
       child: Column(
@@ -769,29 +770,29 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         children: [
           Text(
             '\u0420\u0430\u0441\u043F\u0440\u0435\u0434\u0435\u043B\u0435\u043D\u0438\u0435 \u043D\u0430\u0441\u0442\u0440\u043E\u0435\u043D\u0438\u044F',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.foreground),
+            style: TextStyle(fontSize: AppSize.s(16), fontWeight: FontWeight.w600, color: AppColors.foreground),
           ),
-          SizedBox(height: 16),
+          AppSize.gapH(16),
           ...distributions.where((d) => d.count > 0).map((d) => Padding(
-            padding: const EdgeInsets.only(bottom: 12),
+            padding: AppSize.paddingOnly(bottom: 12),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   children: [
-                    Text(d.emoji, style: TextStyle(fontSize: 14)),
-                    SizedBox(width: 6),
-                    Text(d.label, style: TextStyle(fontSize: 12, color: AppColors.foreground, fontWeight: FontWeight.w500)),
-                    const Spacer(),
-                    Text('${d.count} (${d.percent.toStringAsFixed(0)}%)', style: TextStyle(fontSize: 11, color: AppColors.mutedForeground)),
+                    Text(d.emoji, style: TextStyle(fontSize: AppSize.s(14))),
+                    AppSize.gapW(6),
+                    Text(d.label, style: TextStyle(fontSize: AppSize.s(12), color: AppColors.foreground, fontWeight: FontWeight.w500)),
+                    Spacer(),
+                    Text('${d.count} (${d.percent.toStringAsFixed(0)}%)', style: TextStyle(fontSize: AppSize.s(11), color: AppColors.mutedForeground)),
                   ],
                 ),
-                SizedBox(height: 6),
+                AppSize.gapH(6),
                 Container(
                   height: 10,
                   decoration: BoxDecoration(
                     color: AppColors.surface3,
-                    borderRadius: BorderRadius.circular(5),
+                    borderRadius: AppSize.radius(5),
                   ),
                   child: FractionallySizedBox(
                     alignment: Alignment.centerLeft,
@@ -799,7 +800,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                     child: Container(
                       decoration: BoxDecoration(
                         color: Color(d.colorValue),
-                        borderRadius: BorderRadius.circular(5),
+                        borderRadius: AppSize.radius(5),
                       ),
                     ),
                   ),
@@ -813,20 +814,20 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   }
 
   Widget _buildInsights() {
-    if (_report == null || _report!.insights.isEmpty) return const SizedBox.shrink();
+    if (_report == null || _report!.insights.isEmpty) return SizedBox.shrink();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           '\u0418\u043D\u0441\u0430\u0439\u0442\u044B',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.foreground),
+          style: TextStyle(fontSize: AppSize.s(16), fontWeight: FontWeight.w600, color: AppColors.foreground),
         ),
-        SizedBox(height: 12),
+        AppSize.gapH(12),
         Container(
-          padding: const EdgeInsets.all(16),
+          padding: AppSize.padding(16),
           decoration: BoxDecoration(
-            gradient: const LinearGradient(
+            gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
@@ -834,21 +835,21 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                 Color.fromRGBO(255, 173, 31, 0.04),
               ],
             ),
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: AppSize.radius(16),
             border: Border.all(color: AppColors.citrusOrange.withOpacity(0.1)),
           ),
           child: Column(
             children: _report!.insights.map((insight) => Padding(
-              padding: const EdgeInsets.only(bottom: 10),
+              padding: AppSize.paddingOnly(bottom: 10),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('\u{1F4A1}', style: TextStyle(fontSize: 18)),
-                  SizedBox(width: 10),
+                  Text('\u{1F4A1}', style: TextStyle(fontSize: AppSize.s(18))),
+                  AppSize.gapW(10),
                   Expanded(
                     child: Text(
                       insight,
-                      style: TextStyle(fontSize: 12, color: AppColors.mutedForeground, height: 1.4),
+                      style: TextStyle(fontSize: AppSize.s(12), color: AppColors.mutedForeground, height: 1.4),
                     ),
                   ),
                 ],
@@ -861,15 +862,15 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   }
 
   Widget _buildActivitySection() {
-    if (_report == null) return const SizedBox.shrink();
+    if (_report == null) return SizedBox.shrink();
 
     final a = _report!.activity;
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: AppSize.padding(16),
       decoration: BoxDecoration(
         color: AppColors.surface1,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: AppSize.radius(16),
         border: Border.all(color: AppColors.subtleBorder),
       ),
       child: Column(
@@ -877,17 +878,17 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         children: [
           Text(
             '\u0410\u043A\u0442\u0438\u0432\u043D\u043E\u0441\u0442\u044C',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.foreground),
+            style: TextStyle(fontSize: AppSize.s(16), fontWeight: FontWeight.w600, color: AppColors.foreground),
           ),
-          SizedBox(height: 16),
+          AppSize.gapH(16),
           _buildActivityBar('\u0417\u0430\u043F\u0438\u0441\u0438 \u043D\u0430\u0441\u0442\u0440\u043E\u0435\u043D\u0438\u044F', a.moodRecords, 30, AppColors.citrusOrange),
-          SizedBox(height: 12),
+          AppSize.gapH(12),
           _buildActivityBar('\u0421\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u044F \u0432 \u0447\u0430\u0442\u0435', a.chatMessages, 30, AppColors.citrusAmber),
-          SizedBox(height: 12),
+          AppSize.gapH(12),
           _buildActivityBar('\u0423\u043F\u0440\u0430\u0436\u043D\u0435\u043D\u0438\u044F', a.exercises, 30, AppColors.moodGood),
-          SizedBox(height: 12),
+          AppSize.gapH(12),
           _buildActivityBar('\u0422\u0435\u0441\u0442\u044B', a.tests, 30, AppColors.moodVeryBad),
-          SizedBox(height: 12),
+          AppSize.gapH(12),
           _buildActivityBar('\u0417\u0430\u043F\u0438\u0441\u0438 \u0441\u043D\u0430', a.sleepRecords, 30, AppColors.citrusPurple),
         ],
       ),
@@ -895,16 +896,16 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   }
 
   Widget _buildSleepSection() {
-    if (_report == null) return const SizedBox.shrink();
+    if (_report == null) return SizedBox.shrink();
 
     final m = _report!.metrics;
-    if (m.sleepRecords == 0) return const SizedBox.shrink();
+    if (m.sleepRecords == 0) return SizedBox.shrink();
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: AppSize.padding(16),
       decoration: BoxDecoration(
         color: AppColors.surface1,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: AppSize.radius(16),
         border: Border.all(color: AppColors.subtleBorder),
       ),
       child: Column(
@@ -912,15 +913,15 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         children: [
           Row(
             children: [
-              Text('\u{1F4A4}', style: TextStyle(fontSize: 18)),
-              SizedBox(width: 8),
+              Text('\u{1F4A4}', style: TextStyle(fontSize: AppSize.s(18))),
+              AppSize.gapW(8),
               Text(
                 '\u0410\u043D\u0430\u043B\u0438\u0437 \u0441\u043D\u0430',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.foreground),
+                style: TextStyle(fontSize: AppSize.s(16), fontWeight: FontWeight.w600, color: AppColors.foreground),
               ),
             ],
           ),
-          SizedBox(height: 16),
+          AppSize.gapH(16),
           Row(
             children: [
               Expanded(
@@ -931,7 +932,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                   AppColors.citrusPurple,
                 ),
               ),
-              SizedBox(width: 12),
+              AppSize.gapW(12),
               Expanded(
                 child: _buildSleepMetricCard(
                   '\u0421\u0440\u0435\u0434\u043D\u0435\u0435 \u0432\u0440\u0435\u043C\u044F',
@@ -942,7 +943,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
               ),
             ],
           ),
-          SizedBox(height: 12),
+          AppSize.gapH(12),
           Row(
             children: [
               Expanded(
@@ -953,7 +954,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                   AppColors.moodGood,
                 ),
               ),
-              SizedBox(width: 12),
+              AppSize.gapW(12),
               Expanded(
                 child: _buildSleepMetricCard(
                   '\u041E\u0446\u0435\u043D\u043A\u0430',
@@ -973,25 +974,25 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
 
   Widget _buildSleepMetricCard(String label, String value, IconData icon, Color color) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: AppSize.padding(12),
       decoration: BoxDecoration(
         color: color.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppSize.radius(12),
         border: Border.all(color: color.withOpacity(0.15)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(icon, size: 18, color: color),
-          SizedBox(height: 6),
+          AppSize.gapH(6),
           Text(
             value,
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.foreground),
+            style: TextStyle(fontSize: AppSize.s(18), fontWeight: FontWeight.w700, color: AppColors.foreground),
           ),
-          SizedBox(height: 2),
+          AppSize.gapH(2),
           Text(
             label,
-            style: TextStyle(fontSize: 10, color: AppColors.dimForeground),
+            style: TextStyle(fontSize: AppSize.s(10), color: AppColors.dimForeground),
           ),
         ],
       ),
@@ -1006,17 +1007,17 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       children: [
         Row(
           children: [
-            Text(label, style: TextStyle(fontSize: 12, color: AppColors.mutedForeground, fontWeight: FontWeight.w500)),
-            const Spacer(),
-            Text(value.toString(), style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: color)),
+            Text(label, style: TextStyle(fontSize: AppSize.s(12), color: AppColors.mutedForeground, fontWeight: FontWeight.w500)),
+            Spacer(),
+            Text(value.toString(), style: TextStyle(fontSize: AppSize.s(14), fontWeight: FontWeight.w600, color: color)),
           ],
         ),
-        SizedBox(height: 6),
+        AppSize.gapH(6),
         Container(
           height: 8,
           decoration: BoxDecoration(
             color: AppColors.surface3,
-            borderRadius: BorderRadius.circular(4),
+            borderRadius: AppSize.radius(4),
           ),
           child: FractionallySizedBox(
             alignment: Alignment.centerLeft,
@@ -1024,7 +1025,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
             child: Container(
               decoration: BoxDecoration(
                 color: color,
-                borderRadius: BorderRadius.circular(4),
+                borderRadius: AppSize.radius(4),
               ),
             ),
           ),
@@ -1047,10 +1048,10 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     return GestureDetector(
       onTap: isLoading ? null : onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12),
+        padding: AppSize.paddingH(0, 12),
         decoration: BoxDecoration(
           color: isLoading ? AppColors.surface3 : AppColors.surface1,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: AppSize.radius(12),
           border: Border.all(color: AppColors.subtleBorder),
         ),
         child: isLoading
@@ -1066,8 +1067,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(icon, color: AppColors.citrusOrange, size: 18),
-                  SizedBox(width: 8),
-                  Text(label, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.foreground)),
+                  AppSize.gapW(8),
+                  Text(label, style: TextStyle(fontSize: AppSize.s(13), fontWeight: FontWeight.w600, color: AppColors.foreground)),
                 ],
               ),
       ),
@@ -1082,14 +1083,14 @@ class _DistributionData {
   final int percent;
   final Color color;
 
-  const _DistributionData({required this.emoji, required this.label, required this.count, required this.percent, required this.color});
+  _DistributionData({required this.emoji, required this.label, required this.count, required this.percent, required this.color});
 }
 
 class _InsightData {
   final String icon;
   final String text;
 
-  const _InsightData({required this.icon, required this.text});
+  _InsightData({required this.icon, required this.text});
 }
 
 class _ActivityData {
@@ -1097,5 +1098,5 @@ class _ActivityData {
   final int value;
   final Color color;
 
-  const _ActivityData({required this.label, required this.value, required this.color});
+  _ActivityData({required this.label, required this.value, required this.color});
 }

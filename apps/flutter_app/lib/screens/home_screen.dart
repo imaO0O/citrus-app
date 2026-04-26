@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../core/theme/app_colors.dart';
 import '../core/services/casino_coins_service.dart';
+import '../core/utils/app_size.dart';
 
 // ─── Mood Data ────────────────────────────────────────────────────────────────────
 class _MoodData {
@@ -21,7 +22,7 @@ class _MoodData {
   });
 }
 
-const moods = [
+final moods = [
   _MoodData(id: 0, label: 'Отлично',     color: AppColors.moodExcellent, glow: Color(0x738BC34A),  emoji: '\u{1F604}'),
   _MoodData(id: 1, label: 'Хорошо',      color: AppColors.moodGood,      glow: Color(0x73FFD93D),  emoji: '\u{1F642}'),
   _MoodData(id: 2, label: 'Нормально',   color: AppColors.moodOkay,      glow: Color(0x73FF8C42),  emoji: '\u{1F610}'),
@@ -31,11 +32,11 @@ const moods = [
 ];
 
 // ─── Citrus Wheel geometry ───────────────────────────────────────────────────────
-const double _cx = 140, _cy = 140;
-const double _rOuter = 118;   // outer radius of colored segments
-const double _rInner = 42;    // inner radius (center hole)
-const double _rRindOuter = 132; // outer decorative ring
-const double _gapDeg = 7.0;   // gap between segments in degrees
+double _cx = 140, _cy = 140;
+double _rOuter = 118;   // outer radius of colored segments
+double _rInner = 42;    // inner radius (center hole)
+double _rRindOuter = 132; // outer decorative ring
+double _gapDeg = 7.0;   // gap between segments in degrees
 
 double _toRad(double d) => d * math.pi / 180;
 
@@ -126,7 +127,7 @@ class HomeScreen extends StatefulWidget {
   final VoidCallback? onNavigateToDiary;
   final VoidCallback? onNavigateToSleep;
 
-  const HomeScreen({
+  HomeScreen({
     super.key,
     this.onNavigateToExercises,
     this.onNavigateToChat,
@@ -153,7 +154,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     super.initState();
     _feedbackController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 300),
+      duration: Duration(milliseconds: 300),
     );
   }
 
@@ -181,12 +182,12 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       CasinoCoinsService().refreshStatus();
     });
     _feedbackController.forward(from: 0);
-    _resetTimer = Timer(const Duration(milliseconds: 1800), () {
+    _resetTimer = Timer(Duration(milliseconds: 1800), () {
       if (!mounted) return;
       _feedbackController.reverse().then((_) {
         if (!mounted) return;
         setState(() => _showFeedback = false);
-        _resetTimer = Timer(const Duration(milliseconds: 400), () {
+        _resetTimer = Timer(Duration(milliseconds: 400), () {
           if (mounted) setState(() => _selected = null);
         });
       });
@@ -206,26 +207,26 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       backgroundColor: AppColors.background,
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.only(bottom: 8),
+          padding: AppSize.paddingOnly(bottom: 8),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildGreeting(),
-              SizedBox(height: 8),
+              AppSize.gapH(8),
               _buildCitrusWheel(),
-              SizedBox(height: 12),
+              AppSize.gapH(12),
               _buildSelectedLabel(),
-              SizedBox(height: 8),
+              AppSize.gapH(8),
               _buildStatsStrip(),
-              SizedBox(height: 16),
+              AppSize.gapH(16),
               _buildQuickLinks(),
               if (_todayLog.isNotEmpty) ...[
-                SizedBox(height: 16),
+                AppSize.gapH(16),
                 _buildTodaysMoodLog(),
               ],
-              SizedBox(height: 16),
+              AppSize.gapH(16),
               _buildDailyQuote(),
-              SizedBox(height: 16),
+              AppSize.gapH(16),
             ],
           ),
         ),
@@ -235,31 +236,31 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
   Widget _buildGreeting() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+      padding: EdgeInsets.fromLTRB(20, 16, 20, 0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             _getFormattedDate(),
             style: TextStyle(
-              fontSize: 12,
+              fontSize: AppSize.s(12),
               fontWeight: FontWeight.w500,
               color: AppColors.mutedForeground,
             ),
           ),
-          SizedBox(height: 4),
+          AppSize.gapH(4),
           Text(
             'Как твоё состояние?',
             style: TextStyle(
-              fontSize: 20,
+              fontSize: AppSize.s(20),
               fontWeight: FontWeight.w700,
               color: AppColors.foreground,
             ),
           ),
-          SizedBox(height: 4),
+          AppSize.gapH(4),
           Text(
             'Нажми на дольку цитруса, чтобы отметить настроение',
-            style: TextStyle(fontSize: 12, color: AppColors.dimForeground),
+            style: TextStyle(fontSize: AppSize.s(12), color: AppColors.dimForeground),
           ),
         ],
       ),
@@ -302,7 +303,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               }
             },
             child: CustomPaint(
-              size: const Size(280, 280),
+              size: Size(280, 280),
               painter: CitrusWheelPainter(selectedId: _selected),
             ),
           ),
@@ -332,10 +333,10 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   Widget _buildFeedbackBadge() {
     final mood = moods.firstWhere((m) => m.id == _selected);
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: AppSize.paddingH(16, 8),
       decoration: BoxDecoration(
         color: mood.color,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: AppSize.radius(16),
         boxShadow: [
           BoxShadow(
             color: mood.glow,
@@ -346,7 +347,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       child: Text(
         '${mood.emoji} ${mood.label}',
         style: TextStyle(
-          fontSize: 13,
+          fontSize: AppSize.s(13),
           fontWeight: FontWeight.w600,
           color: Color(0xFF0C0C14),
         ),
@@ -357,13 +358,13 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   Widget _buildSelectedLabel() {
     return Center(
       child: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 300),
+        duration: Duration(milliseconds: 300),
         transitionBuilder: (child, animation) {
           return FadeTransition(
             opacity: animation,
             child: SlideTransition(
               position: Tween<Offset>(
-                begin: const Offset(0, 0.15),
+                begin: Offset(0, 0.15),
                 end: Offset.zero,
               ).animate(animation),
               child: child,
@@ -373,26 +374,26 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         child: _selected != null
             ? Container(
                 key: ValueKey('hs_selected_${_selected}_$_selectionKey'),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                padding: AppSize.paddingH(12, 4),
                 decoration: BoxDecoration(
                   color: Colors.white.withOpacity(0.06),
-                  borderRadius: BorderRadius.circular(999),
+                  borderRadius: AppSize.radius(999),
                 ),
                 child: Text(
                   '${moods.firstWhere((m) => m.id == _selected).emoji} ${moods.firstWhere((m) => m.id == _selected).label} — записано',
                   style: TextStyle(
-                    fontSize: 11,
+                    fontSize: AppSize.s(11),
                     color: moods.firstWhere((m) => m.id == _selected).color,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
               )
             : Container(
-                key: const ValueKey('hs_hint'),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                key: ValueKey('hs_hint'),
+                padding: AppSize.paddingH(12, 4),
                 child: Text(
                   '6 уровней настроения · нажми на дольку',
-                  style: TextStyle(fontSize: 11, color: AppColors.dimForeground),
+                  style: TextStyle(fontSize: AppSize.s(11), color: AppColors.dimForeground),
                 ),
               ),
       ),
@@ -407,39 +408,39 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     ];
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      padding: AppSize.paddingH(20, 0),
       child: GridView.count(
         shrinkWrap: true,
         crossAxisCount: 3,
-        physics: const NeverScrollableScrollPhysics(),
+        physics: NeverScrollableScrollPhysics(),
         childAspectRatio: 1.05,
         mainAxisSpacing: 12,
         crossAxisSpacing: 12,
         children: stats.map((s) {
           return Container(
-            padding: const EdgeInsets.all(12),
+            padding: AppSize.padding(12),
             decoration: BoxDecoration(
               color: AppColors.surface1,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: AppSize.radius(16),
               border: Border.all(color: AppColors.citrusOrange.withOpacity(0.1)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(s['icon'] as String, style: TextStyle(fontSize: 16)),
-                SizedBox(height: 6),
+                Text(s['icon'] as String, style: TextStyle(fontSize: AppSize.s(16))),
+                AppSize.gapH(6),
                 Text(
                   s['value'] as String,
                   style: TextStyle(
-                    fontSize: 16,
+                    fontSize: AppSize.s(16),
                     fontWeight: FontWeight.w700,
                     color: AppColors.foreground,
                   ),
                 ),
-                SizedBox(height: 2),
+                AppSize.gapH(2),
                 Text(
                   s['label'] as String,
-                  style: TextStyle(fontSize: 10, color: AppColors.mutedForeground),
+                  style: TextStyle(fontSize: AppSize.s(10), color: AppColors.mutedForeground),
                 ),
               ],
             ),
@@ -458,11 +459,11 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     ];
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      padding: AppSize.paddingH(20, 0),
       child: GridView.count(
         shrinkWrap: true,
         crossAxisCount: 4,
-        physics: const NeverScrollableScrollPhysics(),
+        physics: NeverScrollableScrollPhysics(),
         childAspectRatio: 0.75,
         mainAxisSpacing: 8,
         crossAxisSpacing: 8,
@@ -470,20 +471,20 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           return GestureDetector(
             onTap: link['onTap'] as VoidCallback?,
             child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 12),
+              padding: AppSize.paddingH(0, 12),
               decoration: BoxDecoration(
                 color: AppColors.surface1,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: AppSize.radius(16),
                 border: Border.all(color: Colors.white.withOpacity(0.05)),
               ),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(link['icon'] as String, style: TextStyle(fontSize: 20)),
-                  SizedBox(height: 6),
+                  Text(link['icon'] as String, style: TextStyle(fontSize: AppSize.s(20))),
+                  AppSize.gapH(6),
                   Text(
                     link['label'] as String,
-                    style: TextStyle(fontSize: 10, color: AppColors.mutedForeground, fontWeight: FontWeight.w500),
+                    style: TextStyle(fontSize: AppSize.s(10), color: AppColors.mutedForeground, fontWeight: FontWeight.w500),
                     textAlign: TextAlign.center,
                   ),
                 ],
@@ -497,39 +498,39 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
   Widget _buildTodaysMoodLog() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      padding: AppSize.paddingH(20, 0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             'Сегодня',
             style: TextStyle(
-              fontSize: 16,
+              fontSize: AppSize.s(16),
               fontWeight: FontWeight.w600,
               color: AppColors.foreground,
             ),
           ),
-          SizedBox(height: 12),
+          AppSize.gapH(12),
           ..._todayLog.reversed.take(4).map((entry) {
             final mood = moods.firstWhere((m) => m.id == entry['id']);
             return Container(
               key: ValueKey('mood_log_${entry['key']}'),
-              margin: const EdgeInsets.only(bottom: 8),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              margin: AppSize.paddingOnly(bottom: 8),
+              padding: AppSize.paddingH(16, 12),
               decoration: BoxDecoration(
                 color: AppColors.surface1,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: AppSize.radius(16),
                 border: Border.all(color: Colors.white.withOpacity(0.05)),
               ),
               child: Row(
                 children: [
-                  Text(mood.emoji, style: TextStyle(fontSize: 20)),
-                  SizedBox(width: 12),
+                  Text(mood.emoji, style: TextStyle(fontSize: AppSize.s(20))),
+                  AppSize.gapW(12),
                   Expanded(
                     child: Text(
                       mood.label,
                       style: TextStyle(
-                        fontSize: 14,
+                        fontSize: AppSize.s(14),
                         fontWeight: FontWeight.w500,
                         color: AppColors.foreground,
                       ),
@@ -546,10 +547,10 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                       ],
                     ),
                   ),
-                  SizedBox(width: 10),
+                  AppSize.gapW(10),
                   Text(
                     entry['time'] as String,
-                    style: TextStyle(fontSize: 12, color: AppColors.dimForeground),
+                    style: TextStyle(fontSize: AppSize.s(12), color: AppColors.dimForeground),
                   ),
                 ],
               ),
@@ -562,10 +563,10 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
   Widget _buildDailyQuote() {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20),
-      padding: const EdgeInsets.all(16),
+      margin: AppSize.paddingH(20, 0),
+      padding: AppSize.padding(16),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
@@ -573,14 +574,14 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             Color.fromRGBO(255, 173, 31, 0.08),
           ],
         ),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: AppSize.radius(16),
         border: Border.all(color: AppColors.citrusOrange.withOpacity(0.2)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('✨', style: TextStyle(fontSize: 20)),
-          SizedBox(width: 12),
+          Text('✨', style: TextStyle(fontSize: AppSize.s(20))),
+          AppSize.gapW(12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -588,16 +589,16 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 Text(
                   '«Каждый день — это новая возможность стать лучше. Ты справишься!»',
                   style: TextStyle(
-                    fontSize: 13,
+                    fontSize: AppSize.s(13),
                     fontStyle: FontStyle.italic,
                     color: AppColors.warmText,
                     height: 1.5,
                   ),
                 ),
-                SizedBox(height: 8),
+                AppSize.gapH(8),
                 Text(
                   'Аффирмация дня',
-                  style: TextStyle(fontSize: 11, color: AppColors.dimForeground),
+                  style: TextStyle(fontSize: AppSize.s(11), color: AppColors.dimForeground),
                 ),
               ],
             ),
@@ -635,14 +636,14 @@ class CitrusWheelPainter extends CustomPainter {
       if (isSelected) {
         canvas.drawPath(_segmentPath(i), Paint()
           ..color = mood.color.withOpacity(0.3)
-          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 10)
+          ..maskFilter = MaskFilter.blur(BlurStyle.normal, 10)
           ..style = PaintingStyle.fill);
       }
 
       // Segment fill with radial gradient
       final gradPaint = Paint()
         ..shader = RadialGradient(
-          center: const Alignment(0, -0.3),
+          center: Alignment(0, -0.3),
           radius: 0.8,
           colors: [
             mood.color.withOpacity(0.95),
@@ -684,7 +685,7 @@ class CitrusWheelPainter extends CustomPainter {
     canvas.drawCircle(
       center,
       _rInner + 2,
-      Paint()..color = const Color(0xFF1A1A2A)..style = PaintingStyle.fill,
+      Paint()..color = Color(0xFF1A1A2A)..style = PaintingStyle.fill,
     );
     // Inner background
     canvas.drawCircle(
@@ -715,7 +716,7 @@ class CitrusWheelPainter extends CustomPainter {
         ? moods.firstWhere((m) => m.id == selectedId).emoji
         : '🍊';
     final centerText = TextPainter(
-      text: TextSpan(text: centerEmoji, style: TextStyle(fontSize: 22)),
+      text: TextSpan(text: centerEmoji, style: TextStyle(fontSize: AppSize.s(22))),
       textDirection: TextDirection.ltr,
     );
     centerText.layout();
@@ -730,7 +731,7 @@ class CitrusWheelPainter extends CustomPainter {
   void _drawFace(Canvas canvas, Offset pos, int moodIndex) {
     const radius = 10.0;
     const lineW = 1.5;
-    final color = const Color(0xFF1A1A2A); // dark color for faces
+    final color = Color(0xFF1A1A2A); // dark color for faces
 
     final basePaint = Paint()
       ..color = color
@@ -783,7 +784,7 @@ class CitrusWheelPainter extends CustomPainter {
         math.pi,
         false,
         Paint()
-          ..color = const Color(0xFF1A1A2A)
+          ..color = Color(0xFF1A1A2A)
           ..style = PaintingStyle.stroke
           ..strokeWidth = 1.5
           ..strokeCap = StrokeCap.round,
@@ -794,7 +795,7 @@ class CitrusWheelPainter extends CustomPainter {
         math.pi,
         false,
         Paint()
-          ..color = const Color(0xFF1A1A2A)
+          ..color = Color(0xFF1A1A2A)
           ..style = PaintingStyle.stroke
           ..strokeWidth = 1.5
           ..strokeCap = StrokeCap.round,
@@ -802,9 +803,9 @@ class CitrusWheelPainter extends CustomPainter {
     } else {
       // Dot eyes
       canvas.drawCircle(Offset(pos.dx - eyeSpread, pos.dy + eyeY), 1.2,
-          Paint()..color = const Color(0xFF1A1A2A)..style = PaintingStyle.fill);
+          Paint()..color = Color(0xFF1A1A2A)..style = PaintingStyle.fill);
       canvas.drawCircle(Offset(pos.dx + eyeSpread, pos.dy + eyeY), 1.2,
-          Paint()..color = const Color(0xFF1A1A2A)..style = PaintingStyle.fill);
+          Paint()..color = Color(0xFF1A1A2A)..style = PaintingStyle.fill);
     }
   }
 
@@ -813,7 +814,7 @@ class CitrusWheelPainter extends CustomPainter {
     const browY = -6.5;
     const browSpread = 4.0;
     final paint = Paint()
-      ..color = const Color(0xFF1A1A2A)
+      ..color = Color(0xFF1A1A2A)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.2
       ..strokeCap = StrokeCap.round;
@@ -833,7 +834,7 @@ class CitrusWheelPainter extends CustomPainter {
 
   void _mouth(Canvas canvas, Offset pos, double r, {required int type}) {
     final paint = Paint()
-      ..color = const Color(0xFF1A1A2A)
+      ..color = Color(0xFF1A1A2A)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.5
       ..strokeCap = StrokeCap.round;

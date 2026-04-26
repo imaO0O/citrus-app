@@ -198,6 +198,19 @@ CREATE TABLE IF NOT EXISTS password_reset_tokens (
 );
 
 -- ============================================================================
+-- 15. ПОЛЬЗОВАТЕЛИ КАЗИНО (монеты, награды, задания)
+-- ============================================================================
+-- из миграции 10
+CREATE TABLE IF NOT EXISTS casino_users (
+    user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+    coins INTEGER DEFAULT 0,
+    last_daily_claim TIMESTAMP,
+    quests_done TEXT[] DEFAULT '{}',
+    total_spins INTEGER DEFAULT 0,
+    total_wins INTEGER DEFAULT 0
+);
+
+-- ============================================================================
 -- СТАНДАРТНЫЕ ДАННЫЕ: ТЕМЫ
 -- ============================================================================
 INSERT INTO themes (id, name, is_dark, primary_color, accent_color) VALUES
@@ -254,3 +267,7 @@ CREATE INDEX IF NOT EXISTS idx_user_exercises_user_type_date
 -- Токены сброса пароля
 CREATE INDEX IF NOT EXISTS idx_password_reset_tokens_user_code 
     ON password_reset_tokens(user_id, code, used);
+
+-- Казино
+CREATE INDEX IF NOT EXISTS idx_casino_users_user_id 
+    ON casino_users(user_id);

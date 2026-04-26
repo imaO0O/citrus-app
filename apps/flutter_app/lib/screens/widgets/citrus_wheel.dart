@@ -2,12 +2,13 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../models/mood.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/utils/app_size.dart';
 
 class CitrusWheel extends StatefulWidget {
   final int? selectedMoodId;
   final ValueChanged<int> onMoodSelected;
 
-  const CitrusWheel({
+  CitrusWheel({
     super.key,
     required this.selectedMoodId,
     required this.onMoodSelected,
@@ -21,11 +22,11 @@ class _CitrusWheelState extends State<CitrusWheel>
     with SingleTickerProviderStateMixin {
   int _selectedIndex = -1;
 
-  static const double _cx = 140;
-  static const double _cy = 140;
-  static const double _rSeg = 118;
-  static const double _rInner = 42;
-  static const double _gapDeg = 3.5;
+  static double _cx = 140;
+  static double _cy = 140;
+  static double _rSeg = 118;
+  static double _rInner = 42;
+  static double _gapDeg = 3.5;
 
   double _toRad(double deg) => deg * math.pi / 180;
 
@@ -90,7 +91,7 @@ class _CitrusWheelState extends State<CitrusWheel>
   void _handleTapOnSegment(int index) {
     setState(() => _selectedIndex = index);
     widget.onMoodSelected(Mood.all[index].id);
-    Future.delayed(const Duration(milliseconds: 1500), () {
+    Future.delayed(Duration(milliseconds: 1500), () {
       if (mounted) setState(() => _selectedIndex = -1);
     });
   }
@@ -107,7 +108,7 @@ class _CitrusWheelState extends State<CitrusWheel>
       child: Stack(
         children: [
           CustomPaint(
-            size: const Size(280, 280),
+            size: Size(280, 280),
             painter: _CitrusPainter(
               moods: Mood.all,
               selectedIndex: _selectedIndex,
@@ -130,9 +131,9 @@ class _CitrusWheelState extends State<CitrusWheel>
                 onTap: () => _handleTapOnSegment(i),
                 child: AnimatedScale(
                   scale: isSelected ? 1.3 : 1.0,
-                  duration: const Duration(milliseconds: 200),
+                  duration: Duration(milliseconds: 200),
                   curve: Curves.easeOutBack,
-                  child: Text(mood.emoji, style: const TextStyle(fontSize: 22)),
+                  child: Text(mood.emoji, style: TextStyle(fontSize: AppSize.s(22))),
                 ),
               ),
             );
@@ -145,25 +146,22 @@ class _CitrusWheelState extends State<CitrusWheel>
               right: 0,
               child: Center(
                 child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
+                  padding: AppSize.paddingH(16, 8),
                   decoration: BoxDecoration(
                     color: selectedMood.color,
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: AppSize.radius(16),
                     boxShadow: [
                       BoxShadow(
                         color: selectedMood.glow,
                         blurRadius: 16,
-                        offset: const Offset(0, 4),
+                        offset: Offset(0, 4),
                       ),
                     ],
                   ),
                   child: Text(
                     '${selectedMood.emoji} ${selectedMood.label}',
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: AppSize.s(14),
                       fontWeight: FontWeight.w600,
                       color: AppColors.primaryForeground,
                     ),
@@ -195,7 +193,7 @@ class _CitrusWheelState extends State<CitrusWheel>
                   child: Center(
                     child: Text(
                       selectedMood?.emoji ?? '🍊',
-                      style: const TextStyle(fontSize: 26),
+                      style: TextStyle(fontSize: AppSize.s(26)),
                     ),
                   ),
                 ),
@@ -233,7 +231,7 @@ class _CitrusPainter extends CustomPainter {
       Offset(cx, cy),
       132,
       Paint()
-        ..color = const Color.fromRGBO(255, 255, 255, 0.08)
+        ..color = Color.fromRGBO(255, 255, 255, 0.08)
         ..style = PaintingStyle.stroke
         ..strokeWidth = 2,
     );
@@ -252,13 +250,13 @@ class _CitrusPainter extends CustomPainter {
         ..lineTo(cx + 132 * math.cos(a1), cy + 132 * math.sin(a1))
         ..arcToPoint(
           Offset(cx + 132 * math.cos(a2), cy + 132 * math.sin(a2)),
-          radius: const Radius.circular(132),
+          radius: Radius.circular(132),
           clockwise: true,
         )
         ..lineTo(cx + 126 * math.cos(a2), cy + 126 * math.sin(a2))
         ..arcToPoint(
           Offset(cx + 126 * math.cos(a1), cy + 126 * math.sin(a1)),
-          radius: const Radius.circular(126),
+          radius: Radius.circular(126),
           clockwise: false,
         )
         ..close();
@@ -279,7 +277,7 @@ class _CitrusPainter extends CustomPainter {
           path,
           Paint()
             ..color = mood.color.withOpacity(0.35)
-            ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8),
+            ..maskFilter = MaskFilter.blur(BlurStyle.normal, 8),
         );
       }
 
@@ -296,7 +294,7 @@ class _CitrusPainter extends CustomPainter {
           Offset(line['x1']!, line['y1']!),
           Offset(line['x2']!, line['y2']!),
           Paint()
-            ..color = const Color.fromRGBO(255, 255, 255, 0.18)
+            ..color = Color.fromRGBO(255, 255, 255, 0.18)
             ..strokeWidth = 0.8
             ..strokeCap = StrokeCap.round,
         );

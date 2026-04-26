@@ -1,4 +1,4 @@
-﻿import 'dart:io';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -8,9 +8,10 @@ import 'package:intl/intl.dart';
 import '../core/theme/app_colors.dart';
 import '../core/repository/memory_photo_repository.dart';
 import '../models/memory_photo.dart';
+import '../core/utils/app_size.dart';
 
 class PhotoGalleryScreen extends StatefulWidget {
-  const PhotoGalleryScreen({super.key});
+  PhotoGalleryScreen({super.key});
 
   @override
   State<PhotoGalleryScreen> createState() => _PhotoGalleryScreenState();
@@ -110,7 +111,7 @@ class _PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
             content: Text('Фото загружено'),
             backgroundColor: Colors.green,
           ),
@@ -137,7 +138,7 @@ class _PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
       builder: (context) => AlertDialog(
         backgroundColor: AppColors.surface1,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: AppSize.radius(16),
           side: BorderSide(color: AppColors.citrusOrange.withOpacity(0.2)),
         ),
         title: Text(
@@ -153,7 +154,7 @@ class _PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
             filled: true,
             fillColor: AppColors.surface2,
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: AppSize.radius(12),
               borderSide: BorderSide.none,
             ),
           ),
@@ -180,7 +181,7 @@ class _PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
       builder: (context) => AlertDialog(
         backgroundColor: AppColors.surface1,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: AppSize.radius(16),
           side: BorderSide(color: AppColors.destructive.withOpacity(0.3)),
         ),
         title: Text('Удалить момент?', style: TextStyle(color: AppColors.foreground)),
@@ -209,7 +210,7 @@ class _PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
       await repo.deletePhoto(photo.id);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Момент удалён'), backgroundColor: Colors.green),
+          SnackBar(content: Text('Момент удалён'), backgroundColor: Colors.green),
         );
         await _loadPhotos();
       }
@@ -227,7 +228,7 @@ class _PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
       context: context,
       builder: (context) => Dialog(
         backgroundColor: Colors.transparent,
-        insetPadding: const EdgeInsets.all(16),
+        insetPadding: AppSize.padding(16),
         child: SizedBox(
           width: double.infinity,
           child: Column(
@@ -236,13 +237,13 @@ class _PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
               // Изображение
               Container(
                 width: double.infinity,
-                constraints: const BoxConstraints(maxHeight: 350),
+                constraints: BoxConstraints(maxHeight: 350),
                 decoration: BoxDecoration(
                   color: AppColors.surface2,
                   borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
                 ),
                 child: ClipRRect(
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
                   child: CachedNetworkImage(
                     imageUrl: photo.imageUrl,
                     fit: BoxFit.cover,
@@ -250,7 +251,7 @@ class _PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
                       child: CircularProgressIndicator(color: AppColors.citrusOrange),
                     ),
                     errorWidget: (context, url, error) => Container(
-                      padding: const EdgeInsets.all(32),
+                      padding: AppSize.padding(32),
                       child: Center(
                         child: Icon(Icons.broken_image, size: 64, color: AppColors.mutedForeground),
                       ),
@@ -265,7 +266,7 @@ class _PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
                   color: AppColors.surface1,
                   borderRadius: BorderRadius.vertical(bottom: Radius.circular(24)),
                 ),
-                padding: const EdgeInsets.all(20),
+                padding: AppSize.padding(20),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -274,17 +275,17 @@ class _PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
                         photo.caption!,
                         style: TextStyle(
                           color: AppColors.foreground,
-                          fontSize: 18,
+                          fontSize: AppSize.s(18),
                           fontWeight: FontWeight.w600,
                         ),
                       ),
-                      SizedBox(height: 4),
+                      AppSize.gapH(4),
                     ],
                     Text(
                       DateFormat('dd MMMM yyyy', 'ru_RU').format(photo.createdAt),
-                      style: TextStyle(color: AppColors.mutedForeground, fontSize: 13),
+                      style: TextStyle(color: AppColors.mutedForeground, fontSize: AppSize.s(13)),
                     ),
-                    SizedBox(height: 16),
+                    AppSize.gapH(16),
                     Row(
                       children: [
                         Expanded(
@@ -293,13 +294,13 @@ class _PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
                             style: ElevatedButton.styleFrom(
                               backgroundColor: AppColors.surface2,
                               foregroundColor: AppColors.foreground,
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              padding: AppSize.paddingH(0, 12),
+                              shape: RoundedRectangleBorder(borderRadius: AppSize.radius(12)),
                             ),
                             child: Text('Закрыть'),
                           ),
                         ),
-                        SizedBox(width: 8),
+                        AppSize.gapW(8),
                         IconButton(
                           icon: Icon(Icons.delete, color: AppColors.destructive),
                           onPressed: () {
@@ -323,7 +324,7 @@ class _PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
     showModalBottomSheet(
       context: context,
       backgroundColor: AppColors.surface1,
-      shape: const RoundedRectangleBorder(
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (context) => SafeArea(
@@ -331,12 +332,12 @@ class _PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Padding(
-              padding: EdgeInsets.all(16),
+              padding: AppSize.padding(16),
               child: Text(
                 'Добавить момент',
                 style: TextStyle(
                   color: AppColors.foreground,
-                  fontSize: 18,
+                  fontSize: AppSize.s(18),
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -357,7 +358,7 @@ class _PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
                 _pickImage(ImageSource.camera);
               },
             ),
-            SizedBox(height: 16),
+            AppSize.gapH(16),
           ],
         ),
       ),
@@ -375,9 +376,9 @@ class _PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
       backgroundColor: AppColors.background,
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(20),
+          padding: AppSize.padding(20),
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 480),
+            constraints: BoxConstraints(maxWidth: 480),
             child: SingleChildScrollView(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -388,7 +389,7 @@ class _PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
                   children: [
                     Text(
                       'Галерея моментов',
-                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: AppColors.foreground),
+                      style: TextStyle(fontSize: AppSize.s(20), fontWeight: FontWeight.w700, color: AppColors.foreground),
                     ),
                     Row(
                       children: [
@@ -402,7 +403,7 @@ class _PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
                               color: _showFavoritesOnly
                                   ? AppColors.citrusRed.withOpacity(0.2)
                                   : Colors.transparent,
-                              borderRadius: BorderRadius.circular(10),
+                              borderRadius: AppSize.radius(10),
                               border: Border.all(
                                 color: _showFavoritesOnly
                                     ? AppColors.citrusRed.withOpacity(0.5)
@@ -418,7 +419,7 @@ class _PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
                             ),
                           ),
                         ),
-                        SizedBox(width: 8),
+                        AppSize.gapW(8),
                         // Кнопка добавить
                         GestureDetector(
                           onTap: _isUploading ? null : _showUploadOptions,
@@ -426,8 +427,8 @@ class _PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
                             width: 32,
                             height: 32,
                             decoration: BoxDecoration(
-                              gradient: const LinearGradient(colors: [AppColors.citrusOrange, AppColors.citrusAmber]),
-                              borderRadius: BorderRadius.circular(10),
+                              gradient: LinearGradient(colors: [AppColors.citrusOrange, AppColors.citrusAmber]),
+                              borderRadius: AppSize.radius(10),
                             ),
                             child: _isUploading
                                 ? SizedBox(
@@ -442,54 +443,54 @@ class _PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
                     ),
                   ],
                 ),
-                SizedBox(height: 16),
+                AppSize.gapH(16),
                 // Мотивационная карточка
                 Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.all(16),
+                  padding: AppSize.padding(16),
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                       colors: [AppColors.citrusRed.withOpacity(0.12), AppColors.citrusOrange.withOpacity(0.08)],
                     ),
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: AppSize.radius(16),
                     border: Border.all(color: AppColors.citrusRed.withOpacity(0.2)),
                   ),
                   child: Text(
                     'Дофамин\nКаждый счастливый момент заслуживает быть сохранённым.',
-                    style: TextStyle(color: AppColors.foreground, fontSize: 14, fontWeight: FontWeight.w500),
+                    style: TextStyle(color: AppColors.foreground, fontSize: AppSize.s(14), fontWeight: FontWeight.w500),
                   ),
                 ),
-                SizedBox(height: 12),
+                AppSize.gapH(12),
                 // Счётчик
                 Row(
                   children: [
                     Icon(Icons.photo, color: AppColors.citrusOrange, size: 16),
-                    SizedBox(width: 4),
+                    AppSize.gapW(4),
                     Text(
                       '${_photos.length} моментов',
-                      style: TextStyle(color: AppColors.mutedForeground, fontSize: 13),
+                      style: TextStyle(color: AppColors.mutedForeground, fontSize: AppSize.s(13)),
                     ),
                     if (favoriteCount > 0) ...[
-                      SizedBox(width: 12),
+                      AppSize.gapW(12),
                       Icon(Icons.favorite, color: AppColors.citrusRed, size: 14),
-                      SizedBox(width: 4),
+                      AppSize.gapW(4),
                       Text(
                         '$favoriteCount избранных',
-                        style: TextStyle(color: AppColors.mutedForeground, fontSize: 13),
+                        style: TextStyle(color: AppColors.mutedForeground, fontSize: AppSize.s(13)),
                       ),
                     ],
                     if (_showFavoritesOnly) ...[
-                      SizedBox(width: 12),
+                      AppSize.gapW(12),
                       Text(
                         '(показаны избранные)',
-                        style: TextStyle(color: AppColors.citrusRed, fontSize: 12, fontStyle: FontStyle.italic),
+                        style: TextStyle(color: AppColors.citrusRed, fontSize: AppSize.s(12), fontStyle: FontStyle.italic),
                       ),
                     ],
                   ],
                 ),
-                SizedBox(height: 16),
+                AppSize.gapH(16),
                 // Сетка фото
                 SizedBox(
                   height: MediaQuery.of(context).size.height - 380,
@@ -501,9 +502,9 @@ class _PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   Icon(Icons.error_outline, size: 48, color: AppColors.destructive),
-                                  SizedBox(height: 8),
+                                  AppSize.gapH(8),
                                   Text(_error!, style: TextStyle(color: AppColors.mutedForeground)),
-                                  SizedBox(height: 16),
+                                  AppSize.gapH(16),
                                   ElevatedButton(
                                     onPressed: _loadPhotos,
                                     child: Text('Повторить'),
@@ -517,21 +518,21 @@ class _PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
                                       Icon(Icons.photo_library, size: 64, color: AppColors.dimForeground),
-                                      SizedBox(height: 8),
+                                      AppSize.gapH(8),
                                       Text(
                                         'Пока нет моментов',
                                         style: TextStyle(color: AppColors.mutedForeground),
                                       ),
-                                      SizedBox(height: 8),
+                                      AppSize.gapH(8),
                                       Text(
                                         'Нажмите + чтобы добавить фото',
-                                        style: TextStyle(color: AppColors.dimForeground, fontSize: 12),
+                                        style: TextStyle(color: AppColors.dimForeground, fontSize: AppSize.s(12)),
                                       ),
                                     ],
                                   ),
                                 )
                               : GridView.builder(
-                                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                                     crossAxisCount: 2,
                                     crossAxisSpacing: 12,
                                     mainAxisSpacing: 12,
@@ -549,7 +550,7 @@ class _PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
                                       child: Container(
                                         decoration: BoxDecoration(
                                           color: AppColors.surface1,
-                                          borderRadius: BorderRadius.circular(16),
+                                          borderRadius: AppSize.radius(16),
                                           border: Border.all(color: AppColors.subtleBorder),
                                         ),
                                         child: Column(
@@ -560,7 +561,7 @@ class _PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
                                               child: Stack(
                                                 children: [
                                                   ClipRRect(
-                                                    borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                                                    borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
                                                     child: CachedNetworkImage(
                                                       imageUrl: photo.imageUrl,
                                                       width: double.infinity,
@@ -597,7 +598,7 @@ class _PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
                                                         height: 28,
                                                         decoration: BoxDecoration(
                                                           color: Colors.black.withOpacity(0.4),
-                                                          borderRadius: BorderRadius.circular(8),
+                                                          borderRadius: AppSize.radius(8),
                                                         ),
                                                         child: Icon(
                                                           photo.isFavorite ? Icons.favorite : Icons.favorite_border,
@@ -615,7 +616,7 @@ class _PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
                                             // Описание
                                             if (photo.caption != null && photo.caption!.isNotEmpty)
                                               Padding(
-                                                padding: const EdgeInsets.all(8),
+                                                padding: AppSize.padding(8),
                                                 child: Column(
                                                   crossAxisAlignment: CrossAxisAlignment.start,
                                                   children: [
@@ -623,18 +624,18 @@ class _PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
                                                       photo.caption!,
                                                       style: TextStyle(
                                                         color: AppColors.foreground,
-                                                        fontSize: 13,
+                                                        fontSize: AppSize.s(13),
                                                         fontWeight: FontWeight.w500,
                                                       ),
                                                       maxLines: 1,
                                                       overflow: TextOverflow.ellipsis,
                                                     ),
-                                                    SizedBox(height: 2),
+                                                    AppSize.gapH(2),
                                                     Text(
                                                       DateFormat('dd.MM.yyyy').format(photo.createdAt),
                                                       style: TextStyle(
                                                         color: AppColors.mutedForeground,
-                                                        fontSize: 11,
+                                                        fontSize: AppSize.s(11),
                                                       ),
                                                     ),
                                                   ],
@@ -642,12 +643,12 @@ class _PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
                                               )
                                             else
                                               Padding(
-                                                padding: const EdgeInsets.all(8),
+                                                padding: AppSize.padding(8),
                                                 child: Text(
                                                   DateFormat('dd.MM.yyyy').format(photo.createdAt),
                                                   style: TextStyle(
                                                     color: AppColors.mutedForeground,
-                                                    fontSize: 11,
+                                                    fontSize: AppSize.s(11),
                                                   ),
                                                 ),
                                               ),
@@ -658,14 +659,14 @@ class _PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
                                   },
                                 ),
                 ),
-                SizedBox(height: 12),
+                AppSize.gapH(12),
                 // Кнопка добавления
                 SizedBox(
                   width: double.infinity,
                   child: Container(
                     decoration: BoxDecoration(
-                      gradient: const LinearGradient(colors: [AppColors.citrusOrange, AppColors.citrusAmber]),
-                      borderRadius: BorderRadius.circular(12),
+                      gradient: LinearGradient(colors: [AppColors.citrusOrange, AppColors.citrusAmber]),
+                      borderRadius: AppSize.radius(12),
                     ),
                     child: ElevatedButton(
                       onPressed: _isUploading ? null : _showUploadOptions,
@@ -673,8 +674,8 @@ class _PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
                         backgroundColor: Colors.transparent,
                         shadowColor: Colors.transparent,
                         foregroundColor: AppColors.background,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        padding: AppSize.paddingH(0, 14),
+                        shape: RoundedRectangleBorder(borderRadius: AppSize.radius(12)),
                       ),
                       child: _isUploading
                           ? SizedBox(
@@ -684,12 +685,12 @@ class _PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
                             )
                           : Text(
                               'Добавить момент',
-                              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+                              style: TextStyle(fontWeight: FontWeight.w600, fontSize: AppSize.s(15)),
                             ),
                     ),
                   ),
                 ),
-                SizedBox(height: 80),
+                AppSize.gapH(80),
               ],
             ),
           ),

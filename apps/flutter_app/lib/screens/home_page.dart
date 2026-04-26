@@ -10,6 +10,7 @@ import 'widgets/citrus_wheel.dart';
 import 'widgets/stats_strip.dart';
 import 'widgets/quick_links.dart';
 import 'widgets/mood_log.dart';
+import '../core/utils/app_size.dart';
 
 class HomePage extends StatefulWidget {
   final VoidCallback? onNavigateToExercises;
@@ -18,7 +19,7 @@ class HomePage extends StatefulWidget {
   final VoidCallback? onNavigateToSleep;
   final VoidCallback? onNavigateToTests;
 
-  const HomePage({
+  HomePage({
     super.key,
     this.onNavigateToExercises,
     this.onNavigateToChat,
@@ -75,16 +76,16 @@ class _HomePageState extends State<HomePage> {
 
   Widget _buildDailyAffirmation() {
     if (_isLoadingAffirmation || _dailyAffirmation == null) {
-      return const SizedBox.shrink();
+      return SizedBox.shrink();
     }
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+      padding: EdgeInsets.fromLTRB(20, 16, 20, 0),
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.all(20),
+        padding: AppSize.padding(20),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: AppSize.radius(20),
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
@@ -107,30 +108,30 @@ class _HomePageState extends State<HomePage> {
                   color: _dailyAffirmation!.color,
                   size: 20,
                 ),
-                const SizedBox(width: 8),
+                AppSize.gapW(8),
                 Text(
                   'Аффирмация дня',
                   style: TextStyle(
-                    fontSize: 12,
+                    fontSize: AppSize.s(12),
                     fontWeight: FontWeight.w600,
                     color: _dailyAffirmation!.color,
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            AppSize.gapH(12),
             Row(
               children: [
                 Text(
                   _dailyAffirmation!.emoji,
-                  style: const TextStyle(fontSize: 32),
+                  style: TextStyle(fontSize: AppSize.s(32)),
                 ),
-                const SizedBox(width: 12),
+                AppSize.gapW(12),
                 Expanded(
                   child: Text(
                     '"${_dailyAffirmation!.text}"',
                     style: TextStyle(
-                      fontSize: 16,
+                      fontSize: AppSize.s(16),
                       fontWeight: FontWeight.w500,
                       color: AppColors.foreground,
                       height: 1.4,
@@ -152,7 +153,7 @@ class _HomePageState extends State<HomePage> {
       body: BlocBuilder<DashboardBloc, DashboardState>(
         builder: (context, state) {
             if (state is DashboardLoading) {
-              return const Center(
+              return Center(
                 child: CircularProgressIndicator(
                   color: AppColors.citrusOrange,
                 ),
@@ -160,7 +161,7 @@ class _HomePageState extends State<HomePage> {
             }
 
             if (state is! DashboardLoaded) {
-              return const Center(child: Text('Загрузка...'));
+              return Center(child: Text('Загрузка...'));
             }
 
             return RefreshIndicator(
@@ -169,39 +170,39 @@ class _HomePageState extends State<HomePage> {
               },
               color: AppColors.citrusOrange,
               child: SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.only(bottom: 80),
+                physics: AlwaysScrollableScrollPhysics(),
+                padding: AppSize.paddingOnly(bottom: 80),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // ─── Greeting ───
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+                      padding: EdgeInsets.fromLTRB(20, 16, 20, 8),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
                             _formatDate(DateTime.now()),
                             style: TextStyle(
-                              fontSize: 12,
+                              fontSize: AppSize.s(12),
                               fontWeight: FontWeight.w500,
                               color: AppColors.mutedForeground,
                             ),
                           ),
-                          const SizedBox(height: 4),
+                          AppSize.gapH(4),
                           Text(
                             'Как твоё состояние?',
                             style: TextStyle(
-                              fontSize: 24,
+                              fontSize: AppSize.s(24),
                               fontWeight: FontWeight.w700,
                               color: AppColors.foreground,
                             ),
                           ),
-                          const SizedBox(height: 4),
+                          AppSize.gapH(4),
                           Text(
                             'Нажми на дольку цитруса, чтобы отметить настроение',
                             style: TextStyle(
-                              fontSize: 12,
+                              fontSize: AppSize.s(12),
                               color: AppColors.dimForeground,
                             ),
                           ),
@@ -210,7 +211,7 @@ class _HomePageState extends State<HomePage> {
                     ),
 
                     // ─── Citrus Wheel ───
-                    const SizedBox(height: 8),
+                    AppSize.gapH(8),
                     Center(
                       child: CitrusWheel(
                         selectedMoodId: state.selectedMoodId,
@@ -219,25 +220,22 @@ class _HomePageState extends State<HomePage> {
                     ),
 
                     // ─── Selected mood label ───
-                    const SizedBox(height: 8),
+                    AppSize.gapH(8),
                     Center(
                       child: AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 300),
+                        duration: Duration(milliseconds: 300),
                         child: state.selectedMoodId != null
                             ? Container(
                                 key: ValueKey('mood_${state.selectedMoodId}_${state.selectionKey}'),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 4,
-                                ),
+                                padding: AppSize.paddingH(12, 4),
                                 decoration: BoxDecoration(
                                   color: AppColors.foreground.withOpacity(0.06),
-                                  borderRadius: BorderRadius.circular(20),
+                                  borderRadius: AppSize.radius(20),
                                 ),
                                 child: Text(
                                   '${Mood.all.firstWhere((m) => m.id == state.selectedMoodId).emoji} ${Mood.all.firstWhere((m) => m.id == state.selectedMoodId).label} — записано',
                                   style: TextStyle(
-                                    fontSize: 12,
+                                    fontSize: AppSize.s(12),
                                     fontWeight: FontWeight.w600,
                                     color: Mood.all
                                         .firstWhere((m) => m.id == state.selectedMoodId)
@@ -246,15 +244,12 @@ class _HomePageState extends State<HomePage> {
                                 ),
                               )
                             : Container(
-                                key: const ValueKey('mood_hint'),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 4,
-                                ),
+                                key: ValueKey('mood_hint'),
+                                padding: AppSize.paddingH(12, 4),
                                 child: Text(
                                   '6 уровней настроения · нажми на дольку',
                                   style: TextStyle(
-                                    fontSize: 12,
+                                    fontSize: AppSize.s(12),
                                     color: AppColors.dimForeground,
                                   ),
                                 ),
@@ -262,7 +257,7 @@ class _HomePageState extends State<HomePage> {
                       ),
                     ),
 
-                    const SizedBox(height: 20),
+                    AppSize.gapH(20),
 
                     // ─── Stats Strip ───
                     StatsStrip(
@@ -271,7 +266,7 @@ class _HomePageState extends State<HomePage> {
                       sleepHours: state.sleepHours,
                     ),
 
-                    const SizedBox(height: 16),
+                    AppSize.gapH(16),
 
                     // ─── Quick Links ───
                     QuickLinks(
@@ -282,7 +277,7 @@ class _HomePageState extends State<HomePage> {
                       onTestsTap: widget.onNavigateToTests,
                     ),
 
-                    const SizedBox(height: 16),
+                    AppSize.gapH(16),
 
                     // ─── Today's Mood Log ───
                     MoodLog(entries: state.todayLog),

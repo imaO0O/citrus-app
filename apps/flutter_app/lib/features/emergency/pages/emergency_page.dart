@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../../core/utils/app_size.dart';
 
 class EmergencyPage extends StatelessWidget {
-  const EmergencyPage({Key? key}) : super(key: key);
+  EmergencyPage({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Экстренная помощь')),
+      appBar: AppBar(title: Text('Экстренная помощь')),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -19,14 +20,14 @@ class EmergencyPage extends StatelessWidget {
                   await launch(phone);
                 }
               },
-              child: const Text('Позвонить на горячую линию'),
+              child: Text('Позвонить на горячую линию'),
             ),
-            const SizedBox(height: 20),
+            AppSize.gapH(20),
             ElevatedButton(
               onPressed: () {
                 // Отправить SOS сообщение
               },
-              child: const Text('Отправить SOS доверенному контакту'),
+              child: Text('Отправить SOS доверенному контакту'),
             ),
           ],
         ),

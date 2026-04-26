@@ -9,6 +9,7 @@ import 'affirmations_screen.dart';
 import 'photo_gallery_screen.dart';
 import 'toy_screen.dart';
 import 'sos_screen.dart';
+import '../core/utils/app_size.dart';
 
 const _kBackground = Color(0xFF111111);
 const _kSurface1 = Color(0xFF131320);
@@ -24,7 +25,7 @@ class _FeatureItem {
   final String description;
   final Widget? screen;
 
-  const _FeatureItem({
+  _FeatureItem({
     required this.emoji,
     required this.title,
     required this.description,
@@ -33,7 +34,7 @@ class _FeatureItem {
 }
 
 class MoreScreen extends StatelessWidget {
-  const MoreScreen({super.key});
+  MoreScreen({super.key});
 
   void _openFeature(BuildContext context, _FeatureItem feature) {
     if (feature.screen != null) {
@@ -81,7 +82,7 @@ class MoreScreen extends StatelessWidget {
               child: GestureDetector(
                 onTap: () {},
                 child: Container(
-                  decoration: const BoxDecoration(
+                  decoration: BoxDecoration(
                     color: _kBackground,
                     borderRadius: BorderRadius.only(
                       topLeft: Radius.circular(24),
@@ -91,17 +92,17 @@ class MoreScreen extends StatelessWidget {
                       top: BorderSide(color: Colors.white10, width: 1),
                     ),
                   ),
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+                  padding: EdgeInsets.fromLTRB(16, 16, 16, 24),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Padding(
-                        padding: EdgeInsets.only(bottom: 12),
+                      Padding(
+                        padding: AppSize.paddingOnly(bottom: 12),
                         child: Text(
                           'ДОПОЛНИТЕЛЬНО',
                           style: TextStyle(
-                            fontSize: 10,
+                            fontSize: AppSize.s(10),
                             fontWeight: FontWeight.bold,
                             letterSpacing: 2,
                             color: _kMutedDeep,
@@ -124,64 +125,64 @@ class MoreScreen extends StatelessWidget {
 class _FeatureGrid extends StatelessWidget {
   final void Function(BuildContext, _FeatureItem) onTap;
 
-  const _FeatureGrid({required this.onTap});
+  _FeatureGrid({required this.onTap});
 
   List<_FeatureItem> get _features => [
-    const _FeatureItem(
+    _FeatureItem(
       emoji: '📈',
       title: 'Аналитика',
       description: 'Статистика и графики',
       screen: AnalyticsScreen(),
     ),
-    const _FeatureItem(
+    _FeatureItem(
       emoji: '🌙',
       title: 'Трекер сна',
       description: 'Качество сна',
       screen: SleepTrackerScreen(),
     ),
-    const _FeatureItem(
+    _FeatureItem(
       emoji: '🧪',
       title: 'Тесты',
       description: 'Психологические тесты',
       screen: TestsScreen(),
     ),
-    const _FeatureItem(
+    _FeatureItem(
       emoji: '🧘',
       title: 'Упражнения',
       description: 'Дыхание и релакс',
       screen: ExercisesScreen(),
     ),
-    const _FeatureItem(
+    _FeatureItem(
       emoji: '🎵',
       title: 'Медиа',
       description: 'Медитации',
       screen: MediaScreen(),
     ),
-    const _FeatureItem(
+    _FeatureItem(
       emoji: '💫',
       title: 'Аффирмации',
       description: 'Позитивные установки',
       screen: AffirmationsScreen(),
     ),
-    const _FeatureItem(
+    _FeatureItem(
       emoji: '📸',
       title: 'Галерея',
       description: 'Счастливые моменты',
       screen: PhotoGalleryScreen(),
     ),
-    const _FeatureItem(
+    _FeatureItem(
       emoji: '🎮',
       title: 'Антистресс',
       description: 'Игры',
       screen: ToyScreen(),
     ),
-    const _FeatureItem(
+    _FeatureItem(
       emoji: '⚙️',
       title: 'Настройки',
       description: 'Профиль',
       screen: SettingsScreen(),
     ),
-    const _FeatureItem(
+    _FeatureItem(
       emoji: '🆘',
       title: 'SOS',
       description: 'Экстренная помощь',
@@ -193,8 +194,8 @@ class _FeatureGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     return GridView.builder(
       shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+      physics: NeverScrollableScrollPhysics(),
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 3,
         crossAxisSpacing: 12,
         mainAxisSpacing: 12,
@@ -208,12 +209,12 @@ class _FeatureGrid extends StatelessWidget {
         return GestureDetector(
           onTap: () => onTap(context, feature),
           child: Container(
-            padding: const EdgeInsets.all(12),
+            padding: AppSize.padding(12),
             decoration: BoxDecoration(
               color: isActive
                   ? _kPrimary.withOpacity(0.15)
                   : Colors.white.withOpacity(0.04),
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: AppSize.radius(16),
               border: Border.all(
                 color: isActive
                     ? _kPrimary.withOpacity(0.35)
@@ -223,22 +224,22 @@ class _FeatureGrid extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text(feature.emoji, style: const TextStyle(fontSize: 28)),
-                const SizedBox(height: 8),
+                Text(feature.emoji, style: TextStyle(fontSize: AppSize.s(28))),
+                AppSize.gapH(8),
                 Text(
                   feature.title,
-                  style: const TextStyle(
-                    fontSize: 14,
+                  style: TextStyle(
+                    fontSize: AppSize.s(14),
                     fontWeight: FontWeight.w500,
                     color: _kForeground,
                   ),
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 4),
+                AppSize.gapH(4),
                 Text(
                   feature.description,
-                  style: const TextStyle(
-                    fontSize: 12,
+                  style: TextStyle(
+                    fontSize: AppSize.s(12),
                     color: _kMutedDeep,
                   ),
                   textAlign: TextAlign.center,

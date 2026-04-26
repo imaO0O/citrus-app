@@ -13,9 +13,10 @@ import '../core/repository/auth_repository.dart';
 import '../core/repository/notification_preferences_repository.dart';
 import '../features/notifications/pages/notifications_page.dart';
 import 'help_screen.dart';
+import '../core/utils/app_size.dart';
 
 class SettingsScreen extends StatefulWidget {
-  const SettingsScreen({super.key});
+  SettingsScreen({super.key});
 
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
@@ -127,7 +128,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
             content: Text('Профиль обновлён'),
             backgroundColor: AppColors.citrusGreen,
           ),
@@ -192,7 +193,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
             content: Text('Аватар обновлён'),
             backgroundColor: AppColors.citrusGreen,
           ),
@@ -228,21 +229,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 480),
+            constraints: BoxConstraints(maxWidth: 480),
             child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 80),
+              padding: EdgeInsets.fromLTRB(20, 20, 20, 80),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildHeader(),
-                  SizedBox(height: 20),
+                  AppSize.gapH(20),
                   BlocBuilder<AuthBloc, AuthState>(
                     builder: (context, state) {
                       final user = state is AuthAuthenticated ? state.user : null;
                       return _buildProfileSection(user);
                     },
                   ),
-                  SizedBox(height: 24),
+                  AppSize.gapH(24),
                   _buildSection(
                     title: 'ПРИЛОЖЕНИЕ',
                     children: [
@@ -254,21 +255,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         onTap: () {
                           Navigator.of(context).push(
                             MaterialPageRoute(
-                              builder: (_) => const NotificationsPage(),
+                              builder: (_) => NotificationsPage(),
                             ),
                           );
                         },
                       ),
                     ],
                   ),
-                  SizedBox(height: 24),
+                  AppSize.gapH(24),
                   _buildSection(
                     title: 'ДОВЕРЕННЫЙ КОНТАКТ',
                     children: [
                       _buildTrustedContactCard(),
                     ],
                   ),
-                  SizedBox(height: 24),
+                  AppSize.gapH(24),
                   _buildSection(
                     title: 'ПОДДЕРЖКА',
                     children: [
@@ -284,15 +285,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         onTap: () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (context) => const HelpScreen()),
+                            MaterialPageRoute(builder: (context) => HelpScreen()),
                           );
                         },
                       ),
                     ],
                   ),
-                  SizedBox(height: 32),
+                  AppSize.gapH(32),
                   _buildLogoutButton(),
-                  SizedBox(height: 20),
+                  AppSize.gapH(20),
                 ],
               ),
             ),
@@ -306,7 +307,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Text(
       'Настройки',
       style: TextStyle(
-        fontSize: 24,
+        fontSize: AppSize.s(24),
         fontWeight: FontWeight.w700,
         color: AppColors.foreground,
       ),
@@ -322,18 +323,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.surface1,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: AppSize.radius(16),
         border: Border.all(color: AppColors.subtleBorder),
       ),
       child: Column(
         children: [
           // Шапка профиля: аватар + имя + email
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: AppSize.padding(16),
             child: Row(
               children: [
                 _buildAvatar(avatarUrl, displayName),
-                SizedBox(width: 12),
+                AppSize.gapW(12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -341,18 +342,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       Text(
                         displayName,
                         style: TextStyle(
-                          fontSize: 16,
+                          fontSize: AppSize.s(16),
                           fontWeight: FontWeight.w600,
                           color: AppColors.foreground,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      SizedBox(height: 2),
+                      AppSize.gapH(2),
                       Text(
                         displayEmail,
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: AppSize.s(12),
                           color: AppColors.mutedForeground,
                         ),
                         maxLines: 1,
@@ -366,7 +367,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     icon: Icon(Icons.edit_outlined, color: AppColors.citrusOrange, size: 20),
                     onPressed: () => _startEditingProfile(user),
                     padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
+                    constraints: BoxConstraints(),
                   ),
               ],
             ),
@@ -376,7 +377,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           if (_isEditingProfile) ...[
             Divider(height: 1, color: AppColors.subtleBorder),
             Padding(
-              padding: const EdgeInsets.all(16),
+              padding: AppSize.padding(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -391,11 +392,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             Container(
                               width: 90,
                               height: 90,
-                              decoration: const BoxDecoration(
+                              decoration: BoxDecoration(
                                 shape: BoxShape.circle,
                                 color: Colors.black54,
                               ),
-                              child: const Center(
+                              child: Center(
                                 child: CircularProgressIndicator(
                                   color: AppColors.citrusOrange,
                                   strokeWidth: 3,
@@ -413,24 +414,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 color: AppColors.citrusOrange,
                                 border: Border.all(color: AppColors.surface1, width: 2),
                               ),
-                              child: const Icon(Icons.camera_alt, color: Colors.white, size: 14),
+                              child: Icon(Icons.camera_alt, color: Colors.white, size: 14),
                             ),
                           ),
                         ],
                       ),
                     ),
                   ),
-                  SizedBox(height: 20),
+                  AppSize.gapH(20),
                   // Имя
                   Text(
                     'Имя',
                     style: TextStyle(
-                      fontSize: 12,
+                      fontSize: AppSize.s(12),
                       fontWeight: FontWeight.w600,
                       color: AppColors.mutedForeground,
                     ),
                   ),
-                  SizedBox(height: 6),
+                  AppSize.gapH(6),
                   TextField(
                     controller: _profileNameController,
                     decoration: InputDecoration(
@@ -438,26 +439,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       filled: true,
                       fillColor: AppColors.surface2,
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: AppSize.radius(12),
                         borderSide: BorderSide.none,
                       ),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      contentPadding: AppSize.paddingH(12, 10),
                       isDense: true,
                       prefixIcon: Icon(Icons.person_outline, color: AppColors.mutedForeground, size: 18),
                     ),
-                    style: TextStyle(fontSize: 14, color: AppColors.foreground),
+                    style: TextStyle(fontSize: AppSize.s(14), color: AppColors.foreground),
                   ),
-                  SizedBox(height: 12),
+                  AppSize.gapH(12),
                   // Телефон
                   Text(
                     'Телефон',
                     style: TextStyle(
-                      fontSize: 12,
+                      fontSize: AppSize.s(12),
                       fontWeight: FontWeight.w600,
                       color: AppColors.mutedForeground,
                     ),
                   ),
-                  SizedBox(height: 6),
+                  AppSize.gapH(6),
                   TextField(
                     controller: _profilePhoneController,
                     keyboardType: TextInputType.phone,
@@ -467,16 +468,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       filled: true,
                       fillColor: AppColors.surface2,
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: AppSize.radius(12),
                         borderSide: BorderSide.none,
                       ),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      contentPadding: AppSize.paddingH(12, 10),
                       isDense: true,
                       prefixIcon: Icon(Icons.phone_outlined, color: AppColors.mutedForeground, size: 18),
                     ),
-                    style: TextStyle(fontSize: 14, color: AppColors.foreground),
+                    style: TextStyle(fontSize: AppSize.s(14), color: AppColors.foreground),
                   ),
-                  SizedBox(height: 16),
+                  AppSize.gapH(16),
                   // Кнопки
                   Row(
                     children: [
@@ -486,27 +487,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.citrusGreen,
                             disabledBackgroundColor: AppColors.citrusGreen.withOpacity(0.5),
-                            padding: const EdgeInsets.symmetric(vertical: 10),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            padding: AppSize.paddingH(0, 10),
+                            shape: RoundedRectangleBorder(borderRadius: AppSize.radius(10)),
                           ),
                           child: _isSavingProfile
-                              ? const SizedBox(
+                              ? SizedBox(
                                   width: 16,
                                   height: 16,
                                   child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                                 )
-                              : const Text('Сохранить', style: TextStyle(color: Colors.white)),
+                              : Text('Сохранить', style: TextStyle(color: Colors.white)),
                         ),
                       ),
-                      SizedBox(width: 8),
+                      AppSize.gapW(8),
                       Expanded(
                         child: OutlinedButton(
                           onPressed: _cancelEditingProfile,
                           style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 10),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            padding: AppSize.paddingH(0, 10),
+                            shape: RoundedRectangleBorder(borderRadius: AppSize.radius(10)),
                           ),
-                          child: const Text('Отмена'),
+                          child: Text('Отмена'),
                         ),
                       ),
                     ],
@@ -527,7 +528,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         gradient: avatarUrl == null
-            ? const LinearGradient(
+            ? LinearGradient(
                 colors: [AppColors.citrusOrange, AppColors.citrusAmber],
               )
             : null,
@@ -562,7 +563,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         // Форма редактирования/создания
         if (isEditing || isCreating)
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: AppSize.padding(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -571,12 +572,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ? 'Новый доверенный контакт'
                       : 'Редактировать контакт',
                   style: TextStyle(
-                    fontSize: 13,
+                    fontSize: AppSize.s(13),
                     fontWeight: FontWeight.w600,
                     color: AppColors.foreground,
                   ),
                 ),
-                SizedBox(height: 12),
+                AppSize.gapH(12),
                 TextField(
                   controller: _trustedNameController,
                   decoration: InputDecoration(
@@ -585,13 +586,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     filled: true,
                     fillColor: AppColors.surface2,
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: AppSize.radius(12),
                     ),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    contentPadding: AppSize.paddingH(12, 10),
                     isDense: true,
                   ),
                 ),
-                SizedBox(height: 8),
+                AppSize.gapH(8),
                 TextField(
                   controller: _trustedPhoneController,
                   keyboardType: TextInputType.phone,
@@ -602,13 +603,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     filled: true,
                     fillColor: AppColors.surface2,
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: AppSize.radius(12),
                     ),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    contentPadding: AppSize.paddingH(12, 10),
                     isDense: true,
                   ),
                 ),
-                SizedBox(height: 12),
+                AppSize.gapH(12),
                 Row(
                   children: [
                     Expanded(
@@ -616,19 +617,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         onPressed: _saveTrustedContact,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.citrusGreen,
-                          padding: const EdgeInsets.symmetric(vertical: 10),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          padding: AppSize.paddingH(0, 10),
+                          shape: RoundedRectangleBorder(borderRadius: AppSize.radius(10)),
                         ),
                         child: Text('Сохранить', style: TextStyle(color: Colors.white)),
                       ),
                     ),
-                    SizedBox(width: 8),
+                    AppSize.gapW(8),
                     Expanded(
                       child: OutlinedButton(
                         onPressed: _cancelEditing,
                         style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 10),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          padding: AppSize.paddingH(0, 10),
+                          shape: RoundedRectangleBorder(borderRadius: AppSize.radius(10)),
                         ),
                         child: Text('Отмена'),
                       ),
@@ -649,13 +650,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 _trustedPhoneController.clear();
                 setState(() => _editingContactId = '');
               },
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: AppSize.radius(16),
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                padding: AppSize.paddingH(16, 16),
                 child: Row(
                   children: [
                     Icon(Icons.person_add_outlined, color: AppColors.citrusOrange, size: 20),
-                    SizedBox(width: 12),
+                    AppSize.gapW(12),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -663,16 +664,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           Text(
                             'Добавить доверенный контакт',
                             style: TextStyle(
-                              fontSize: 14,
+                              fontSize: AppSize.s(14),
                               fontWeight: FontWeight.w500,
                               color: AppColors.foreground,
                             ),
                           ),
-                          SizedBox(height: 2),
+                          AppSize.gapH(2),
                           Text(
                             'Для отправки SOS-сообщений',
                             style: TextStyle(
-                              fontSize: 12,
+                              fontSize: AppSize.s(12),
                               color: AppColors.mutedForeground,
                             ),
                           ),
@@ -693,11 +694,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: InkWell(
               onTap: () {},
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: AppSize.paddingH(16, 12),
                 child: Row(
                   children: [
                     Icon(Icons.favorite, color: AppColors.destructive, size: 18),
-                    SizedBox(width: 10),
+                    AppSize.gapW(10),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -707,7 +708,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 ? contact['name']
                                 : 'Контакт',
                             style: TextStyle(
-                              fontSize: 14,
+                              fontSize: AppSize.s(14),
                               fontWeight: FontWeight.w600,
                               color: AppColors.foreground,
                             ),
@@ -715,7 +716,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           Text(
                             _formatPhoneForDisplay(contact['phone']),
                             style: TextStyle(
-                              fontSize: 12,
+                              fontSize: AppSize.s(12),
                               color: AppColors.mutedForeground,
                             ),
                           ),
@@ -727,15 +728,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       onPressed: () => _editContact(contact),
                       color: AppColors.mutedForeground,
                       padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
+                      constraints: BoxConstraints(),
                     ),
-                    SizedBox(width: 12),
+                    AppSize.gapW(12),
                     IconButton(
                       icon: Icon(Icons.delete_outline, size: 18),
                       onPressed: () => _deleteContact(contact['id']),
                       color: AppColors.destructive,
                       padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
+                      constraints: BoxConstraints(),
                     ),
                   ],
                 ),
@@ -755,15 +756,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 setState(() => _editingContactId = '');
               },
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: AppSize.paddingH(16, 12),
                 child: Row(
                   children: [
                     Icon(Icons.add, color: AppColors.citrusOrange, size: 20),
-                    SizedBox(width: 8),
+                    AppSize.gapW(8),
                     Text(
                       'Добавить ещё',
                       style: TextStyle(
-                        fontSize: 13,
+                        fontSize: AppSize.s(13),
                         color: AppColors.citrusOrange,
                         fontWeight: FontWeight.w500,
                       ),
@@ -782,11 +783,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.only(bottom: 12),
+          padding: AppSize.paddingOnly(bottom: 12),
           child: Text(
             title,
             style: TextStyle(
-              fontSize: 11,
+              fontSize: AppSize.s(11),
               fontWeight: FontWeight.w700,
               letterSpacing: 1.5,
               color: AppColors.mutedForeground,
@@ -796,7 +797,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         Container(
           decoration: BoxDecoration(
             color: AppColors.surface1,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: AppSize.radius(16),
             border: Border.all(color: AppColors.subtleBorder),
           ),
           child: Column(
@@ -813,11 +814,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
       builder: (context, _) {
         final isDark = ThemeService().isDarkMode;
         return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          padding: AppSize.paddingH(16, 12),
           child: Row(
             children: [
               Icon(Icons.palette_outlined, color: AppColors.mutedForeground, size: 20),
-              SizedBox(width: 12),
+              AppSize.gapW(12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -825,7 +826,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     Text(
                       'Тема',
                       style: TextStyle(
-                        fontSize: 14,
+                        fontSize: AppSize.s(14),
                         fontWeight: FontWeight.w500,
                         color: AppColors.foreground,
                       ),
@@ -833,7 +834,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     Text(
                       isDark ? 'Тёмная' : 'Светлая',
                       style: TextStyle(
-                        fontSize: 12,
+                        fontSize: AppSize.s(12),
                         color: AppColors.mutedForeground,
                       ),
                     ),
@@ -841,7 +842,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               ),
               SegmentedButton<int>(
-                segments: const [
+                segments: [
                   ButtonSegment(value: 0, label: Text('☀️')),
                   ButtonSegment(value: 1, label: Text('🌙')),
                 ],
@@ -871,16 +872,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
     required ValueChanged<bool> onChanged,
   }) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: AppSize.paddingH(16, 12),
       child: Row(
         children: [
           Icon(icon, color: AppColors.mutedForeground, size: 20),
-          SizedBox(width: 12),
+          AppSize.gapW(12),
           Expanded(
             child: Text(
               label,
               style: TextStyle(
-                fontSize: 14,
+                fontSize: AppSize.s(14),
                 fontWeight: FontWeight.w500,
                 color: AppColors.foreground,
               ),
@@ -908,13 +909,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: AppSize.radius(16),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          padding: AppSize.paddingH(16, 12),
           child: Row(
             children: [
               Icon(icon, color: AppColors.mutedForeground, size: 20),
-              SizedBox(width: 12),
+              AppSize.gapW(12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -922,7 +923,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     Text(
                       label,
                       style: TextStyle(
-                        fontSize: 14,
+                        fontSize: AppSize.s(14),
                         fontWeight: FontWeight.w500,
                         color: AppColors.foreground,
                       ),
@@ -931,7 +932,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       Text(
                         subtitle,
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: AppSize.s(12),
                           color: AppColors.mutedForeground,
                         ),
                       ),
@@ -950,25 +951,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.destructive.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: AppSize.radius(16),
         border: Border.all(color: AppColors.destructive.withOpacity(0.3)),
       ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           onTap: () => _showLogoutDialog(context),
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: AppSize.radius(16),
           child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 16),
+            padding: AppSize.paddingH(0, 16),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(Icons.logout, color: AppColors.destructive, size: 20),
-                SizedBox(width: 8),
+                AppSize.gapW(8),
                 Text(
                   'Выйти из аккаунта',
                   style: TextStyle(
-                    fontSize: 15,
+                    fontSize: AppSize.s(15),
                     fontWeight: FontWeight.w600,
                     color: AppColors.destructive,
                   ),
@@ -987,7 +988,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       builder: (context) => AlertDialog(
         backgroundColor: AppColors.surface1,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: AppSize.radius(16),
           side: BorderSide(color: AppColors.destructive.withOpacity(0.3)),
         ),
         icon: Icon(Icons.logout, color: AppColors.destructive, size: 32),
@@ -1007,7 +1008,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           FilledButton(
             onPressed: () {
               Navigator.pop(context);
-              context.read<AuthBloc>().add(const AuthLogout());
+              context.read<AuthBloc>().add(AuthLogout());
             },
             style: FilledButton.styleFrom(
               backgroundColor: AppColors.destructive,
@@ -1153,11 +1154,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: AppColors.surface1,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(borderRadius: AppSize.radius(16)),
         title: Row(
           children: [
             Icon(Icons.info, color: AppColors.citrusOrange),
-            SizedBox(width: 8),
+            AppSize.gapW(8),
             Text('О приложении', style: TextStyle(color: AppColors.foreground)),
           ],
         ),
@@ -1169,10 +1170,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
               'Цитрус — персональный помощник ментального здоровья',
               style: TextStyle(color: AppColors.foreground, fontWeight: FontWeight.w500),
             ),
-            SizedBox(height: 8),
+            AppSize.gapH(8),
             Text(
               'Версия: 1.0.0 (Beta)\n\nПриложение включает:\n• Трекер настроения\n• Трекер сна\n• Календарь событий\n• ИИ-чат\n• Упражнения и медитации\n• Аналитику',
-              style: TextStyle(color: AppColors.mutedForeground, fontSize: 13),
+              style: TextStyle(color: AppColors.mutedForeground, fontSize: AppSize.s(13)),
             ),
           ],
         ),

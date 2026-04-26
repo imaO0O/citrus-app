@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/utils/app_size.dart';
 
 class QuickLinks extends StatelessWidget {
   final VoidCallback? onExerciseTap;
@@ -8,7 +9,7 @@ class QuickLinks extends StatelessWidget {
   final VoidCallback? onSleepTap;
   final VoidCallback? onTestsTap;
 
-  const QuickLinks({
+  QuickLinks({
     super.key,
     this.onExerciseTap,
     this.onChatTap,
@@ -48,12 +49,12 @@ class QuickLinks extends StatelessWidget {
     ];
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      padding: AppSize.paddingH(20, 0),
       child: Row(
         children: links
             .map((link) => Expanded(
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    padding: AppSize.paddingH(4, 0),
                     child: link,
                   ),
                 ))
@@ -68,7 +69,7 @@ class _QuickLinkItem extends StatelessWidget {
   final String label;
   final VoidCallback onTap;
 
-  const _QuickLinkItem({
+  _QuickLinkItem({
     required this.icon,
     required this.label,
     required this.onTap,
@@ -79,10 +80,10 @@ class _QuickLinkItem extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12),
+        padding: AppSize.paddingH(0, 12),
         decoration: BoxDecoration(
           color: AppColors.card,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: AppSize.radius(16),
           border: Border.all(
             color: AppColors.foreground.withOpacity(0.05),
           ),
@@ -90,13 +91,13 @@ class _QuickLinkItem extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(icon, style: const TextStyle(fontSize: 22)),
-            const SizedBox(height: 6),
+            Text(icon, style: TextStyle(fontSize: AppSize.s(22))),
+            AppSize.gapH(6),
             Text(
               label,
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontSize: 10,
+                fontSize: AppSize.s(10),
                 fontWeight: FontWeight.w500,
                 color: AppColors.mutedForeground,
               ),

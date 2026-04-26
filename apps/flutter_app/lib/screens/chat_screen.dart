@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -14,13 +14,14 @@ import '../core/repository/mood_repository.dart';
 import '../core/repository/diary_repository.dart';
 import '../core/repository/sleep_repository.dart';
 import '../core/services/storage_service.dart';
+import '../core/utils/app_size.dart';
 
 class _Message {
   final String text;
   final bool isUser;
   final String time;
 
-  const _Message({required this.text, required this.isUser, required this.time});
+  _Message({required this.text, required this.isUser, required this.time});
 }
 
 const _suggestions = [
@@ -31,7 +32,7 @@ const _suggestions = [
 ];
 
 class ChatScreen extends StatefulWidget {
-  const ChatScreen({super.key});
+  ChatScreen({super.key});
 
   @override
   State<ChatScreen> createState() => _ChatScreenState();
@@ -91,7 +92,7 @@ class _ChatScreenState extends State<ChatScreen> {
       final analyticsText = await analyticsLoader.loadAndFormatAnalytics(
         token: token,
         userId: moodRepo.userId,
-        startDate: DateTime.now().subtract(const Duration(days: 30)),
+        startDate: DateTime.now().subtract(Duration(days: 30)),
       );
 
       if (!mounted) return;
@@ -130,14 +131,14 @@ class _ChatScreenState extends State<ChatScreen> {
 
       // Загружаем записи за последние 30 дней
       final entries = await diaryLoader.loadDiaryEntries(
-        startDate: DateTime.now().subtract(const Duration(days: 30)),
+        startDate: DateTime.now().subtract(Duration(days: 30)),
       );
 
       if (!mounted) return;
 
       if (entries.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
             content: Text('Нет записей дневника за последний месяц'),
             backgroundColor: AppColors.citrusOrange,
             behavior: SnackBarBehavior.floating,
@@ -225,11 +226,11 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   void _scrollToBottom() {
-    Future.delayed(const Duration(milliseconds: 100), () {
+    Future.delayed(Duration(milliseconds: 100), () {
       if (_scrollController.hasClients) {
         _scrollController.animateTo(
           _scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300),
+          duration: Duration(milliseconds: 300),
           curve: Curves.easeOut,
         );
       }
@@ -253,21 +254,21 @@ class _ChatScreenState extends State<ChatScreen> {
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 480),
+            constraints: BoxConstraints(maxWidth: 480),
             child: Column(
               children: [
                 _buildHeader(),
                 Expanded(
                   child: ListView.builder(
                     controller: _scrollController,
-                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
+                    padding: EdgeInsets.fromLTRB(16, 16, 16, 80),
                     itemCount: _messages.length + (_isTyping ? 1 : 0),
                     itemBuilder: (context, index) {
                       if (index == _messages.length && _isTyping) {
                         return Align(
                           alignment: Alignment.centerLeft,
                           child: Padding(
-                            padding: const EdgeInsets.only(top: 8),
+                            padding: AppSize.paddingOnly(top: 8),
                             child: _TypingIndicator(),
                           ),
                         );
@@ -289,7 +290,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
   Widget _buildHeader() {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: AppSize.padding(16),
       decoration: BoxDecoration(
         border: Border(bottom: BorderSide(color: AppColors.surface2)),
       ),
@@ -299,7 +300,7 @@ class _ChatScreenState extends State<ChatScreen> {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
+              gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [AppColors.citrusOrange, AppColors.citrusAmber],
@@ -309,13 +310,13 @@ class _ChatScreenState extends State<ChatScreen> {
                 BoxShadow(
                   color: AppColors.citrusOrange.withOpacity(0.3),
                   blurRadius: 8,
-                  offset: const Offset(0, 2),
+                  offset: Offset(0, 2),
                 ),
               ],
             ),
-            child: Center(child: Text('\u{1F34A}', style: TextStyle(fontSize: 20))),
+            child: Center(child: Text('\u{1F34A}', style: TextStyle(fontSize: AppSize.s(20)))),
           ),
-          SizedBox(width: 12),
+          AppSize.gapW(12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -326,17 +327,17 @@ class _ChatScreenState extends State<ChatScreen> {
                   style: TextStyle(
                     color: AppColors.foreground,
                     fontWeight: FontWeight.w600,
-                    fontSize: 15,
+                    fontSize: AppSize.s(15),
                   ),
                 ),
-                SizedBox(height: 2),
+                AppSize.gapH(2),
                 Row(
                   children: [
                     _PulsingDot(),
-                    SizedBox(width: 6),
+                    AppSize.gapW(6),
                     Text(
                       '\u0412\u0441\u0435\u0433\u0434\u0430 \u043E\u043D\u043B\u0430\u0439\u043D',
-                      style: TextStyle(color: Color(0xFF4ADE80), fontSize: 12),
+                      style: TextStyle(color: Color(0xFF4ADE80), fontSize: AppSize.s(12)),
                     ),
                   ],
                 ),
@@ -352,7 +353,7 @@ class _ChatScreenState extends State<ChatScreen> {
   Widget _buildMessageBubble(_Message msg) {
     final isUser = msg.isUser;
     return Padding(
-      padding: const EdgeInsets.only(top: 8),
+      padding: AppSize.paddingOnly(top: 8),
       child: Align(
         alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
         child: GestureDetector(
@@ -360,32 +361,32 @@ class _ChatScreenState extends State<ChatScreen> {
             Clipboard.setData(ClipboardData(text: msg.text));
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: const Text('Сообщение скопировано'),
-                duration: const Duration(seconds: 1),
+                content: Text('Сообщение скопировано'),
+                duration: Duration(seconds: 1),
                 behavior: SnackBarBehavior.floating,
                 backgroundColor: AppColors.citrusOrange,
               ),
             );
           },
           child: Container(
-            constraints: const BoxConstraints(maxWidth: 280),
-            padding: const EdgeInsets.all(12),
+            constraints: BoxConstraints(maxWidth: 280),
+            padding: AppSize.padding(12),
             decoration: BoxDecoration(
               gradient: isUser
-                  ? const LinearGradient(
+                  ? LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                       colors: [AppColors.citrusOrange, AppColors.citrusAmber],
                     )
                   : null,
               color: isUser ? null : AppColors.surface1,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: AppSize.radius(16),
               border: isUser ? null : Border.all(color: Colors.white.withOpacity(0.06)),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withOpacity(0.15),
                   blurRadius: 8,
-                  offset: const Offset(0, 2),
+                  offset: Offset(0, 2),
                 ),
               ],
             ),
@@ -397,8 +398,8 @@ class _ChatScreenState extends State<ChatScreen> {
                   children: [
                     if (!isUser)
                       Padding(
-                        padding: EdgeInsets.only(right: 4),
-                        child: Text('\u{1F34A}', style: TextStyle(fontSize: 16)),
+                        padding: AppSize.paddingOnly(right: 4),
+                        child: Text('\u{1F34A}', style: TextStyle(fontSize: AppSize.s(16))),
                       ),
                     if (!isUser)
                       GestureDetector(
@@ -406,8 +407,8 @@ class _ChatScreenState extends State<ChatScreen> {
                           Clipboard.setData(ClipboardData(text: msg.text));
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: const Text('Сообщение скопировано'),
-                              duration: const Duration(seconds: 1),
+                              content: Text('Сообщение скопировано'),
+                              duration: Duration(seconds: 1),
                               behavior: SnackBarBehavior.floating,
                               backgroundColor: AppColors.citrusOrange,
                             ),
@@ -419,23 +420,23 @@ class _ChatScreenState extends State<ChatScreen> {
                           color: (isUser ? Colors.white : AppColors.mutedForeground).withOpacity(0.5),
                         ),
                       ),
-                    const Spacer(),
+                    Spacer(),
                     Text(
                       msg.time,
                       style: TextStyle(
                         color: (isUser ? Colors.white : AppColors.mutedForeground).withOpacity(0.5),
-                        fontSize: 10,
+                        fontSize: AppSize.s(10),
                       ),
                     ),
                   ],
                 ),
-                SizedBox(height: 4),
+                AppSize.gapH(4),
                 isUser
                     ? Text(
                         msg.text,
                         style: TextStyle(
                           color: Colors.white,
-                          fontSize: 14,
+                          fontSize: AppSize.s(14),
                           height: 1.5,
                         ),
                       )
@@ -444,47 +445,47 @@ class _ChatScreenState extends State<ChatScreen> {
                         styleSheet: MarkdownStyleSheet(
                           p: TextStyle(
                             color: AppColors.foreground,
-                            fontSize: 14,
+                            fontSize: AppSize.s(14),
                             height: 1.5,
                           ),
                           strong: TextStyle(
                             color: AppColors.foreground,
                             fontWeight: FontWeight.bold,
-                            fontSize: 14,
+                            fontSize: AppSize.s(14),
                           ),
                           em: TextStyle(
                             color: AppColors.foreground,
                             fontStyle: FontStyle.italic,
-                            fontSize: 14,
+                            fontSize: AppSize.s(14),
                           ),
                           listBullet: TextStyle(
                             color: AppColors.foreground,
-                            fontSize: 14,
+                            fontSize: AppSize.s(14),
                           ),
                           blockquote: TextStyle(
                             color: AppColors.mutedForeground,
-                            fontSize: 13,
+                            fontSize: AppSize.s(13),
                             fontStyle: FontStyle.italic,
                           ),
                           code: TextStyle(
                             color: AppColors.citrusAmber,
-                            fontSize: 13,
+                            fontSize: AppSize.s(13),
                             fontFamily: 'monospace',
                           ),
                           h1: TextStyle(
                             color: AppColors.foreground,
                             fontWeight: FontWeight.bold,
-                            fontSize: 18,
+                            fontSize: AppSize.s(18),
                           ),
                           h2: TextStyle(
                             color: AppColors.foreground,
                             fontWeight: FontWeight.bold,
-                            fontSize: 16,
+                            fontSize: AppSize.s(16),
                           ),
                           h3: TextStyle(
                             color: AppColors.foreground,
                             fontWeight: FontWeight.bold,
-                            fontSize: 15,
+                            fontSize: AppSize.s(15),
                           ),
                         ),
                         selectable: true,
@@ -499,7 +500,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
   Widget _buildSuggestions() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+      padding: EdgeInsets.fromLTRB(16, 0, 16, 8),
       child: Wrap(
         spacing: 8,
         runSpacing: 8,
@@ -507,15 +508,15 @@ class _ChatScreenState extends State<ChatScreen> {
           return GestureDetector(
             onTap: () => _sendMessage(text: hint),
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              padding: AppSize.paddingH(14, 8),
               decoration: BoxDecoration(
                 color: AppColors.citrusOrange.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(999),
+                borderRadius: AppSize.radius(999),
                 border: Border.all(color: AppColors.citrusOrange.withOpacity(0.2)),
               ),
               child: Text(
                 hint,
-                style: TextStyle(color: AppColors.citrusOrange, fontSize: 12),
+                style: TextStyle(color: AppColors.citrusOrange, fontSize: AppSize.s(12)),
               ),
             ),
           );
@@ -528,7 +529,7 @@ class _ChatScreenState extends State<ChatScreen> {
     final hasText = _controller.text.trim().isNotEmpty;
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: AppSize.padding(16),
       decoration: BoxDecoration(
         border: Border(top: BorderSide(color: AppColors.surface2)),
       ),
@@ -550,46 +551,46 @@ class _ChatScreenState extends State<ChatScreen> {
                     filled: true,
                     fillColor: Colors.white.withOpacity(0.04),
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: AppSize.radius(16),
                       borderSide: BorderSide(color: AppColors.surface3),
                     ),
                     enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: AppSize.radius(16),
                       borderSide: BorderSide(color: AppColors.surface3),
                     ),
                     focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: AppSize.radius(16),
                       borderSide: BorderSide(color: AppColors.citrusOrange, width: 1.5),
                     ),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    contentPadding: AppSize.paddingH(16, 12),
                   ),
                   onChanged: (_) => setState(() {}),
                   onSubmitted: (_) => _sendMessage(),
                 ),
               ),
-              SizedBox(width: 8),
+              AppSize.gapW(8),
               GestureDetector(
                 onTap: hasText ? _sendMessage : null,
                 child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
+                  duration: Duration(milliseconds: 200),
                   width: 44,
                   height: 44,
                   decoration: BoxDecoration(
                     gradient: hasText
-                        ? const LinearGradient(
+                        ? LinearGradient(
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                             colors: [AppColors.citrusOrange, AppColors.citrusAmber],
                           )
                         : null,
                     color: hasText ? null : Colors.white.withOpacity(0.06),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: AppSize.radius(12),
                     boxShadow: hasText
                         ? [
                             BoxShadow(
                               color: AppColors.citrusOrange.withOpacity(0.35),
                               blurRadius: 16,
-                              offset: const Offset(0, 4),
+                              offset: Offset(0, 4),
                             ),
                           ]
                         : null,
@@ -603,14 +604,14 @@ class _ChatScreenState extends State<ChatScreen> {
               ),
             ],
           ),
-          SizedBox(height: 8),
+          AppSize.gapH(8),
           SizedBox(
             height: 36,
             child: ListView(
               scrollDirection: Axis.horizontal,
               children: [
                 _buildAnalyticsButton(),
-                const SizedBox(width: 8),
+                AppSize.gapW(8),
                 _buildDiaryButton(),
               ],
             ),
@@ -624,10 +625,10 @@ class _ChatScreenState extends State<ChatScreen> {
     return GestureDetector(
       onTap: _isLoadingAnalytics ? null : _loadAnalytics,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        padding: AppSize.paddingH(12, 8),
         decoration: BoxDecoration(
           color: AppColors.citrusPurple.withOpacity(_isLoadingAnalytics ? 0.05 : 0.1),
-          borderRadius: BorderRadius.circular(999),
+          borderRadius: AppSize.radius(999),
           border: Border.all(color: AppColors.citrusPurple.withOpacity(0.2)),
         ),
         child: Row(
@@ -644,10 +645,10 @@ class _ChatScreenState extends State<ChatScreen> {
               )
             else
               Icon(Icons.analytics_outlined, color: AppColors.citrusPurple, size: 14),
-            SizedBox(width: 6),
+            AppSize.gapW(6),
             Text(
               _isLoadingAnalytics ? 'Загрузка...' : 'Аналитика',
-              style: TextStyle(color: AppColors.citrusPurple, fontSize: 12),
+              style: TextStyle(color: AppColors.citrusPurple, fontSize: AppSize.s(12)),
             ),
           ],
         ),
@@ -659,10 +660,10 @@ class _ChatScreenState extends State<ChatScreen> {
     return GestureDetector(
       onTap: _isLoadingDiary ? null : _showDiarySelectionDialog,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        padding: AppSize.paddingH(12, 8),
         decoration: BoxDecoration(
           color: AppColors.citrusAmber.withOpacity(_isLoadingDiary ? 0.05 : 0.1),
-          borderRadius: BorderRadius.circular(999),
+          borderRadius: AppSize.radius(999),
           border: Border.all(color: AppColors.citrusAmber.withOpacity(0.2)),
         ),
         child: Row(
@@ -679,10 +680,10 @@ class _ChatScreenState extends State<ChatScreen> {
               )
             else
               Icon(Icons.menu_book_rounded, color: AppColors.citrusAmber, size: 14),
-            SizedBox(width: 6),
+            AppSize.gapW(6),
             Text(
               _isLoadingDiary ? 'Загрузка...' : 'Дневник',
-              style: TextStyle(color: AppColors.citrusAmber, fontSize: 12),
+              style: TextStyle(color: AppColors.citrusAmber, fontSize: AppSize.s(12)),
             ),
           ],
         ),
@@ -692,7 +693,7 @@ class _ChatScreenState extends State<ChatScreen> {
 }
 
 class _TypingIndicator extends StatefulWidget {
-  const _TypingIndicator();
+  _TypingIndicator();
 
   @override
   State<_TypingIndicator> createState() => _TypingIndicatorState();
@@ -707,7 +708,7 @@ class _TypingIndicatorState extends State<_TypingIndicator>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 600),
+      duration: Duration(milliseconds: 600),
     )..repeat();
   }
 
@@ -723,17 +724,17 @@ class _TypingIndicatorState extends State<_TypingIndicator>
       animation: _controller,
       builder: (context, child) {
         return Container(
-          padding: const EdgeInsets.all(12),
+          padding: AppSize.padding(12),
           decoration: BoxDecoration(
             color: AppColors.surface1,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: AppSize.radius(16),
             border: Border.all(color: Colors.white.withOpacity(0.06)),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text('\u{1F34A}', style: TextStyle(fontSize: 16)),
-              SizedBox(width: 8),
+              Text('\u{1F34A}', style: TextStyle(fontSize: AppSize.s(16))),
+              AppSize.gapW(8),
               for (int i = 0; i < 3; i++) ...[
                 Transform.scale(
                   scale: 0.6 + 0.4 * ((0.5 + 0.5 * math.sin((_controller.value * 2 * math.pi + i * 0.8)))).clamp(0.0, 1.0),
@@ -746,7 +747,7 @@ class _TypingIndicatorState extends State<_TypingIndicator>
                     ),
                   ),
                 ),
-                if (i < 2) SizedBox(width: 4),
+                if (i < 2) AppSize.gapW(4),
               ],
             ],
           ),
@@ -757,7 +758,7 @@ class _TypingIndicatorState extends State<_TypingIndicator>
 }
 
 class _PulsingDot extends StatefulWidget {
-  const _PulsingDot();
+  _PulsingDot();
 
   @override
   State<_PulsingDot> createState() => _PulsingDotState();
@@ -773,7 +774,7 @@ class _PulsingDotState extends State<_PulsingDot>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1200),
+      duration: Duration(milliseconds: 1200),
     )..repeat(reverse: true);
     _animation = Tween<double>(begin: 0.4, end: 1.0).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
@@ -810,7 +811,7 @@ class _PulsingDotState extends State<_PulsingDot>
 class _DiarySelectionDialog extends StatefulWidget {
   final List<DiaryEntry> entries;
 
-  const _DiarySelectionDialog({required this.entries});
+  _DiarySelectionDialog({required this.entries});
 
   @override
   State<_DiarySelectionDialog> createState() => _DiarySelectionDialogState();
@@ -845,11 +846,11 @@ class _DiarySelectionDialogState extends State<_DiarySelectionDialog> {
 
     return Dialog(
       backgroundColor: AppColors.surface1,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      shape: RoundedRectangleBorder(borderRadius: AppSize.radius(16)),
       child: Container(
         width: double.infinity,
-        constraints: const BoxConstraints(maxWidth: 400, maxHeight: 500),
-        padding: const EdgeInsets.all(16),
+        constraints: BoxConstraints(maxWidth: 400, maxHeight: 500),
+        padding: AppSize.padding(16),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -860,7 +861,7 @@ class _DiarySelectionDialogState extends State<_DiarySelectionDialog> {
                   child: Text(
                     'Выберите записи',
                     style: TextStyle(
-                      fontSize: 18,
+                      fontSize: AppSize.s(18),
                       fontWeight: FontWeight.w600,
                       color: AppColors.foreground,
                     ),
@@ -874,7 +875,7 @@ class _DiarySelectionDialogState extends State<_DiarySelectionDialog> {
                       onPressed: _selectAll,
                       child: Text(
                         _selectedIds.length == widget.entries.length ? 'Снять все' : 'Выбрать все',
-                        style: TextStyle(color: AppColors.citrusOrange, fontSize: 12),
+                        style: TextStyle(color: AppColors.citrusOrange, fontSize: AppSize.s(12)),
                       ),
                     ),
                     IconButton(
@@ -882,22 +883,22 @@ class _DiarySelectionDialogState extends State<_DiarySelectionDialog> {
                       onPressed: () => Navigator.pop(context),
                       color: AppColors.mutedForeground,
                       padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
+                      constraints: BoxConstraints(),
                     ),
                   ],
                 ),
               ],
             ),
-            const SizedBox(height: 8),
+            AppSize.gapH(8),
             Text(
               '${_selectedIds.length} из ${widget.entries.length} записей выбрано',
-              style: TextStyle(color: AppColors.mutedForeground, fontSize: 12),
+              style: TextStyle(color: AppColors.mutedForeground, fontSize: AppSize.s(12)),
             ),
-            const SizedBox(height: 12),
+            AppSize.gapH(12),
             Expanded(
               child: ListView.separated(
                 itemCount: widget.entries.length,
-                separatorBuilder: (context, index) => const SizedBox(height: 8),
+                separatorBuilder: (context, index) => AppSize.gapH(8),
                 itemBuilder: (context, index) {
                   final entry = widget.entries[index];
                   final isSelected = _selectedIds.contains(entry.id);
@@ -906,13 +907,13 @@ class _DiarySelectionDialogState extends State<_DiarySelectionDialog> {
                   return GestureDetector(
                     onTap: () => _toggleSelection(entry.id),
                     child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      padding: const EdgeInsets.all(12),
+                      duration: Duration(milliseconds: 200),
+                      padding: AppSize.padding(12),
                       decoration: BoxDecoration(
                         color: isSelected
                             ? AppColors.citrusOrange.withOpacity(0.15)
                             : Colors.white.withOpacity(0.04),
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: AppSize.radius(12),
                         border: Border.all(
                           color: isSelected
                               ? AppColors.citrusOrange
@@ -927,10 +928,10 @@ class _DiarySelectionDialogState extends State<_DiarySelectionDialog> {
                             color: isSelected ? AppColors.citrusOrange : AppColors.mutedForeground,
                             size: 20,
                           ),
-                          const SizedBox(width: 8),
+                          AppSize.gapW(8),
                           if (entry.moodValue != null)
-                            Text(moodEmojis[entry.moodValue!.clamp(0, 5)], style: const TextStyle(fontSize: 18)),
-                          if (entry.moodValue != null) const SizedBox(width: 8),
+                            Text(moodEmojis[entry.moodValue!.clamp(0, 5)], style: TextStyle(fontSize: AppSize.s(18))),
+                          if (entry.moodValue != null) AppSize.gapW(8),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -938,17 +939,17 @@ class _DiarySelectionDialogState extends State<_DiarySelectionDialog> {
                                 Text(
                                   dateStr,
                                   style: TextStyle(
-                                    fontSize: 11,
+                                    fontSize: AppSize.s(11),
                                     color: AppColors.mutedForeground,
                                   ),
                                 ),
-                                const SizedBox(height: 2),
+                                AppSize.gapH(2),
                                 Text(
                                   entry.content.length > 50
                                       ? '${entry.content.substring(0, 50)}...'
                                       : entry.content,
                                   style: TextStyle(
-                                    fontSize: 13,
+                                    fontSize: AppSize.s(13),
                                     color: AppColors.foreground,
                                   ),
                                   maxLines: 2,
@@ -964,7 +965,7 @@ class _DiarySelectionDialogState extends State<_DiarySelectionDialog> {
                 },
               ),
             ),
-            const SizedBox(height: 12),
+            AppSize.gapH(12),
             SizedBox(
               width: double.infinity,
               child: FilledButton(
@@ -978,14 +979,14 @@ class _DiarySelectionDialogState extends State<_DiarySelectionDialog> {
                       },
                 style: FilledButton.styleFrom(
                   backgroundColor: AppColors.citrusOrange,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  padding: AppSize.paddingH(0, 12),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: AppSize.radius(12),
                   ),
                 ),
                 child: Text(
                   'Отправить ${_selectedIds.length} ${_selectedIds.length == 1 ? 'запись' : 'записей'} в чат',
-                  style: TextStyle(fontSize: 14),
+                  style: TextStyle(fontSize: AppSize.s(14)),
                 ),
               ),
             ),

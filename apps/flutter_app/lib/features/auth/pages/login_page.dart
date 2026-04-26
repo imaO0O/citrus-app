@@ -6,9 +6,10 @@ import '../../../core/services/storage_service.dart';
 import '../bloc/auth_bloc.dart';
 import 'register_page.dart';
 import 'forgot_password_page.dart';
+import '../../../core/utils/app_size.dart';
 
 class LoginPage extends StatefulWidget {
-  const LoginPage({Key? key}) : super(key: key);
+  LoginPage({Key? key}) : super(key: key);
 
   @override
   State<LoginPage> createState() => _LoginPageState();
@@ -81,7 +82,7 @@ class _LoginPageState extends State<LoginPage> {
               backgroundColor: AppColors.destructive,
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppColors.radius),
+                borderRadius: BorderRadius.circular(AppSize.s(AppColors.radius)),
               ),
             ),
           );
@@ -92,9 +93,9 @@ class _LoginPageState extends State<LoginPage> {
         body: SafeArea(
           child: Center(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
+              padding: AppSize.padding(24),
               child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 400),
+                constraints: BoxConstraints(maxWidth: 400),
                 child: Form(
                   key: _formKey,
                   child: Column(
@@ -106,8 +107,8 @@ class _LoginPageState extends State<LoginPage> {
                         width: 80,
                         height: 80,
                         decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(24),
-                          gradient: const LinearGradient(
+                          borderRadius: AppSize.radius(24),
+                          gradient: LinearGradient(
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                             colors: [AppColors.citrusOrange, AppColors.citrusAmber],
@@ -116,37 +117,37 @@ class _LoginPageState extends State<LoginPage> {
                             BoxShadow(
                               color: AppColors.glowOrange,
                               blurRadius: 30,
-                              offset: const Offset(0, 8),
+                              offset: Offset(0, 8),
                             ),
                           ],
                         ),
-                        child: const Center(
+                        child: Center(
                           child: Text(
                             '🍊',
-                            style: TextStyle(fontSize: 40),
+                            style: TextStyle(fontSize: AppSize.s(40)),
                           ),
                         ),
                       ),
-                      const SizedBox(height: 24),
+                      AppSize.gapH(24),
                       Text(
                         'Цитрус',
                         style: TextStyle(
-                          fontSize: 32,
+                          fontSize: AppSize.s(32),
                           fontWeight: FontWeight.w700,
                           color: AppColors.foreground,
                         ),
                         textAlign: TextAlign.center,
                       ),
-                      const SizedBox(height: 8),
+                      AppSize.gapH(8),
                       Text(
                         'Ваш персональный помощник',
                         style: TextStyle(
-                          fontSize: 14,
+                          fontSize: AppSize.s(14),
                           color: AppColors.mutedForeground,
                         ),
                         textAlign: TextAlign.center,
                       ),
-                      const SizedBox(height: 48),
+                      AppSize.gapH(48),
                       
                       // Email field
                       _buildTextField(
@@ -165,7 +166,7 @@ class _LoginPageState extends State<LoginPage> {
                           return null;
                         },
                       ),
-                      const SizedBox(height: 16),
+                      AppSize.gapH(16),
                       
                       // Password field
                       _buildTextField(
@@ -198,7 +199,7 @@ class _LoginPageState extends State<LoginPage> {
                           return null;
                         },
                       ),
-                      const SizedBox(height: 16),
+                      AppSize.gapH(16),
                       
                       // Remember me checkbox
                       Row(
@@ -218,7 +219,7 @@ class _LoginPageState extends State<LoginPage> {
                               side: BorderSide(color: AppColors.mutedForeground),
                             ),
                           ),
-                          const SizedBox(width: 8),
+                          AppSize.gapW(8),
                           GestureDetector(
                             onTap: () {
                               setState(() {
@@ -228,25 +229,25 @@ class _LoginPageState extends State<LoginPage> {
                             child: Text(
                               'Запомнить меня',
                               style: TextStyle(
-                                fontSize: 14,
+                                fontSize: AppSize.s(14),
                                 color: AppColors.foreground,
                               ),
                             ),
                           ),
-                          const Spacer(),
+                          Spacer(),
                           GestureDetector(
                             onTap: () {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => const ForgotPasswordPage(),
+                                  builder: (context) => ForgotPasswordPage(),
                                 ),
                               );
                             },
                             child: Text(
                               'Забыли пароль?',
                               style: TextStyle(
-                                fontSize: 13,
+                                fontSize: AppSize.s(13),
                                 color: AppColors.citrusOrange,
                                 fontWeight: FontWeight.w500,
                               ),
@@ -254,7 +255,7 @@ class _LoginPageState extends State<LoginPage> {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 24),
+                      AppSize.gapH(24),
                       
                       // Login button
                       BlocBuilder<AuthBloc, AuthState>(
@@ -265,9 +266,9 @@ class _LoginPageState extends State<LoginPage> {
                               height: 56,
                               decoration: BoxDecoration(
                                 color: AppColors.citrusOrange.withOpacity(0.3),
-                                borderRadius: BorderRadius.circular(AppColors.radius),
+                                borderRadius: BorderRadius.circular(AppSize.s(AppColors.radius)),
                               ),
-                              child: const Center(
+                              child: Center(
                                 child: CircularProgressIndicator(
                                   color: Colors.white,
                                   strokeWidth: 2,
@@ -278,15 +279,15 @@ class _LoginPageState extends State<LoginPage> {
                           return Container(
                             height: 56,
                             decoration: BoxDecoration(
-                              gradient: const LinearGradient(
+                              gradient: LinearGradient(
                                 colors: [AppColors.citrusOrange, AppColors.citrusAmber],
                               ),
-                              borderRadius: BorderRadius.circular(AppColors.radius),
+                              borderRadius: BorderRadius.circular(AppSize.s(AppColors.radius)),
                               boxShadow: [
                                 BoxShadow(
                                   color: AppColors.glowOrange,
                                   blurRadius: 20,
-                                  offset: const Offset(0, 4),
+                                  offset: Offset(0, 4),
                                 ),
                               ],
                             ),
@@ -297,13 +298,13 @@ class _LoginPageState extends State<LoginPage> {
                                 shadowColor: Colors.transparent,
                                 foregroundColor: Colors.white,
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(AppColors.radius),
+                                  borderRadius: BorderRadius.circular(AppSize.s(AppColors.radius)),
                                 ),
                               ),
-                              child: const Text(
+                              child: Text(
                                 'Войти',
                                 style: TextStyle(
-                                  fontSize: 16,
+                                  fontSize: AppSize.s(16),
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
@@ -311,7 +312,7 @@ class _LoginPageState extends State<LoginPage> {
                           );
                         },
                       ),
-                      const SizedBox(height: 24),
+                      AppSize.gapH(24),
                       
                       // Register link
                       Row(
@@ -321,7 +322,7 @@ class _LoginPageState extends State<LoginPage> {
                             'Нет аккаунта? ',
                             style: TextStyle(
                               color: AppColors.mutedForeground,
-                              fontSize: 14,
+                              fontSize: AppSize.s(14),
                             ),
                           ),
                           GestureDetector(
@@ -329,7 +330,7 @@ class _LoginPageState extends State<LoginPage> {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => const RegisterPage(),
+                                  builder: (context) => RegisterPage(),
                                 ),
                               );
                             },
@@ -337,7 +338,7 @@ class _LoginPageState extends State<LoginPage> {
                               'Зарегистрироваться',
                               style: TextStyle(
                                 color: AppColors.citrusOrange,
-                                fontSize: 14,
+                                fontSize: AppSize.s(14),
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
@@ -371,25 +372,25 @@ class _LoginPageState extends State<LoginPage> {
         Text(
           label,
           style: TextStyle(
-            fontSize: 12,
+            fontSize: AppSize.s(12),
             fontWeight: FontWeight.w500,
             color: AppColors.foreground,
           ),
         ),
-        const SizedBox(height: 8),
+        AppSize.gapH(8),
         TextFormField(
           controller: controller,
           keyboardType: keyboardType,
           obscureText: obscureText,
           style: TextStyle(
             color: AppColors.foreground,
-            fontSize: 14,
+            fontSize: AppSize.s(14),
           ),
           decoration: InputDecoration(
             hintText: hint,
             hintStyle: TextStyle(
               color: AppColors.mutedForeground,
-              fontSize: 14,
+              fontSize: AppSize.s(14),
             ),
             prefixIcon: Icon(
               prefixIcon,
@@ -400,32 +401,29 @@ class _LoginPageState extends State<LoginPage> {
             filled: true,
             fillColor: AppColors.surface1,
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppColors.radius),
+              borderRadius: BorderRadius.circular(AppSize.s(AppColors.radius)),
               borderSide: BorderSide.none,
             ),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppColors.radius),
+              borderRadius: BorderRadius.circular(AppSize.s(AppColors.radius)),
               borderSide: BorderSide(
                 color: AppColors.subtleBorder,
               ),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppColors.radius),
-              borderSide: const BorderSide(
+              borderRadius: BorderRadius.circular(AppSize.s(AppColors.radius)),
+              borderSide: BorderSide(
                 color: AppColors.citrusOrange,
                 width: 1.5,
               ),
             ),
             errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppColors.radius),
+              borderRadius: BorderRadius.circular(AppSize.s(AppColors.radius)),
               borderSide: BorderSide(
                 color: AppColors.destructive,
               ),
             ),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 16,
-            ),
+            contentPadding: AppSize.paddingH(16, 16),
           ),
           validator: validator,
         ),

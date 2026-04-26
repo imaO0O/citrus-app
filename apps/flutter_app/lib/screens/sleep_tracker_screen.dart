@@ -5,9 +5,10 @@ import '../core/services/casino_coins_service.dart';
 import '../features/sleep/bloc/sleep_bloc.dart';
 import '../features/auth/bloc/auth_bloc.dart';
 import '../models/sleep_record.dart';
+import '../core/utils/app_size.dart';
 
 class SleepTrackerScreen extends StatefulWidget {
-  const SleepTrackerScreen({super.key});
+  SleepTrackerScreen({super.key});
 
   @override
   State<SleepTrackerScreen> createState() => _SleepTrackerScreenState();
@@ -140,9 +141,9 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(Icons.error_outline, size: 48, color: AppColors.destructive),
-                    SizedBox(height: 16),
+                    AppSize.gapH(16),
                     Text(state.message, style: TextStyle(color: AppColors.mutedForeground)),
-                    SizedBox(height: 16),
+                    AppSize.gapH(16),
                     ElevatedButton(
                       onPressed: _loadSleepData,
                       child: Text('Повторить'),
@@ -163,9 +164,9 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(Icons.bedtime, size: 64, color: AppColors.dimForeground),
-                  SizedBox(height: 16),
-                  Text('Нет данных о сне', style: TextStyle(color: AppColors.mutedForeground, fontSize: 16)),
-                  SizedBox(height: 16),
+                  AppSize.gapH(16),
+                  Text('Нет данных о сне', style: TextStyle(color: AppColors.mutedForeground, fontSize: AppSize.s(16))),
+                  AppSize.gapH(16),
                   ElevatedButton.icon(
                     onPressed: () => _showAddSleepDialog(context, null),
                     icon: Icon(Icons.add),
@@ -187,7 +188,7 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
               child: Icon(Icons.add),
             );
           }
-          return const SizedBox.shrink();
+          return SizedBox.shrink();
         },
       ),
     );
@@ -198,28 +199,28 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
 
     return Center(
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 480),
+        constraints: BoxConstraints(maxWidth: 480),
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(20, 20, 20, 80),
+          padding: EdgeInsets.fromLTRB(20, 20, 20, 80),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildHeader(),
-              SizedBox(height: 20),
+              AppSize.gapH(20),
               _buildSummaryCards(records, state),
-              SizedBox(height: 24),
+              AppSize.gapH(24),
               _buildSleepChart(last7Days),
-              SizedBox(height: 24),
+              AppSize.gapH(24),
               _buildLogSleepButton(),
-              SizedBox(height: 24),
+              AppSize.gapH(24),
               _buildSleepHistoryHeader(),
-              SizedBox(height: 12),
+              AppSize.gapH(12),
               _buildSleepHistoryList(records),
-              SizedBox(height: 24),
+              AppSize.gapH(24),
               _buildSleepTipsHeader(),
-              SizedBox(height: 12),
+              AppSize.gapH(12),
               _buildSleepTipsList(),
-              SizedBox(height: 20),
+              AppSize.gapH(20),
             ],
           ),
         ),
@@ -252,12 +253,12 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
       children: [
         Text(
           'Трекер сна',
-          style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700, color: AppColors.foreground),
+          style: TextStyle(fontSize: AppSize.s(24), fontWeight: FontWeight.w700, color: AppColors.foreground),
         ),
-        SizedBox(height: 4),
+        AppSize.gapH(4),
         Text(
           'Отслеживайте качество сна',
-          style: TextStyle(fontSize: 13, color: AppColors.mutedForeground),
+          style: TextStyle(fontSize: AppSize.s(13), color: AppColors.mutedForeground),
         ),
       ],
     );
@@ -276,14 +277,14 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
             label: 'Средний сон',
           ),
         ),
-        SizedBox(width: 10),
+        AppSize.gapW(10),
         Expanded(
           child: _buildSummaryCard(
             value: avgQuality != null ? '${avgQuality.toStringAsFixed(1)} / 5' : '—',
             label: 'Качество',
           ),
         ),
-        SizedBox(width: 10),
+        AppSize.gapW(10),
         Expanded(
           child: _buildSummaryCard(
             value: '$goodNights/${records.length}',
@@ -296,10 +297,10 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
 
   Widget _buildSummaryCard({required String value, required String label}) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: AppSize.padding(14),
       decoration: BoxDecoration(
         color: AppColors.surface1,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: AppSize.radius(14),
         border: Border.all(color: AppColors.subtleBorder),
       ),
       child: Column(
@@ -307,10 +308,10 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
         children: [
           Text(
             value,
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.foreground),
+            style: TextStyle(fontSize: AppSize.s(18), fontWeight: FontWeight.w700, color: AppColors.foreground),
           ),
-          SizedBox(height: 4),
-          Text(label, style: TextStyle(fontSize: 10, color: AppColors.dimForeground)),
+          AppSize.gapH(4),
+          Text(label, style: TextStyle(fontSize: AppSize.s(10), color: AppColors.dimForeground)),
         ],
       ),
     );
@@ -320,10 +321,10 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
     final maxHours = 10.0;
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: AppSize.padding(16),
       decoration: BoxDecoration(
         color: AppColors.surface1,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: AppSize.radius(16),
         border: Border.all(color: AppColors.subtleBorder),
       ),
       child: Column(
@@ -331,9 +332,9 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
         children: [
           Text(
             'Сон за неделю',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.foreground),
+            style: TextStyle(fontSize: AppSize.s(16), fontWeight: FontWeight.w600, color: AppColors.foreground),
           ),
-          SizedBox(height: 20),
+          AppSize.gapH(20),
           SizedBox(
             height: 160,
             child: Row(
@@ -347,7 +348,7 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
 
                   return Expanded(
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 3),
+                      padding: AppSize.paddingH(3, 0),
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.end,
                         children: [
@@ -356,13 +357,13 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
                               height: barHeight,
                               decoration: BoxDecoration(
                                 color: AppColors.citrusPurple,
-                                borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
+                                borderRadius: BorderRadius.vertical(top: Radius.circular(6)),
                               ),
                             ),
-                          SizedBox(height: 8),
+                          AppSize.gapH(8),
                           Text(
                             _days[dayOfWeek],
-                            style: TextStyle(fontSize: 10, color: AppColors.dimForeground),
+                            style: TextStyle(fontSize: AppSize.s(10), color: AppColors.dimForeground),
                           ),
                         ],
                       ),
@@ -371,13 +372,13 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
                 } else {
                   return Expanded(
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 3),
+                      padding: AppSize.paddingH(3, 0),
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.end,
                         children: [
                           Container(height: 0),
-                          SizedBox(height: 8),
-                          Text('', style: TextStyle(fontSize: 10)),
+                          AppSize.gapH(8),
+                          Text('', style: TextStyle(fontSize: AppSize.s(10))),
                         ],
                       ),
                     ),
@@ -386,10 +387,10 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
               }),
             ),
           ),
-          SizedBox(height: 16),
+          AppSize.gapH(16),
           Text(
             'Фиолетовые столбцы — длительность сна',
-            style: TextStyle(fontSize: 10, color: AppColors.mutedForeground),
+            style: TextStyle(fontSize: AppSize.s(10), color: AppColors.mutedForeground),
           ),
         ],
       ),
@@ -405,7 +406,7 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
           colors: [AppColors.citrusPurple.withOpacity(0.12), AppColors.citrusOrange.withOpacity(0.08)],
         ),
         border: Border.all(color: AppColors.citrusPurple.withOpacity(0.25)),
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: AppSize.radius(14),
       ),
       child: Material(
         color: Colors.transparent,
@@ -415,17 +416,17 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
             final records = state is SleepLoaded ? state.records : <SleepRecord>[];
             _showAddSleepDialog(context, records);
           },
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: AppSize.radius(14),
           child: Padding(
-            padding: EdgeInsets.symmetric(vertical: 14),
+            padding: AppSize.paddingH(0, 14),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(Icons.nights_stay, color: AppColors.citrusPurple, size: 20),
-                SizedBox(width: 8),
+                AppSize.gapW(8),
                 Text(
                   'Записать сон',
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.foreground),
+                  style: TextStyle(fontSize: AppSize.s(14), fontWeight: FontWeight.w600, color: AppColors.foreground),
                 ),
               ],
             ),
@@ -438,7 +439,7 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
   Widget _buildSleepHistoryHeader() {
     return Text(
       'История сна',
-      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: AppColors.foreground),
+      style: TextStyle(fontSize: AppSize.s(18), fontWeight: FontWeight.w600, color: AppColors.foreground),
     );
   }
 
@@ -446,11 +447,11 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
     if (records.isEmpty) {
       return Center(
         child: Padding(
-          padding: const EdgeInsets.all(32),
+          padding: AppSize.padding(32),
           child: Column(
             children: [
               Icon(Icons.bedtime, size: 48, color: AppColors.dimForeground),
-              SizedBox(height: 8),
+              AppSize.gapH(8),
               Text(
                 'Нет записей о сне',
                 style: TextStyle(color: AppColors.mutedForeground),
@@ -467,11 +468,11 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
         final quality = record.quality;
 
         return Container(
-          margin: const EdgeInsets.only(bottom: 8),
-          padding: const EdgeInsets.all(14),
+          margin: AppSize.paddingOnly(bottom: 8),
+          padding: AppSize.padding(14),
           decoration: BoxDecoration(
             color: AppColors.surface1,
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: AppSize.radius(14),
             border: Border.all(color: AppColors.subtleBorder),
           ),
           child: Column(
@@ -483,7 +484,7 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
                   Expanded(
                     child: Text(
                       _getDayLabel(record.sleepDate),
-                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.foreground),
+                      style: TextStyle(fontSize: AppSize.s(14), fontWeight: FontWeight.w600, color: AppColors.foreground),
                     ),
                   ),
                   IconButton(
@@ -504,19 +505,19 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
                   if (record.bedTime != null && record.wakeTime != null)
                     Text(
                       '${record.bedTime!.substring(0, 5)} - ${record.wakeTime!.substring(0, 5)}',
-                      style: TextStyle(fontSize: 12, color: AppColors.mutedForeground),
+                      style: TextStyle(fontSize: AppSize.s(12), color: AppColors.mutedForeground),
                     ),
                   Text(
                     hours > 0 ? _formatSleepDuration(hours) : '—',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.foreground),
+                    style: TextStyle(fontSize: AppSize.s(16), fontWeight: FontWeight.w700, color: AppColors.foreground),
                   ),
                 ],
               ),
               if (quality != null) ...[
-                SizedBox(height: 4),
+                AppSize.gapH(4),
                 Text(
                   _getQualityLabel(quality),
-                  style: TextStyle(fontSize: 12, color: AppColors.mutedForeground),
+                  style: TextStyle(fontSize: AppSize.s(12), color: AppColors.mutedForeground),
                 ),
               ],
             ],
@@ -529,26 +530,26 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
   Widget _buildSleepTipsHeader() {
     return Text(
       'Советы для здорового сна',
-      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.foreground),
+      style: TextStyle(fontSize: AppSize.s(16), fontWeight: FontWeight.w600, color: AppColors.foreground),
     );
   }
 
   Widget _buildSleepTipsList() {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: AppSize.padding(16),
       decoration: BoxDecoration(
         color: AppColors.citrusOrange.withOpacity(0.05),
         border: Border.all(color: AppColors.citrusOrange.withOpacity(0.1)),
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: AppSize.radius(14),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: _sleepTips.map((tip) {
           return Padding(
-            padding: const EdgeInsets.only(bottom: 6),
+            padding: AppSize.paddingOnly(bottom: 6),
             child: Text(
               '• $tip',
-              style: TextStyle(fontSize: 12, color: AppColors.mutedForeground, height: 1.5),
+              style: TextStyle(fontSize: AppSize.s(12), color: AppColors.mutedForeground, height: 1.5),
             ),
           );
         }).toList(),
@@ -582,7 +583,7 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
         builder: (context, setModalState) => AlertDialog(
           backgroundColor: AppColors.surface1,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: AppSize.radius(16),
             side: BorderSide(color: AppColors.citrusPurple.withOpacity(0.2)),
           ),
           title: Text(
@@ -596,10 +597,10 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
                 ListTile(
                   contentPadding: EdgeInsets.zero,
                   leading: Icon(Icons.calendar_today, color: AppColors.mutedForeground, size: 20),
-                  title: Text('Дата', style: TextStyle(color: AppColors.mutedForeground, fontSize: 13)),
+                  title: Text('Дата', style: TextStyle(color: AppColors.mutedForeground, fontSize: AppSize.s(13))),
                   subtitle: Text(
                     '${selectedDate.day}.${selectedDate.month}.${selectedDate.year}',
-                    style: TextStyle(color: AppColors.foreground, fontSize: 14),
+                    style: TextStyle(color: AppColors.foreground, fontSize: AppSize.s(14)),
                   ),
                   onTap: () async {
                     final date = await showDatePicker(
@@ -613,23 +614,23 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
                     }
                   },
                 ),
-                SizedBox(height: 12),
+                AppSize.gapH(12),
                 Row(
                   children: [
-                    Text('Отбой:', style: TextStyle(color: AppColors.mutedForeground, fontSize: 13)),
-                    SizedBox(width: 8),
+                    Text('Отбой:', style: TextStyle(color: AppColors.mutedForeground, fontSize: AppSize.s(13))),
+                    AppSize.gapW(8),
                     Expanded(
                       child: TextField(
-                        style: TextStyle(color: AppColors.foreground, fontSize: 13),
+                        style: TextStyle(color: AppColors.foreground, fontSize: AppSize.s(13)),
                         controller: TextEditingController(text: bedtime),
                         decoration: InputDecoration(
                           filled: true,
                           fillColor: AppColors.surface2,
                           border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: AppSize.radius(8),
                             borderSide: BorderSide.none,
                           ),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          contentPadding: AppSize.paddingH(10, 6),
                           isDense: true,
                         ),
                         onChanged: (v) => bedtime = _formatTimeInput(v),
@@ -637,23 +638,23 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
                     ),
                   ],
                 ),
-                SizedBox(height: 10),
+                AppSize.gapH(10),
                 Row(
                   children: [
-                    Text('Подъём:', style: TextStyle(color: AppColors.mutedForeground, fontSize: 13)),
-                    SizedBox(width: 8),
+                    Text('Подъём:', style: TextStyle(color: AppColors.mutedForeground, fontSize: AppSize.s(13))),
+                    AppSize.gapW(8),
                     Expanded(
                       child: TextField(
-                        style: TextStyle(color: AppColors.foreground, fontSize: 13),
+                        style: TextStyle(color: AppColors.foreground, fontSize: AppSize.s(13)),
                         controller: TextEditingController(text: wakeup),
                         decoration: InputDecoration(
                           filled: true,
                           fillColor: AppColors.surface2,
                           border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: AppSize.radius(8),
                             borderSide: BorderSide.none,
                           ),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          contentPadding: AppSize.paddingH(10, 6),
                           isDense: true,
                         ),
                         onChanged: (v) => wakeup = _formatTimeInput(v),
@@ -661,9 +662,9 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
                     ),
                   ],
                 ),
-                SizedBox(height: 10),
-                Text('Качество:', style: TextStyle(color: AppColors.mutedForeground, fontSize: 13)),
-                SizedBox(height: 6),
+                AppSize.gapH(10),
+                Text('Качество:', style: TextStyle(color: AppColors.mutedForeground, fontSize: AppSize.s(13))),
+                AppSize.gapH(6),
                 Wrap(
                   alignment: WrapAlignment.center,
                   spacing: 6,
@@ -673,17 +674,17 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
                     return GestureDetector(
                       onTap: () => setModalState(() => quality = q),
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                        padding: AppSize.paddingH(14, 8),
                         decoration: BoxDecoration(
                           color: isSelected ? AppColors.citrusPurple.withValues(alpha: 0.2) : AppColors.surface2,
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius: AppSize.radius(10),
                           border: Border.all(color: isSelected ? AppColors.citrusPurple : Colors.transparent),
                         ),
                         child: Text(
                           _getQualityLabel(q),
                           style: TextStyle(
                             color: isSelected ? AppColors.citrusPurple : AppColors.mutedForeground,
-                            fontSize: 12,
+                            fontSize: AppSize.s(12),
                             fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
                           ),
                         ),
@@ -723,7 +724,7 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
                   Navigator.pop(context);
                   if (!context.mounted) return;
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
+                    SnackBar(
                       content: Text('Запись о сне добавлена +25 🪙'),
                       backgroundColor: Colors.green,
                     ),
@@ -750,7 +751,7 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
         builder: (context, setModalState) => AlertDialog(
           backgroundColor: AppColors.surface1,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: AppSize.radius(16),
             side: BorderSide(color: AppColors.citrusPurple.withOpacity(0.2)),
           ),
           title: Text(
@@ -764,7 +765,7 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
                 ListTile(
                   contentPadding: EdgeInsets.zero,
                   leading: Icon(Icons.calendar_today, color: AppColors.mutedForeground, size: 20),
-                  title: Text('Дата', style: TextStyle(color: AppColors.mutedForeground, fontSize: 13)),
+                  title: Text('Дата', style: TextStyle(color: AppColors.mutedForeground, fontSize: AppSize.s(13))),
                   subtitle: Text(
                     '${selectedDate.day}.${selectedDate.month}.${selectedDate.year}',
                     style: TextStyle(color: AppColors.foreground),
@@ -779,47 +780,47 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
                     if (date != null) setModalState(() => selectedDate = date);
                   },
                 ),
-                SizedBox(height: 12),
+                AppSize.gapH(12),
                 Row(
                   children: [
-                    Text('Отбой:', style: TextStyle(color: AppColors.mutedForeground, fontSize: 13)),
-                    SizedBox(width: 8),
+                    Text('Отбой:', style: TextStyle(color: AppColors.mutedForeground, fontSize: AppSize.s(13))),
+                    AppSize.gapW(8),
                     Expanded(
                       child: TextField(
-                        style: TextStyle(color: AppColors.foreground, fontSize: 13),
+                        style: TextStyle(color: AppColors.foreground, fontSize: AppSize.s(13)),
                         controller: TextEditingController(text: bedtime),
                         decoration: InputDecoration(
                           filled: true, fillColor: AppColors.surface2,
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6), isDense: true,
+                          border: OutlineInputBorder(borderRadius: AppSize.radius(8), borderSide: BorderSide.none),
+                          contentPadding: AppSize.paddingH(10, 6), isDense: true,
                         ),
                         onChanged: (v) => bedtime = _formatTimeInput(v),
                       ),
                     ),
                   ],
                 ),
-                SizedBox(height: 10),
+                AppSize.gapH(10),
                 Row(
                   children: [
-                    Text('Подъём:', style: TextStyle(color: AppColors.mutedForeground, fontSize: 13)),
-                    SizedBox(width: 8),
+                    Text('Подъём:', style: TextStyle(color: AppColors.mutedForeground, fontSize: AppSize.s(13))),
+                    AppSize.gapW(8),
                     Expanded(
                       child: TextField(
-                        style: TextStyle(color: AppColors.foreground, fontSize: 13),
+                        style: TextStyle(color: AppColors.foreground, fontSize: AppSize.s(13)),
                         controller: TextEditingController(text: wakeup),
                         decoration: InputDecoration(
                           filled: true, fillColor: AppColors.surface2,
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6), isDense: true,
+                          border: OutlineInputBorder(borderRadius: AppSize.radius(8), borderSide: BorderSide.none),
+                          contentPadding: AppSize.paddingH(10, 6), isDense: true,
                         ),
                         onChanged: (v) => wakeup = _formatTimeInput(v),
                       ),
                     ),
                   ],
                 ),
-                SizedBox(height: 10),
-                Text('Качество:', style: TextStyle(color: AppColors.mutedForeground, fontSize: 13)),
-                SizedBox(height: 6),
+                AppSize.gapH(10),
+                Text('Качество:', style: TextStyle(color: AppColors.mutedForeground, fontSize: AppSize.s(13))),
+                AppSize.gapH(6),
                 Wrap(
                   alignment: WrapAlignment.center,
                   spacing: 6,
@@ -829,17 +830,17 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
                     return GestureDetector(
                       onTap: () => setModalState(() => quality = q),
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                        padding: AppSize.paddingH(14, 8),
                         decoration: BoxDecoration(
                           color: isSelected ? AppColors.citrusPurple.withValues(alpha: 0.2) : AppColors.surface2,
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius: AppSize.radius(10),
                           border: Border.all(color: isSelected ? AppColors.citrusPurple : Colors.transparent),
                         ),
                         child: Text(
                           _getQualityLabel(q),
                           style: TextStyle(
                             color: isSelected ? AppColors.citrusPurple : AppColors.mutedForeground,
-                            fontSize: 12,
+                            fontSize: AppSize.s(12),
                             fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
                           ),
                         ),
@@ -872,7 +873,7 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
 
                 context.read<SleepBloc>().add(UpdateSleepRecord(updatedRecord));
                 Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Запись обновлена'), backgroundColor: Colors.green));
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Запись обновлена'), backgroundColor: Colors.green));
               },
               style: FilledButton.styleFrom(backgroundColor: AppColors.citrusPurple),
               child: Text('Сохранить'),
@@ -888,7 +889,7 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: AppColors.surface1,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide(color: AppColors.destructive.withOpacity(0.3))),
+        shape: RoundedRectangleBorder(borderRadius: AppSize.radius(16), side: BorderSide(color: AppColors.destructive.withOpacity(0.3))),
         title: Text('Удалить запись?', style: TextStyle(color: AppColors.foreground)),
         content: Text('Запись о сне будет удалена навсегда.', style: TextStyle(color: AppColors.mutedForeground)),
         actions: [
@@ -897,7 +898,7 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
             onPressed: () {
               context.read<SleepBloc>().add(DeleteSleepRecord(record.id));
               Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Запись удалена'), backgroundColor: Colors.orange));
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Запись удалена'), backgroundColor: Colors.orange));
             },
             style: FilledButton.styleFrom(backgroundColor: AppColors.destructive),
             child: Text('Удалить'),
