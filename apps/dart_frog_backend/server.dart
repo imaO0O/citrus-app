@@ -8,22 +8,20 @@ import 'package:crypto/crypto.dart';
 import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
 import 'package:http/http.dart' as http;
 import 'package:mime/mime.dart';
-import 'package:dotenv/dotenv.dart';
+
 import 'lib/services/gigachat_service.dart';
 import 'lib/services/email_service.dart';
-
-final _env = DotEnv(includePlatformEnvironment: true);
 
 PostgreSQLConnection? _db;
 const _jwtSecret = 'citrus-app-secret-key-change-in-production';
 
-// Параметры БД из .env (с fallback на локальную БД для разработки)
-String get _dbHost => _env['DB_HOST'] ?? 'localhost';
-int get _dbPort => int.tryParse(_env['DB_PORT'] ?? '5432') ?? 5432;
-String get _dbName => _env['DB_NAME'] ?? 'citrus';
-String get _dbUser => _env['DB_USER'] ?? 'citrus';
-String get _dbPassword => _env['DB_PASSWORD'] ?? 'citrus123';
-bool get _dbSSL => _env['DB_SSL']?.toLowerCase() == 'true' || _dbHost.contains('supabase');
+// Параметры БД из переменных окружения (с fallback на локальную БД для разработки)
+String get _dbHost => Platform.environment['DB_HOST'] ?? 'localhost';
+int get _dbPort => int.tryParse(Platform.environment['DB_PORT'] ?? '5432') ?? 5432;
+String get _dbName => Platform.environment['DB_NAME'] ?? 'citrus';
+String get _dbUser => Platform.environment['DB_USER'] ?? 'citrus';
+String get _dbPassword => Platform.environment['DB_PASSWORD'] ?? 'citrus123';
+bool get _dbSSL => Platform.environment['DB_SSL']?.toLowerCase() == 'true' || _dbHost.contains('supabase');
 
 // Ретри при ошибке 42P05 (duplicate_prepared_statement) — коллизия имён
 // prepared statements в transaction-mode пулере Supabase (Supavisor).
@@ -156,7 +154,6 @@ Future<Response> _handleRequest(RequestContext context) async {
   // Инициализация БД при первом запросе
   if (_db == null || _db!.isClosed) {
     try {
-      _env.load(); // загружаем .env если ещё не загружен (defaults to ['.env'])
       _db = PostgreSQLConnection(
         _dbHost,
         _dbPort,
