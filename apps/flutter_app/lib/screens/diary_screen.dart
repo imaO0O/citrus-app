@@ -169,7 +169,7 @@ class _DiaryScreenState extends State<DiaryScreen> with SingleTickerProviderStat
 
   Widget _buildEmpty() {
     return Center(
-      child: Padding(
+      child: SingleChildScrollView(
         padding: AppSize.padding(40),
         child: Column(mainAxisAlignment: MainAxisAlignment.center, mainAxisSize: MainAxisSize.min, children: [
           Container(
@@ -204,7 +204,7 @@ class _DiaryScreenState extends State<DiaryScreen> with SingleTickerProviderStat
 
   Widget _buildError(String msg) {
     return Center(
-      child: Padding(
+      child: SingleChildScrollView(
         padding: AppSize.padding(40),
         child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
           Container(

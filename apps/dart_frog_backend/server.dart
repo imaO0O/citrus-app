@@ -1698,7 +1698,24 @@ Future<Response> _updateDiaryEntry(RequestContext context, _AuthContext auth, St
       "WHERE id = '$id' AND user_id = '$userId'",
     );
 
-    return Response.json(body: {'id': id, 'content': content, 'mood_value': moodValue});
+    final results = await _dbQuery(
+      "SELECT id, user_id, content, mood_value, entry_date::text as entry_date, created_at::text as created_at "
+      "FROM diary_entries WHERE id = '$id' AND user_id = '$userId'",
+    );
+
+    if (results.isEmpty) {
+      return Response(statusCode: 404, body: 'Entry not found');
+    }
+
+    final row = results.first;
+    return Response.json(body: {
+      'id': row[0] as String,
+      'user_id': row[1] as String,
+      'content': row[2] as String,
+      'mood_value': row[3] as int?,
+      'entry_date': row[4] as String?,
+      'created_at': row[5] as String?,
+    });
   } catch (e) {
     return Response(statusCode: 500, body: 'Error: $e');
   }
