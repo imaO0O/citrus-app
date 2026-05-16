@@ -45,7 +45,6 @@ class Affirmation {
 class AffirmationsService {
   static const _storageKey = 'cached_affirmations';
   static const _lastGenerationKey = 'last_affirmations_generation';
-  static const _favoritesKey = 'affirmations_favorites';
   
   // Базовые аффирмации на случай если GigaChat недоступен
   static const _defaultAffirmations = [
@@ -260,63 +259,6 @@ class AffirmationsService {
       return now.difference(lastDate).inHours >= 24;
     } catch (e) {
       return true;
-    }
-  }
-
-  /// Получить избранные аффирмации из кеша
-  Future<List<Affirmation>> getFavoriteAffirmations() async {
-    try {
-      final storage = StorageService();
-      final jsonStr = await storage.getString(_favoritesKey);
-      
-      if (jsonStr != null && jsonStr.isNotEmpty) {
-        final List<dynamic> jsonList = jsonDecode(jsonStr);
-        return jsonList.map((e) => Affirmation.fromJson(e as Map<String, dynamic>)).toList();
-      }
-    } catch (e) {
-      debugPrint('Error loading favorite affirmations: $e');
-    }
-    return [];
-  }
-
-  /// Добавить аффирмацию в избранное
-  Future<void> addFavorite(Affirmation affirmation) async {
-    try {
-      final favorites = await getFavoriteAffirmations();
-      if (!favorites.any((f) => f.id == affirmation.id)) {
-        favorites.add(affirmation);
-        await _saveFavorites(favorites);
-      }
-    } catch (e) {
-      debugPrint('Error adding favorite: $e');
-    }
-  }
-
-  /// Удалить аффирмацию из избранного
-  Future<void> removeFavorite(String id) async {
-    try {
-      final favorites = await getFavoriteAffirmations();
-      favorites.removeWhere((f) => f.id == id);
-      await _saveFavorites(favorites);
-    } catch (e) {
-      debugPrint('Error removing favorite: $e');
-    }
-  }
-
-  /// Проверить, является ли аффирмация избранной
-  Future<bool> isFavorite(String id) async {
-    final favorites = await getFavoriteAffirmations();
-    return favorites.any((f) => f.id == id);
-  }
-
-  /// Сохранить список избранного
-  Future<void> _saveFavorites(List<Affirmation> favorites) async {
-    try {
-      final storage = StorageService();
-      final jsonList = favorites.map((a) => a.toJson()).toList();
-      await storage.setString(_favoritesKey, jsonEncode(jsonList));
-    } catch (e) {
-      debugPrint('Error saving favorites: $e');
     }
   }
 }

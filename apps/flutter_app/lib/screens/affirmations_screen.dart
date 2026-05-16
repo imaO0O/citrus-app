@@ -14,8 +14,6 @@ class AffirmationsScreen extends StatefulWidget {
 
 class _AffirmationsScreenState extends State<AffirmationsScreen> {
   late PageController _pageController;
-  Set<String> _favorites = {}; // храним ID, а не индексы
-  List<Affirmation> _favoriteAffirmations = []; // полные объекты из кеша
   String _selectedCategory = 'Все';
 
   final AffirmationsService _service = AffirmationsService();
@@ -38,10 +36,6 @@ class _AffirmationsScreenState extends State<AffirmationsScreen> {
   Future<void> _loadAffirmations() async {
     if (!mounted) return;
     setState(() => _isLoading = true);
-    
-    // Загружаем избранное из кеша
-    _favoriteAffirmations = await _service.getFavoriteAffirmations();
-    _favorites = _favoriteAffirmations.map((a) => a.id).toSet();
     
     final affirmations = await _service.getCachedAffirmations();
     
@@ -72,12 +66,6 @@ class _AffirmationsScreenState extends State<AffirmationsScreen> {
       if (mounted) {
         setState(() {
           _affirmations = newAffirmations;
-          // Обновляем избранное: оставляем только те, что есть в новом списке,
-          // и добавляем новые из кеша если они совпадают по ID
-          _favoriteAffirmations = _favoriteAffirmations
-              .where((fav) => newAffirmations.any((a) => a.id == fav.id))
-              .toList();
-          _favorites = _favoriteAffirmations.map((a) => a.id).toSet();
           _isGenerating = false;
         });
         
@@ -116,34 +104,6 @@ class _AffirmationsScreenState extends State<AffirmationsScreen> {
     }
   }
 
-  void _toggleFavorite(String id) async {
-    // Находим объект аффирмации
-    final affirmation = _affirmations.firstWhere(
-      (a) => a.id == id,
-      orElse: () => _favoriteAffirmations.firstWhere(
-        (a) => a.id == id,
-        orElse: () => throw Exception('Affirmation not found'),
-      ),
-    );
-
-    setState(() {
-      if (_favorites.contains(id)) {
-        _favorites.remove(id);
-        _favoriteAffirmations.removeWhere((a) => a.id == id);
-      } else {
-        _favorites.add(id);
-        _favoriteAffirmations.add(affirmation);
-      }
-    });
-
-    // Сохраняем в кеш
-    if (_favorites.contains(id)) {
-      await _service.addFavorite(affirmation);
-    } else {
-      await _service.removeFavorite(id);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -162,11 +122,6 @@ class _AffirmationsScreenState extends State<AffirmationsScreen> {
                   _buildCategoryPills(),
                   AppSize.gapH(16),
                   _buildContent(),
-                  AppSize.gapH(16),
-                  if (_favoriteAffirmations.isNotEmpty) ...[
-                    AppSize.gapH(12),
-                    _buildFavoritesSection(),
-                  ],
                   AppSize.gapH(80),
                 ],
               ),
@@ -260,7 +215,7 @@ class _AffirmationsScreenState extends State<AffirmationsScreen> {
                   itemCount: _filteredAffirmations.length,
                   itemBuilder: (context, index) {
                     final affirmation = _filteredAffirmations[index];
-                    return _buildMainCard(affirmation, index);
+                    return _buildMainCard(affirmation);
                   },
                 ),
     );
@@ -304,9 +259,7 @@ class _AffirmationsScreenState extends State<AffirmationsScreen> {
     );
   }
 
-  Widget _buildMainCard(Affirmation affirmation, int index) {
-    final isFavorite = _favorites.contains(affirmation.id);
-
+  Widget _buildMainCard(Affirmation affirmation) {
     return Container(
       decoration: BoxDecoration(
         borderRadius: AppSize.radius(24),
@@ -378,84 +331,6 @@ class _AffirmationsScreenState extends State<AffirmationsScreen> {
                   ],
                 ),
               ),
-            ),
-          ),
-          Positioned(
-            bottom: 16,
-            right: 16,
-            child: GestureDetector(
-              onTap: () => _toggleFavorite(affirmation.id),
-              child: Icon(
-                isFavorite ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-                color: isFavorite ? affirmation.color : AppColors.mutedForeground,
-                size: 24,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFavoritesSection() {
-    if (_favoriteAffirmations.isEmpty) return SizedBox.shrink();
-
-    return Container(
-      padding: AppSize.padding(12),
-      decoration: BoxDecoration(
-        color: AppColors.surface1,
-        borderRadius: AppSize.radius(16),
-        border: Border.all(color: AppColors.subtleBorder),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'ИЗБРАННОЕ',
-            style: TextStyle(
-              fontSize: AppSize.s(10),
-              fontWeight: FontWeight.w700,
-              letterSpacing: 2.4,
-              color: AppColors.dimForeground,
-            ),
-          ),
-          AppSize.gapH(8),
-          SizedBox(
-            height: 56,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              itemCount: _favoriteAffirmations.length,
-              separatorBuilder: (_, __) => AppSize.gapW(8),
-              itemBuilder: (context, index) {
-                final affirmation = _favoriteAffirmations[index];
-                return GestureDetector(
-                  onTap: () {
-                    // Переключаемся на категорию этой аффирмации и переходим к ней
-                    setState(() => _selectedCategory = 'Все');
-        if (_filteredAffirmations.isNotEmpty) {
-          try {
-            _pageController.jumpToPage(0);
-          } catch (_) {}
-        }
-                    // Если аффирмация есть в текущем списке — переходим к ней
-                    final filteredIndex = _filteredAffirmations.indexWhere((a) => a.id == affirmation.id);
-                    if (filteredIndex >= 0) {
-                      Future.delayed(const Duration(milliseconds: 50), () => _goToPage(filteredIndex));
-                    }
-                  },
-                  child: Container(
-                    width: 56,
-                    decoration: BoxDecoration(
-                      color: affirmation.color.withOpacity(0.1),
-                      borderRadius: AppSize.radius(12),
-                      border: Border.all(color: affirmation.color.withOpacity(0.2)),
-                    ),
-                    child: Center(
-                      child: Text(affirmation.emoji, style: TextStyle(fontSize: AppSize.s(20))),
-                    ),
-                  ),
-                );
-              },
             ),
           ),
         ],
