@@ -14,7 +14,8 @@ class AffirmationsScreen extends StatefulWidget {
 
 class _AffirmationsScreenState extends State<AffirmationsScreen> {
   late PageController _pageController;
-  final Set<String> _favorites = {}; // храним ID, а не индексы
+  Set<String> _favorites = {}; // храним ID, а не индексы
+  List<Affirmation> _favoriteAffirmations = []; // полные объекты из кеша
   String _selectedCategory = 'Все';
 
   final AffirmationsService _service = AffirmationsService();
@@ -37,6 +38,10 @@ class _AffirmationsScreenState extends State<AffirmationsScreen> {
   Future<void> _loadAffirmations() async {
     if (!mounted) return;
     setState(() => _isLoading = true);
+    
+    // Загружаем избранное из кеша
+    _favoriteAffirmations = await _service.getFavoriteAffirmations();
+    _favorites = _favoriteAffirmations.map((a) => a.id).toSet();
     
     final affirmations = await _service.getCachedAffirmations();
     
@@ -100,14 +105,32 @@ class _AffirmationsScreenState extends State<AffirmationsScreen> {
     }
   }
 
-  void _toggleFavorite(String id) {
+  void _toggleFavorite(String id) async {
+    // Находим объект аффирмации
+    final affirmation = _affirmations.firstWhere(
+      (a) => a.id == id,
+      orElse: () => _favoriteAffirmations.firstWhere(
+        (a) => a.id == id,
+        orElse: () => throw Exception('Affirmation not found'),
+      ),
+    );
+
     setState(() {
       if (_favorites.contains(id)) {
         _favorites.remove(id);
+        _favoriteAffirmations.removeWhere((a) => a.id == id);
       } else {
         _favorites.add(id);
+        _favoriteAffirmations.add(affirmation);
       }
     });
+
+    // Сохраняем в кеш
+    if (_favorites.contains(id)) {
+      await _service.addFavorite(affirmation);
+    } else {
+      await _service.removeFavorite(id);
+    }
   }
 
   @override
@@ -129,7 +152,7 @@ class _AffirmationsScreenState extends State<AffirmationsScreen> {
                   AppSize.gapH(16),
                   _buildContent(),
                   AppSize.gapH(16),
-                  if (_favorites.isNotEmpty) ...[
+                  if (_favoriteAffirmations.isNotEmpty) ...[
                     AppSize.gapH(12),
                     _buildFavoritesSection(),
                   ],
@@ -364,10 +387,7 @@ class _AffirmationsScreenState extends State<AffirmationsScreen> {
   }
 
   Widget _buildFavoritesSection() {
-    if (_favorites.isEmpty) return SizedBox.shrink();
-
-    // Находим аффирмации, которые в избранном, по их ID
-    final favoriteAffirmations = _affirmations.where((a) => _favorites.contains(a.id)).toList();
+    if (_favoriteAffirmations.isEmpty) return SizedBox.shrink();
 
     return Container(
       padding: AppSize.padding(12),
@@ -393,20 +413,19 @@ class _AffirmationsScreenState extends State<AffirmationsScreen> {
             height: 56,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
-              itemCount: favoriteAffirmations.length,
+              itemCount: _favoriteAffirmations.length,
               separatorBuilder: (_, __) => AppSize.gapW(8),
               itemBuilder: (context, index) {
-                final affirmation = favoriteAffirmations[index];
-                final globalIndex = _affirmations.indexOf(affirmation);
+                final affirmation = _favoriteAffirmations[index];
                 return GestureDetector(
                   onTap: () {
                     // Переключаемся на категорию этой аффирмации и переходим к ней
-                    if (_selectedCategory != affirmation.category && _selectedCategory != 'Все') {
-                      setState(() => _selectedCategory = affirmation.category);
-                    }
-                    final filteredIndex = _filteredAffirmations.indexOf(affirmation);
+                    setState(() => _selectedCategory = 'Все');
+                    _pageController.jumpToPage(0);
+                    // Если аффирмация есть в текущем списке — переходим к ней
+                    final filteredIndex = _filteredAffirmations.indexWhere((a) => a.id == affirmation.id);
                     if (filteredIndex >= 0) {
-                      _goToPage(filteredIndex);
+                      Future.delayed(const Duration(milliseconds: 50), () => _goToPage(filteredIndex));
                     }
                   },
                   child: Container(
