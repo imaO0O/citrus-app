@@ -100,7 +100,18 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
     };
   }
 
-  /// Автоформатирование времени при вводе
+  /// Проверка корректности времени (HH:MM)
+  bool _isValidTime(String value) {
+    if (!value.contains(':')) return false;
+    final parts = value.split(':');
+    if (parts.length != 2) return false;
+    final hour = int.tryParse(parts[0]);
+    final minute = int.tryParse(parts[1]);
+    if (hour == null || minute == null) return false;
+    return hour >= 0 && hour <= 23 && minute >= 0 && minute <= 59;
+  }
+
+  /// Автоформатирование и коррекция времени при вводе
   String _formatTimeInput(String value) {
     // Удаляем всё кроме цифр и двоеточий
     final cleaned = value.replaceAll(RegExp(r'[^\d:]'), '');
@@ -116,8 +127,15 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
     // Если уже есть двоеточие, ограничиваем длину
     final parts = cleaned.split(':');
     if (parts.length >= 2) {
-      final hour = parts[0].length > 2 ? parts[0].substring(0, 2) : parts[0];
-      final minute = parts[1].length > 2 ? parts[1].substring(0, 2) : parts[1];
+      String hour = parts[0].length > 2 ? parts[0].substring(0, 2) : parts[0];
+      String minute = parts[1].length > 2 ? parts[1].substring(0, 2) : parts[1];
+      
+      // Автоматическая коррекция некорректных значений
+      final h = int.tryParse(hour) ?? 0;
+      final m = int.tryParse(minute) ?? 0;
+      if (h > 23) hour = '23';
+      if (m > 59) minute = '59';
+      
       return '$hour:$minute';
     }
     
@@ -343,7 +361,7 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
                 if (index < last7Days.length) {
                   final record = last7Days[index];
                   final hours = _calculateSleepDuration(record.bedTime, record.wakeTime);
-                  final barHeight = hours > 0 ? (hours / maxHours) * 120 : 0.0;
+                  final barHeight = hours > 0 ? ((hours / maxHours) * 120).clamp(0.0, 120.0) : 0.0;
                   final dayOfWeek = (record.sleepDate.weekday - 1) % 7;
 
                   return Expanded(
@@ -702,6 +720,25 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
             ),
             FilledButton(
               onPressed: () {
+                if (!_isValidTime(bedtime)) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Некорректное время отбоя (формат ЧЧ:ММ, часы 0-23, минуты 0-59)'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                  return;
+                }
+                if (!_isValidTime(wakeup)) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Некорректное время подъёма (формат ЧЧ:ММ, часы 0-23, минуты 0-59)'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                  return;
+                }
+
                 final btParts = bedtime.split(':');
                 final wuParts = wakeup.split(':');
                 final btH = int.tryParse(btParts[0]) ?? 0;
@@ -855,6 +892,25 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
             TextButton(onPressed: () => Navigator.pop(context), child: Text('Отмена', style: TextStyle(color: AppColors.mutedForeground))),
             FilledButton(
               onPressed: () {
+                if (!_isValidTime(bedtime)) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Некорректное время отбоя (формат ЧЧ:ММ, часы 0-23, минуты 0-59)'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                  return;
+                }
+                if (!_isValidTime(wakeup)) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Некорректное время подъёма (формат ЧЧ:ММ, часы 0-23, минуты 0-59)'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                  return;
+                }
+
                 final btParts = bedtime.split(':');
                 final wuParts = wakeup.split(':');
                 final btH = int.tryParse(btParts[0]) ?? 0;
