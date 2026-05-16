@@ -45,21 +45,12 @@ class _AffirmationsScreenState extends State<AffirmationsScreen> {
     
     final affirmations = await _service.getCachedAffirmations();
     
-      if (mounted) {
-        setState(() {
-          _affirmations = newAffirmations;
-          _favoriteAffirmations = _favoriteAffirmations
-              .where((fav) => newAffirmations.any((a) => a.id == fav.id))
-              .toList();
-          _favorites = _favoriteAffirmations.map((a) => a.id).toSet();
-          _isGenerating = false;
-        });
-        if (_filteredAffirmations.isNotEmpty) {
-          try {
-            _pageController.jumpToPage(0);
-          } catch (_) {}
-        }
-      }
+    if (mounted) {
+      setState(() {
+        _affirmations = affirmations;
+        _isLoading = false;
+      });
+    }
     
     // Проверяем, нужно ли обновить (раз в день)
     final shouldRefresh = await _service.shouldRefresh();
@@ -436,7 +427,11 @@ class _AffirmationsScreenState extends State<AffirmationsScreen> {
                   onTap: () {
                     // Переключаемся на категорию этой аффирмации и переходим к ней
                     setState(() => _selectedCategory = 'Все');
-                    _pageController.jumpToPage(0);
+        if (_filteredAffirmations.isNotEmpty) {
+          try {
+            _pageController.jumpToPage(0);
+          } catch (_) {}
+        }
                     // Если аффирмация есть в текущем списке — переходим к ней
                     final filteredIndex = _filteredAffirmations.indexWhere((a) => a.id == affirmation.id);
                     if (filteredIndex >= 0) {
