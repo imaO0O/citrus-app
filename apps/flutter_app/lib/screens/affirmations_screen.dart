@@ -14,7 +14,7 @@ class AffirmationsScreen extends StatefulWidget {
 
 class _AffirmationsScreenState extends State<AffirmationsScreen> {
   late PageController _pageController;
-  final Set<int> _favorites = {};
+  final Set<String> _favorites = {}; // храним ID, а не индексы
   String _selectedCategory = 'Все';
 
   final AffirmationsService _service = AffirmationsService();
@@ -100,12 +100,12 @@ class _AffirmationsScreenState extends State<AffirmationsScreen> {
     }
   }
 
-  void _toggleFavorite(int index) {
+  void _toggleFavorite(String id) {
     setState(() {
-      if (_favorites.contains(index)) {
-        _favorites.remove(index);
+      if (_favorites.contains(id)) {
+        _favorites.remove(id);
       } else {
-        _favorites.add(index);
+        _favorites.add(id);
       }
     });
   }
@@ -271,7 +271,7 @@ class _AffirmationsScreenState extends State<AffirmationsScreen> {
   }
 
   Widget _buildMainCard(Affirmation affirmation, int index) {
-    final isFavorite = _favorites.contains(index);
+    final isFavorite = _favorites.contains(affirmation.id);
 
     return Container(
       decoration: BoxDecoration(
@@ -350,7 +350,7 @@ class _AffirmationsScreenState extends State<AffirmationsScreen> {
             bottom: 16,
             right: 16,
             child: GestureDetector(
-              onTap: () => _toggleFavorite(index),
+              onTap: () => _toggleFavorite(affirmation.id),
               child: Icon(
                 isFavorite ? Icons.favorite_rounded : Icons.favorite_border_rounded,
                 color: isFavorite ? affirmation.color : AppColors.mutedForeground,
@@ -365,7 +365,9 @@ class _AffirmationsScreenState extends State<AffirmationsScreen> {
 
   Widget _buildFavoritesSection() {
     if (_favorites.isEmpty) return SizedBox.shrink();
-    final favoriteList = _favorites.toList()..sort();
+
+    // Находим аффирмации, которые в избранном, по их ID
+    final favoriteAffirmations = _affirmations.where((a) => _favorites.contains(a.id)).toList();
 
     return Container(
       padding: AppSize.padding(12),
@@ -391,16 +393,22 @@ class _AffirmationsScreenState extends State<AffirmationsScreen> {
             height: 56,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
-              itemCount: favoriteList.length,
+              itemCount: favoriteAffirmations.length,
               separatorBuilder: (_, __) => AppSize.gapW(8),
               itemBuilder: (context, index) {
-                final favIndex = favoriteList[index];
-                if (favIndex >= _filteredAffirmations.length) {
-                  return SizedBox.shrink();
-                }
-                final affirmation = _filteredAffirmations[favIndex];
+                final affirmation = favoriteAffirmations[index];
+                final globalIndex = _affirmations.indexOf(affirmation);
                 return GestureDetector(
-                  onTap: () => _goToPage(favIndex),
+                  onTap: () {
+                    // Переключаемся на категорию этой аффирмации и переходим к ней
+                    if (_selectedCategory != affirmation.category && _selectedCategory != 'Все') {
+                      setState(() => _selectedCategory = affirmation.category);
+                    }
+                    final filteredIndex = _filteredAffirmations.indexOf(affirmation);
+                    if (filteredIndex >= 0) {
+                      _goToPage(filteredIndex);
+                    }
+                  },
                   child: Container(
                     width: 56,
                     decoration: BoxDecoration(
