@@ -72,6 +72,12 @@ class _AffirmationsScreenState extends State<AffirmationsScreen> {
       if (mounted) {
         setState(() {
           _affirmations = newAffirmations;
+          // Обновляем избранное: оставляем только те, что есть в новом списке,
+          // и добавляем новые из кеша если они совпадают по ID
+          _favoriteAffirmations = _favoriteAffirmations
+              .where((fav) => newAffirmations.any((a) => a.id == fav.id))
+              .toList();
+          _favorites = _favoriteAffirmations.map((a) => a.id).toSet();
           _isGenerating = false;
         });
         _pageController.jumpToPage(0);
