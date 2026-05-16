@@ -80,7 +80,12 @@ class _AffirmationsScreenState extends State<AffirmationsScreen> {
           _favorites = _favoriteAffirmations.map((a) => a.id).toSet();
           _isGenerating = false;
         });
-        _pageController.jumpToPage(0);
+        
+        // Ждем перестроения виджетов и проверяем, что PageView построен
+        await Future.delayed(const Duration(milliseconds: 100));
+        if (mounted && _pageController.hasClients && _filteredAffirmations.isNotEmpty) {
+          _pageController.jumpToPage(0);
+        }
       }
     } catch (e) {
       if (mounted) {
