@@ -45,12 +45,21 @@ class _AffirmationsScreenState extends State<AffirmationsScreen> {
     
     final affirmations = await _service.getCachedAffirmations();
     
-    if (mounted) {
-      setState(() {
-        _affirmations = affirmations;
-        _isLoading = false;
-      });
-    }
+      if (mounted) {
+        setState(() {
+          _affirmations = newAffirmations;
+          _favoriteAffirmations = _favoriteAffirmations
+              .where((fav) => newAffirmations.any((a) => a.id == fav.id))
+              .toList();
+          _favorites = _favoriteAffirmations.map((a) => a.id).toSet();
+          _isGenerating = false;
+        });
+        if (_filteredAffirmations.isNotEmpty) {
+          try {
+            _pageController.jumpToPage(0);
+          } catch (_) {}
+        }
+      }
     
     // Проверяем, нужно ли обновить (раз в день)
     final shouldRefresh = await _service.shouldRefresh();
