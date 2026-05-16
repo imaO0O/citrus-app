@@ -1709,8 +1709,8 @@ Future<Response> _updateDiaryEntry(RequestContext context, _AuthContext auth, St
 
     final row = results.first;
     return Response.json(body: {
-      'id': row[0] as String,
-      'user_id': row[1] as String,
+      'id': row[0] is String ? row[0] : Uuid.unparse(row[0] as Uint8List),
+      'user_id': row[1] is String ? row[1] : Uuid.unparse(row[1] as Uint8List),
       'content': row[2] as String,
       'mood_value': row[3] as int?,
       'entry_date': row[4] as String?,
