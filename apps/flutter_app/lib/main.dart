@@ -5,6 +5,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'app/routes.dart';
 import 'core/utils/theme.dart';
 import 'core/utils/theme_service.dart';
+import 'core/utils/app_size.dart';
 import 'core/repository/auth_repository.dart';
 import 'core/repository/sleep_repository.dart';
 import 'core/repository/calendar_event_repository.dart';
@@ -26,7 +27,7 @@ void main() async {
 
   // Настройка статус-бара и навигации
   SystemChrome.setSystemUIOverlayStyle(
-    const SystemUiOverlayStyle(
+    SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
       statusBarIconBrightness: Brightness.light,
       systemNavigationBarColor: Colors.transparent,
@@ -38,7 +39,7 @@ void main() async {
   // Инициализация сервиса тем (с таймаутом)
   debugPrint('main: init ThemeService...');
   await ThemeService().init().timeout(
-    const Duration(seconds: 5),
+    Duration(seconds: 5),
     onTimeout: () => debugPrint('main: ThemeService init timeout'),
   );
   debugPrint('main: ThemeService initialized');
@@ -46,29 +47,35 @@ void main() async {
   // Инициализация сервиса уведомлений (с таймаутом, не блокируем запуск)
   debugPrint('main: init NotificationService...');
   NotificationService().initialize().timeout(
-    const Duration(seconds: 10),
+    Duration(seconds: 10),
     onTimeout: () => debugPrint('main: NotificationService init timeout'),
   ).catchError((e) => debugPrint('main: NotificationService error: $e'));
   debugPrint('main: NotificationService started (non-blocking)');
 
-  runApp(const MyApp());
+  runApp(MyApp());
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({Key? key}) : super(key: key);
+class MyApp extends StatefulWidget {
+  MyApp({Key? key}) : super(key: key);
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  // Создаем репозитории и роутер один раз — не пересоздаём при rebuild
+  final authRepository = AuthRepository();
+  final sleepRepository = SleepRepository(userId: 'unknown', token: null);
+  final calendarRepository = CalendarEventRepository(userId: 'unknown', token: null);
+  final diaryRepository = DiaryRepository(userId: 'unknown', token: null);
+  final moodRepository = MoodRepository(userId: 'unknown', token: null);
+  final memoryPhotoRepository = MemoryPhotoRepository(userId: 'unknown', token: null);
+  final articleRepository = ArticleRepository();
+  final notificationPreferencesRepository = NotificationPreferencesRepository();
+  final _appRouter = AppRouter();
 
   @override
   Widget build(BuildContext context) {
-    // Создаем репозитории
-    final authRepository = AuthRepository();
-    final sleepRepository = SleepRepository(userId: 'unknown', token: null);
-    final calendarRepository = CalendarEventRepository(userId: 'unknown', token: null);
-    final diaryRepository = DiaryRepository(userId: 'unknown', token: null);
-    final moodRepository = MoodRepository(userId: 'unknown', token: null);
-    final memoryPhotoRepository = MemoryPhotoRepository(userId: 'unknown', token: null);
-    final articleRepository = ArticleRepository();
-    final notificationPreferencesRepository = NotificationPreferencesRepository();
-
     return ListenableBuilder(
       listenable: ThemeService(),
       builder: (context, _) {
@@ -90,7 +97,7 @@ class MyApp extends StatelessWidget {
                   final authBloc = AuthBloc(
                     repository: authRepository,
                     notificationRepository: notificationPreferencesRepository,
-                  )..add(const AuthInit());
+                  )..add(AuthInit());
 
                   // Слушаем изменения состояния авторизации
                   authBloc.stream.listen((state) {
@@ -147,20 +154,21 @@ class MyApp extends StatelessWidget {
             ],
             child: Builder(
               builder: (ctx) {
+                AppSize.init(ctx);
                 return MaterialApp.router(
                   title: 'Citrus',
                   theme: lightTheme,
                   darkTheme: darkTheme,
                   themeMode: ThemeService().themeMode,
-                  routerConfig: AppRouter().router,
+                  routerConfig: _appRouter.router,
                   debugShowCheckedModeBanner: false,
-                  locale: const Locale('ru', 'RU'),
-                  localizationsDelegates: const [
+                  locale: Locale('ru', 'RU'),
+                  localizationsDelegates: [
                     GlobalMaterialLocalizations.delegate,
                     GlobalWidgetsLocalizations.delegate,
                     GlobalCupertinoLocalizations.delegate,
                   ],
-                  supportedLocales: const [
+                  supportedLocales: [
                     Locale('ru', 'RU'),
                     Locale('en', 'US'),
                   ],

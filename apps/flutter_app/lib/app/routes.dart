@@ -6,7 +6,9 @@ import '../screens/main_navigation_screen.dart';
 import '../features/auth/pages/login_page.dart';
 import '../features/auth/pages/register_page.dart';
 import '../features/auth/bloc/auth_bloc.dart';
+import '../features/notifications/pages/notifications_page.dart';
 import '../features/notifications/pages/notifications_debug_page.dart';
+import '../core/utils/app_size.dart';
 
 class AppRouter {
   final GoRouter router = GoRouter(
@@ -43,38 +45,44 @@ class AppRouter {
       GoRoute(
         path: '/auth',
         name: 'auth',
-        builder: (context, state) => const AuthSelectionPage(),
+        builder: (context, state) => AuthSelectionPage(),
       ),
       // Вход
       GoRoute(
         path: '/login',
         name: 'login',
-        builder: (context, state) => const LoginPage(),
+        builder: (context, state) => LoginPage(),
       ),
       // Регистрация
       GoRoute(
         path: '/register',
         name: 'register',
-        builder: (context, state) => const RegisterPage(),
+        builder: (context, state) => RegisterPage(),
       ),
       // Основной маршрут — главная навигация со всеми экранами
       GoRoute(
         path: '/',
         name: 'home',
-        builder: (context, state) => const MainNavigationScreen(),
+        builder: (context, state) => MainNavigationScreen(),
+      ),
+      // Настройки уведомлений
+      GoRoute(
+        path: '/notifications',
+        name: 'notifications',
+        builder: (context, state) => NotificationsPage(),
       ),
       // Отладка уведомлений (только для разработки)
       GoRoute(
         path: '/debug/notifications',
         name: 'notifications_debug',
-        builder: (context, state) => const NotificationsDebugPage(),
+        builder: (context, state) => NotificationsDebugPage(),
       ),
     ],
   );
 }
 
 class AuthSelectionPage extends StatelessWidget {
-  const AuthSelectionPage({Key? key}) : super(key: key);
+  AuthSelectionPage({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -83,9 +91,9 @@ class AuthSelectionPage extends StatelessWidget {
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
+            padding: AppSize.padding(24),
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 400),
+              constraints: BoxConstraints(maxWidth: 400),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -94,8 +102,8 @@ class AuthSelectionPage extends StatelessWidget {
                     width: 120,
                     height: 120,
                     decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(36),
-                      gradient: const LinearGradient(
+                      borderRadius: AppSize.radius(36),
+                      gradient: LinearGradient(
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                         colors: [AppColors.citrusOrange, AppColors.citrusAmber],
@@ -104,56 +112,56 @@ class AuthSelectionPage extends StatelessWidget {
                         BoxShadow(
                           color: AppColors.glowOrange,
                           blurRadius: 40,
-                          offset: const Offset(0, 12),
+                          offset: Offset(0, 12),
                         ),
                       ],
                     ),
-                    child: const Center(
+                    child: Center(
                       child: Text(
                         '🍊',
-                        style: TextStyle(fontSize: 56),
+                        style: TextStyle(fontSize: AppSize.s(56)),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 32),
+                  AppSize.gapH(32),
                   
                   // Title
                   Text(
                     'Цитрус',
                     style: TextStyle(
-                      fontSize: 40,
+                      fontSize: AppSize.s(40),
                       fontWeight: FontWeight.w700,
                       color: AppColors.foreground,
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  AppSize.gapH(12),
                   
                   // Subtitle
                   Text(
                     'Ваш персональный помощник\nдля ментального здоровья',
                     style: TextStyle(
-                      fontSize: 16,
+                      fontSize: AppSize.s(16),
                       color: AppColors.mutedForeground,
                       height: 1.5,
                     ),
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 64),
+                  AppSize.gapH(64),
                   
                   // Login button
                   Container(
                     width: double.infinity,
                     height: 56,
                     decoration: BoxDecoration(
-                      gradient: const LinearGradient(
+                      gradient: LinearGradient(
                         colors: [AppColors.citrusOrange, AppColors.citrusAmber],
                       ),
-                      borderRadius: BorderRadius.circular(AppColors.radius),
+                      borderRadius: BorderRadius.circular(AppSize.s(AppColors.radius)),
                       boxShadow: [
                         BoxShadow(
                           color: AppColors.glowOrange,
                           blurRadius: 20,
-                          offset: const Offset(0, 4),
+                          offset: Offset(0, 4),
                         ),
                       ],
                     ),
@@ -164,26 +172,26 @@ class AuthSelectionPage extends StatelessWidget {
                         shadowColor: Colors.transparent,
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(AppColors.radius),
+                          borderRadius: BorderRadius.circular(AppSize.s(AppColors.radius)),
                         ),
                       ),
-                      child: const Text(
+                      child: Text(
                         'Войти',
                         style: TextStyle(
-                          fontSize: 16,
+                          fontSize: AppSize.s(16),
                           fontWeight: FontWeight.w600,
                         ),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  AppSize.gapH(16),
                   
                   // Register button
                   Container(
                     width: double.infinity,
                     height: 56,
                     decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(AppColors.radius),
+                      borderRadius: BorderRadius.circular(AppSize.s(AppColors.radius)),
                       border: Border.all(
                         color: AppColors.citrusOrange.withOpacity(0.5),
                       ),
@@ -195,25 +203,25 @@ class AuthSelectionPage extends StatelessWidget {
                         foregroundColor: AppColors.citrusOrange,
                         side: BorderSide.none,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(AppColors.radius),
+                          borderRadius: BorderRadius.circular(AppSize.s(AppColors.radius)),
                         ),
                       ),
-                      child: const Text(
+                      child: Text(
                         'Зарегистрироваться',
                         style: TextStyle(
-                          fontSize: 16,
+                          fontSize: AppSize.s(16),
                           fontWeight: FontWeight.w600,
                         ),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 48),
+                  AppSize.gapH(48),
                   
                   // Footer text
                   Text(
                     'Продолжая, вы соглашаетесь с условиями использования',
                     style: TextStyle(
-                      fontSize: 12,
+                      fontSize: AppSize.s(12),
                       color: AppColors.dimForeground,
                     ),
                     textAlign: TextAlign.center,

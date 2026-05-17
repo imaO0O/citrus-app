@@ -160,6 +160,24 @@ class CalendarBloc extends Bloc<CalendarEvent, CalendarState> {
         focusedDay: now,
         moodAverages: moodAverages,
       ));
+
+      // Перепланируем уведомления для загруженных событий
+      try {
+        final eventInfos = events
+            .where((e) => e.notificationEnabled && e.startTime != null)
+            .map((e) => CalendarEventInfo(
+                  id: e.id,
+                  title: e.title,
+                  description: e.description,
+                  eventDate: e.eventDate,
+                  eventTime: _parseTime(e.startTime),
+                  notificationEnabled: e.notificationEnabled,
+                ))
+            .toList();
+        await _notificationRepository.updateCalendarNotifications(eventInfos);
+      } catch (e) {
+        debugPrint('CalendarBloc: ошибка перепланирования уведомлений: $e');
+      }
     } catch (e) {
       print('CalendarBloc: ошибка загрузки: $e');
       emit(CalendarError('Ошибка загрузки календаря: $e'));

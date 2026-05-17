@@ -38,6 +38,8 @@ class User {
   final String email;
   final String? name;
   final String? themeId;
+  final String? avatarUrl;
+  final String? phone;
   final String token;
 
   User({
@@ -45,6 +47,8 @@ class User {
     required this.email,
     this.name,
     this.themeId,
+    this.avatarUrl,
+    this.phone,
     required this.token,
   });
 
@@ -54,6 +58,8 @@ class User {
       email: json['email'] as String,
       name: json['name'] as String?,
       themeId: json['theme_id'] as String?,
+      avatarUrl: json['avatar_url'] as String?,
+      phone: json['phone'] as String?,
       token: json['token'] as String,
     );
   }
@@ -152,6 +158,67 @@ class AuthApiService {
       throw Exception('Ошибка обновления темы: ${response.statusCode}');
     }
   }
+
+  /// Получить профиль пользователя
+  Future<Map<String, dynamic>> getProfile(String token) async {
+    final response = await _client.get(
+      Uri.parse('$baseUrl/user/profile'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body) as Map<String, dynamic>;
+    } else {
+      throw Exception('Ошибка загрузки профиля: ${response.statusCode}');
+    }
+  }
+
+  /// Обновить профиль пользователя (имя, телефон)
+  Future<Map<String, dynamic>> updateProfile(String token, {String? name, String? phone}) async {
+    final response = await _client.put(
+      Uri.parse('$baseUrl/user/profile'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode({
+        if (name != null) 'name': name,
+        if (phone != null) 'phone': phone,
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body) as Map<String, dynamic>;
+    } else {
+      throw Exception('Ошибка обновления профиля: ${response.statusCode}');
+    }
+  }
+
+  /// Загрузить аватар пользователя
+  Future<String> uploadAvatar(String token, String filePath, List<int> fileBytes, String fileName) async {
+    final request = http.MultipartRequest('POST', Uri.parse('$baseUrl/user/avatar'));
+    request.headers['Authorization'] = 'Bearer $token';
+    request.files.add(
+      http.MultipartFile.fromBytes(
+        'file',
+        fileBytes,
+        filename: fileName,
+      ),
+    );
+
+    final streamedResponse = await request.send();
+    final response = await http.Response.fromStream(streamedResponse);
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      return data['avatar_url'] as String;
+    } else {
+      throw Exception('Ошибка загрузки аватара: ${response.statusCode}');
+    }
+  }
 }
 
 /// Репозиторий для авторизации
@@ -212,6 +279,14 @@ class AuthRepository {
         const Duration(seconds: 5),
         onTimeout: () => null,
       );
+      final savedAvatarUrl = await storage.getString('auth_user_avatar_url').timeout(
+        const Duration(seconds: 5),
+        onTimeout: () => null,
+      );
+      final savedPhone = await storage.getString('auth_user_phone').timeout(
+        const Duration(seconds: 5),
+        onTimeout: () => null,
+      );
 
       if (savedToken != null && savedToken.isNotEmpty && savedUserId != null) {
         _currentUser = User(
@@ -219,6 +294,8 @@ class AuthRepository {
           email: savedEmail ?? '',
           name: savedName,
           themeId: savedThemeId,
+          avatarUrl: savedAvatarUrl,
+          phone: savedPhone,
           token: savedToken,
         );
         debugPrint('AuthRepository: session restored, userId=$savedUserId');
@@ -231,7 +308,7 @@ class AuthRepository {
   }
 
   /// Сохранить данные пользователя в постоянное хранилище
-  Future<void> _saveSession(User user) async {
+  Future<void> saveSession(User user) async {
     try {
       final storage = StorageService();
       
@@ -250,6 +327,8 @@ class AuthRepository {
       await storage.setString('auth_user_email', user.email);
       if (user.name != null) await storage.setString('auth_user_name', user.name!);
       if (user.themeId != null) await storage.setString('auth_user_theme_id', user.themeId!);
+      if (user.avatarUrl != null) await storage.setString('auth_user_avatar_url', user.avatarUrl!);
+      if (user.phone != null) await storage.setString('auth_user_phone', user.phone!);
     } catch (e) {
       debugPrint('AuthRepository save error: $e');
     }
@@ -264,6 +343,8 @@ class AuthRepository {
       await storage.remove('auth_user_email');
       await storage.remove('auth_user_name');
       await storage.remove('auth_user_theme_id');
+      await storage.remove('auth_user_avatar_url');
+      await storage.remove('auth_user_phone');
       // Не удаляем remember_me, чтобы знать настройку пользователя
     } catch (e) {
       debugPrint('AuthRepository clear error: $e');
@@ -280,6 +361,8 @@ class AuthRepository {
       await storage.remove('auth_user_email');
       await storage.remove('auth_user_name');
       await storage.remove('auth_user_theme_id');
+      await storage.remove('auth_user_avatar_url');
+      await storage.remove('auth_user_phone');
       await storage.remove('remember_me');
       await storage.remove('saved_email');
       await storage.remove('saved_password');
@@ -299,7 +382,7 @@ class AuthRepository {
       password: password,
       name: name,
     );
-    await _saveSession(_currentUser!);
+    await saveSession(_currentUser!);
     return _currentUser!;
   }
 
@@ -312,7 +395,7 @@ class AuthRepository {
       email: email,
       password: password,
     );
-    await _saveSession(_currentUser!);
+    await saveSession(_currentUser!);
     return _currentUser!;
   }
 

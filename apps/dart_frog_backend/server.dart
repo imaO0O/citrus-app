@@ -8,13 +8,60 @@ import 'package:crypto/crypto.dart';
 import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
 import 'package:http/http.dart' as http;
 import 'package:mime/mime.dart';
-import 'package:dotenv/dotenv.dart';
-import 'lib/services/gigachat_service.dart';
 
-final _env = DotEnv(includePlatformEnvironment: true);
+import 'lib/services/gigachat_service.dart';
+import 'lib/services/email_service.dart';
 
 PostgreSQLConnection? _db;
 const _jwtSecret = 'citrus-app-secret-key-change-in-production';
+
+// Параметры БД из переменных окружения (с fallback на локальную БД для разработки)
+String get _dbHost => Platform.environment['DB_HOST'] ?? 'localhost';
+int get _dbPort => int.tryParse(Platform.environment['DB_PORT'] ?? '5432') ?? 5432;
+String get _dbName => Platform.environment['DB_NAME'] ?? 'citrus';
+String get _dbUser => Platform.environment['DB_USER'] ?? 'citrus';
+String get _dbPassword => Platform.environment['DB_PASSWORD'] ?? 'citrus123';
+bool get _dbSSL => Platform.environment['DB_SSL']?.toLowerCase() == 'true' || _dbHost.contains('supabase');
+
+// Ретри при ошибке 42P05 (duplicate_prepared_statement) — коллизия имён
+// prepared statements в transaction-mode пулере Supabase (Supavisor).
+// При ошибке закрываем соединение, переподключаемся и повторяем запрос.
+Future<PostgreSQLResult> _dbQuery(
+  String fmtString, {
+  Map<String, dynamic>? substitutionValues,
+  int? timeoutInSeconds,
+}) async {
+  try {
+    return await _db!.query(
+      fmtString,
+      substitutionValues: substitutionValues,
+      timeoutInSeconds: timeoutInSeconds,
+    );
+  } catch (e) {
+    if (e.toString().contains('42P05') ||
+        e.toString().contains('duplicate_prepared_statement')) {
+      print('42P05 duplicate_prepared_statement — переподключение и ретри...');
+      try {
+        await _db!.close();
+      } catch (_) {}
+      _db = PostgreSQLConnection(
+        _dbHost,
+        _dbPort,
+        _dbName,
+        username: _dbUser,
+        password: _dbPassword,
+        useSSL: _dbSSL,
+      );
+      await _db!.open();
+      return await _db!.query(
+        fmtString,
+        substitutionValues: substitutionValues,
+        timeoutInSeconds: timeoutInSeconds,
+      );
+    }
+    rethrow;
+  }
+}
 
 // GigaChat сервис
 GigaChatService? _gigachatService;
@@ -108,14 +155,15 @@ Future<Response> _handleRequest(RequestContext context) async {
   if (_db == null || _db!.isClosed) {
     try {
       _db = PostgreSQLConnection(
-        'localhost',
-        5432,
-        'citrus',
-        username: 'citrus',
-        password: 'citrus123',
+        _dbHost,
+        _dbPort,
+        _dbName,
+        username: _dbUser,
+        password: _dbPassword,
+        useSSL: _dbSSL,
       );
       await _db!.open();
-      print('Database connected!');
+      print('Database connected to $_dbHost:$_dbPort/$_dbName! (SSL: $_dbSSL)');
     } catch (e) {
       return Response(
         statusCode: 500,
@@ -126,23 +174,17 @@ Future<Response> _handleRequest(RequestContext context) async {
 
   // Инициализация GigaChat сервиса (если ещё не инициализирован)
   if (_gigachatService == null) {
-    _env.load();
-    final authKey = _env['GIGACHAT_AUTHORIZATION_KEY'];
-    
-    print('GIGACHAT_AUTHORIZATION_KEY: ${authKey != null ? "${authKey.substring(0, 20)}..." : "null"}');
-
-    if (authKey != null) {
-      try {
-        _gigachatService = GigaChatService(
-          authorizationKey: authKey,
-        );
-        print('GigaChat service initialized!');
-      } catch (e) {
-        print('Failed to initialize GigaChat service: $e');
-      }
-    } else {
-      print('GigaChat credentials not found. Set GIGACHAT_AUTHORIZATION_KEY environment variable.');
+    try {
+      _gigachatService = GigaChatService();
+      print('GigaChat service initialized!');
+    } catch (e) {
+      print('Failed to initialize GigaChat service: $e');
     }
+  }
+
+  // Инициализация Email сервиса (Yandex SMTP) — учётные данные захардкожены в EmailService
+  if (!EmailService.isConfigured) {
+    EmailService.init();
   }
 
   final path = context.request.uri.path;
@@ -154,6 +196,12 @@ Future<Response> _handleRequest(RequestContext context) async {
   }
   if (path == '/auth/login' && method == HttpMethod.post) {
     return _login(context);
+  }
+  if (path == '/auth/forgot-password' && method == HttpMethod.post) {
+    return _forgotPassword(context);
+  }
+  if (path == '/auth/reset-password' && method == HttpMethod.post) {
+    return _resetPassword(context);
   }
 
   // GET /themes - получить список тем
@@ -169,6 +217,21 @@ Future<Response> _handleRequest(RequestContext context) async {
   // PUT /user/theme - обновить тему пользователя
   if (path == '/user/theme' && method == HttpMethod.put) {
     return _updateUserTheme(context);
+  }
+
+  // GET /user/profile - получить профиль пользователя
+  if (path == '/user/profile' && method == HttpMethod.get) {
+    return _getUserProfile(context);
+  }
+
+  // PUT /user/profile - обновить профиль пользователя
+  if (path == '/user/profile' && method == HttpMethod.put) {
+    return _updateUserProfile(context);
+  }
+
+  // POST /user/avatar - загрузить аватар
+  if (path == '/user/avatar' && method == HttpMethod.post) {
+    return _uploadUserAvatar(context);
   }
 
   // Sleep endpoints (требуют авторизации)
@@ -293,18 +356,18 @@ Future<Response> _handleRequest(RequestContext context) async {
   if (path == '/calendar/events' && method == HttpMethod.get) {
     return _getEvents(context, authContext);
   }
-  
+
   // POST /calendar/events
   if (path == '/calendar/events' && method == HttpMethod.post) {
     return _createEvent(context, authContext);
   }
-  
+
   // PUT /calendar/events/{id}
   if (path.startsWith('/calendar/events/') && method == HttpMethod.put) {
     final id = path.substring('/calendar/events/'.length);
     return _updateEvent(context, authContext, id);
   }
-  
+
   // DELETE /calendar/events/{id}
   if (path.startsWith('/calendar/events/') && method == HttpMethod.delete) {
     final id = path.substring('/calendar/events/'.length);
@@ -613,7 +676,7 @@ Future<Response> _register(RequestContext context) async {
     }
 
     // Проверяем существование пользователя
-    final existing = await _db!.query(
+    final existing = await _dbQuery(
       "SELECT id FROM users WHERE email = '$email'",
     );
 
@@ -625,7 +688,7 @@ Future<Response> _register(RequestContext context) async {
     final passwordHash = _hashPassword(password);
     final nameSql = name != null && name.isNotEmpty ? "'${name.replaceAll("'", "''")}'" : 'NULL';
 
-    await _db!.query(
+    await _dbQuery(
       "INSERT INTO users (id, email, password_hash, name, theme_id) VALUES ('$userId', '$email', '$passwordHash', $nameSql, '00000000-0000-0000-0000-000000000001')",
     );
 
@@ -642,6 +705,8 @@ Future<Response> _register(RequestContext context) async {
         'email': email,
         'name': name,
         'theme_id': '00000000-0000-0000-0000-000000000001',
+        'avatar_url': null,
+        'phone': null,
         'token': token,
       },
     );
@@ -660,8 +725,8 @@ Future<Response> _login(RequestContext context) async {
       return Response(statusCode: 400, body: 'email and password are required');
     }
 
-    final results = await _db!.query(
-      "SELECT id, email, name, theme_id, password_hash FROM users WHERE email = '$email'",
+    final results = await _dbQuery(
+      "SELECT id, email, name, theme_id, password_hash, avatar_url, phone FROM users WHERE email = '$email'",
     );
 
     if (results.isEmpty) {
@@ -687,8 +752,123 @@ Future<Response> _login(RequestContext context) async {
       'email': row[1] as String,
       'name': row[2] as String?,
       'theme_id': row[3] as String?,
+      'avatar_url': row[5] as String?,
+      'phone': row[6] as String?,
       'token': token,
     });
+  } catch (e) {
+    return Response(statusCode: 500, body: 'Error: $e');
+  }
+}
+
+/// Запросить сброс пароля — отправить код на email
+Future<Response> _forgotPassword(RequestContext context) async {
+  try {
+    final body = await context.request.json();
+    final email = body['email'] as String?;
+
+    if (email == null || email.isEmpty) {
+      return Response(statusCode: 400, body: 'email is required');
+    }
+
+    // Проверяем, существует ли пользователь
+    final results = await _dbQuery(
+      "SELECT id FROM users WHERE email = '$email'",
+    );
+
+    if (results.isEmpty) {
+      return Response.json(body: {'error': 'Пользователь с таким email не найден'});
+    }
+
+    final userId = results.first[0] as String;
+
+    // Инвалидируем старые коды
+    await _dbQuery(
+      "UPDATE password_reset_tokens SET used = true WHERE user_id = '$userId' AND used = false",
+    );
+
+    // Генерируем 6-значный код
+    final code = (100000 + DateTime.now().millisecondsSinceEpoch % 900000).toString();
+
+    // Сохраняем код (действителен 15 минут)
+    final expiresAt = DateTime.now().add(const Duration(minutes: 15));
+    final tokenId = const Uuid().v4();
+
+    await _dbQuery(
+      "INSERT INTO password_reset_tokens (id, user_id, code, expires_at) VALUES ('$tokenId', '$userId', '$code', '${expiresAt.toIso8601String()}')",
+    );
+
+    // Отправляем email
+    final sent = await EmailService.sendPasswordResetCode(email, code);
+    if (!sent) {
+      print('Failed to send reset email to $email, but code is stored');
+    }
+
+    return Response.json(body: {'message': 'Если аккаунт с таким email существует, код отправлен'});
+  } catch (e, stackTrace) {
+    print('ERROR in _forgotPassword: $e');
+    print('Stack trace: $stackTrace');
+    return Response(statusCode: 500, body: 'Error: $e');
+  }
+}
+
+/// Сбросить пароль по коду
+Future<Response> _resetPassword(RequestContext context) async {
+  try {
+    final body = await context.request.json();
+    final email = body['email'] as String?;
+    final code = body['code'] as String?;
+    final newPassword = body['new_password'] as String?;
+
+    if (email == null || code == null || newPassword == null) {
+      return Response(statusCode: 400, body: 'email, code and new_password are required');
+    }
+
+    if (newPassword.length < 6) {
+      return Response(statusCode: 400, body: 'Password must be at least 6 characters');
+    }
+
+    // Находим пользователя
+    final userResults = await _dbQuery(
+      "SELECT id FROM users WHERE email = '$email'",
+    );
+
+    if (userResults.isEmpty) {
+      return Response(statusCode: 400, body: 'Invalid or expired code');
+    }
+
+    final userId = userResults.first[0] as String;
+
+    // Проверяем код
+    final tokenResults = await _dbQuery(
+      "SELECT id, expires_at FROM password_reset_tokens WHERE user_id = '$userId' AND code = '$code' AND used = false ORDER BY created_at DESC LIMIT 1",
+    );
+
+    if (tokenResults.isEmpty) {
+      return Response(statusCode: 400, body: 'Invalid or expired code');
+    }
+
+    final expiresAt = tokenResults.first[1] as DateTime;
+    if (DateTime.now().isAfter(expiresAt)) {
+      // Код просрочен
+      await _dbQuery(
+        "UPDATE password_reset_tokens SET used = true WHERE id = '${tokenResults.first[0]}'",
+      );
+      return Response(statusCode: 400, body: 'Code has expired');
+    }
+
+    // Помечаем код как использованный
+    await _dbQuery(
+      "UPDATE password_reset_tokens SET used = true WHERE id = '${tokenResults.first[0]}'",
+    );
+
+    // Обновляем пароль
+    final passwordHash = _hashPassword(newPassword);
+    await _dbQuery(
+      "UPDATE users SET password_hash = '$passwordHash' WHERE id = '$userId'",
+    );
+
+    return Response.json(body: {'message': 'Password has been reset successfully'});
   } catch (e) {
     return Response(statusCode: 500, body: 'Error: $e');
   }
@@ -705,7 +885,7 @@ Future<Response> _getEvents(RequestContext context, _AuthContext auth) async {
   }
 
   try {
-    final results = await _db!.query(
+    final results = await _dbQuery(
       "SELECT id, user_id, title, description, event_date, "
       "start_time::text as start_time, "
       "end_time::text as end_time, "
@@ -783,7 +963,7 @@ Future<Response> _createEvent(RequestContext context, _AuthContext auth) async {
     final endTimeSql = endTime != null ? "'$endTime'" : 'NULL';
     final descriptionSql = description.isNotEmpty ? "'${description.replaceAll("'", "''")}'" : 'NULL';
 
-    await _db!.query(
+    await _dbQuery(
       "INSERT INTO calendar_events (id, user_id, title, description, event_date, start_time, end_time, notification_enabled) "
       "VALUES ('$eventId', '$userId', '${title.replaceAll("'", "''")}', $descriptionSql, '$eventDate', $startTimeSql, $endTimeSql, $notificationEnabled)",
     );
@@ -832,7 +1012,7 @@ Future<Response> _updateEvent(RequestContext context, _AuthContext auth, String 
     final descriptionSql = description.isNotEmpty ? "'${description.replaceAll("'", "''")}'" : 'NULL';
 
     // Проверяем, что событие принадлежит пользователю
-    final checkResults = await _db!.query(
+    final checkResults = await _dbQuery(
       "SELECT id FROM calendar_events WHERE id = '$id' AND user_id = '$userId'",
     );
 
@@ -840,7 +1020,7 @@ Future<Response> _updateEvent(RequestContext context, _AuthContext auth, String 
       return Response(statusCode: 404, body: 'Event not found');
     }
 
-    final results = await _db!.query(
+    final results = await _dbQuery(
       "UPDATE calendar_events "
       "SET title = '${title.replaceAll("'", "''")}', description = $descriptionSql, event_date = '$eventDate', "
       "start_time = $startTimeSql, end_time = $endTimeSql, notification_enabled = $notificationEnabled "
@@ -877,7 +1057,7 @@ Future<Response> _deleteEvent(RequestContext context, _AuthContext auth, String 
 
   try {
     // Проверяем и удаляем только свои события
-    final results = await _db!.query(
+    final results = await _dbQuery(
       "DELETE FROM calendar_events WHERE id = '$id' AND user_id = '$userId' RETURNING id",
     );
 
@@ -894,7 +1074,7 @@ Future<Response> _deleteEvent(RequestContext context, _AuthContext auth, String 
 /// Получить список всех тем
 Future<Response> _getThemes(RequestContext context) async {
   try {
-    final results = await _db!.query(
+    final results = await _dbQuery(
       "SELECT id, name, is_dark, primary_color, accent_color FROM themes ORDER BY id",
     );
 
@@ -925,7 +1105,7 @@ Future<Response> _getUserTheme(RequestContext context) async {
     final jwt = JWT.verify(token, SecretKey(_jwtSecret));
     final userId = jwt.payload['user_id'] as String;
 
-    final result = await _db!.query(
+    final result = await _dbQuery(
       "SELECT theme_id FROM users WHERE id = '$userId'",
     );
 
@@ -957,11 +1137,128 @@ Future<Response> _updateUserTheme(RequestContext context) async {
       return Response(statusCode: 400, body: 'theme_id is required');
     }
 
-    await _db!.query(
+    await _dbQuery(
       "UPDATE users SET theme_id = '$themeId' WHERE id = '$userId'",
     );
 
     return Response.json(body: {'theme_id': themeId});
+  } catch (e) {
+    return Response(statusCode: 500, body: 'Error: $e');
+  }
+}
+
+/// Получить профиль пользователя
+Future<Response> _getUserProfile(RequestContext context) async {
+  final token = _extractToken(context);
+  if (token == null) {
+    return Response(statusCode: 401, body: 'Unauthorized');
+  }
+
+  try {
+    final jwt = JWT.verify(token, SecretKey(_jwtSecret));
+    final userId = jwt.payload['user_id'] as String;
+
+    final result = await _dbQuery(
+      "SELECT id, email, name, theme_id, avatar_url, phone FROM users WHERE id = '$userId'",
+    );
+
+    if (result.isEmpty) {
+      return Response(statusCode: 404, body: 'User not found');
+    }
+
+    final row = result.first;
+    return Response.json(body: {
+      'id': row[0] as String,
+      'email': row[1] as String,
+      'name': row[2] as String?,
+      'theme_id': row[3] as String?,
+      'avatar_url': row[4] as String?,
+      'phone': row[5] as String?,
+    });
+  } catch (e) {
+    return Response(statusCode: 500, body: 'Error: $e');
+  }
+}
+
+/// Обновить профиль пользователя (имя, телефон)
+Future<Response> _updateUserProfile(RequestContext context) async {
+  final token = _extractToken(context);
+  if (token == null) {
+    return Response(statusCode: 401, body: 'Unauthorized');
+  }
+
+  try {
+    final jwt = JWT.verify(token, SecretKey(_jwtSecret));
+    final userId = jwt.payload['user_id'] as String;
+    final body = await context.request.json();
+
+    final name = body['name'] as String?;
+    final phone = body['phone'] as String?;
+
+    final nameSql = name != null && name.isNotEmpty ? "'${name.replaceAll("'", "''")}'" : 'NULL';
+    final phoneSql = phone != null && phone.isNotEmpty ? "'${phone.replaceAll("'", "''")}'" : 'NULL';
+
+    await _dbQuery(
+      "UPDATE users SET name = $nameSql, phone = $phoneSql WHERE id = '$userId'",
+    );
+
+    // Возвращаем обновлённый профиль
+    final result = await _dbQuery(
+      "SELECT id, email, name, theme_id, avatar_url, phone FROM users WHERE id = '$userId'",
+    );
+
+    if (result.isEmpty) {
+      return Response(statusCode: 404, body: 'User not found');
+    }
+
+    final row = result.first;
+    return Response.json(body: {
+      'id': row[0] as String,
+      'email': row[1] as String,
+      'name': row[2] as String?,
+      'theme_id': row[3] as String?,
+      'avatar_url': row[4] as String?,
+      'phone': row[5] as String?,
+    });
+  } catch (e) {
+    return Response(statusCode: 500, body: 'Error: $e');
+  }
+}
+
+/// Загрузить аватар пользователя
+Future<Response> _uploadUserAvatar(RequestContext context) async {
+  final token = _extractToken(context);
+  if (token == null) {
+    return Response(statusCode: 401, body: 'Unauthorized');
+  }
+
+  try {
+    final jwt = JWT.verify(token, SecretKey(_jwtSecret));
+    final userId = jwt.payload['user_id'] as String;
+
+    // Multipart upload
+    final formData = await context.request.formData();
+    final file = formData.files['file'];
+
+    if (file == null) {
+      return Response(statusCode: 400, body: 'file is required');
+    }
+
+    final fileBytes = Uint8List.fromList(await file.readAsBytes());
+    final fileName = file.name;
+    final mimeType = lookupMimeType(fileName) ?? file.contentType.mimeType;
+
+    // Загружаем в Cloudinary
+    final cloudinaryUrl = await _uploadToCloudinary(fileBytes, fileName, mimeType);
+
+    // Обновляем аватар в БД
+    await _dbQuery(
+      "UPDATE users SET avatar_url = '$cloudinaryUrl' WHERE id = '$userId'",
+    );
+
+    return Response.json(body: {
+      'avatar_url': cloudinaryUrl,
+    });
   } catch (e) {
     return Response(statusCode: 500, body: 'Error: $e');
   }
@@ -980,7 +1277,7 @@ Future<Response> _getSleepRecords(RequestContext context, _AuthContext auth) asy
   }
 
   try {
-    final results = await _db!.query(
+    final results = await _dbQuery(
       "SELECT id, user_id, sleep_date, "
       "bed_time::text as bed_time, "
       "wake_time::text as wake_time, "
@@ -1064,7 +1361,7 @@ Future<Response> _createSleepRecord(RequestContext context, _AuthContext auth) a
     final wakeTimeSql = (wakeTime != null && wakeTime.isNotEmpty) ? "'$wakeTime'" : 'NULL';
     final qualitySql = quality != null ? quality.toString() : 'NULL';
 
-    await _db!.query(
+    await _dbQuery(
       "INSERT INTO sleep_records (id, user_id, sleep_date, bed_time, wake_time, quality) "
       "VALUES ('$recordId', '$userId', '$sleepDate', $bedTimeSql, $wakeTimeSql, $qualitySql)",
     );
@@ -1110,7 +1407,7 @@ Future<Response> _updateSleepRecord(RequestContext context, _AuthContext auth, S
     final qualitySql = quality != null ? quality.toString() : 'NULL';
 
     // Проверяем, что запись принадлежит пользователю
-    final checkResults = await _db!.query(
+    final checkResults = await _dbQuery(
       "SELECT id FROM sleep_records WHERE id = '$id' AND user_id = '$userId'",
     );
 
@@ -1118,7 +1415,7 @@ Future<Response> _updateSleepRecord(RequestContext context, _AuthContext auth, S
       return Response(statusCode: 404, body: 'Record not found');
     }
 
-    final results = await _db!.query(
+    final results = await _dbQuery(
       "UPDATE sleep_records "
       "SET sleep_date = '$sleepDate', bed_time = $bedTimeSql, wake_time = $wakeTimeSql, quality = $qualitySql "
       "WHERE id = '$id' AND user_id = '$userId' "
@@ -1165,7 +1462,7 @@ Future<Response> _deleteSleepRecord(RequestContext context, _AuthContext auth, S
   }
 
   try {
-    final results = await _db!.query(
+    final results = await _dbQuery(
       "DELETE FROM sleep_records WHERE id = '$id' AND user_id = '$userId' RETURNING id",
     );
 
@@ -1194,7 +1491,7 @@ Future<Response> _getMoodRecords(RequestContext context, _AuthContext auth) asyn
     if (startDate != null) whereClause += " AND DATE(recorded_at) >= '$startDate'";
     if (endDate != null) whereClause += " AND DATE(recorded_at) <= '$endDate'";
 
-    final results = await _db!.query(
+    final results = await _dbQuery(
       "SELECT id, user_id, mood_value, recorded_at::text "
       "FROM mood_entries $whereClause ORDER BY recorded_at DESC",
     );
@@ -1238,7 +1535,7 @@ Future<Response> _createMoodRecord(RequestContext context, _AuthContext auth) as
 
     print('mood create SQL: $sql');
 
-    await _db!.query(sql);
+    await _dbQuery(sql);
 
     return Response.json(statusCode: 201, body: {
       'id': recordId,
@@ -1266,7 +1563,7 @@ Future<Response> _updateMoodRecord(RequestContext context, _AuthContext auth, St
       return Response(statusCode: 400, body: 'mood_id is required');
     }
 
-    await _db!.query(
+    await _dbQuery(
       "UPDATE mood_entries SET mood_value = $moodId "
       "WHERE id = '$id' AND user_id = '$userId'",
     );
@@ -1282,7 +1579,7 @@ Future<Response> _deleteMoodRecord(RequestContext context, _AuthContext auth, St
   if (userId == null) return Response(statusCode: 401, body: 'Unauthorized');
 
   try {
-    await _db!.query("DELETE FROM mood_entries WHERE id = '$id' AND user_id = '$userId'");
+    await _dbQuery("DELETE FROM mood_entries WHERE id = '$id' AND user_id = '$userId'");
     return Response(statusCode: 204);
   } catch (e) {
     return Response(statusCode: 500, body: 'Error: $e');
@@ -1316,7 +1613,7 @@ Future<Response> _getDiaryEntries(RequestContext context, _AuthContext auth) asy
       whereClause += " AND content ILIKE '%$escapedSearch%'";
     }
 
-    final results = await _db!.query(
+    final results = await _dbQuery(
       "SELECT id, user_id, content, mood_value, entry_date::text, created_at::text "
       "FROM diary_entries $whereClause ORDER BY entry_date DESC, created_at DESC",
     );
@@ -1360,7 +1657,7 @@ Future<Response> _createDiaryEntry(RequestContext context, _AuthContext auth) as
     final contentSql = "'${content.replaceAll("'", "''")}'";
     final moodSql = moodValue != null ? moodValue.toString() : 'NULL';
 
-    await _db!.query(
+    await _dbQuery(
       "INSERT INTO diary_entries (id, user_id, content, mood_value, entry_date) "
       "VALUES ('$recordId', '$userId', $contentSql, $moodSql, $dateSql)",
     );
@@ -1396,12 +1693,29 @@ Future<Response> _updateDiaryEntry(RequestContext context, _AuthContext auth, St
     final contentSql = "'${content.replaceAll("'", "''")}'";
     final moodSql = moodValue != null ? moodValue.toString() : 'NULL';
 
-    await _db!.query(
+    await _dbQuery(
       "UPDATE diary_entries SET content = $contentSql, mood_value = $moodSql "
       "WHERE id = '$id' AND user_id = '$userId'",
     );
 
-    return Response.json(body: {'id': id, 'content': content, 'mood_value': moodValue});
+    final results = await _dbQuery(
+      "SELECT id, user_id, content, mood_value, entry_date::text as entry_date, created_at::text as created_at "
+      "FROM diary_entries WHERE id = '$id' AND user_id = '$userId'",
+    );
+
+    if (results.isEmpty) {
+      return Response(statusCode: 404, body: 'Entry not found');
+    }
+
+    final row = results.first;
+    return Response.json(body: {
+      'id': row[0] is String ? row[0] : Uuid.unparse(row[0] as Uint8List),
+      'user_id': row[1] is String ? row[1] : Uuid.unparse(row[1] as Uint8List),
+      'content': row[2] as String,
+      'mood_value': row[3] as int?,
+      'entry_date': row[4] as String?,
+      'created_at': row[5] as String?,
+    });
   } catch (e) {
     return Response(statusCode: 500, body: 'Error: $e');
   }
@@ -1412,7 +1726,7 @@ Future<Response> _deleteDiaryEntry(RequestContext context, _AuthContext auth, St
   if (userId == null) return Response(statusCode: 401, body: 'Unauthorized');
 
   try {
-    await _db!.query("DELETE FROM diary_entries WHERE id = '$id' AND user_id = '$userId'");
+    await _dbQuery("DELETE FROM diary_entries WHERE id = '$id' AND user_id = '$userId'");
     return Response(statusCode: 204);
   } catch (e) {
     return Response(statusCode: 500, body: 'Error: $e');
@@ -1420,7 +1734,8 @@ Future<Response> _deleteDiaryEntry(RequestContext context, _AuthContext auth, St
 }
 
 void main() async {
-  final server = await serve(_handleRequest, InternetAddress.anyIPv4, 8081);
+  final port = int.tryParse(Platform.environment['PORT'] ?? '8081') ?? 8081;
+  final server = await serve(_handleRequest, InternetAddress.anyIPv4, port);
   print('Server running on http://${server.address.host}:${server.port}');
 }
 
@@ -1574,7 +1889,7 @@ Future<Response> _submitTest(
 
     print('Inserting test result: testId=$testId, userId=$userId, scores=$scoresJson');
 
-    await _db!.query(
+    await _dbQuery(
       "INSERT INTO psychological_test_results (id, user_id, test_id, scores, interpretations, completed_at) "
       r"VALUES (@id, @userId, @testId, @scores, @interpretations, @completedAt)",
       substitutionValues: {
@@ -1607,7 +1922,7 @@ Future<Response> _getTestResults(
   if (userId == null) return Response(statusCode: 401, body: 'Unauthorized');
 
   try {
-    final results = await _db!.query(
+    final results = await _dbQuery(
       "SELECT id, test_id, scores::text, interpretations::text, completed_at "
       "FROM psychological_test_results "
       "WHERE user_id = '$userId' "
@@ -1637,7 +1952,7 @@ Future<Response> _getTestResult(
   if (userId == null) return Response(statusCode: 401, body: 'Unauthorized');
 
   try {
-    final results = await _db!.query(
+    final results = await _dbQuery(
       "SELECT id, test_id, scores::text, interpretations::text, completed_at "
       "FROM psychological_test_results "
       "WHERE user_id = '$userId' AND test_id = '$testId' "
@@ -1668,7 +1983,7 @@ Future<Response> _getTrustedContacts(RequestContext context, _AuthContext auth) 
   if (userId == null) return Response(statusCode: 401, body: 'Unauthorized');
 
   try {
-    final results = await _db!.query(
+    final results = await _dbQuery(
       "SELECT id, name, phone, created_at FROM trusted_contacts WHERE user_id = '$userId' ORDER BY created_at DESC",
     );
 
@@ -1693,7 +2008,7 @@ Future<Response> _getPhotos(RequestContext context, _AuthContext auth) async {
   if (userId == null) return Response(statusCode: 401, body: 'Unauthorized');
 
   try {
-    final results = await _db!.query(
+    final results = await _dbQuery(
       "SELECT id, user_id, image_url, caption, photo_date::text, is_favorite, created_at::text "
       "FROM memory_photos "
       "WHERE user_id = '$userId' "
@@ -1733,7 +2048,7 @@ Future<Response> _createTrustedContact(RequestContext context, _AuthContext auth
     final contactId = const Uuid().v4();
     final nameSql = name.isNotEmpty ? "'${name.replaceAll("'", "''")}'" : 'NULL';
 
-    await _db!.query(
+    await _dbQuery(
       "INSERT INTO trusted_contacts (id, user_id, name, phone) VALUES ('$contactId', '$userId', $nameSql, '${phone.replaceAll("'", "''")}')",
     );
 
@@ -1767,7 +2082,7 @@ Future<Response> _createPhoto(RequestContext context, _AuthContext auth) async {
       final photoDateSql = photoDate != null ? "'$photoDate'" : 'NOW()';
       final captionSql = caption != null ? "'${caption.replaceAll("'", "''")}'" : 'NULL';
 
-      await _db!.query(
+      await _dbQuery(
         "INSERT INTO memory_photos (id, user_id, image_url, caption, photo_date) "
         "VALUES ('$photoId', '$userId', '$imageUrl', $captionSql, $photoDateSql)",
       );
@@ -1808,7 +2123,7 @@ Future<Response> _createPhoto(RequestContext context, _AuthContext auth) async {
     final caption = captionField;
     final captionSql = caption != null ? "'${caption.replaceAll("'", "''")}'" : 'NULL';
 
-    await _db!.query(
+    await _dbQuery(
       "INSERT INTO memory_photos (id, user_id, image_url, caption, photo_date) "
       "VALUES ('$photoId', '$userId', '$cloudinaryUrl', $captionSql, '$photoDate')",
     );
@@ -1844,7 +2159,7 @@ Future<Response> _updateTrustedContact(RequestContext context, _AuthContext auth
     final nameSql = name != null && name.isNotEmpty ? "'${name.replaceAll("'", "''")}'" : 'NULL';
     final phoneSql = phone.replaceAll("'", "''");
 
-    final result = await _db!.query(
+    final result = await _dbQuery(
       "UPDATE trusted_contacts SET name = $nameSql, phone = '$phoneSql' WHERE id = '$id' AND user_id = '$userId' RETURNING id, name, phone",
     );
 
@@ -1869,7 +2184,7 @@ Future<Response> _togglePhotoFavorite(RequestContext context, _AuthContext auth,
   if (userId == null) return Response(statusCode: 401, body: 'Unauthorized');
 
   try {
-    final results = await _db!.query(
+    final results = await _dbQuery(
       "SELECT is_favorite FROM memory_photos WHERE id = '$id' AND user_id = '$userId'",
     );
 
@@ -1880,7 +2195,7 @@ Future<Response> _togglePhotoFavorite(RequestContext context, _AuthContext auth,
     final currentFavorite = results.first[0] == true;
     final newFavorite = !currentFavorite;
 
-    await _db!.query(
+    await _dbQuery(
       "UPDATE memory_photos SET is_favorite = $newFavorite WHERE id = '$id' AND user_id = '$userId'",
     );
 
@@ -1896,7 +2211,7 @@ Future<Response> _deleteTrustedContact(RequestContext context, _AuthContext auth
   if (userId == null) return Response(statusCode: 401, body: 'Unauthorized');
 
   try {
-    final result = await _db!.query(
+    final result = await _dbQuery(
       "DELETE FROM trusted_contacts WHERE id = '$id' AND user_id = '$userId'",
     );
 
@@ -1917,7 +2232,7 @@ Future<Response> _deletePhoto(RequestContext context, _AuthContext auth, String 
 
   try {
     // Получаем URL фото для удаления из Cloudinary
-    final photoResults = await _db!.query(
+    final photoResults = await _dbQuery(
       "SELECT image_url FROM memory_photos WHERE id = '$id' AND user_id = '$userId'",
     );
 
@@ -1928,7 +2243,7 @@ Future<Response> _deletePhoto(RequestContext context, _AuthContext auth, String 
     final imageUrl = photoResults.first[0] as String;
 
     // Удаляем из БД
-    final result = await _db!.query(
+    final result = await _dbQuery(
       "DELETE FROM memory_photos WHERE id = '$id' AND user_id = '$userId'",
     );
 
@@ -2033,7 +2348,7 @@ Future<Response> _chatWithAI(RequestContext context) async {
         final msgId = const Uuid().v4();
         final escapedUser = message.replaceAll("'", "''");
         final escapedResponse = response.replaceAll("'", "''");
-        await _db!.query(
+        await _dbQuery(
           """
           INSERT INTO chat_messages 
           (id, user_id, user_message, ai_response, created_at, response_time_ms, model_used)
@@ -2073,7 +2388,7 @@ Future<Response> _getChatMessages(RequestContext context) async {
     final jwt = JWT.verify(token, SecretKey(_jwtSecret));
     final userId = jwt.payload['user_id'] as String;
 
-    final result = await _db!.query(
+    final result = await _dbQuery(
       '''SELECT id, user_message, ai_response, created_at 
          FROM chat_messages 
          WHERE user_id = '$userId' 
@@ -2103,7 +2418,7 @@ Future<Response> _getAnalyticsStats(RequestContext context, _AuthContext auth) a
     // Количество сообщений в чате
     int chatMessages = 0;
     try {
-      final chatResult = await _db!.query(
+      final chatResult = await _dbQuery(
         "SELECT COUNT(*) FROM chat_messages WHERE user_id = '$userId'",
       );
       chatMessages = int.parse(chatResult.first[0].toString());
@@ -2112,7 +2427,7 @@ Future<Response> _getAnalyticsStats(RequestContext context, _AuthContext auth) a
     // Количество пройденных тестов
     int testsCompleted = 0;
     try {
-      final testResult = await _db!.query(
+      final testResult = await _dbQuery(
         "SELECT COUNT(*) FROM psychological_test_results WHERE user_id = '$userId'",
       );
       testsCompleted = int.parse(testResult.first[0].toString());
@@ -2121,7 +2436,7 @@ Future<Response> _getAnalyticsStats(RequestContext context, _AuthContext auth) a
     // Количество выполненных упражнений
     int exercisesCompleted = 0;
     try {
-      final exerciseResult = await _db!.query(
+      final exerciseResult = await _dbQuery(
         "SELECT COALESCE(SUM(completion_count), 0) FROM user_exercises WHERE user_id = '$userId'",
       );
       exercisesCompleted = int.parse(exerciseResult.first[0].toString());
@@ -2171,7 +2486,7 @@ Future<Response> _completeExercise(RequestContext context, _AuthContext auth) as
     }
 
     final id = const Uuid().v4();
-    await _db!.query(
+    await _dbQuery(
       """
       INSERT INTO user_exercises 
       (id, user_id, exercise_id, exercise_type, title, duration_minutes, difficulty_level, user_notes, mood_before, mood_after, completed_at)
@@ -2210,19 +2525,19 @@ Future<Response> _getExerciseStats(RequestContext context, _AuthContext auth) as
     int last30Days = 0;
 
     // Общее количество упражнений
-    final totalResult = await _db!.query(
+    final totalResult = await _dbQuery(
       "SELECT COUNT(*) FROM user_exercises WHERE user_id = '$userId'",
     );
     totalExercises = int.parse(totalResult.first[0].toString());
 
     // Общее время
-    final minutesResult = await _db!.query(
+    final minutesResult = await _dbQuery(
       "SELECT COALESCE(SUM(duration_minutes), 0) FROM user_exercises WHERE user_id = '$userId'",
     );
     totalMinutes = int.parse(minutesResult.first[0].toString());
 
     // Группировка по типам
-    final typeResult = await _db!.query(
+    final typeResult = await _dbQuery(
       "SELECT exercise_type, COUNT(*) FROM user_exercises WHERE user_id = '$userId' GROUP BY exercise_type",
     );
     for (final row in typeResult) {
@@ -2230,20 +2545,20 @@ Future<Response> _getExerciseStats(RequestContext context, _AuthContext auth) as
     }
 
     // За последние 7 дней
-    final last7Result = await _db!.query(
+    final last7Result = await _dbQuery(
       "SELECT COUNT(*) FROM user_exercises WHERE user_id = '$userId' AND completed_at > NOW() - INTERVAL '7 days'",
     );
     last7Days = int.parse(last7Result.first[0].toString());
 
     // За последние 30 дней
-    final last30Result = await _db!.query(
+    final last30Result = await _dbQuery(
       "SELECT COUNT(*) FROM user_exercises WHERE user_id = '$userId' AND completed_at > NOW() - INTERVAL '30 days'",
     );
     last30Days = int.parse(last30Result.first[0].toString());
 
     // Средняя продолжительность
     double avgDuration = 0;
-    final avgResult = await _db!.query(
+    final avgResult = await _dbQuery(
       "SELECT AVG(duration_minutes) FROM user_exercises WHERE user_id = '$userId' AND duration_minutes IS NOT NULL",
     );
     if (avgResult.first[0] != null) {
@@ -2290,7 +2605,7 @@ Future<Response> _getExercises(RequestContext context, _AuthContext auth) async 
       whereClause += " AND exercise_type = '$exerciseType'";
     }
 
-    final results = await _db!.query(
+    final results = await _dbQuery(
       """
       SELECT id, exercise_id, exercise_type, title, completed_at, duration_minutes, difficulty_level, user_notes, mood_before, mood_after
       FROM user_exercises 
@@ -2316,7 +2631,7 @@ Future<Response> _getExercises(RequestContext context, _AuthContext auth) async 
     }).toList();
 
     // Получаем общее количество для пагинации
-    final countResult = await _db!.query(
+    final countResult = await _dbQuery(
       "SELECT COUNT(*) FROM user_exercises $whereClause",
     );
     final total = int.parse(countResult.first[0].toString());
@@ -2420,8 +2735,8 @@ Future<Response> _getArticles(RequestContext context, _AuthContext auth) async {
 
   try {
     // Загружаем статьи из БД
-    final results = await _db!.query(
-      "SELECT id, user_id, title, content, category, is_custom, created_at FROM articles WHERE user_id = '$userId' OR user_id IS NULL ORDER BY created_at DESC",
+    final results = await _dbQuery(
+      "SELECT id, user_id, title, content, category, is_custom, source, tags, created_at FROM articles WHERE user_id = '$userId' OR user_id IS NULL ORDER BY created_at DESC",
     );
 
     final articles = results.map((row) {
@@ -2432,9 +2747,9 @@ Future<Response> _getArticles(RequestContext context, _AuthContext auth) async {
         'content': row[3],
         'category': row[4],
         'is_custom': row[5],
-        'created_at': row[6].toString(),
-        'source': 'app',
-        'tags': row.length > 7 ? row[7] : null,
+        'source': row[6],
+        'tags': row[7],
+        'created_at': row[8].toString(),
       };
     }).toList();
 
@@ -2899,8 +3214,8 @@ Future<Response> _createArticle(RequestContext context, _AuthContext auth) async
     final contentSql = content.replaceAll("'", "''");
     final categorySql = category.replaceAll("'", "''");
 
-    final result = await _db!.query(
-      "INSERT INTO articles (id, user_id, title, content, category, is_custom) VALUES ('$articleId', '$userId', '$titleSql', '$contentSql', '$categorySql', true) RETURNING id, user_id, title, content, category, is_custom, created_at",
+    final result = await _dbQuery(
+      "INSERT INTO articles (id, user_id, title, content, category, is_custom) VALUES ('$articleId', '$userId', '$titleSql', '$contentSql', '$categorySql', true) RETURNING id, user_id, title, content, category, is_custom, source, tags, created_at",
     );
 
     final row = result.first;
@@ -2913,7 +3228,9 @@ Future<Response> _createArticle(RequestContext context, _AuthContext auth) async
         'content': row[3],
         'category': row[4],
         'is_custom': row[5],
-        'created_at': row[6].toString(),
+        'source': row[6],
+        'tags': row[7],
+        'created_at': row[8].toString(),
       },
     );
   } catch (e) {
@@ -2941,7 +3258,7 @@ Future<Response> _updateArticle(RequestContext context, _AuthContext auth, Strin
     final categorySql = category != null ? "'${category.replaceAll("'", "''")}'" : null;
 
     // Проверяем, что статья принадлежит пользователю
-    final checkResult = await _db!.query(
+    final checkResult = await _dbQuery(
       "SELECT title, content, category FROM articles WHERE id = '$id' AND user_id = '$userId'",
     );
 
@@ -2954,8 +3271,8 @@ Future<Response> _updateArticle(RequestContext context, _AuthContext auth, Strin
     final finalContent = contentSql ?? "'${(currentRow[1] as String).replaceAll("'", "''")}'";
     final finalCategory = categorySql ?? "'${(currentRow[2] as String).replaceAll("'", "''")}'";
 
-    final result = await _db!.query(
-      "UPDATE articles SET title = $finalTitle, content = $finalContent, category = $finalCategory WHERE id = '$id' AND user_id = '$userId' RETURNING id, user_id, title, content, category, is_custom, created_at",
+    final result = await _dbQuery(
+      "UPDATE articles SET title = $finalTitle, content = $finalContent, category = $finalCategory WHERE id = '$id' AND user_id = '$userId' RETURNING id, user_id, title, content, category, is_custom, source, tags, created_at",
     );
 
     final row = result.first;
@@ -2966,7 +3283,9 @@ Future<Response> _updateArticle(RequestContext context, _AuthContext auth, Strin
       'content': row[3],
       'category': row[4],
       'is_custom': row[5],
-      'created_at': row[6].toString(),
+      'source': row[6],
+      'tags': row[7],
+      'created_at': row[8].toString(),
     });
   } catch (e) {
     return Response(statusCode: 500, body: 'Error: $e');
@@ -2979,7 +3298,7 @@ Future<Response> _deleteArticle(RequestContext context, _AuthContext auth, Strin
   if (userId == null) return Response(statusCode: 401, body: 'Unauthorized');
 
   try {
-    final result = await _db!.query(
+    final result = await _dbQuery(
       "DELETE FROM articles WHERE id = '$id' AND user_id = '$userId'",
     );
 
@@ -2997,10 +3316,10 @@ Future<Response> _getCasinoStatus(RequestContext context, _AuthContext auth) asy
   final userId = auth.userId;
   if (userId == null) return Response(statusCode: 401, body: 'Unauthorized');
   try {
-    await _db!.query("CREATE TABLE IF NOT EXISTS casino_users (user_id UUID PRIMARY KEY, coins INTEGER DEFAULT 0, last_daily_claim TIMESTAMP, quests_done TEXT[] DEFAULT '{}', total_spins INTEGER DEFAULT 0, total_wins INTEGER DEFAULT 0)");
-    final result = await _db!.query("SELECT coins, last_daily_claim, quests_done, total_spins, total_wins FROM casino_users WHERE user_id = '$userId'");
+    await _dbQuery("CREATE TABLE IF NOT EXISTS casino_users (user_id UUID PRIMARY KEY, coins INTEGER DEFAULT 0, last_daily_claim TIMESTAMP, quests_done TEXT[] DEFAULT '{}', total_spins INTEGER DEFAULT 0, total_wins INTEGER DEFAULT 0)");
+    final result = await _dbQuery("SELECT coins, last_daily_claim, quests_done, total_spins, total_wins FROM casino_users WHERE user_id = '$userId'");
     if (result.isEmpty) {
-      await _db!.query("INSERT INTO casino_users (user_id, coins, last_daily_claim, quests_done) VALUES ('$userId', 100, NOW(), '{}')");
+      await _dbQuery("INSERT INTO casino_users (user_id, coins, last_daily_claim, quests_done) VALUES ('$userId', 100, NOW(), '{}')");
       return Response.json(body: {'coins': 100, 'quests_done': [], 'daily_claimed': true, 'total_spins': 0, 'total_wins': 0});
     }
     final row = result.first;
@@ -3012,11 +3331,11 @@ Future<Response> _getCasinoStatus(RequestContext context, _AuthContext auth) asy
     bool dailyClaimed = lastDaily != null && lastDaily.year == now.year && lastDaily.month == now.month && lastDaily.day == now.day;
     if (!dailyClaimed) {
       // Новый день: начисляем ежедневные монеты и сбрасываем выполненные задания
-      await _db!.query("UPDATE casino_users SET coins = coins + 100, last_daily_claim = NOW(), quests_done = '{}' WHERE user_id = '$userId'");
+      await _dbQuery("UPDATE casino_users SET coins = coins + 100, last_daily_claim = NOW(), quests_done = '{}' WHERE user_id = '$userId'");
       dailyClaimed = true;
       questsDone = [];
     }
-    final updated = await _db!.query("SELECT coins FROM casino_users WHERE user_id = '$userId'");
+    final updated = await _dbQuery("SELECT coins FROM casino_users WHERE user_id = '$userId'");
     final coins = updated.isNotEmpty ? (updated.first[0] as int? ?? 0) : 0;
     return Response.json(body: {'coins': coins, 'quests_done': questsDone.map((e) => e.toString()).toList(), 'daily_claimed': dailyClaimed, 'total_spins': totalSpins, 'total_wins': totalWins});
   } catch (e) { return Response(statusCode: 500, body: 'Error: $e'); }
@@ -3027,16 +3346,16 @@ Future<Response> _claimDailyCoins(RequestContext context, _AuthContext auth) asy
   if (userId == null) return Response(statusCode: 401, body: 'Unauthorized');
   try {
     final now = DateTime.now();
-    final check = await _db!.query("SELECT last_daily_claim FROM casino_users WHERE user_id = '$userId'");
+    final check = await _dbQuery("SELECT last_daily_claim FROM casino_users WHERE user_id = '$userId'");
     if (check.isNotEmpty) {
       final lastClaim = check.first[0] as DateTime?;
       if (lastClaim != null && lastClaim.year == now.year && lastClaim.month == now.month && lastClaim.day == now.day) {
         return Response(statusCode: 400, body: 'Daily already claimed');
       }
     }
-    await _db!.query("INSERT INTO casino_users (user_id, coins, last_daily_claim) VALUES ('$userId', 100, NOW()) ON CONFLICT (user_id) DO UPDATE SET coins = casino_users.coins + 100, last_daily_claim = NOW()");
+    await _dbQuery("INSERT INTO casino_users (user_id, coins, last_daily_claim) VALUES ('$userId', 100, NOW()) ON CONFLICT (user_id) DO UPDATE SET coins = casino_users.coins + 100, last_daily_claim = NOW()");
     
-    final result = await _db!.query("SELECT coins, last_daily_claim, quests_done, total_spins, total_wins FROM casino_users WHERE user_id = '$userId'");
+    final result = await _dbQuery("SELECT coins, last_daily_claim, quests_done, total_spins, total_wins FROM casino_users WHERE user_id = '$userId'");
     if (result.isEmpty) return Response(statusCode: 500, body: 'User not found');
     final row = result.first;
     final coins = row[0] as int? ?? 0;
@@ -3064,16 +3383,16 @@ Future<Response> _completeQuest(RequestContext context, _AuthContext auth) async
     final questId = body['quest_id'] as String?;
     if (questId == null) return Response(statusCode: 400, body: 'quest_id required');
     
-    await _db!.query("INSERT INTO casino_users (user_id, coins, last_daily_claim, quests_done) VALUES ('$userId', 0, NULL, '{}') ON CONFLICT (user_id) DO NOTHING");
+    await _dbQuery("INSERT INTO casino_users (user_id, coins, last_daily_claim, quests_done) VALUES ('$userId', 0, NULL, '{}') ON CONFLICT (user_id) DO NOTHING");
     
-    final check = await _db!.query("SELECT quests_done FROM casino_users WHERE user_id = '$userId'");
+    final check = await _dbQuery("SELECT quests_done FROM casino_users WHERE user_id = '$userId'");
     if (check.isNotEmpty) {
       final quests = check.first[0] as List? ?? [];
       if (quests.contains(questId)) return Response(statusCode: 400, body: 'Quest already completed');
     }
-    await _db!.query("UPDATE casino_users SET coins = coins + 25, quests_done = array_append(quests_done, '$questId') WHERE user_id = '$userId'");
+    await _dbQuery("UPDATE casino_users SET coins = coins + 25, quests_done = array_append(quests_done, '$questId') WHERE user_id = '$userId'");
     
-    final result = await _db!.query("SELECT coins, last_daily_claim, quests_done, total_spins, total_wins FROM casino_users WHERE user_id = '$userId'");
+    final result = await _dbQuery("SELECT coins, last_daily_claim, quests_done, total_spins, total_wins FROM casino_users WHERE user_id = '$userId'");
     if (result.isEmpty) return Response(statusCode: 500, body: 'User not found');
     final row = result.first;
     final coins = row[0] as int? ?? 0;
@@ -3107,11 +3426,11 @@ Future<Response> _casinoSpin(RequestContext context, _AuthContext auth) async {
       return Response(statusCode: 400, body: 'symbols required');
     }
     
-    final check = await _db!.query("SELECT coins FROM casino_users WHERE user_id = '$userId'");
+    final check = await _dbQuery("SELECT coins FROM casino_users WHERE user_id = '$userId'");
     final coins = check.isNotEmpty ? (check.first[0] as int? ?? 0) : 0;
     if (coins < bet) return Response(statusCode: 400, body: 'Not enough coins');
     
-    await _db!.query("UPDATE casino_users SET coins = coins - $bet + $win, total_spins = total_spins + 1 WHERE user_id = '$userId'");
+    await _dbQuery("UPDATE casino_users SET coins = coins - $bet + $win, total_spins = total_spins + 1 WHERE user_id = '$userId'");
     return Response.json(body: {'success': true, 'new_balance': coins - bet + win});
   } catch (e) { return Response(statusCode: 500, body: 'Error: $e'); }
 }

@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/utils/app_size.dart';
 
 class StatsStrip extends StatelessWidget {
   final int streakDays;
   final String goodDaysPercent;
   final String sleepHours;
 
-  const StatsStrip({
+  StatsStrip({
     super.key,
     this.streakDays = 7,
     this.goodDaysPercent = '85%',
@@ -18,31 +19,31 @@ class StatsStrip extends StatelessWidget {
     final stats = [
       _StatCard(
         icon: Icons.local_fire_department,
-        iconColor: const Color(0xFFFF8C42),
+        iconColor: Color(0xFFFF8C42),
         value: '$streakDays',
         label: 'Дней подряд',
       ),
       _StatCard(
         icon: Icons.trending_up,
-        iconColor: const Color(0xFF8BC34A),
+        iconColor: Color(0xFF8BC34A),
         value: goodDaysPercent,
         label: 'Хороших дней',
       ),
       _StatCard(
         icon: Icons.nightlight_round,
-        iconColor: const Color(0xFF7C83D1),
+        iconColor: Color(0xFF7C83D1),
         value: sleepHours,
         label: 'Сон вчера',
       ),
     ];
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      padding: AppSize.paddingH(20, 0),
       child: Row(
         children: stats
             .map((s) => Expanded(
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    padding: AppSize.paddingH(4, 0),
                     child: s,
                   ),
                 ))
@@ -58,7 +59,7 @@ class _StatCard extends StatelessWidget {
   final String value;
   final String label;
 
-  const _StatCard({
+  _StatCard({
     required this.icon,
     required this.iconColor,
     required this.value,
@@ -68,10 +69,10 @@ class _StatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: AppSize.padding(12),
       decoration: BoxDecoration(
         color: AppColors.card,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: AppSize.radius(16),
         border: Border.all(
           color: AppColors.citrusOrange.withOpacity(0.1),
         ),
@@ -81,20 +82,20 @@ class _StatCard extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(icon, size: 18, color: iconColor),
-          const SizedBox(height: 4),
+          AppSize.gapH(4),
           Text(
             value,
             style: TextStyle(
-              fontSize: 18,
+              fontSize: AppSize.s(18),
               fontWeight: FontWeight.w700,
               color: AppColors.foreground,
             ),
           ),
-          const SizedBox(height: 2),
+          AppSize.gapH(2),
           Text(
             label,
             style: TextStyle(
-              fontSize: 10,
+              fontSize: AppSize.s(10),
               color: AppColors.mutedForeground,
             ),
           ),

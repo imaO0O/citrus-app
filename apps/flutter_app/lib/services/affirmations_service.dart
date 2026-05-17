@@ -143,7 +143,16 @@ class AffirmationsService {
         final affirmations = _parseAiResponse(aiResponse, category);
         
         if (affirmations.isNotEmpty) {
-          // Сохраняем новые аффирмации
+          // Фильтруем по запрошенной категории, если AI вернул смешанные
+          final filtered = category == 'Все' 
+              ? affirmations 
+              : affirmations.where((a) => a.category == category).toList();
+          
+          if (filtered.isNotEmpty) {
+            await saveAffirmations(filtered);
+            return filtered;
+          }
+          // Если AI не вернул ничего для этой категории, сохраняем все и возвращаем их
           await saveAffirmations(affirmations);
           return affirmations;
         }

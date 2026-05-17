@@ -4,9 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../core/theme/app_colors.dart';
 import '../core/services/casino_coins_service.dart';
+import '../core/utils/app_size.dart';
 
 class ToyScreen extends StatefulWidget {
-  const ToyScreen({super.key});
+  ToyScreen({super.key});
 
   @override
   State<ToyScreen> createState() => _ToyScreenState();
@@ -25,16 +26,16 @@ class _ToyScreenState extends State<ToyScreen> {
       backgroundColor: AppColors.background,
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(20),
+          padding: AppSize.padding(20),
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 480),
+            constraints: BoxConstraints(maxWidth: 480),
             child: Column(
               children: [
                 Text(
                   'Антистресс',
-                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700, color: AppColors.foreground),
+                  style: TextStyle(fontSize: AppSize.s(24), fontWeight: FontWeight.w700, color: AppColors.foreground),
                 ),
-                SizedBox(height: 20),
+                AppSize.gapH(20),
                 Expanded(
                 child: IndexedStack(
                     index: _activeTab,
@@ -61,7 +62,7 @@ class _ToyScreenState extends State<ToyScreen> {
     const emojis = ['🍊', '🫧', '🏖️', '🌧️', '🔮', '🎰'];
     const labels = ['Цитрус', 'Пузыри', 'Песок', 'Дождь', 'Шарики', 'Казино'];
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 16),
+      padding: AppSize.paddingH(0, 16),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: Row(
@@ -70,25 +71,25 @@ class _ToyScreenState extends State<ToyScreen> {
             return GestureDetector(
               onTap: () => _onTabChanged(i),
               child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                margin: const EdgeInsets.symmetric(horizontal: 4),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                duration: Duration(milliseconds: 200),
+                margin: AppSize.paddingH(4, 0),
+                padding: AppSize.paddingH(16, 10),
                 decoration: BoxDecoration(
                   color: isActive ? AppColors.citrusOrange.withOpacity(0.15) : Colors.transparent,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: AppSize.radius(12),
                 ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
                       emojis[i],
-                      style: TextStyle(fontSize: 24, color: isActive ? AppColors.citrusOrange : AppColors.mutedForeground),
+                      style: TextStyle(fontSize: AppSize.s(24), color: isActive ? AppColors.citrusOrange : AppColors.mutedForeground),
                     ),
-                    SizedBox(height: 4),
+                    AppSize.gapH(4),
                     Text(
                       labels[i],
                       style: TextStyle(
-                        fontSize: 10,
+                        fontSize: AppSize.s(10),
                         color: isActive ? AppColors.citrusOrange : AppColors.dimForeground,
                         fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
                       ),
@@ -108,7 +109,7 @@ class _ToyScreenState extends State<ToyScreen> {
 // 1. Squish Citrus — с haptic, эффектом сока и стаканами
 // ============================================================
 class SqueezeCitrusToy extends StatefulWidget {
-  const SqueezeCitrusToy({super.key});
+  SqueezeCitrusToy({super.key});
 
   @override
   State<SqueezeCitrusToy> createState() => _SqueezeCitrusToyState();
@@ -118,7 +119,7 @@ class _SqueezeCitrusToyState extends State<SqueezeCitrusToy>
     with SingleTickerProviderStateMixin {
   int _squeezeCount = 0;
   int _glassesFilled = 0;
-  static const int _squeezesPerGlass = 8;
+  static int _squeezesPerGlass = 8;
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
   final List<_JuiceDrop> _drops = [];
@@ -127,7 +128,7 @@ class _SqueezeCitrusToyState extends State<SqueezeCitrusToy>
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 300));
+    _controller = AnimationController(vsync: this, duration: Duration(milliseconds: 300));
     _scaleAnimation = Tween<double>(begin: 1.0, end: 1.0).animate(_controller);
   }
 
@@ -159,11 +160,11 @@ class _SqueezeCitrusToyState extends State<SqueezeCitrusToy>
       }
     });
 
-    Future.delayed(const Duration(milliseconds: 200), () {
+    Future.delayed(Duration(milliseconds: 200), () {
       if (mounted) setState(() => _showSplash = false);
     });
 
-    Future.delayed(const Duration(milliseconds: 800), () {
+    Future.delayed(Duration(milliseconds: 800), () {
       if (mounted && _drops.isNotEmpty) {
         setState(() {
           _drops.removeRange(0, _drops.length > 3 ? 3 : _drops.length);
@@ -190,22 +191,22 @@ class _SqueezeCitrusToyState extends State<SqueezeCitrusToy>
           // Бейдж стаканов
           if (_glassesFilled > 0)
             Container(
-              margin: const EdgeInsets.only(bottom: 12),
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+              margin: AppSize.paddingOnly(bottom: 12),
+              padding: AppSize.paddingH(14, 6),
               decoration: BoxDecoration(
                 color: AppColors.citrusAmber.withOpacity(0.12),
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: AppSize.radius(20),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text('🧃', style: TextStyle(fontSize: 16)),
-                  SizedBox(width: 6),
+                  Text('🧃', style: TextStyle(fontSize: AppSize.s(16))),
+                  AppSize.gapW(6),
                   Text(
                     '$_glassesFilled ${_glassesFilled == 1 ? 'стакан' : _glassesFilled < 5 ? 'стакана' : 'стаканов'}',
                     style: TextStyle(
                       color: AppColors.citrusAmber,
-                      fontSize: 13,
+                      fontSize: AppSize.s(13),
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -215,9 +216,9 @@ class _SqueezeCitrusToyState extends State<SqueezeCitrusToy>
 
           Text(
             'Нажми на апельсин!',
-            style: TextStyle(fontSize: 14, color: AppColors.mutedForeground, fontWeight: FontWeight.w500),
+            style: TextStyle(fontSize: AppSize.s(14), color: AppColors.mutedForeground, fontWeight: FontWeight.w500),
           ),
-          SizedBox(height: 20),
+          AppSize.gapH(20),
 
           // Апельсин с каплями сока
           GestureDetector(
@@ -237,7 +238,7 @@ class _SqueezeCitrusToyState extends State<SqueezeCitrusToy>
                           width: 160,
                           height: 160,
                           decoration: BoxDecoration(
-                            gradient: const LinearGradient(
+                            gradient: LinearGradient(
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
                               colors: [AppColors.citrusOrange, Color(0xFFFF7020)],
@@ -252,7 +253,7 @@ class _SqueezeCitrusToyState extends State<SqueezeCitrusToy>
                             ],
                           ),
                           child: Center(
-                            child: Text('🍊', style: TextStyle(fontSize: 72)),
+                            child: Text('🍊', style: TextStyle(fontSize: AppSize.s(72))),
                           ),
                         ),
                         // Капли сока
@@ -261,7 +262,7 @@ class _SqueezeCitrusToyState extends State<SqueezeCitrusToy>
                           top: 60 + drop.dy * 80,
                           child: AnimatedOpacity(
                             opacity: drop.opacity,
-                            duration: const Duration(milliseconds: 200),
+                            duration: Duration(milliseconds: 200),
                             child: Container(
                               width: drop.size,
                               height: drop.size,
@@ -293,7 +294,7 @@ class _SqueezeCitrusToyState extends State<SqueezeCitrusToy>
             ),
           ),
 
-          SizedBox(height: 20),
+          AppSize.gapH(20),
 
           // Стакан с прогрессом
           Container(
@@ -301,7 +302,7 @@ class _SqueezeCitrusToyState extends State<SqueezeCitrusToy>
             height: 72,
             decoration: BoxDecoration(
               color: Colors.white.withOpacity(0.05),
-              borderRadius: const BorderRadius.only(
+              borderRadius: BorderRadius.only(
                 bottomLeft: Radius.circular(8),
                 bottomRight: Radius.circular(8),
                 topLeft: Radius.circular(4),
@@ -313,11 +314,11 @@ class _SqueezeCitrusToyState extends State<SqueezeCitrusToy>
               alignment: Alignment.bottomCenter,
               children: [
                 AnimatedContainer(
-                  duration: const Duration(milliseconds: 300),
+                  duration: Duration(milliseconds: 300),
                   curve: Curves.easeOut,
                   height: 68 * _glassProgress,
                   width: double.infinity,
-                  margin: const EdgeInsets.all(2),
+                  margin: AppSize.padding(2),
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       begin: Alignment.topCenter,
@@ -327,7 +328,7 @@ class _SqueezeCitrusToyState extends State<SqueezeCitrusToy>
                         AppColors.citrusOrange.withOpacity(0.8),
                       ],
                     ),
-                    borderRadius: const BorderRadius.only(
+                    borderRadius: BorderRadius.only(
                       bottomLeft: Radius.circular(6),
                       bottomRight: Radius.circular(6),
                     ),
@@ -337,18 +338,18 @@ class _SqueezeCitrusToyState extends State<SqueezeCitrusToy>
             ),
           ),
 
-          SizedBox(height: 16),
+          AppSize.gapH(16),
           Text(
             '$_squeezeCount',
             style: TextStyle(
               color: AppColors.foreground,
-              fontSize: 28,
+              fontSize: AppSize.s(28),
               fontWeight: FontWeight.w700,
             ),
           ),
           Text(
             'раз сжато',
-            style: TextStyle(color: AppColors.mutedForeground, fontSize: 12),
+            style: TextStyle(color: AppColors.mutedForeground, fontSize: AppSize.s(12)),
           ),
         ],
       ),
@@ -368,7 +369,7 @@ class _JuiceDrop {
 // 2. Bubble Wrap — сетка 6×6, haptic, таймер, прогресс
 // ============================================================
 class BubbleWrapToy extends StatefulWidget {
-  const BubbleWrapToy({super.key});
+  BubbleWrapToy({super.key});
 
   @override
   State<BubbleWrapToy> createState() => _BubbleWrapToyState();
@@ -377,7 +378,7 @@ class BubbleWrapToy extends StatefulWidget {
 class _BubbleWrapToyState extends State<BubbleWrapToy> {
   final Map<int, bool> _popped = {};
   int _poppedCount = 0;
-  static const int gridSize = 6;
+  static int gridSize = 6;
   Stopwatch? _stopwatch;
   String _timeDisplay = '';
   Timer? _displayTimer;
@@ -409,7 +410,7 @@ class _BubbleWrapToyState extends State<BubbleWrapToy> {
 
   void _startDisplayTimer() {
     _displayTimer?.cancel();
-    _displayTimer = Timer.periodic(const Duration(milliseconds: 100), (_) {
+    _displayTimer = Timer.periodic(Duration(milliseconds: 100), (_) {
       if (mounted) _updateTime();
     });
   }
@@ -450,36 +451,36 @@ class _BubbleWrapToyState extends State<BubbleWrapToy> {
           children: [
             Row(
               children: [
-                Text('Лопнуто: ', style: TextStyle(color: AppColors.mutedForeground, fontSize: 14)),
+                Text('Лопнуто: ', style: TextStyle(color: AppColors.mutedForeground, fontSize: AppSize.s(14))),
                 Text('$_poppedCount/$_totalBubbles',
-                    style: TextStyle(color: AppColors.foreground, fontSize: 16, fontWeight: FontWeight.w700)),
+                    style: TextStyle(color: AppColors.foreground, fontSize: AppSize.s(16), fontWeight: FontWeight.w700)),
               ],
             ),
             Row(
               children: [
                 if (_timeDisplay.isNotEmpty) ...[
                   Icon(Icons.timer, size: 16, color: AppColors.citrusAmber),
-                  SizedBox(width: 4),
+                  AppSize.gapW(4),
                   Text('${_timeDisplay}с',
-                      style: TextStyle(color: AppColors.citrusAmber, fontSize: 14, fontWeight: FontWeight.w600)),
-                  SizedBox(width: 12),
+                      style: TextStyle(color: AppColors.citrusAmber, fontSize: AppSize.s(14), fontWeight: FontWeight.w600)),
+                  AppSize.gapW(12),
                 ],
                 if (_poppedCount > 0)
                   GestureDetector(
                     onTap: _reset,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      padding: AppSize.paddingH(12, 6),
                       decoration: BoxDecoration(
                         color: AppColors.citrusOrange.withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: AppSize.radius(10),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(Icons.refresh, size: 14, color: AppColors.citrusOrange),
-                          SizedBox(width: 4),
+                          AppSize.gapW(4),
                           Text('Заново',
-                              style: TextStyle(color: AppColors.citrusOrange, fontSize: 12, fontWeight: FontWeight.w500)),
+                              style: TextStyle(color: AppColors.citrusOrange, fontSize: AppSize.s(12), fontWeight: FontWeight.w500)),
                         ],
                       ),
                     ),
@@ -491,9 +492,9 @@ class _BubbleWrapToyState extends State<BubbleWrapToy> {
 
         // Прогресс-бар
         if (_poppedCount > 0 && !_allPopped) ...[
-          SizedBox(height: 8),
+          AppSize.gapH(8),
           ClipRRect(
-            borderRadius: BorderRadius.circular(4),
+            borderRadius: AppSize.radius(4),
             child: LinearProgressIndicator(
               value: _poppedCount / _totalBubbles,
               minHeight: 4,
@@ -505,32 +506,32 @@ class _BubbleWrapToyState extends State<BubbleWrapToy> {
 
         // Результат
         if (_allPopped) ...[
-          SizedBox(height: 12),
+          AppSize.gapH(12),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            padding: AppSize.paddingH(16, 10),
             decoration: BoxDecoration(
               color: AppColors.citrusGreen.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: AppSize.radius(14),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text('🎉', style: TextStyle(fontSize: 20)),
-                SizedBox(width: 8),
+                Text('🎉', style: TextStyle(fontSize: AppSize.s(20))),
+                AppSize.gapW(8),
                 Text('Все лопнуто за ${_timeDisplay}с!',
-                    style: TextStyle(color: AppColors.citrusGreen, fontSize: 14, fontWeight: FontWeight.w700)),
+                    style: TextStyle(color: AppColors.citrusGreen, fontSize: AppSize.s(14), fontWeight: FontWeight.w700)),
               ],
             ),
           ),
         ],
 
-        SizedBox(height: 12),
+        AppSize.gapH(12),
 
         // Сетка
         Expanded(
           child: GridView.builder(
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            physics: NeverScrollableScrollPhysics(),
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: gridSize,
               crossAxisSpacing: 8,
               mainAxisSpacing: 8,
@@ -542,12 +543,12 @@ class _BubbleWrapToyState extends State<BubbleWrapToy> {
                 onTap: () => _popBubble(index),
                 child: AnimatedScale(
                   scale: isPopped ? 0.85 : 1.0,
-                  duration: const Duration(milliseconds: 150),
+                  duration: Duration(milliseconds: 150),
                   curve: Curves.easeOut,
                   child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
+                    duration: Duration(milliseconds: 200),
                     decoration: BoxDecoration(
-                      gradient: isPopped ? null : const LinearGradient(
+                      gradient: isPopped ? null : LinearGradient(
                         begin: Alignment(-0.3, -0.4),
                         end: Alignment.bottomRight,
                         colors: [
@@ -568,13 +569,13 @@ class _BubbleWrapToyState extends State<BubbleWrapToy> {
                               BoxShadow(
                                 color: AppColors.citrusOrange.withOpacity(0.25),
                                 blurRadius: 4,
-                                offset: const Offset(0, 2),
+                                offset: Offset(0, 2),
                               ),
                             ],
                     ),
                     child: isPopped
                         ? Center(child: Text('✓',
-                            style: TextStyle(color: AppColors.mutedForeground.withOpacity(0.4), fontSize: 12)))
+                            style: TextStyle(color: AppColors.mutedForeground.withOpacity(0.4), fontSize: AppSize.s(12))))
                         : null,
                   ),
                 ),
@@ -591,7 +592,7 @@ class _BubbleWrapToyState extends State<BubbleWrapToy> {
 // 3. Sandbox — рисование пальцем по песку
 // ============================================================
 class SandboxToy extends StatefulWidget {
-  const SandboxToy({super.key});
+  SandboxToy({super.key});
 
   @override
   State<SandboxToy> createState() => _SandboxToyState();
@@ -601,8 +602,8 @@ class _SandboxToyState extends State<SandboxToy> {
   final List<_SandStroke> _strokes = [];
   _SandStroke? _currentStroke;
   double _brushSize = 12;
-  Color _sandColor = const Color(0xFFD4A76A);
-  static const _colorPalette = [
+  Color _sandColor = Color(0xFFD4A76A);
+  static final _colorPalette = [
     Color(0xFFD4A76A), // Песок
     Color(0xFF8BC34A), // Трава
     Color(0xFF7C83D1), // Лаванда
@@ -655,29 +656,29 @@ class _SandboxToyState extends State<SandboxToy> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text('Рисуй пальцем по песку',
-                style: TextStyle(color: AppColors.mutedForeground, fontSize: 13, fontWeight: FontWeight.w500)),
+                style: TextStyle(color: AppColors.mutedForeground, fontSize: AppSize.s(13), fontWeight: FontWeight.w500)),
             if (_strokes.isNotEmpty)
               Row(
                 children: [
                   GestureDetector(
                     onTap: _undo,
                     child: Container(
-                      padding: const EdgeInsets.all(6),
+                      padding: AppSize.padding(6),
                       decoration: BoxDecoration(
                         color: AppColors.citrusOrange.withOpacity(0.12),
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: AppSize.radius(8),
                       ),
                       child: Icon(Icons.undo, size: 18, color: AppColors.citrusOrange),
                     ),
                   ),
-                  SizedBox(width: 6),
+                  AppSize.gapW(6),
                   GestureDetector(
                     onTap: _clearCanvas,
                     child: Container(
-                      padding: const EdgeInsets.all(6),
+                      padding: AppSize.padding(6),
                       decoration: BoxDecoration(
                         color: AppColors.destructive.withOpacity(0.12),
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: AppSize.radius(8),
                       ),
                       child: Icon(Icons.delete_outline, size: 18, color: AppColors.destructive),
                     ),
@@ -687,19 +688,19 @@ class _SandboxToyState extends State<SandboxToy> {
           ],
         ),
 
-        SizedBox(height: 12),
+        AppSize.gapH(12),
 
         // Палитра цветов
         Row(
           children: [
-            Text('Цвет: ', style: TextStyle(color: AppColors.dimForeground, fontSize: 11)),
+            Text('Цвет: ', style: TextStyle(color: AppColors.dimForeground, fontSize: AppSize.s(11))),
             ..._colorPalette.map((c) {
               final sel = _sandColor == c;
               return GestureDetector(
                 onTap: () => setState(() => _sandColor = c),
                 child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  margin: const EdgeInsets.only(right: 8),
+                  duration: Duration(milliseconds: 200),
+                  margin: AppSize.paddingOnly(right: 8),
                   width: sel ? 28 : 24,
                   height: sel ? 28 : 24,
                   decoration: BoxDecoration(
@@ -720,10 +721,10 @@ class _SandboxToyState extends State<SandboxToy> {
         ),
 
         // Размер кисти
-        SizedBox(height: 10),
+        AppSize.gapH(10),
         Row(
           children: [
-            Text('Размер: ', style: TextStyle(color: AppColors.dimForeground, fontSize: 11)),
+            Text('Размер: ', style: TextStyle(color: AppColors.dimForeground, fontSize: AppSize.s(11))),
             Expanded(
               child: SliderTheme(
                 data: SliderThemeData(
@@ -753,12 +754,12 @@ class _SandboxToyState extends State<SandboxToy> {
           ],
         ),
 
-        SizedBox(height: 10),
+        AppSize.gapH(10),
 
         // Холст
         Expanded(
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: AppSize.radius(16),
             child: GestureDetector(
               onPanStart: _onPanStart,
               onPanUpdate: _onPanUpdate,
@@ -797,12 +798,12 @@ class _SandCanvasPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     // Фон — тёмный песок
-    final bgPaint = Paint()..color = const Color(0xFF2A2218);
+    final bgPaint = Paint()..color = Color(0xFF2A2218);
     canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), bgPaint);
 
     // Текстура песчинок
     final rng = Random(42);
-    final dotPaint = Paint()..color = const Color(0xFF3D3020);
+    final dotPaint = Paint()..color = Color(0xFF3D3020);
     for (int i = 0; i < 300; i++) {
       canvas.drawCircle(
         Offset(rng.nextDouble() * size.width, rng.nextDouble() * size.height),
@@ -821,7 +822,7 @@ class _SandCanvasPainter extends CustomPainter {
         ..strokeCap = StrokeCap.round
         ..strokeJoin = StrokeJoin.round
         ..style = PaintingStyle.stroke
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 1.5);
+        ..maskFilter = MaskFilter.blur(BlurStyle.normal, 1.5);
 
       final path = Path();
       path.moveTo(stroke.points.first.dx, stroke.points.first.dy);
@@ -862,7 +863,7 @@ class _SandCanvasPainter extends CustomPainter {
 // 4. Rain — медитативный дождь с кругами на воде
 // ============================================================
 class RainToy extends StatefulWidget {
-  const RainToy({super.key});
+  RainToy({super.key});
 
   @override
   State<RainToy> createState() => _RainToyState();
@@ -883,7 +884,7 @@ class _RainToyState extends State<RainToy> with SingleTickerProviderStateMixin {
     super.initState();
     _animController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 16),
+      duration: Duration(milliseconds: 16),
     )..repeat();
 
     _startRain();
@@ -911,7 +912,7 @@ class _RainToyState extends State<RainToy> with SingleTickerProviderStateMixin {
   }
 
   void _startCleanup() {
-    _cleanupTimer = Timer.periodic(const Duration(milliseconds: 50), (_) {
+    _cleanupTimer = Timer.periodic(Duration(milliseconds: 50), (_) {
       if (!mounted) return;
       setState(() {
         // Удаляем капли за экраном, создаём круги
@@ -972,11 +973,11 @@ class _RainToyState extends State<RainToy> with SingleTickerProviderStateMixin {
                 GestureDetector(
                   onTap: _toggleRain,
                   child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 300),
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    duration: Duration(milliseconds: 300),
+                    padding: AppSize.paddingH(14, 8),
                     decoration: BoxDecoration(
                       color: (_isRaining ? AppColors.citrusPurple : AppColors.citrusAmber).withOpacity(0.12),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: AppSize.radius(12),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -986,12 +987,12 @@ class _RainToyState extends State<RainToy> with SingleTickerProviderStateMixin {
                           size: 18,
                           color: _isRaining ? AppColors.citrusPurple : AppColors.citrusAmber,
                         ),
-                        SizedBox(width: 6),
+                        AppSize.gapW(6),
                         Text(
                           _isRaining ? 'Пауза' : 'Играть',
                           style: TextStyle(
                             color: _isRaining ? AppColors.citrusPurple : AppColors.citrusAmber,
-                            fontSize: 12,
+                            fontSize: AppSize.s(12),
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -999,19 +1000,19 @@ class _RainToyState extends State<RainToy> with SingleTickerProviderStateMixin {
                     ),
                   ),
                 ),
-                SizedBox(width: 12),
+                AppSize.gapW(12),
                 Text('💧 $_dropCount',
-                    style: TextStyle(color: AppColors.mutedForeground, fontSize: 13)),
+                    style: TextStyle(color: AppColors.mutedForeground, fontSize: AppSize.s(13))),
               ],
             ),
           ],
         ),
 
         // Интенсивность
-        SizedBox(height: 10),
+        AppSize.gapH(10),
         Row(
           children: [
-            Text('🌧️ ', style: TextStyle(fontSize: 14)),
+            Text('🌧️ ', style: TextStyle(fontSize: AppSize.s(14))),
             Expanded(
               child: SliderTheme(
                 data: SliderThemeData(
@@ -1032,19 +1033,19 @@ class _RainToyState extends State<RainToy> with SingleTickerProviderStateMixin {
                 ),
               ),
             ),
-            Text('⛈️', style: TextStyle(fontSize: 14)),
+            Text('⛈️', style: TextStyle(fontSize: AppSize.s(14))),
           ],
         ),
 
-        SizedBox(height: 6),
+        AppSize.gapH(6),
         Text('Нажми на воду, чтобы создать круги',
-            style: TextStyle(color: AppColors.dimForeground, fontSize: 11)),
-        SizedBox(height: 10),
+            style: TextStyle(color: AppColors.dimForeground, fontSize: AppSize.s(11))),
+        AppSize.gapH(10),
 
         // Холст дождя
         Expanded(
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: AppSize.radius(16),
             child: GestureDetector(
               onTapDown: (details) {
                 final size = (context.findRenderObject() as RenderBox).size;
@@ -1103,13 +1104,13 @@ class _RainCanvasPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     // Фон — тёмная вода
-    final bgPaint = Paint()..color = const Color(0xFF0E1525);
+    final bgPaint = Paint()..color = Color(0xFF0E1525);
     canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), bgPaint);
 
     // Тонкая полоса «поверхности воды»
     final surfaceY = size.height * 0.85;
     final surfacePaint = Paint()
-      ..color = const Color(0xFF1A2A45)
+      ..color = Color(0xFF1A2A45)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1;
     canvas.drawLine(Offset(0, surfaceY), Offset(size.width, surfaceY), surfacePaint);
@@ -1120,8 +1121,8 @@ class _RainCanvasPainter extends CustomPainter {
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
         colors: [
-          const Color(0xFF1A2A45),
-          const Color(0xFF0E1525),
+          Color(0xFF1A2A45),
+          Color(0xFF0E1525),
         ],
       ).createShader(Rect.fromLTWH(0, surfaceY, size.width, size.height - surfaceY));
     canvas.drawRect(Rect.fromLTWH(0, surfaceY, size.width, size.height - surfaceY), reflectPaint);
@@ -1179,7 +1180,7 @@ class _RainCanvasPainter extends CustomPainter {
 
     // Случайные отражения капель в воде
     final rng = Random(7);
-    final reflPaint = Paint()..color = const Color.fromRGBO(140, 180, 255, 0.05);
+    final reflPaint = Paint()..color = Color.fromRGBO(140, 180, 255, 0.05);
     for (int i = 0; i < 20; i++) {
       canvas.drawCircle(
         Offset(rng.nextDouble() * size.width, surfaceY + rng.nextDouble() * (size.height - surfaceY)),
@@ -1197,7 +1198,7 @@ class _RainCanvasPainter extends CustomPainter {
 // 5. Orbs — плавающие шарики, которые лопаются
 // ============================================================
 class OrbsToy extends StatefulWidget {
-  const OrbsToy({super.key});
+  OrbsToy({super.key});
 
   @override
   State<OrbsToy> createState() => _OrbsToyState();
@@ -1211,7 +1212,7 @@ class _OrbsToyState extends State<OrbsToy> with SingleTickerProviderStateMixin {
   int _missedCount = 0;
   bool _isPlaying = true;
 
-  static const _orbColors = [
+  static final _orbColors = [
     Color(0xFFFF8C42),
     Color(0xFFFFD93D),
     Color(0xFF8BC34A),
@@ -1226,7 +1227,7 @@ class _OrbsToyState extends State<OrbsToy> with SingleTickerProviderStateMixin {
     super.initState();
     _animController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 16),
+      duration: Duration(milliseconds: 16),
     )..repeat();
 
     _startSpawning();
@@ -1235,7 +1236,7 @@ class _OrbsToyState extends State<OrbsToy> with SingleTickerProviderStateMixin {
 
   void _startSpawning() {
     _spawnTimer?.cancel();
-    _spawnTimer = Timer.periodic(const Duration(milliseconds: 1200), (_) {
+    _spawnTimer = Timer.periodic(Duration(milliseconds: 1200), (_) {
       if (!_isPlaying || !mounted) return;
       final rng = Random();
       setState(() {
@@ -1256,7 +1257,7 @@ class _OrbsToyState extends State<OrbsToy> with SingleTickerProviderStateMixin {
   }
 
   void _startPhysics() {
-    Timer.periodic(const Duration(milliseconds: 16), (_) {
+    Timer.periodic(Duration(milliseconds: 16), (_) {
       if (!mounted) return;
       setState(() {
         final toRemove = <_Orb>[];
@@ -1311,35 +1312,35 @@ class _OrbsToyState extends State<OrbsToy> with SingleTickerProviderStateMixin {
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: AppSize.paddingH(10, 4),
                   decoration: BoxDecoration(
                     color: AppColors.citrusGreen.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: AppSize.radius(8),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text('💥', style: TextStyle(fontSize: 14)),
-                      SizedBox(width: 4),
+                      Text('💥', style: TextStyle(fontSize: AppSize.s(14))),
+                      AppSize.gapW(4),
                       Text('$_poppedCount',
-                          style: TextStyle(color: AppColors.citrusGreen, fontSize: 14, fontWeight: FontWeight.w700)),
+                          style: TextStyle(color: AppColors.citrusGreen, fontSize: AppSize.s(14), fontWeight: FontWeight.w700)),
                     ],
                   ),
                 ),
-                SizedBox(width: 8),
+                AppSize.gapW(8),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: AppSize.paddingH(10, 4),
                   decoration: BoxDecoration(
                     color: AppColors.citrusAmber.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: AppSize.radius(8),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text('💨', style: TextStyle(fontSize: 14)),
-                      SizedBox(width: 4),
+                      Text('💨', style: TextStyle(fontSize: AppSize.s(14))),
+                      AppSize.gapW(4),
                       Text('$_missedCount',
-                          style: TextStyle(color: AppColors.citrusAmber, fontSize: 14, fontWeight: FontWeight.w700)),
+                          style: TextStyle(color: AppColors.citrusAmber, fontSize: AppSize.s(14), fontWeight: FontWeight.w700)),
                     ],
                   ),
                 ),
@@ -1349,10 +1350,10 @@ class _OrbsToyState extends State<OrbsToy> with SingleTickerProviderStateMixin {
               GestureDetector(
                 onTap: _reset,
                 child: Container(
-                  padding: const EdgeInsets.all(6),
+                  padding: AppSize.padding(6),
                   decoration: BoxDecoration(
                     color: AppColors.citrusOrange.withOpacity(0.12),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: AppSize.radius(8),
                   ),
                   child: Icon(Icons.refresh, size: 18, color: AppColors.citrusOrange),
                 ),
@@ -1360,15 +1361,15 @@ class _OrbsToyState extends State<OrbsToy> with SingleTickerProviderStateMixin {
           ],
         ),
 
-        SizedBox(height: 6),
+        AppSize.gapH(6),
         Text('Лопай шарики, пока не улетели!',
-            style: TextStyle(color: AppColors.dimForeground, fontSize: 11)),
-        SizedBox(height: 10),
+            style: TextStyle(color: AppColors.dimForeground, fontSize: AppSize.s(11))),
+        AppSize.gapH(10),
 
         // Игровое поле
         Expanded(
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: AppSize.radius(16),
             child: LayoutBuilder(
               builder: (context, constraints) {
                 final w = constraints.maxWidth;
@@ -1435,7 +1436,7 @@ class _OrbsPainter extends CustomPainter {
       ..shader = LinearGradient(
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
-        colors: [const Color(0xFF0A0E1A), const Color(0xFF151025)],
+        colors: [Color(0xFF0A0E1A), Color(0xFF151025)],
       ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
     canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), bgPaint);
 
@@ -1459,19 +1460,19 @@ class _OrbsPainter extends CustomPainter {
       // Свечение
       final glowPaint = Paint()
         ..color = orb.color.withOpacity(0.25)
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 20);
+        ..maskFilter = MaskFilter.blur(BlurStyle.normal, 20);
       canvas.drawCircle(Offset(cx, cy), r * 1.4, glowPaint);
 
       // Основной шарик с градиентом
       final orbPaint = Paint()
         ..shader = RadialGradient(
-          center: const Alignment(-0.3, -0.3),
+          center: Alignment(-0.3, -0.3),
           colors: [
             Colors.white.withOpacity(0.5),
             orb.color.withOpacity(0.8),
             orb.color,
           ],
-          stops: const [0.0, 0.4, 1.0],
+          stops: [0.0, 0.4, 1.0],
         ).createShader(Rect.fromCircle(center: Offset(cx, cy), radius: r));
       canvas.drawCircle(Offset(cx, cy), r, orbPaint);
 
@@ -1497,7 +1498,7 @@ class _OrbsPainter extends CustomPainter {
 // 6. Casino — игровой автомат (слоты) с ежедневными заданиями
 // ============================================================
 class CasinoToy extends StatefulWidget {
-  const CasinoToy({super.key});
+  CasinoToy({super.key});
 
   @override
   State<CasinoToy> createState() => _CasinoToyState();
@@ -1630,7 +1631,7 @@ class _CasinoToyState extends State<CasinoToy> with TickerProviderStateMixin, Wi
       _reelControllers[i].forward();
     }
 
-    await Future.delayed(const Duration(milliseconds: 2000));
+    await Future.delayed(Duration(milliseconds: 2000));
 
     final r = _reelResults;
     int displayWin = 0;
@@ -1638,15 +1639,15 @@ class _CasinoToyState extends State<CasinoToy> with TickerProviderStateMixin, Wi
 
     if (r[0] == r[1] && r[1] == r[2]) {
       final pay = _symbolPay[r[0]]!;
-      displayWin = _bet * pay;
-      msg = '🎉 ДЖЕКПОТ! ${r[0]}${r[1]}${r[2]} — ×$pay! +$displayWin';
+      final displayWin = _bet * pay;
+      final msg = '🎉 ДЖЕКПОТ! ${r[0]}${r[1]}${r[2]} — ×$pay! +$displayWin';
       HapticFeedback.heavyImpact();
     } else if (r[0] == r[1] || r[1] == r[2] || r[0] == r[2]) {
-      displayWin = (_bet * 1.5).round();
-      msg = '✨ Два совпадения! +$displayWin монет';
+      final displayWin = (_bet * 1.5).round();
+      final msg = '✨ Два совпадения! +$displayWin монет';
       HapticFeedback.lightImpact();
     } else {
-      msg = '😔 Не повезло... Крути ещё!';
+      const msg = '😔 Не повезло... Крути ещё!';
     }
 
     final spinResult = await _coinsService.spin(_bet, _reelResults, displayWin);
@@ -1700,7 +1701,7 @@ class _CasinoToyState extends State<CasinoToy> with TickerProviderStateMixin, Wi
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator(color: AppColors.citrusAmber));
+      return Center(child: CircularProgressIndicator(color: AppColors.citrusAmber));
     }
 
     return SingleChildScrollView(
@@ -1711,59 +1712,59 @@ class _CasinoToyState extends State<CasinoToy> with TickerProviderStateMixin, Wi
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              padding: AppSize.paddingH(12, 6),
               decoration: BoxDecoration(
                 color: AppColors.citrusAmber.withOpacity(0.12),
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: AppSize.radius(10),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text('🪙', style: TextStyle(fontSize: 16)),
-                  SizedBox(width: 6),
+                  Text('🪙', style: TextStyle(fontSize: AppSize.s(16))),
+                  AppSize.gapW(6),
                   Text('$_coins',
-                      style: TextStyle(color: AppColors.citrusAmber, fontSize: 16, fontWeight: FontWeight.w700)),
+                      style: TextStyle(color: AppColors.citrusAmber, fontSize: AppSize.s(16), fontWeight: FontWeight.w700)),
                 ],
               ),
             ),
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: AppSize.paddingH(8, 4),
                   decoration: BoxDecoration(
                     color: AppColors.citrusGreen.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: AppSize.radius(8),
                   ),
                   child: Text('🏆 $_totalWins/$_totalSpins',
-                      style: TextStyle(color: AppColors.citrusGreen, fontSize: 11, fontWeight: FontWeight.w600)),
+                      style: TextStyle(color: AppColors.citrusGreen, fontSize: AppSize.s(11), fontWeight: FontWeight.w600)),
                 ),
-                SizedBox(width: 6),
+                AppSize.gapW(6),
                 if (_biggestWin > 0)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: AppSize.paddingH(8, 4),
                     decoration: BoxDecoration(
                       color: AppColors.citrusPurple.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: AppSize.radius(8),
                     ),
                     child: Text('💰 Макс: $_biggestWin',
-                        style: TextStyle(color: AppColors.citrusPurple, fontSize: 11, fontWeight: FontWeight.w600)),
+                        style: TextStyle(color: AppColors.citrusPurple, fontSize: AppSize.s(11), fontWeight: FontWeight.w600)),
                   ),
               ],
             ),
           ],
         ),
 
-        SizedBox(height: 12),
+        AppSize.gapH(12),
 
         // Корпус автомата
         Container(
           decoration: BoxDecoration(
-            gradient: const LinearGradient(
+            gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
               colors: [Color(0xFF1A1428), Color(0xFF0E0A18)],
             ),
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: AppSize.radius(20),
             border: Border.all(color: AppColors.citrusAmber.withOpacity(0.3), width: 2),
             boxShadow: [
               BoxShadow(
@@ -1777,14 +1778,14 @@ class _CasinoToyState extends State<CasinoToy> with TickerProviderStateMixin, Wi
             children: [
               // Заголовок автомата
               Container(
-                padding: const EdgeInsets.symmetric(vertical: 10),
+                padding: AppSize.paddingH(0, 10),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [AppColors.citrusAmber.withOpacity(0.2), Colors.transparent],
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                   ),
-                  borderRadius: const BorderRadius.only(
+                  borderRadius: BorderRadius.only(
                     topLeft: Radius.circular(18),
                     topRight: Radius.circular(18),
                   ),
@@ -1792,22 +1793,22 @@ class _CasinoToyState extends State<CasinoToy> with TickerProviderStateMixin, Wi
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text('★ ', style: TextStyle(color: AppColors.citrusAmber, fontSize: 14)),
+                    Text('★ ', style: TextStyle(color: AppColors.citrusAmber, fontSize: AppSize.s(14))),
                     Text('LUCKY SLOTS',
                         style: TextStyle(
                           color: AppColors.citrusAmber,
-                          fontSize: 16,
+                          fontSize: AppSize.s(16),
                           fontWeight: FontWeight.w800,
                           letterSpacing: 3,
                         )),
-                    Text(' ★', style: TextStyle(color: AppColors.citrusAmber, fontSize: 14)),
+                    Text(' ★', style: TextStyle(color: AppColors.citrusAmber, fontSize: AppSize.s(14))),
                   ],
                 ),
               ),
 
               // Барабаны
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: AppSize.paddingH(16, 12),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: List.generate(3, (i) {
@@ -1818,7 +1819,7 @@ class _CasinoToyState extends State<CasinoToy> with TickerProviderStateMixin, Wi
 
               // Линия выигрыша
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
+                padding: AppSize.paddingH(24, 0),
                 child: Container(
                   height: 2,
                   decoration: BoxDecoration(
@@ -1835,72 +1836,72 @@ class _CasinoToyState extends State<CasinoToy> with TickerProviderStateMixin, Wi
 
               // Результат
               Container(
-                padding: const EdgeInsets.symmetric(vertical: 10),
-                constraints: const BoxConstraints(minHeight: 40),
+                padding: AppSize.paddingH(0, 10),
+                constraints: BoxConstraints(minHeight: 40),
                 child: _resultMessage.isEmpty
                     ? Text('Крути барабаны!',
-                        style: TextStyle(color: AppColors.dimForeground, fontSize: 13))
+                        style: TextStyle(color: AppColors.dimForeground, fontSize: AppSize.s(13)))
                     : Text(_resultMessage,
-                        style: TextStyle(color: _resultColor, fontSize: 13, fontWeight: FontWeight.w700),
+                        style: TextStyle(color: _resultColor, fontSize: AppSize.s(13), fontWeight: FontWeight.w700),
                         textAlign: TextAlign.center),
               ),
             ],
           ),
         ),
 
-        SizedBox(height: 12),
+        AppSize.gapH(12),
 
         // Управление ставкой
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text('Ставка: ', style: TextStyle(color: AppColors.mutedForeground, fontSize: 13)),
+            Text('Ставка: ', style: TextStyle(color: AppColors.mutedForeground, fontSize: AppSize.s(13))),
             GestureDetector(
               onTap: _isSpinning ? null : () => _changeBet(-5),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: AppSize.paddingH(12, 6),
                 decoration: BoxDecoration(
                   color: AppColors.citrusOrange.withOpacity(0.12),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: AppSize.radius(8),
                 ),
-                child: Text('−', style: TextStyle(color: AppColors.citrusOrange, fontSize: 18, fontWeight: FontWeight.w700)),
+                child: Text('−', style: TextStyle(color: AppColors.citrusOrange, fontSize: AppSize.s(18), fontWeight: FontWeight.w700)),
               ),
             ),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+              padding: AppSize.paddingH(16, 6),
               child: Text('$_bet 🪙',
-                  style: TextStyle(color: AppColors.citrusAmber, fontSize: 16, fontWeight: FontWeight.w700)),
+                  style: TextStyle(color: AppColors.citrusAmber, fontSize: AppSize.s(16), fontWeight: FontWeight.w700)),
             ),
             GestureDetector(
               onTap: _isSpinning ? null : () => _changeBet(5),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: AppSize.paddingH(12, 6),
                 decoration: BoxDecoration(
                   color: AppColors.citrusOrange.withOpacity(0.12),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: AppSize.radius(8),
                 ),
-                child: Text('+', style: TextStyle(color: AppColors.citrusOrange, fontSize: 18, fontWeight: FontWeight.w700)),
+                child: Text('+', style: TextStyle(color: AppColors.citrusOrange, fontSize: AppSize.s(18), fontWeight: FontWeight.w700)),
               ),
             ),
           ],
         ),
 
-        SizedBox(height: 12),
+        AppSize.gapH(12),
 
         // Кнопка SPIN
         GestureDetector(
           onTap: _spin,
           child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 14),
+            duration: Duration(milliseconds: 200),
+            padding: AppSize.paddingH(40, 14),
             decoration: BoxDecoration(
               gradient: _isSpinning
                   ? null
-                  : const LinearGradient(
+                  : LinearGradient(
                       colors: [AppColors.citrusOrange, Color(0xFFFF6020)],
                     ),
               color: _isSpinning ? AppColors.mutedForeground.withOpacity(0.3) : null,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: AppSize.radius(16),
               boxShadow: _isSpinning
                   ? null
                   : [
@@ -1916,14 +1917,14 @@ class _CasinoToyState extends State<CasinoToy> with TickerProviderStateMixin, Wi
               children: [
                 Text(
                   _isSpinning ? '⏳' : '🎰',
-                  style: TextStyle(fontSize: 20),
+                  style: TextStyle(fontSize: AppSize.s(20)),
                 ),
-                SizedBox(width: 8),
+                AppSize.gapW(8),
                 Text(
                   _isSpinning ? 'Крутится...' : 'КРУТИТЬ',
                   style: TextStyle(
                     color: Colors.white,
-                    fontSize: 16,
+                    fontSize: AppSize.s(16),
                     fontWeight: FontWeight.w800,
                     letterSpacing: 1,
                   ),
@@ -1933,14 +1934,14 @@ class _CasinoToyState extends State<CasinoToy> with TickerProviderStateMixin, Wi
           ),
         ),
 
-        SizedBox(height: 16),
+        AppSize.gapH(16),
 
         // ─── Панель ежедневных заданий ───
         Container(
-          padding: const EdgeInsets.all(14),
+          padding: AppSize.padding(14),
           decoration: BoxDecoration(
             color: Colors.white.withOpacity(0.03),
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: AppSize.radius(14),
             border: Border.all(color: Colors.white.withOpacity(0.06)),
           ),
           child: Column(
@@ -1948,38 +1949,38 @@ class _CasinoToyState extends State<CasinoToy> with TickerProviderStateMixin, Wi
             children: [
               Row(
                 children: [
-                  Text('📋', style: TextStyle(fontSize: 16)),
-                  SizedBox(width: 8),
+                  Text('📋', style: TextStyle(fontSize: AppSize.s(16))),
+                  AppSize.gapW(8),
                   Text('Ежедневные задания',
-                      style: TextStyle(color: AppColors.foreground, fontSize: 14, fontWeight: FontWeight.w700)),
+                      style: TextStyle(color: AppColors.foreground, fontSize: AppSize.s(14), fontWeight: FontWeight.w700)),
                   Spacer(),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    padding: AppSize.paddingH(8, 3),
                     decoration: BoxDecoration(
                       color: AppColors.citrusAmber.withOpacity(0.12),
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: AppSize.radius(8),
                     ),
                     child: Text('+${CasinoCoinsService.dailyFreeLimit}/день',
-                        style: TextStyle(color: AppColors.citrusAmber, fontSize: 10, fontWeight: FontWeight.w600)),
+                        style: TextStyle(color: AppColors.citrusAmber, fontSize: AppSize.s(10), fontWeight: FontWeight.w600)),
                   ),
                 ],
               ),
-              SizedBox(height: 4),
+              AppSize.gapH(4),
               Text('Ежедневно ${CasinoCoinsService.dailyFreeLimit} монет + задания по ${CasinoCoinsService.questReward} 🪙',
-                  style: TextStyle(color: AppColors.dimForeground, fontSize: 10)),
-              SizedBox(height: 10),
+                  style: TextStyle(color: AppColors.dimForeground, fontSize: AppSize.s(10))),
+              AppSize.gapH(10),
 
               // Список заданий
               ...CasinoCoinsService.quests.map((quest) {
                 final done = _questsDone.contains(quest.id);
                 return Container(
-                  margin: const EdgeInsets.only(bottom: 8),
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  margin: AppSize.paddingOnly(bottom: 8),
+                  padding: AppSize.paddingH(12, 10),
                   decoration: BoxDecoration(
                     color: done
                         ? AppColors.citrusGreen.withOpacity(0.08)
                         : Colors.white.withOpacity(0.03),
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: AppSize.radius(10),
                     border: Border.all(
                       color: done
                           ? AppColors.citrusGreen.withOpacity(0.2)
@@ -1988,8 +1989,8 @@ class _CasinoToyState extends State<CasinoToy> with TickerProviderStateMixin, Wi
                   ),
                   child: Row(
                     children: [
-                      Text(quest.emoji, style: TextStyle(fontSize: 20)),
-                      SizedBox(width: 10),
+                      Text(quest.emoji, style: TextStyle(fontSize: AppSize.s(20))),
+                      AppSize.gapW(10),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1997,36 +1998,36 @@ class _CasinoToyState extends State<CasinoToy> with TickerProviderStateMixin, Wi
                             Text(quest.title,
                                 style: TextStyle(
                                   color: done ? AppColors.citrusGreen : AppColors.foreground,
-                                  fontSize: 13,
+                                  fontSize: AppSize.s(13),
                                   fontWeight: FontWeight.w600,
                                   decoration: done ? TextDecoration.lineThrough : null,
                                 )),
-                            SizedBox(height: 2),
+                            AppSize.gapH(2),
                             Text(quest.description,
-                                style: TextStyle(color: AppColors.dimForeground, fontSize: 10)),
+                                style: TextStyle(color: AppColors.dimForeground, fontSize: AppSize.s(10))),
                           ],
                         ),
                       ),
-                      SizedBox(width: 8),
+                      AppSize.gapW(8),
                       if (done)
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          padding: AppSize.paddingH(8, 4),
                           decoration: BoxDecoration(
                             color: AppColors.citrusGreen.withOpacity(0.15),
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: AppSize.radius(8),
                           ),
                           child: Text('✓ +${quest.reward}',
-                              style: TextStyle(color: AppColors.citrusGreen, fontSize: 11, fontWeight: FontWeight.w700)),
+                              style: TextStyle(color: AppColors.citrusGreen, fontSize: AppSize.s(11), fontWeight: FontWeight.w700)),
                         )
                       else
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          padding: AppSize.paddingH(8, 4),
                           decoration: BoxDecoration(
                             color: AppColors.citrusAmber.withOpacity(0.12),
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: AppSize.radius(8),
                           ),
                           child: Text('+${quest.reward} 🪙',
-                              style: TextStyle(color: AppColors.citrusAmber, fontSize: 11, fontWeight: FontWeight.w600)),
+                              style: TextStyle(color: AppColors.citrusAmber, fontSize: AppSize.s(11), fontWeight: FontWeight.w600)),
                         ),
                     ],
                   ),
@@ -2034,15 +2035,15 @@ class _CasinoToyState extends State<CasinoToy> with TickerProviderStateMixin, Wi
               }),
 
               // Прогресс заданий
-              SizedBox(height: 4),
+              AppSize.gapH(4),
               Row(
                 children: [
                   Text('${_questsDone.length}/${CasinoCoinsService.quests.length} заданий',
-                      style: TextStyle(color: AppColors.dimForeground, fontSize: 10)),
-                  SizedBox(width: 8),
+                      style: TextStyle(color: AppColors.dimForeground, fontSize: AppSize.s(10))),
+                  AppSize.gapW(8),
                   Expanded(
                     child: ClipRRect(
-                      borderRadius: BorderRadius.circular(4),
+                      borderRadius: AppSize.radius(4),
                       child: LinearProgressIndicator(
                         value: _questsDone.length / CasinoCoinsService.quests.length,
                         minHeight: 4,
@@ -2051,41 +2052,41 @@ class _CasinoToyState extends State<CasinoToy> with TickerProviderStateMixin, Wi
                       ),
                     ),
                   ),
-                  SizedBox(width: 8),
+                  AppSize.gapW(8),
                   Text('+$_questCoinsEarned 🪙',
-                      style: TextStyle(color: AppColors.citrusAmber, fontSize: 10, fontWeight: FontWeight.w600)),
+                      style: TextStyle(color: AppColors.citrusAmber, fontSize: AppSize.s(10), fontWeight: FontWeight.w600)),
                 ],
               ),
             ],
           ),
         ),
 
-        SizedBox(height: 8),
+        AppSize.gapH(8),
 
         // Таблица выплат
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          padding: AppSize.paddingH(12, 8),
           decoration: BoxDecoration(
             color: Colors.white.withOpacity(0.03),
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: AppSize.radius(10),
             border: Border.all(color: Colors.white.withOpacity(0.05)),
           ),
           child: Column(
             children: [
-              Text('Таблица выплат', style: TextStyle(color: AppColors.dimForeground, fontSize: 10, fontWeight: FontWeight.w600)),
-              SizedBox(height: 4),
+              Text('Таблица выплат', style: TextStyle(color: AppColors.dimForeground, fontSize: AppSize.s(10), fontWeight: FontWeight.w600)),
+              AppSize.gapH(4),
               Wrap(
                 spacing: 8,
                 runSpacing: 4,
                 alignment: WrapAlignment.center,
                 children: _symbolPay.entries.map((e) {
                   return Text('${e.key} ×${e.value}',
-                      style: TextStyle(color: AppColors.mutedForeground, fontSize: 10));
+                      style: TextStyle(color: AppColors.mutedForeground, fontSize: AppSize.s(10)));
                 }).toList(),
               ),
-              SizedBox(height: 2),
+              AppSize.gapH(2),
               Text('Два совпадения — ×1.5 к ставке',
-                  style: TextStyle(color: AppColors.dimForeground, fontSize: 9)),
+                  style: TextStyle(color: AppColors.dimForeground, fontSize: AppSize.s(9))),
             ],
           ),
         ),
@@ -2098,16 +2099,16 @@ class _CasinoToyState extends State<CasinoToy> with TickerProviderStateMixin, Wi
     return Container(
       width: 80,
       height: 90,
-      margin: const EdgeInsets.symmetric(horizontal: 6),
+      margin: AppSize.paddingH(6, 0),
       decoration: BoxDecoration(
-        color: const Color(0xFF0A0618),
-        borderRadius: BorderRadius.circular(12),
+        color: Color(0xFF0A0618),
+        borderRadius: AppSize.radius(12),
         border: Border.all(color: AppColors.citrusAmber.withOpacity(0.2), width: 1),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.5),
             blurRadius: 8,
-            offset: const Offset(0, 4),
+            offset: Offset(0, 4),
           ),
         ],
       ),
@@ -2131,7 +2132,7 @@ class _CasinoToyState extends State<CasinoToy> with TickerProviderStateMixin, Wi
           return Center(
             child: AnimatedScale(
               scale: isLanded ? 1.1 : 1.0,
-              duration: const Duration(milliseconds: 200),
+              duration: Duration(milliseconds: 200),
               curve: Curves.elasticOut,
               child: Text(
                 displaySymbol,

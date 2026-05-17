@@ -39,6 +39,12 @@ class AuthThemeChanged extends AuthEvent {
   const AuthThemeChanged(this.user);
 }
 
+class AuthProfileUpdated extends AuthEvent {
+  final User user;
+
+  const AuthProfileUpdated(this.user);
+}
+
 class AuthRequestNotificationPermissions extends AuthEvent {
   const AuthRequestNotificationPermissions();
 }
@@ -88,6 +94,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<AuthRegister>(_onRegister);
     on<AuthLogout>(_onLogout);
     on<AuthThemeChanged>(_onThemeChanged);
+    on<AuthProfileUpdated>(_onProfileUpdated);
     on<AuthRequestNotificationPermissions>(_onRequestPermissions);
   }
 
@@ -196,6 +203,12 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
   Future<void> _onThemeChanged(AuthThemeChanged event, Emitter<AuthState> emit) async {
     _repository.currentUser = event.user;
+    emit(AuthAuthenticated(event.user));
+  }
+
+  Future<void> _onProfileUpdated(AuthProfileUpdated event, Emitter<AuthState> emit) async {
+    _repository.currentUser = event.user;
+    await _repository.saveSession(event.user);
     emit(AuthAuthenticated(event.user));
   }
 }

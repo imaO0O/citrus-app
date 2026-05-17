@@ -4,11 +4,12 @@ import 'package:flutter_markdown/flutter_markdown.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../models/article.dart';
 import '../bloc/article_bloc.dart';
+import '../../../core/utils/app_size.dart';
 
 class CreateEditArticlePage extends StatefulWidget {
   final Article? article;
 
-  const CreateEditArticlePage({super.key, this.article});
+  CreateEditArticlePage({super.key, this.article});
 
   @override
   State<CreateEditArticlePage> createState() => _CreateEditArticlePageState();
@@ -23,13 +24,13 @@ class _CreateEditArticlePageState extends State<CreateEditArticlePage> {
   bool _isPreviewMode = false;
 
   final List<CategoryOption> _categories = [
-    const CategoryOption(value: 'anxiety', label: 'Тревожность', icon: Icons.psychology),
-    const CategoryOption(value: 'depression', label: 'Депрессия', icon: Icons.cloud),
-    const CategoryOption(value: 'sleep', label: 'Сон', icon: Icons.nightlight),
-    const CategoryOption(value: 'stress', label: 'Стресс', icon: Icons.self_improvement),
-    const CategoryOption(value: 'self-esteem', label: 'Самооценка', icon: Icons.favorite),
-    const CategoryOption(value: 'relationships', label: 'Отношения', icon: Icons.people),
-    const CategoryOption(value: 'mindfulness', label: 'Осознанность', icon: Icons.auto_awesome),
+    CategoryOption(value: 'anxiety', label: 'Тревожность', icon: Icons.psychology),
+    CategoryOption(value: 'depression', label: 'Депрессия', icon: Icons.cloud),
+    CategoryOption(value: 'sleep', label: 'Сон', icon: Icons.nightlight),
+    CategoryOption(value: 'stress', label: 'Стресс', icon: Icons.self_improvement),
+    CategoryOption(value: 'self-esteem', label: 'Самооценка', icon: Icons.favorite),
+    CategoryOption(value: 'relationships', label: 'Отношения', icon: Icons.people),
+    CategoryOption(value: 'mindfulness', label: 'Осознанность', icon: Icons.auto_awesome),
   ];
 
   @override
@@ -72,7 +73,7 @@ class _CreateEditArticlePageState extends State<CreateEditArticlePage> {
             isEditing ? 'Редактировать статью' : 'Новая статья',
             style: TextStyle(
               color: AppColors.foreground,
-              fontSize: 18,
+              fontSize: AppSize.s(18),
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -87,8 +88,8 @@ class _CreateEditArticlePageState extends State<CreateEditArticlePage> {
               color: AppColors.mutedForeground,
             ),
             if (_isSaving)
-              const Padding(
-                padding: EdgeInsets.all(16.0),
+              Padding(
+                padding: AppSize.padding(16.0),
                 child: SizedBox(
                   width: 20,
                   height: 20,
@@ -100,7 +101,7 @@ class _CreateEditArticlePageState extends State<CreateEditArticlePage> {
               )
             else
               IconButton(
-                icon: const Icon(Icons.check, color: AppColors.citrusOrange),
+                icon: Icon(Icons.check, color: AppColors.citrusOrange),
                 onPressed: _saveArticle,
               ),
           ],
@@ -112,7 +113,7 @@ class _CreateEditArticlePageState extends State<CreateEditArticlePage> {
 
   Widget _buildForm() {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: AppSize.padding(16),
       child: Form(
         key: _formKey,
         child: Column(
@@ -123,11 +124,11 @@ class _CreateEditArticlePageState extends State<CreateEditArticlePage> {
               'Категория',
               style: TextStyle(
                 color: AppColors.foreground,
-                fontSize: 16,
+                fontSize: AppSize.s(16),
                 fontWeight: FontWeight.w600,
               ),
             ),
-            const SizedBox(height: 12),
+            AppSize.gapH(12),
             Wrap(
               spacing: 8,
               runSpacing: 8,
@@ -135,14 +136,14 @@ class _CreateEditArticlePageState extends State<CreateEditArticlePage> {
                 final isSelected = _selectedCategory == category.value;
                 return InkWell(
                   onTap: () => setState(() => _selectedCategory = category.value),
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: AppSize.radius(20),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    padding: AppSize.paddingH(12, 8),
                     decoration: BoxDecoration(
                       color: isSelected
                           ? AppColors.citrusOrange.withOpacity(0.2)
                           : AppColors.surface2,
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius: AppSize.radius(20),
                       border: Border.all(
                         color: isSelected ? AppColors.citrusOrange : AppColors.border,
                         width: 1,
@@ -156,12 +157,12 @@ class _CreateEditArticlePageState extends State<CreateEditArticlePage> {
                           size: 16,
                           color: isSelected ? AppColors.citrusOrange : AppColors.mutedForeground,
                         ),
-                        const SizedBox(width: 6),
+                        AppSize.gapW(6),
                         Text(
                           category.label,
                           style: TextStyle(
                             color: isSelected ? AppColors.citrusOrange : AppColors.mutedForeground,
-                            fontSize: 13,
+                            fontSize: AppSize.s(13),
                             fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
                           ),
                         ),
@@ -171,33 +172,33 @@ class _CreateEditArticlePageState extends State<CreateEditArticlePage> {
                 );
               }).toList(),
             ),
-            const SizedBox(height: 24),
+            AppSize.gapH(24),
 
             // Заголовок
             Text(
               'Заголовок',
               style: TextStyle(
                 color: AppColors.foreground,
-                fontSize: 16,
+                fontSize: AppSize.s(16),
                 fontWeight: FontWeight.w600,
               ),
             ),
-            const SizedBox(height: 8),
+            AppSize.gapH(8),
             TextFormField(
               controller: _titleController,
-              style: TextStyle(color: AppColors.foreground, fontSize: 16),
+              style: TextStyle(color: AppColors.foreground, fontSize: AppSize.s(16)),
               decoration: InputDecoration(
                 hintText: 'Введите заголовок статьи...',
                 hintStyle: TextStyle(color: AppColors.mutedForeground),
                 filled: true,
                 fillColor: AppColors.inputFieldBackground,
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(AppColors.radiusMd),
+                  borderRadius: BorderRadius.circular(AppSize.s(AppColors.radiusMd)),
                   borderSide: BorderSide(color: AppColors.border),
                 ),
                 focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(AppColors.radiusMd),
-                  borderSide: const BorderSide(color: AppColors.citrusOrange, width: 2),
+                  borderRadius: BorderRadius.circular(AppSize.s(AppColors.radiusMd)),
+                  borderSide: BorderSide(color: AppColors.citrusOrange, width: 2),
                 ),
               ),
               validator: (value) {
@@ -209,38 +210,38 @@ class _CreateEditArticlePageState extends State<CreateEditArticlePage> {
               maxLength: 200,
               maxLines: 2,
             ),
-            const SizedBox(height: 24),
+            AppSize.gapH(24),
 
             // Содержимое
             Text(
               'Содержание',
               style: TextStyle(
                 color: AppColors.foreground,
-                fontSize: 16,
+                fontSize: AppSize.s(16),
                 fontWeight: FontWeight.w600,
               ),
             ),
-            const SizedBox(height: 8),
+            AppSize.gapH(8),
             Text(
               'Поддерживается Markdown разметка: **жирный**, *курсив*, - список, # заголовки',
-              style: TextStyle(color: AppColors.dimForeground, fontSize: 12),
+              style: TextStyle(color: AppColors.dimForeground, fontSize: AppSize.s(12)),
             ),
-            const SizedBox(height: 8),
+            AppSize.gapH(8),
             TextFormField(
               controller: _contentController,
-              style: TextStyle(color: AppColors.foreground, fontSize: 15),
+              style: TextStyle(color: AppColors.foreground, fontSize: AppSize.s(15)),
               decoration: InputDecoration(
                 hintText: 'Напишите статью...',
                 hintStyle: TextStyle(color: AppColors.mutedForeground),
                 filled: true,
                 fillColor: AppColors.inputFieldBackground,
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(AppColors.radiusMd),
+                  borderRadius: BorderRadius.circular(AppSize.s(AppColors.radiusMd)),
                   borderSide: BorderSide(color: AppColors.border),
                 ),
                 focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(AppColors.radiusMd),
-                  borderSide: const BorderSide(color: AppColors.citrusOrange, width: 2),
+                  borderRadius: BorderRadius.circular(AppSize.s(AppColors.radiusMd)),
+                  borderSide: BorderSide(color: AppColors.citrusOrange, width: 2),
                 ),
               ),
               validator: (value) {
@@ -252,21 +253,21 @@ class _CreateEditArticlePageState extends State<CreateEditArticlePage> {
               maxLines: 20,
               minLines: 10,
             ),
-            const SizedBox(height: 32),
+            AppSize.gapH(32),
 
             // Кнопка сохранения
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
                 onPressed: _isSaving ? null : _saveArticle,
-                icon: const Icon(Icons.save),
+                icon: Icon(Icons.save),
                 label: Text(widget.article != null ? 'Сохранить изменения' : 'Создать статью'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.citrusOrange,
                   foregroundColor: AppColors.primaryForeground,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  padding: AppSize.paddingH(0, 16),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppColors.radiusMd),
+                    borderRadius: BorderRadius.circular(AppSize.s(AppColors.radiusMd)),
                   ),
                 ),
               ),
@@ -291,16 +292,16 @@ class _CreateEditArticlePageState extends State<CreateEditArticlePage> {
     }
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: AppSize.padding(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Категория
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            padding: AppSize.paddingH(12, 6),
             decoration: BoxDecoration(
               color: AppColors.accent.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: AppSize.radius(20),
               border: Border.all(color: AppColors.accent.withOpacity(0.3)),
             ),
             child: Row(
@@ -311,26 +312,26 @@ class _CreateEditArticlePageState extends State<CreateEditArticlePage> {
                   color: AppColors.accent,
                   size: 16,
                 ),
-                const SizedBox(width: 6),
+                AppSize.gapW(6),
                 Text(
                   _categories.firstWhere((c) => c.value == _selectedCategory).label,
                   style: TextStyle(
                     color: AppColors.accent,
-                    fontSize: 13,
+                    fontSize: AppSize.s(13),
                     fontWeight: FontWeight.w500,
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 16),
+          AppSize.gapH(16),
 
           // Заголовок
           Text(
             title.isNotEmpty ? title : 'Без заголовка',
             style: TextStyle(
               color: AppColors.foreground,
-              fontSize: 26,
+              fontSize: AppSize.s(26),
               fontWeight: FontWeight.bold,
               height: 1.3,
             ),
@@ -345,42 +346,42 @@ class _CreateEditArticlePageState extends State<CreateEditArticlePage> {
                   styleSheet: MarkdownStyleSheet(
                     p: TextStyle(
                       color: AppColors.mutedForeground,
-                      fontSize: 16,
+                      fontSize: AppSize.s(16),
                       height: 1.7,
                     ),
                     h1: TextStyle(
                       color: AppColors.foreground,
-                      fontSize: 24,
+                      fontSize: AppSize.s(24),
                       fontWeight: FontWeight.bold,
                       height: 1.4,
                     ),
                     h2: TextStyle(
                       color: AppColors.foreground,
-                      fontSize: 20,
+                      fontSize: AppSize.s(20),
                       fontWeight: FontWeight.bold,
                       height: 1.4,
                     ),
                     h3: TextStyle(
                       color: AppColors.foreground,
-                      fontSize: 18,
+                      fontSize: AppSize.s(18),
                       fontWeight: FontWeight.w600,
                       height: 1.4,
                     ),
                     h4: TextStyle(
                       color: AppColors.foreground,
-                      fontSize: 16,
+                      fontSize: AppSize.s(16),
                       fontWeight: FontWeight.w600,
                       height: 1.4,
                     ),
                     h5: TextStyle(
                       color: AppColors.foreground,
-                      fontSize: 15,
+                      fontSize: AppSize.s(15),
                       fontWeight: FontWeight.w600,
                       height: 1.4,
                     ),
                     h6: TextStyle(
                       color: AppColors.foreground,
-                      fontSize: 14,
+                      fontSize: AppSize.s(14),
                       fontWeight: FontWeight.w600,
                       height: 1.4,
                     ),
@@ -394,23 +395,23 @@ class _CreateEditArticlePageState extends State<CreateEditArticlePage> {
                     ),
                     blockquote: TextStyle(
                       color: AppColors.citrusAmber,
-                      fontSize: 16,
+                      fontSize: AppSize.s(16),
                       fontStyle: FontStyle.italic,
                       height: 1.6,
                     ),
-                    blockquotePadding: const EdgeInsets.only(left: 16),
+                    blockquotePadding: AppSize.paddingOnly(left: 16),
                     listBullet: TextStyle(
                       color: AppColors.citrusOrange,
-                      fontSize: 16,
+                      fontSize: AppSize.s(16),
                     ),
                     code: TextStyle(
                       color: AppColors.citrusGreen,
                       backgroundColor: AppColors.surface2,
-                      fontSize: 14,
+                      fontSize: AppSize.s(14),
                     ),
                     codeblockDecoration: BoxDecoration(
                       color: AppColors.surface2,
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: AppSize.radius(8),
                     ),
                   ),
                 )
@@ -453,7 +454,7 @@ class _CreateEditArticlePageState extends State<CreateEditArticlePage> {
     }
 
     // Ждём результат
-    Future.delayed(const Duration(milliseconds: 500), () {
+    Future.delayed(Duration(milliseconds: 500), () {
       if (mounted) {
         setState(() => _isSaving = false);
         // Проверяем, нет ли ошибки
@@ -471,7 +472,7 @@ class CategoryOption {
   final String label;
   final IconData icon;
 
-  const CategoryOption({
+  CategoryOption({
     required this.value,
     required this.label,
     required this.icon,

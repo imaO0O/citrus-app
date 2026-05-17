@@ -15,6 +15,7 @@ class ThemeService extends ChangeNotifier {
   factory ThemeService() => _instance;
 
   static const String _fileName = 'theme_config.json';
+
   ThemeMode _themeMode = ThemeMode.light;
   bool _isLoaded = false;
 

@@ -2,7 +2,7 @@
 -- Citrus App - Database Initialization Script
 -- ============================================================================
 -- Этот файл содержит полную структуру базы данных со всеми таблицами,
--- включая все поля из миграций (002, 03, 04, 05, 06, 07, add_themes).
+-- включая все поля из миграций (002, 03, 04, 05, 06, 07, 08, 09, add_themes).
 -- Используйте для создания БД с нуля.
 -- ============================================================================
 
@@ -27,6 +27,8 @@ CREATE TABLE IF NOT EXISTS users (
     password_hash TEXT NOT NULL,
     name TEXT,
     theme_id UUID DEFAULT '00000000-0000-0000-0000-000000000001',
+    avatar_url TEXT,              -- из миграции 08
+    phone TEXT,                   -- из миграции 08
     created_at TIMESTAMP DEFAULT NOW(),
     CONSTRAINT fk_users_theme FOREIGN KEY (theme_id) REFERENCES themes(id) ON DELETE SET DEFAULT
 );
@@ -183,6 +185,32 @@ CREATE TABLE IF NOT EXISTS user_exercises (
 );
 
 -- ============================================================================
+-- 14. ТОКЕНЫ СБРОСА ПАРОЛЯ
+-- ============================================================================
+-- из миграции 09
+CREATE TABLE IF NOT EXISTS password_reset_tokens (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    code TEXT NOT NULL,
+    used BOOLEAN DEFAULT FALSE,
+    expires_at TIMESTAMP NOT NULL,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- ============================================================================
+-- 15. ПОЛЬЗОВАТЕЛИ КАЗИНО (монеты, награды, задания)
+-- ============================================================================
+-- из миграции 10
+CREATE TABLE IF NOT EXISTS casino_users (
+    user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+    coins INTEGER DEFAULT 0,
+    last_daily_claim TIMESTAMP,
+    quests_done TEXT[] DEFAULT '{}',
+    total_spins INTEGER DEFAULT 0,
+    total_wins INTEGER DEFAULT 0
+);
+
+-- ============================================================================
 -- СТАНДАРТНЫЕ ДАННЫЕ: ТЕМЫ
 -- ============================================================================
 INSERT INTO themes (id, name, is_dark, primary_color, accent_color) VALUES
@@ -235,3 +263,11 @@ CREATE INDEX IF NOT EXISTS idx_user_exercises_type
     ON user_exercises(exercise_type);
 CREATE INDEX IF NOT EXISTS idx_user_exercises_user_type_date 
     ON user_exercises(user_id, exercise_type, completed_at DESC);
+
+-- Токены сброса пароля
+CREATE INDEX IF NOT EXISTS idx_password_reset_tokens_user_code 
+    ON password_reset_tokens(user_id, code, used);
+
+-- Казино
+CREATE INDEX IF NOT EXISTS idx_casino_users_user_id 
+    ON casino_users(user_id);

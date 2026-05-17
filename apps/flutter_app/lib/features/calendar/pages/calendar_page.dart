@@ -6,9 +6,10 @@ import '../bloc/calendar_bloc.dart';
 import '../../auth/bloc/auth_bloc.dart';
 import '../../../models/calendar_event.dart';
 import 'calendar_detail_page.dart';
+import '../../../core/utils/app_size.dart';
 
 class CalendarPage extends StatefulWidget {
-  const CalendarPage({Key? key}) : super(key: key);
+  CalendarPage({Key? key}) : super(key: key);
 
   @override
   State<CalendarPage> createState() => _CalendarPageState();
@@ -68,10 +69,10 @@ class _CalendarPageState extends State<CalendarPage> {
         },
         child: Scaffold(
         appBar: AppBar(
-          title: const Text('Календарь'),
+          title: Text('Календарь'),
           actions: [
             IconButton(
-              icon: const Icon(Icons.today),
+              icon: Icon(Icons.today),
               onPressed: () {
                 setState(() {
                   _focusedDay = DateTime.now();
@@ -86,7 +87,7 @@ class _CalendarPageState extends State<CalendarPage> {
         body: BlocBuilder<CalendarBloc, CalendarState>(
           builder: (context, state) {
             if (state is CalendarLoading) {
-              return const Center(child: CircularProgressIndicator());
+              return Center(child: CircularProgressIndicator());
             }
 
             if (state is CalendarError) {
@@ -94,15 +95,15 @@ class _CalendarPageState extends State<CalendarPage> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(Icons.error_outline, size: 48, color: Colors.red),
-                    const SizedBox(height: 16),
+                    Icon(Icons.error_outline, size: 48, color: Colors.red),
+                    AppSize.gapH(16),
                     Text(state.message, textAlign: TextAlign.center),
-                    const SizedBox(height: 16),
+                    AppSize.gapH(16),
                     ElevatedButton(
                       onPressed: () {
                         context.read<CalendarBloc>().add(LoadCalendar(month: _focusedDay));
                       },
-                      child: const Text('Повторить'),
+                      child: Text('Повторить'),
                     ),
                   ],
                 ),
@@ -113,13 +114,13 @@ class _CalendarPageState extends State<CalendarPage> {
               return Column(
                 children: [
                   _buildCalendar(state),
-                  const Divider(height: 1),
+                  Divider(height: 1),
                   _buildEventsList(state),
                 ],
               );
             }
 
-            return const Center(
+            return Center(
               child: Text('Нажмите "Загрузить" для отображения календаря'),
             );
           },
@@ -127,7 +128,7 @@ class _CalendarPageState extends State<CalendarPage> {
         floatingActionButton: FloatingActionButton(
           heroTag: 'calendar_page_fab',
           onPressed: () => _showAddEventDialog(context),
-          child: const Icon(Icons.add),
+          child: Icon(Icons.add),
         ),
       ),
     ),
@@ -143,7 +144,7 @@ class _CalendarPageState extends State<CalendarPage> {
       calendarFormat: _calendarFormat,
       eventLoader: (day) => state.getEventsForDay(day),
       startingDayOfWeek: StartingDayOfWeek.monday,
-      headerStyle: const HeaderStyle(
+      headerStyle: HeaderStyle(
         formatButtonVisible: true,
         titleCentered: true,
         formatButtonShowsNext: false,
@@ -157,7 +158,7 @@ class _CalendarPageState extends State<CalendarPage> {
         outsideDaysVisible: false,
         weekendTextStyle: TextStyle(color: Colors.red[700]),
         holidayTextStyle: TextStyle(color: Colors.red[700]),
-        selectedDecoration: const BoxDecoration(
+        selectedDecoration: BoxDecoration(
           color: Colors.blue,
           shape: BoxShape.circle,
         ),
@@ -165,7 +166,7 @@ class _CalendarPageState extends State<CalendarPage> {
           color: Colors.blue[200],
           shape: BoxShape.circle,
         ),
-        markerDecoration: const BoxDecoration(
+        markerDecoration: BoxDecoration(
           color: Colors.orange,
           shape: BoxShape.circle,
         ),
@@ -227,26 +228,26 @@ class _CalendarPageState extends State<CalendarPage> {
                     size: 64,
                     color: Colors.grey[400],
                   ),
-                  const SizedBox(height: 16),
+                  AppSize.gapH(16),
                   Text(
                     'Нет событий на ${DateFormat('MMMM yyyy').format(_focusedDay)}',
                     style: TextStyle(
-                      fontSize: 16,
+                      fontSize: AppSize.s(16),
                       color: Colors.grey[600],
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  AppSize.gapH(8),
                   TextButton.icon(
                     onPressed: () => _showAddEventDialog(context),
-                    icon: const Icon(Icons.add),
-                    label: const Text('Добавить событие'),
+                    icon: Icon(Icons.add),
+                    label: Text('Добавить событие'),
                   ),
                 ],
               ),
             )
           : ListView.builder(
               itemCount: events.length,
-              padding: const EdgeInsets.all(8),
+              padding: AppSize.padding(8),
               itemBuilder: (context, index) {
                 final event = events[index];
                 return _buildEventCard(event);
@@ -262,14 +263,14 @@ class _CalendarPageState extends State<CalendarPage> {
         : null;
 
     return Card(
-      margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+      margin: AppSize.paddingH(8, 4),
       child: ListTile(
         leading: CircleAvatar(
           backgroundColor: Colors.blue[100],
           child: Text(
             timeText ?? '',
             style: TextStyle(
-              fontSize: 12,
+              fontSize: AppSize.s(12),
               fontWeight: FontWeight.bold,
               color: Colors.blue[900],
             ),
@@ -277,7 +278,7 @@ class _CalendarPageState extends State<CalendarPage> {
         ),
         title: Text(
           event.title,
-          style: const TextStyle(fontWeight: FontWeight.w600),
+          style: TextStyle(fontWeight: FontWeight.w600),
         ),
         subtitle: event.description != null && event.description!.isNotEmpty
             ? Text(
@@ -319,19 +320,14 @@ class _CalendarPageState extends State<CalendarPage> {
       isScrollControlled: true,
       enableDrag: true,
       isDismissible: true,
-      shape: const RoundedRectangleBorder(
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (context) => SafeArea(
         child: SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
+          physics: BouncingScrollPhysics(),
           child: Padding(
-            padding: EdgeInsets.only(
-              left: 16,
-              right: 16,
-              top: 16,
-              bottom: MediaQuery.of(context).viewInsets.bottom + 16,
-            ),
+            padding: EdgeInsets.only(left: AppSize.w(16), top: AppSize.h(16), right: AppSize.w(16), bottom: MediaQuery.of(context).viewInsets.bottom + AppSize.h(16)),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -339,71 +335,71 @@ class _CalendarPageState extends State<CalendarPage> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
+                    Text(
                       'Новое событие',
-                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                      style: TextStyle(fontSize: AppSize.s(20), fontWeight: FontWeight.bold),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.close),
+                      icon: Icon(Icons.close),
                       onPressed: () => Navigator.pop(context),
                     ),
                   ],
                 ),
-                const Divider(),
+                Divider(),
                 TextField(
                   controller: titleController,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: 'Название',
                     hintText: 'Введите название события',
                     border: OutlineInputBorder(),
                   ),
                   autofocus: true,
                 ),
-                const SizedBox(height: 16),
+                AppSize.gapH(16),
                 TextField(
                   controller: descriptionController,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: 'Описание',
                     hintText: 'Введите описание (необязательно)',
                     border: OutlineInputBorder(),
                   ),
                   maxLines: 3,
                 ),
-                const SizedBox(height: 16),
+                AppSize.gapH(16),
                 ListTile(
-                  leading: const Icon(Icons.access_time),
-                  title: const Text('Время события'),
+                  leading: Icon(Icons.access_time),
+                  title: Text('Время события'),
                   subtitle: Text(
                     selectedTime != null
                         ? 'Выбрано: ${selectedTime!.format(context)}'
                         : 'Не выбрано',
                   ),
-                  trailing: const Icon(Icons.chevron_right),
+                  trailing: Icon(Icons.chevron_right),
                   onTap: () async {
                     final time = await showTimePicker(
                       context: context,
                       initialTime: TimeOfDay.now(),
                     );
                     if (time != null) {
-                      selectedTime = time;
+                      final selectedTime = time;
                     }
                   },
                 ),
                 SwitchListTile(
-                  title: const Text('Уведомление'),
-                  subtitle: const Text('Напомнить о событии'),
+                  title: Text('Уведомление'),
+                  subtitle: Text('Напомнить о событии'),
                   value: notificationEnabled,
                   onChanged: (value) {
-                    notificationEnabled = value;
+                    final notificationEnabled = value;
                   },
-                  secondary: const Icon(Icons.notifications),
+                  secondary: Icon(Icons.notifications),
                 ),
-                const SizedBox(height: 16),
+                AppSize.gapH(16),
                 ElevatedButton(
                   onPressed: () {
                     if (titleController.text.trim().isEmpty) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Введите название события')),
+                        SnackBar(content: Text('Введите название события')),
                       );
                       return;
                     }
@@ -445,19 +441,19 @@ class _CalendarPageState extends State<CalendarPage> {
                     Navigator.pop(context);
 
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
+                      SnackBar(
                         content: Text('Событие добавлено'),
                         backgroundColor: Colors.green,
                       ),
                     );
                   },
                   style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    padding: AppSize.paddingH(0, 16),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: AppSize.radius(12),
                     ),
                   ),
-                  child: const Text('Добавить событие'),
+                  child: Text('Добавить событие'),
                 ),
               ],
             ),

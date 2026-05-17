@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/utils/app_size.dart';
 
 class DailyQuote extends StatelessWidget {
   final String quote;
   final String label;
 
-  const DailyQuote({
+  DailyQuote({
     super.key,
     this.quote = 'Каждый день — это новая возможность стать лучше. Ты справишься!',
     this.label = 'Аффирмация дня',
@@ -14,11 +15,11 @@ class DailyQuote extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+      padding: EdgeInsets.fromLTRB(20, 16, 20, 16),
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: AppSize.padding(16),
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
+          gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
@@ -26,16 +27,16 @@ class DailyQuote extends StatelessWidget {
               Color.fromRGBO(255, 173, 31, 0.08),
             ],
           ),
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: AppSize.radius(16),
           border: Border.all(
-            color: const Color.fromRGBO(255, 140, 66, 0.2),
+            color: Color.fromRGBO(255, 140, 66, 0.2),
           ),
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('✨', style: TextStyle(fontSize: 20)),
-            const SizedBox(width: 12),
+            Text('✨', style: TextStyle(fontSize: AppSize.s(20))),
+            AppSize.gapW(12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -43,17 +44,17 @@ class DailyQuote extends StatelessWidget {
                   Text(
                     '«$quote»',
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: AppSize.s(14),
                       fontStyle: FontStyle.italic,
                       height: 1.5,
                       color: AppColors.mutedForeground,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  AppSize.gapH(8),
                   Text(
                     label,
                     style: TextStyle(
-                      fontSize: 12,
+                      fontSize: AppSize.s(12),
                       color: AppColors.dimForeground,
                     ),
                   ),

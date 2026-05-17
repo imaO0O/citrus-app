@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -6,10 +6,11 @@ import '../core/theme/app_colors.dart';
 import '../core/utils/phone_formatter.dart';
 import '../core/config/api_config.dart';
 import '../core/services/storage_service.dart';
+import '../core/utils/app_size.dart';
 
 class EmergencyModal extends StatefulWidget {
   final VoidCallback onClose;
-  const EmergencyModal({super.key, required this.onClose});
+  EmergencyModal({super.key, required this.onClose});
 
   @override
   State<EmergencyModal> createState() => _EmergencyModalState();
@@ -37,10 +38,10 @@ class _EmergencyModalState extends State<EmergencyModal> {
   Future<void> _loadCuratorPhone() async {
     final storage = StorageService();
     final saved = await storage.getString('curator_phone');
-    if (saved != null && saved.isNotEmpty) {
+    if (saved != null && saved.isNotEmpty && mounted) {
       setState(() {
-        curatorPhone = saved;
-        inputValue = saved;
+        final curatorPhone = saved;
+        final inputValue = saved;
         _phoneController.text = saved;
       });
     }
@@ -84,9 +85,9 @@ class _EmergencyModalState extends State<EmergencyModal> {
     final trimmed = _phoneController.text.trim();
     if (trimmed.isEmpty) return;
     setState(() {
-      curatorPhone = trimmed;
-      inputValue = trimmed;
-      isEditing = false;
+      final curatorPhone = trimmed;
+      final inputValue = trimmed;
+      const isEditing = false;
     });
     _saveCuratorPhone();
   }
@@ -112,13 +113,13 @@ class _EmergencyModalState extends State<EmergencyModal> {
 
     // Сначала пробуем из БД
     if (_trustedContacts.isNotEmpty) {
-      trustedPhone = _trustedContacts.first['phone'];
+      final trustedPhone = _trustedContacts.first['phone'];
     }
 
     // Fallback на SharedPreferences
     if (trustedPhone == null || trustedPhone.isEmpty) {
       final storage = StorageService();
-      trustedPhone = await storage.getString('trusted_contact');
+      final trustedPhone = await storage.getString('trusted_contact');
     }
 
     if (trustedPhone == null || trustedPhone.isEmpty) {
@@ -151,7 +152,7 @@ class _EmergencyModalState extends State<EmergencyModal> {
     } else {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
             content: Text('Не удалось отправить SMS'),
             backgroundColor: AppColors.destructive,
           ),
@@ -190,7 +191,7 @@ class _EmergencyModalState extends State<EmergencyModal> {
             child: Align(
               alignment: Alignment.bottomCenter,
               child: Container(
-                constraints: const BoxConstraints(maxWidth: 500),
+                constraints: BoxConstraints(maxWidth: 500),
                 decoration: BoxDecoration(
                   color: AppColors.surface2,
                   borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
@@ -201,23 +202,23 @@ class _EmergencyModalState extends State<EmergencyModal> {
                     _buildHeader(),
                     Flexible(
                       child: SingleChildScrollView(
-                        padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
+                        padding: EdgeInsets.fromLTRB(24, 16, 24, 16),
                         child: Column(
                           children: [
                             _buildAlertMessage(),
-                            SizedBox(height: 16),
+                            AppSize.gapH(16),
                             if (_showGroundingExercise)
                               _buildGroundingExercise()
                             else ...[
                               _buildContacts(),
-                              SizedBox(height: 12),
+                              AppSize.gapH(12),
                               _buildSosButton(),
-                              SizedBox(height: 16),
+                              AppSize.gapH(16),
                               _buildQuickTechniques(),
-                              SizedBox(height: 16),
+                              AppSize.gapH(16),
                               _buildTipsList(),
                             ],
-                            SizedBox(height: 12),
+                            AppSize.gapH(12),
                             _buildCloseButton(),
                           ],
                         ),
@@ -235,9 +236,9 @@ class _EmergencyModalState extends State<EmergencyModal> {
 
   Widget _buildHeader() {
     return Container(
-      padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
+      padding: EdgeInsets.fromLTRB(24, 24, 24, 16),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
@@ -257,12 +258,12 @@ class _EmergencyModalState extends State<EmergencyModal> {
             height: 48,
             decoration: BoxDecoration(
               color: AppColors.destructive.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: AppSize.radius(16),
               border: Border.all(color: AppColors.destructive.withOpacity(0.3)),
             ),
-            child: Center(child: Text('\u{1F198}', style: TextStyle(fontSize: 24))),
+            child: Center(child: Text('\u{1F198}', style: TextStyle(fontSize: AppSize.s(24)))),
           ),
-          SizedBox(width: 12),
+          AppSize.gapW(12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -270,15 +271,15 @@ class _EmergencyModalState extends State<EmergencyModal> {
                 Text(
                   '\u042D\u043A\u0441\u0442\u0440\u0435\u043D\u043D\u0430\u044F \u043F\u043E\u043C\u043E\u0449\u044C',
                   style: TextStyle(
-                    fontSize: 16,
+                    fontSize: AppSize.s(16),
                     fontWeight: FontWeight.w700,
                     color: AppColors.foreground,
                   ),
                 ),
-                SizedBox(height: 4),
+                AppSize.gapH(4),
                 Text(
                   '\u0422\u044B \u043D\u0435 \u043E\u0434\u0438\u043D, \u043F\u043E\u043C\u043E\u0449\u044C \u0440\u044F\u0434\u043E\u043C',
-                  style: TextStyle(fontSize: 12, color: AppColors.mutedForeground),
+                  style: TextStyle(fontSize: AppSize.s(12), color: AppColors.mutedForeground),
                 ),
               ],
             ),
@@ -290,7 +291,7 @@ class _EmergencyModalState extends State<EmergencyModal> {
               height: 32,
               decoration: BoxDecoration(
                 color: Colors.white.withOpacity(0.07),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: AppSize.radius(12),
               ),
               child: Icon(Icons.close, color: AppColors.mutedForeground, size: 18),
             ),
@@ -302,16 +303,16 @@ class _EmergencyModalState extends State<EmergencyModal> {
 
   Widget _buildAlertMessage() {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: AppSize.padding(16),
       decoration: BoxDecoration(
         color: AppColors.destructive.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: AppSize.radius(16),
         border: Border.all(color: AppColors.destructive.withOpacity(0.2)),
       ),
       child: Text(
         '\u0415\u0441\u043B\u0438 \u0442\u044B \u0432 \u043A\u0440\u0438\u0437\u0438\u0441\u043D\u043E\u0439 \u0441\u0438\u0442\u0443\u0430\u0446\u0438\u0438 \u2014 \u043D\u0435\u043C\u0435\u0434\u043B\u0435\u043D\u043D\u043E \u043E\u0431\u0440\u0430\u0442\u0438\u0441\u044C \u0437\u0430 \u043F\u043E\u043C\u043E\u0449\u044C\u044E. \u0422\u044B \u0432\u0430\u0436\u0435\u043D, \u0438 \u0442\u0435\u0431\u0435 \u043F\u043E\u043C\u043E\u0433\u0443\u0442 24/7.',
         style: TextStyle(
-          fontSize: 13,
+          fontSize: AppSize.s(13),
           color: Color(0xFFFFADA5),
           height: 1.5,
         ),
@@ -330,7 +331,7 @@ class _EmergencyModalState extends State<EmergencyModal> {
           color: AppColors.destructive,
           onTap: () => _makePhoneCall('88002000122'),
         ),
-        SizedBox(height: 8),
+        AppSize.gapH(8),
         _buildContactCard(
           name: 'Служба 112',
           number: '112',
@@ -339,7 +340,7 @@ class _EmergencyModalState extends State<EmergencyModal> {
           color: AppColors.citrusOrange,
           onTap: () => _makePhoneCall('112'),
         ),
-        SizedBox(height: 8),
+        AppSize.gapH(8),
         _buildContactCard(
           name: 'Психолог ВУЗа',
           number: 'Записаться',
@@ -348,7 +349,7 @@ class _EmergencyModalState extends State<EmergencyModal> {
           color: AppColors.citrusPurple,
           onTap: () => _makePhoneCall('88002000122'), // Заглушка
         ),
-        SizedBox(height: 8),
+        AppSize.gapH(8),
         _buildCuratorCard(),
       ],
     );
@@ -365,11 +366,11 @@ class _EmergencyModalState extends State<EmergencyModal> {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        margin: const EdgeInsets.only(bottom: 8),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        margin: AppSize.paddingOnly(bottom: 8),
+        padding: AppSize.paddingH(16, 14),
         decoration: BoxDecoration(
           color: color.withOpacity(0.07),
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: AppSize.radius(16),
           border: Border.all(color: color.withOpacity(0.15)),
         ),
         child: Row(
@@ -379,11 +380,11 @@ class _EmergencyModalState extends State<EmergencyModal> {
               height: 44,
               decoration: BoxDecoration(
                 color: color.withOpacity(0.12),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: AppSize.radius(12),
               ),
               child: Icon(icon, color: color, size: 22),
             ),
-            SizedBox(width: 12),
+            AppSize.gapW(12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -391,24 +392,24 @@ class _EmergencyModalState extends State<EmergencyModal> {
                   Text(
                     name,
                     style: TextStyle(
-                      fontSize: 13,
+                      fontSize: AppSize.s(13),
                       fontWeight: FontWeight.w700,
                       color: AppColors.foreground,
                     ),
                   ),
-                  SizedBox(height: 2),
+                  AppSize.gapH(2),
                   Text(
                     number,
                     style: TextStyle(
-                      fontSize: 12,
+                      fontSize: AppSize.s(12),
                       fontWeight: FontWeight.w600,
                       color: color,
                     ),
                   ),
-                  SizedBox(height: 2),
+                  AppSize.gapH(2),
                   Text(
                     desc,
-                    style: TextStyle(fontSize: 10, color: AppColors.mutedForeground),
+                    style: TextStyle(fontSize: AppSize.s(10), color: AppColors.mutedForeground),
                   ),
                 ],
               ),
@@ -418,7 +419,7 @@ class _EmergencyModalState extends State<EmergencyModal> {
               height: 32,
               decoration: BoxDecoration(
                 color: color.withOpacity(0.12),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: AppSize.radius(12),
               ),
               child: Icon(Icons.phone, color: color, size: 16),
             ),
@@ -431,10 +432,10 @@ class _EmergencyModalState extends State<EmergencyModal> {
   Widget _buildCuratorCard() {
     final color = AppColors.citrusGreen;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      padding: AppSize.paddingH(16, 14),
       decoration: BoxDecoration(
         color: color.withOpacity(0.07),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: AppSize.radius(16),
         border: Border.all(color: color.withOpacity(0.15)),
       ),
       child: Row(
@@ -444,11 +445,11 @@ class _EmergencyModalState extends State<EmergencyModal> {
             height: 44,
             decoration: BoxDecoration(
               color: color.withOpacity(0.12),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: AppSize.radius(12),
             ),
             child: Icon(Icons.school, color: color, size: 22),
           ),
-          SizedBox(width: 12),
+          AppSize.gapW(12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -456,30 +457,30 @@ class _EmergencyModalState extends State<EmergencyModal> {
                 Text(
                   'Куратор учебной группы',
                   style: TextStyle(
-                    fontSize: 13,
+                    fontSize: AppSize.s(13),
                     fontWeight: FontWeight.w700,
                     color: AppColors.foreground,
                   ),
                 ),
-                SizedBox(height: 6),
+                AppSize.gapH(6),
                 if (isEditing)
                   Row(
                     children: [
                       Expanded(
                         child: TextField(
                           controller: _phoneController,
-                          style: TextStyle(fontSize: 12, color: AppColors.foreground),
+                          style: TextStyle(fontSize: AppSize.s(12), color: AppColors.foreground),
                           inputFormatters: [PhoneInputFormatter()],
                           decoration: InputDecoration(
                             hintText: '+7 (___) ___-__-__',
-                            hintStyle: TextStyle(fontSize: 12, color: AppColors.dimForeground),
+                            hintStyle: TextStyle(fontSize: AppSize.s(12), color: AppColors.dimForeground),
                             filled: true,
                             fillColor: Colors.white.withOpacity(0.07),
                             border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: AppSize.radius(12),
                               borderSide: BorderSide(color: color.withOpacity(0.25)),
                             ),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            contentPadding: AppSize.paddingH(12, 8),
                             isDense: true,
                           ),
                           keyboardType: TextInputType.phone,
@@ -487,7 +488,7 @@ class _EmergencyModalState extends State<EmergencyModal> {
                           onSubmitted: (_) => _handleSave(),
                         ),
                       ),
-                      SizedBox(width: 8),
+                      AppSize.gapW(8),
                       GestureDetector(
                         onTap: _handleSave,
                         child: Container(
@@ -495,7 +496,7 @@ class _EmergencyModalState extends State<EmergencyModal> {
                           height: 28,
                           decoration: BoxDecoration(
                             color: color.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: AppSize.radius(8),
                             border: Border.all(color: color.withOpacity(0.3)),
                           ),
                           child: Icon(Icons.check, size: 16),
@@ -510,14 +511,14 @@ class _EmergencyModalState extends State<EmergencyModal> {
                       Text(
                         curatorPhone.isEmpty ? 'Номер не указан' : curatorPhone,
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: AppSize.s(12),
                           fontWeight: FontWeight.w600,
                           color: color,
                         ),
                       ),
                       Text(
                         'Куратор вашей группы',
-                        style: TextStyle(fontSize: 10, color: AppColors.mutedForeground),
+                        style: TextStyle(fontSize: AppSize.s(10), color: AppColors.mutedForeground),
                       ),
                     ],
                   ),
@@ -536,18 +537,18 @@ class _EmergencyModalState extends State<EmergencyModal> {
                           height: 32,
                           decoration: BoxDecoration(
                             color: color.withOpacity(0.12),
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: AppSize.radius(12),
                           ),
                           child: Icon(Icons.phone, color: color, size: 16),
                         ),
                       ),
-                      SizedBox(width: 6),
+                      AppSize.gapW(6),
                       GestureDetector(
                         onTap: () {
                           setState(() {
-                            inputValue = curatorPhone;
+                            final inputValue = curatorPhone;
                             _phoneController.text = curatorPhone;
-                            isEditing = true;
+                            const isEditing = true;
                           });
                         },
                         child: Container(
@@ -555,7 +556,7 @@ class _EmergencyModalState extends State<EmergencyModal> {
                           height: 32,
                           decoration: BoxDecoration(
                             color: Colors.white.withOpacity(0.07),
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: AppSize.radius(12),
                           ),
                           child: Icon(Icons.edit, color: AppColors.mutedForeground, size: 14),
                         ),
@@ -567,16 +568,16 @@ class _EmergencyModalState extends State<EmergencyModal> {
                       setState(() => isEditing = true);
                     },
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      padding: AppSize.paddingH(12, 6),
                       decoration: BoxDecoration(
                         color: color.withOpacity(0.12),
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: AppSize.radius(12),
                         border: Border.all(color: color.withOpacity(0.2)),
                       ),
                       child: Text(
                         'Добавить',
                         style: TextStyle(
-                          fontSize: 11,
+                          fontSize: AppSize.s(11),
                           fontWeight: FontWeight.w600,
                           color: color,
                         ),
@@ -593,19 +594,19 @@ class _EmergencyModalState extends State<EmergencyModal> {
       onTap: _sendSosMessage,
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 16),
+        padding: AppSize.paddingH(0, 16),
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
+          gradient: LinearGradient(
             colors: [AppColors.destructive, Color(0xFFFF5B5B)],
             begin: Alignment.centerLeft,
             end: Alignment.centerRight,
           ),
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: AppSize.radius(16),
           boxShadow: [
             BoxShadow(
               color: AppColors.destructive.withOpacity(0.3),
               blurRadius: 12,
-              offset: const Offset(0, 4),
+              offset: Offset(0, 4),
             ),
           ],
         ),
@@ -613,12 +614,12 @@ class _EmergencyModalState extends State<EmergencyModal> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(Icons.warning_amber_rounded, color: Colors.white, size: 24),
-            SizedBox(width: 8),
+            AppSize.gapW(8),
             Flexible(
               child: Text(
                 '🆘 Отправить SOS',
                 style: TextStyle(
-                  fontSize: 14,
+                  fontSize: AppSize.s(14),
                   fontWeight: FontWeight.w700,
                   color: Colors.white,
                 ),
@@ -635,11 +636,11 @@ class _EmergencyModalState extends State<EmergencyModal> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: EdgeInsets.only(bottom: 8),
+          padding: AppSize.paddingOnly(bottom: 8),
           child: Text(
             'БЫСТРАЯ ТЕХНИКА САМОПОМОЩИ',
             style: TextStyle(
-              fontSize: 10,
+              fontSize: AppSize.s(10),
               fontWeight: FontWeight.w700,
               color: AppColors.dimForeground,
               letterSpacing: 0.8,
@@ -650,10 +651,10 @@ class _EmergencyModalState extends State<EmergencyModal> {
           onTap: _startGroundingExercise,
           child: Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(14),
+            padding: AppSize.padding(14),
             decoration: BoxDecoration(
               color: AppColors.citrusGreen.withOpacity(0.06),
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: AppSize.radius(16),
               border: Border.all(color: AppColors.citrusGreen.withOpacity(0.12)),
             ),
             child: Row(
@@ -663,11 +664,11 @@ class _EmergencyModalState extends State<EmergencyModal> {
                   height: 40,
                   decoration: BoxDecoration(
                     color: AppColors.citrusGreen.withOpacity(0.12),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: AppSize.radius(12),
                   ),
                   child: Icon(Icons.favorite, color: AppColors.citrusGreen, size: 22),
                 ),
-                SizedBox(width: 12),
+                AppSize.gapW(12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -675,15 +676,15 @@ class _EmergencyModalState extends State<EmergencyModal> {
                       Text(
                         '5-4-3-2-1',
                         style: TextStyle(
-                          fontSize: 13,
+                          fontSize: AppSize.s(13),
                           fontWeight: FontWeight.w700,
                           color: AppColors.foreground,
                         ),
                       ),
-                      SizedBox(height: 2),
+                      AppSize.gapH(2),
                       Text(
                         '5 видишь · 4 потрогать · 3 слышишь',
-                        style: TextStyle(fontSize: 10, color: AppColors.mutedForeground),
+                        style: TextStyle(fontSize: AppSize.s(10), color: AppColors.mutedForeground),
                       ),
                     ],
                   ),
@@ -699,10 +700,10 @@ class _EmergencyModalState extends State<EmergencyModal> {
 
   Widget _buildGroundingExercise() {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: AppSize.padding(20),
       decoration: BoxDecoration(
         color: AppColors.citrusGreen.withOpacity(0.06),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: AppSize.radius(20),
         border: Border.all(color: AppColors.citrusGreen.withOpacity(0.2)),
       ),
       child: Column(
@@ -713,7 +714,7 @@ class _EmergencyModalState extends State<EmergencyModal> {
               Text(
                 'Техника 5-4-3-2-1',
                 style: TextStyle(
-                  fontSize: 14,
+                  fontSize: AppSize.s(14),
                   fontWeight: FontWeight.w700,
                   color: AppColors.foreground,
                 ),
@@ -725,54 +726,54 @@ class _EmergencyModalState extends State<EmergencyModal> {
                   height: 28,
                   decoration: BoxDecoration(
                     color: Colors.white.withOpacity(0.07),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: AppSize.radius(8),
                   ),
                   child: Icon(Icons.close, size: 16, color: AppColors.mutedForeground),
                 ),
               ),
             ],
           ),
-          SizedBox(height: 16),
+          AppSize.gapH(16),
           _buildGroundingStep(
             number: 5,
             icon: Icons.visibility,
             text: 'Назови 5 вещей, которые ты ВИДИШЬ',
             color: AppColors.citrusPurple,
           ),
-          SizedBox(height: 8),
+          AppSize.gapH(8),
           _buildGroundingStep(
             number: 4,
             icon: Icons.back_hand,
             text: 'Назови 4 вещи, которые ты можешь ПОТРОГАТЬ',
             color: AppColors.citrusGreen,
           ),
-          SizedBox(height: 8),
+          AppSize.gapH(8),
           _buildGroundingStep(
             number: 3,
             icon: Icons.hearing,
             text: 'Назови 3 звука, которые ты СЛЫШИШЬ',
             color: AppColors.citrusOrange,
           ),
-          SizedBox(height: 8),
+          AppSize.gapH(8),
           _buildGroundingStep(
             number: 2,
             icon: Icons.air,
             text: 'Назови 2 запаха, которые ты ЧУВСТВУЕШЬ',
             color: AppColors.citrusPurple,
           ),
-          SizedBox(height: 8),
+          AppSize.gapH(8),
           _buildGroundingStep(
             number: 1,
             icon: Icons.favorite,
             text: 'Назови 1 вещь, которая ты чувствуешь на ВКУС',
             color: AppColors.destructive,
           ),
-          SizedBox(height: 16),
+          AppSize.gapH(16),
           Text(
             'Эта техника помогает вернуться в настоящий момент и снизить тревогу.',
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: 11,
+              fontSize: AppSize.s(11),
               color: AppColors.mutedForeground,
               height: 1.5,
             ),
@@ -795,25 +796,25 @@ class _EmergencyModalState extends State<EmergencyModal> {
           height: 36,
           decoration: BoxDecoration(
             color: color.withOpacity(0.12),
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: AppSize.radius(10),
           ),
           child: Center(
             child: Text(
               '$number',
               style: TextStyle(
-                fontSize: 16,
+                fontSize: AppSize.s(16),
                 fontWeight: FontWeight.w700,
                 color: color,
               ),
             ),
           ),
         ),
-        SizedBox(width: 10),
+        AppSize.gapW(10),
         Expanded(
           child: Text(
             text,
             style: TextStyle(
-              fontSize: 12,
+              fontSize: AppSize.s(12),
               color: AppColors.foreground,
               height: 1.4,
             ),
@@ -832,10 +833,10 @@ class _EmergencyModalState extends State<EmergencyModal> {
     ];
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: AppSize.padding(16),
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.03),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: AppSize.radius(16),
         border: Border.all(color: Colors.white.withOpacity(0.06)),
       ),
       child: Column(
@@ -844,26 +845,26 @@ class _EmergencyModalState extends State<EmergencyModal> {
           Text(
             'Что делать прямо сейчас:',
             style: TextStyle(
-              fontSize: 11,
+              fontSize: AppSize.s(11),
               fontWeight: FontWeight.w700,
               color: AppColors.mutedForeground,
             ),
           ),
-          SizedBox(height: 8),
+          AppSize.gapH(8),
           ...tips.map((tip) => Padding(
-            padding: const EdgeInsets.only(bottom: 6),
+            padding: AppSize.paddingOnly(bottom: 6),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   '→',
-                  style: TextStyle(color: AppColors.citrusPurple, fontSize: 12),
+                  style: TextStyle(color: AppColors.citrusPurple, fontSize: AppSize.s(12)),
                 ),
-                SizedBox(width: 6),
+                AppSize.gapW(6),
                 Expanded(
                   child: Text(
                     tip,
-                    style: TextStyle(fontSize: 12, color: AppColors.mutedForeground),
+                    style: TextStyle(fontSize: AppSize.s(12), color: AppColors.mutedForeground),
                   ),
                 ),
               ],
@@ -879,16 +880,16 @@ class _EmergencyModalState extends State<EmergencyModal> {
       onTap: widget.onClose,
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 14),
+        padding: AppSize.paddingH(0, 14),
         decoration: BoxDecoration(
           color: Colors.white.withOpacity(0.07),
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: AppSize.radius(16),
         ),
         child: Text(
           'Закрыть',
           textAlign: TextAlign.center,
           style: TextStyle(
-            fontSize: 13,
+            fontSize: AppSize.s(13),
             fontWeight: FontWeight.w700,
             color: AppColors.mutedForeground,
           ),
