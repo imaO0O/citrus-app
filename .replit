@@ -26,19 +26,32 @@ args = "Start application"
 name = "Start application"
 author = "agent"
 
-[workflows.workflow.metadata]
-outputType = "webview"
-
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "cd apps/dart_frog_backend && dart run server.dart"
 waitForPort = 5000
 
+[workflows.workflow.metadata]
+outputType = "webview"
+
+[[workflows.workflow]]
+name = "dart pub get"
+mode = "sequential"
+author = 58220216
+
+[[workflows.workflow.tasks]]
+task = "packager.installForLanguage"
+args = "dart-pub"
+
 [[ports]]
 localPort = 5000
 externalPort = 80
 
+[[ports]]
+localPort = 5050
+externalPort = 3000
+
 [deployment]
 deploymentTarget = "vm"
-run = ["bash", "-c", "cd apps/dart_frog_backend && dart run server.dart"]
-build = ["bash", "-c", "cd apps/dart_frog_backend && dart pub get"]
+run = ["bash", "-c", "cd apps/dart_frog_backend && ./server"]
+build = ["bash", "-c", "cd apps/dart_frog_backend && dart pub get && dart compile exe server.dart -o server"]

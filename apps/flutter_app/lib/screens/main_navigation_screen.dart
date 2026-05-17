@@ -22,11 +22,13 @@ import '../features/auth/bloc/auth_bloc.dart';
 import '../bloc/dashboard_bloc.dart';
 import '../core/repository/sleep_repository.dart';
 import '../features/diary/bloc/diary_bloc.dart';
+import '../features/sleep/bloc/sleep_bloc.dart';
 import '../features/articles/pages/articles_page.dart';
 import '../features/articles/bloc/article_bloc.dart';
+import '../core/utils/app_size.dart';
 
 class MainNavigationScreen extends StatefulWidget {
-  const MainNavigationScreen({super.key});
+  MainNavigationScreen({super.key});
 
   @override
   State<MainNavigationScreen> createState() => _MainNavigationScreenState();
@@ -54,7 +56,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   void initState() {
     super.initState();
     _screens.addAll([
-      HomePage(                 // 0 — homepage из test_fornt
+      HomePage(                 // 0 — homepage
         onNavigateToExercises: () => _setIndex(9),
         onNavigateToChat: () => _setIndex(2),
         onNavigateToDiary: () => _setIndex(3),
@@ -72,7 +74,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       ExercisesScreen(),           // 9
       AnalyticsScreen(key: _analyticsKey),           // 10
       SettingsScreen(),            // 11
-      const ArticlesPage(showBackButton: false),  // 12
+      ArticlesPage(showBackButton: false),  // 12
     ]);
 
     // Инициализация BLoC при старте
@@ -84,6 +86,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           debugPrint('MainNav: init — пользователь уже авторизован, userId=${authState.user.id}');
           context.read<DashboardBloc>().updateUserId(authState.user.id, token: authState.user.token);
           context.read<DiaryBloc>().updateUserId(authState.user.id, token: authState.user.token);
+          context.read<SleepBloc>().updateUserId(authState.user.id, token: authState.user.token);
           context.read<ArticleBloc>().setToken(authState.user.token);
         }
       } catch (e) {
@@ -92,7 +95,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     });
   }
 
-  final List<Map<String, String>> _allFeatures = const [
+  final List<Map<String, String>> _allFeatures = [
     {'path': '4',  'label': 'Аффирмации',    'icon': '💫', 'desc': 'Позитивные установки'},
     {'path': '5',  'label': 'Галерея',       'icon': '📸', 'desc': 'Счастливые моменты'},
     {'path': '6',  'label': 'Антистресс',    'icon': '🎮', 'desc': 'Снять напряжение'},
@@ -140,6 +143,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                     context.read<DiaryBloc>().updateUserId(state.user.id, token: state.user.token);
                   } catch (e) {}
                   try {
+                    context.read<SleepBloc>().updateUserId(state.user.id, token: state.user.token);
+                  } catch (e) {}
+                  try {
                     context.read<ArticleBloc>().setToken(state.user.token);
                   } catch (e) {}
                 }
@@ -166,19 +172,19 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                             width: 64,
                             height: 64,
                             decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(20),
-                              gradient: const LinearGradient(
+                              borderRadius: AppSize.radius(20),
+                              gradient: LinearGradient(
                                 begin: Alignment.topLeft,
                                 end: Alignment.bottomRight,
                                 colors: [AppColors.citrusOrange, AppColors.citrusAmber],
                               ),
                             ),
-                            child: const Center(child: Text('🍊', style: TextStyle(fontSize: 32))),
+                            child: Center(child: Text('🍊', style: TextStyle(fontSize: AppSize.s(32)))),
                           ),
-                          const SizedBox(height: 24),
+                          AppSize.gapH(24),
                           Text(
                             'Загрузка...',
-                            style: TextStyle(color: AppColors.mutedForeground, fontSize: 14),
+                            style: TextStyle(color: AppColors.mutedForeground, fontSize: AppSize.s(14)),
                           ),
                         ],
                       ),
@@ -187,11 +193,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                 );
               }
               if (authState is AuthUnauthenticated) {
-                return const SizedBox.shrink(); // redirect перенаправит на /auth
+                return SizedBox.shrink(); // redirect перенаправит на /auth
               }
 
               return AnnotatedRegion<SystemUiOverlayStyle>(
-                value: const SystemUiOverlayStyle(
+                value: SystemUiOverlayStyle(
                   statusBarColor: Colors.transparent,
                   statusBarIconBrightness: Brightness.light,
                   systemNavigationBarColor: Colors.transparent,
@@ -230,7 +236,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
   Widget _buildHeader() {
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+      padding: EdgeInsets.fromLTRB(16, 12, 16, 12),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
@@ -253,8 +259,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                 width: 32,
                 height: 32,
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  gradient: const LinearGradient(
+                  borderRadius: AppSize.radius(12),
+                  gradient: LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: [AppColors.citrusOrange, AppColors.citrusAmber],
@@ -267,30 +273,30 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                   ],
                 ),
                 child: Center(
-                  child: Text('🍊', style: TextStyle(fontSize: 16)),
+                  child: Text('🍊', style: TextStyle(fontSize: AppSize.s(16))),
                 ),
               ),
-              SizedBox(width: 8),
+              AppSize.gapW(8),
               Text(
                 'Цитрус',
                 style: TextStyle(
-                  fontSize: 16,
+                  fontSize: AppSize.s(16),
                   fontWeight: FontWeight.w700,
                   color: AppColors.foreground,
                   letterSpacing: -0.5,
                 ),
               ),
-              SizedBox(width: 6),
+              AppSize.gapW(6),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                padding: AppSize.paddingH(8, 2),
                 decoration: BoxDecoration(
                   color: AppColors.citrusOrange.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(999),
+                  borderRadius: AppSize.radius(999),
                 ),
                 child: Text(
                   'Beta',
                   style: TextStyle(
-                    fontSize: 10,
+                    fontSize: AppSize.s(10),
                     fontWeight: FontWeight.w500,
                     color: AppColors.citrusOrange,
                   ),
@@ -305,30 +311,30 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                 height: 32,
                 decoration: BoxDecoration(
                   color: Colors.white.withOpacity(0.05),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: AppSize.radius(12),
                 ),
                 child: Icon(Icons.notifications_none,
                     color: AppColors.mutedForeground, size: 18),
               ),
-              SizedBox(width: 8),
+              AppSize.gapW(8),
               GestureDetector(
                 onTap: () => setState(() => _showEmergency = true),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: AppSize.paddingH(12, 6),
                   decoration: BoxDecoration(
                     color: AppColors.destructive.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: AppSize.radius(12),
                     border: Border.all(color: AppColors.destructive.withOpacity(0.3)),
                   ),
                   child: Row(
                     children: [
                       Icon(Icons.warning_amber_rounded,
                           color: AppColors.destructive, size: 14),
-                      SizedBox(width: 4),
+                      AppSize.gapW(4),
                       Text(
                         'SOS',
                         style: TextStyle(
-                          fontSize: 11,
+                          fontSize: AppSize.s(11),
                           fontWeight: FontWeight.w600,
                           color: AppColors.destructive,
                         ),
@@ -353,7 +359,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     ];
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+      padding: EdgeInsets.fromLTRB(16, 8, 16, 16),
       decoration: BoxDecoration(
         color: AppColors.background.withOpacity(0.95),
         border: Border(
@@ -361,14 +367,14 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         ),
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: AppSize.radius(16),
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+            padding: AppSize.paddingH(4, 4),
             decoration: BoxDecoration(
               color: AppColors.foreground.withOpacity(0.03),
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: AppSize.radius(16),
             ),
             child: Row(
               children: [
@@ -380,12 +386,12 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                     child: GestureDetector(
                       onTap: () => _setIndex(index),
                       child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        padding: AppSize.paddingH(0, 8),
                         decoration: BoxDecoration(
                           color: active
                               ? AppColors.citrusOrange.withOpacity(0.15)
                               : Colors.transparent,
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: AppSize.radius(12),
                         ),
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
@@ -399,11 +405,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                                   : AppColors.dimForeground,
                               size: 20,
                             ),
-                            SizedBox(height: 4),
+                            AppSize.gapH(4),
                             Text(
                               item['label'] as String,
                               style: TextStyle(
-                                fontSize: 10,
+                                fontSize: AppSize.s(10),
                                 fontWeight: active ? FontWeight.w600 : FontWeight.w400,
                                 color: active
                                     ? AppColors.citrusOrange
@@ -421,12 +427,12 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                   child: GestureDetector(
                     onTap: () => setState(() => _showMenu = true),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      padding: AppSize.paddingH(0, 8),
                       decoration: BoxDecoration(
                         color: _isMenuActive
                             ? AppColors.citrusOrange.withOpacity(0.15)
                             : Colors.transparent,
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: AppSize.radius(12),
                       ),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
@@ -438,11 +444,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                                 : AppColors.dimForeground,
                             size: 20,
                           ),
-                          SizedBox(height: 4),
+                          AppSize.gapH(4),
                           Text(
                             'Ещё',
                             style: TextStyle(
-                              fontSize: 10,
+                              fontSize: AppSize.s(10),
                               fontWeight: _isMenuActive ? FontWeight.w600 : FontWeight.w400,
                               color: _isMenuActive
                                   ? AppColors.citrusOrange
@@ -479,12 +485,12 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                 ),
                 decoration: BoxDecoration(
                   color: AppColors.surface2,
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
                   border: Border(
                     top: BorderSide(color: AppColors.citrusOrange.withOpacity(0.15)),
                   ),
                 ),
-                padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
+                padding: EdgeInsets.fromLTRB(24, 24, 24, 32),
                 child: SingleChildScrollView(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -498,16 +504,16 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                             Text(
                               'Все функции',
                               style: TextStyle(
-                                fontSize: 18,
+                                fontSize: AppSize.s(18),
                                 fontWeight: FontWeight.w700,
                                 color: AppColors.foreground,
                               ),
                             ),
-                            SizedBox(height: 4),
+                            AppSize.gapH(4),
                             Text(
                               'Все инструменты ментального здоровья',
                               style: TextStyle(
-                                  fontSize: 11, color: AppColors.mutedForeground),
+                                  fontSize: AppSize.s(11), color: AppColors.mutedForeground),
                             ),
                           ],
                         ),
@@ -518,7 +524,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                             height: 32,
                             decoration: BoxDecoration(
                               color: Colors.white.withOpacity(0.08),
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: AppSize.radius(12),
                             ),
                             child: Icon(Icons.close,
                                 color: AppColors.mutedForeground, size: 18),
@@ -526,11 +532,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                         ),
                       ],
                     ),
-                    SizedBox(height: 20),
+                    AppSize.gapH(20),
                     GridView.count(
                       shrinkWrap: true,
                       crossAxisCount: 3,
-                      physics: const NeverScrollableScrollPhysics(),
+                      physics: NeverScrollableScrollPhysics(),
                       mainAxisSpacing: 12,
                       crossAxisSpacing: 12,
                       childAspectRatio: 0.85,
@@ -542,12 +548,12 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                           _setIndex(featureIndex);
                         },
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+                            padding: AppSize.paddingH(8, 10),
                             decoration: BoxDecoration(
                               color: isActive
                                   ? AppColors.citrusOrange.withOpacity(0.15)
                                   : Colors.white.withOpacity(0.04),
-                              borderRadius: BorderRadius.circular(16),
+                              borderRadius: AppSize.radius(16),
                               border: Border.all(
                                 color: isActive
                                     ? AppColors.citrusOrange.withOpacity(0.35)
@@ -558,12 +564,12 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Text(feature['icon'] as String,
-                                    style: TextStyle(fontSize: 22)),
-                                SizedBox(height: 4),
+                                    style: TextStyle(fontSize: AppSize.s(22))),
+                                AppSize.gapH(4),
                                 Text(
                                   feature['label'] as String,
                                   style: TextStyle(
-                                    fontSize: 11,
+                                    fontSize: AppSize.s(11),
                                     fontWeight: FontWeight.w500,
                                     color: isActive
                                         ? AppColors.citrusOrange
@@ -573,11 +579,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                 ),
-                                SizedBox(height: 1),
+                                AppSize.gapH(1),
                                 Text(
                                   feature['desc'] as String,
                                   style: TextStyle(
-                                      fontSize: 9,
+                                      fontSize: AppSize.s(9),
                                       color: AppColors.dimForeground),
                                   textAlign: TextAlign.center,
                                   maxLines: 2,
@@ -588,26 +594,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                           ),
                         );
                       }).toList(),
-                    ),
-                    Container(
-                      margin: const EdgeInsets.only(top: 16),
-                      padding: const EdgeInsets.only(top: 16),
-                      decoration: BoxDecoration(
-                        border: Border(
-                            top: BorderSide(color: Colors.white.withOpacity(0.06))),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Быстрый доступ',
-                            style: TextStyle(
-                                fontSize: 11, color: AppColors.mutedForeground),
-                          ),
-                          Icon(Icons.chevron_right,
-                              color: AppColors.mutedForeground, size: 14),
-                        ],
-                      ),
                     ),
                     ],
                   ),

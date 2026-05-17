@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import '../core/theme/app_colors.dart';
@@ -6,9 +6,10 @@ import '../features/calendar/bloc/calendar_bloc.dart';
 import '../features/auth/bloc/auth_bloc.dart';
 import '../models/calendar_event.dart';
 import '../screens/models/mood.dart';
+import '../core/utils/app_size.dart';
 
 class CalendarScreen extends StatefulWidget {
-  const CalendarScreen({super.key});
+  CalendarScreen({super.key});
 
   @override
   State<CalendarScreen> createState() => _CalendarScreenState();
@@ -117,9 +118,9 @@ class _CalendarScreenState extends State<CalendarScreen> with WidgetsBindingObse
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(Icons.error_outline, size: 48, color: AppColors.destructive),
-                    SizedBox(height: 16),
+                    AppSize.gapH(16),
                     Text(state.message, style: TextStyle(color: AppColors.mutedForeground)),
-                    SizedBox(height: 16),
+                    AppSize.gapH(16),
                     ElevatedButton(onPressed: _loadCalendar, child: Text('Повторить')),
                   ],
                 ),
@@ -133,22 +134,22 @@ class _CalendarScreenState extends State<CalendarScreen> with WidgetsBindingObse
             final moodAverages = state is CalendarLoaded ? state.moodAverages : <DateTime, double>{};
 
             return SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
+              padding: EdgeInsets.fromLTRB(16, 16, 16, 80),
               child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 480),
+                constraints: BoxConstraints(maxWidth: 480),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _buildMonthNavigation(),
-                    SizedBox(height: 16),
+                    AppSize.gapH(16),
                     _buildWeekdayHeaders(),
-                    SizedBox(height: 8),
+                    AppSize.gapH(8),
                     _buildCalendarGrid(days, today, eventsByDay, moodAverages),
                     if (_selectedDay != null) ...[
-                      SizedBox(height: 16),
+                      AppSize.gapH(16),
                       _buildSelectedDayPanel(eventsByDay),
                     ],
-                    if (_selectedDay != null) SizedBox(height: 24),
+                    if (_selectedDay != null) AppSize.gapH(24),
                     _buildEventsList(events),
                   ],
                 ),
@@ -177,7 +178,7 @@ class _CalendarScreenState extends State<CalendarScreen> with WidgetsBindingObse
             height: 36,
             decoration: BoxDecoration(
               color: AppColors.surface1,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: AppSize.radius(12),
               border: Border.all(color: Colors.white.withOpacity(0.07)),
             ),
             child: Icon(Icons.chevron_left, color: AppColors.foreground, size: 18),
@@ -186,7 +187,7 @@ class _CalendarScreenState extends State<CalendarScreen> with WidgetsBindingObse
         Text(
           '${_monthNames[_focusedMonth.month - 1]} ${_focusedMonth.year}',
           style: TextStyle(
-            fontSize: 18,
+            fontSize: AppSize.s(18),
             fontWeight: FontWeight.w600,
             letterSpacing: 1.2,
             color: AppColors.foreground,
@@ -199,7 +200,7 @@ class _CalendarScreenState extends State<CalendarScreen> with WidgetsBindingObse
             height: 36,
             decoration: BoxDecoration(
               color: AppColors.surface1,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: AppSize.radius(12),
               border: Border.all(color: Colors.white.withOpacity(0.07)),
             ),
             child: Icon(Icons.chevron_right, color: AppColors.foreground, size: 18),
@@ -213,7 +214,7 @@ class _CalendarScreenState extends State<CalendarScreen> with WidgetsBindingObse
     const weekdays = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
     return GridView.count(
       shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
+      physics: NeverScrollableScrollPhysics(),
       crossAxisCount: 7,
       childAspectRatio: 4,
       padding: EdgeInsets.zero,
@@ -223,7 +224,7 @@ class _CalendarScreenState extends State<CalendarScreen> with WidgetsBindingObse
                   day,
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontSize: 12,
+                    fontSize: AppSize.s(12),
                     fontWeight: FontWeight.w500,
                     color: AppColors.mutedForeground,
                   ),
@@ -236,8 +237,8 @@ class _CalendarScreenState extends State<CalendarScreen> with WidgetsBindingObse
   Widget _buildCalendarGrid(List<DateTime> days, DateTime today, Map<DateTime, List<CalendarEventModel>> eventsByDay, Map<DateTime, double> moodAverages) {
     return GridView.builder(
       shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+      physics: NeverScrollableScrollPhysics(),
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 7,
         mainAxisSpacing: 4,
         crossAxisSpacing: 4,
@@ -259,11 +260,11 @@ class _CalendarScreenState extends State<CalendarScreen> with WidgetsBindingObse
         Color borderColor = Colors.transparent;
 
         if (isSelected) {
-          bgColor = AppColors.citrusOrange.withOpacity(0.2);
-          borderColor = AppColors.citrusOrange.withOpacity(0.5);
+          final bgColor = AppColors.citrusOrange.withOpacity(0.2);
+          final borderColor = AppColors.citrusOrange.withOpacity(0.5);
         } else if (isToday) {
-          bgColor = AppColors.citrusOrange.withOpacity(0.08);
-          borderColor = AppColors.citrusOrange.withOpacity(0.25);
+          final bgColor = AppColors.citrusOrange.withOpacity(0.08);
+          final borderColor = AppColors.citrusOrange.withOpacity(0.25);
         }
 
         // Определяем цвет фона на основе среднего настроения
@@ -271,7 +272,7 @@ class _CalendarScreenState extends State<CalendarScreen> with WidgetsBindingObse
           // Округляем до ближайшего целого moodId
           final roundedMoodId = avgMood!.round().clamp(0, Mood.all.length - 1);
           final moodColor = Mood.all[roundedMoodId].color;
-          bgColor = moodColor.withOpacity(0.15);
+          final bgColor = moodColor.withOpacity(0.15);
         }
 
         return GestureDetector(
@@ -279,7 +280,7 @@ class _CalendarScreenState extends State<CalendarScreen> with WidgetsBindingObse
           child: Container(
             decoration: BoxDecoration(
               color: bgColor,
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: AppSize.radius(8),
               border: Border.all(color: borderColor),
             ),
             child: Column(
@@ -288,22 +289,22 @@ class _CalendarScreenState extends State<CalendarScreen> with WidgetsBindingObse
                 Text(
                   isCurrentMonth ? '${day.day}' : '',
                   style: TextStyle(
-                    fontSize: 14,
+                    fontSize: AppSize.s(14),
                     fontWeight: isToday || isSelected ? FontWeight.w600 : FontWeight.w500,
                     color: isCurrentMonth ? AppColors.foreground : AppColors.dimForeground,
                   ),
                 ),
                 if (hasMood)
                   Container(
-                    margin: const EdgeInsets.only(top: 2),
+                    margin: AppSize.paddingOnly(top: 2),
                     child: Text(
                       _getMoodEmoji(avgMood!),
-                      style: TextStyle(fontSize: 12),
+                      style: TextStyle(fontSize: AppSize.s(12)),
                     ),
                   )
                 else if (hasEvents && isCurrentMonth)
                   Container(
-                    margin: const EdgeInsets.only(top: 4),
+                    margin: AppSize.paddingOnly(top: 4),
                     width: 6,
                     height: 6,
                     decoration: BoxDecoration(
@@ -330,10 +331,10 @@ class _CalendarScreenState extends State<CalendarScreen> with WidgetsBindingObse
     final dayEvents = eventsByDay[dayKey] ?? [];
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: AppSize.padding(16),
       decoration: BoxDecoration(
         color: AppColors.surface1,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: AppSize.radius(16),
         border: Border.all(color: Colors.white.withOpacity(0.06)),
       ),
       child: Column(
@@ -345,7 +346,7 @@ class _CalendarScreenState extends State<CalendarScreen> with WidgetsBindingObse
               Text(
                 '${selected.day} ${_monthNames[selected.month - 1]}',
                 style: TextStyle(
-                  fontSize: 16,
+                  fontSize: AppSize.s(16),
                   fontWeight: FontWeight.w600,
                   color: AppColors.foreground,
                 ),
@@ -353,15 +354,15 @@ class _CalendarScreenState extends State<CalendarScreen> with WidgetsBindingObse
               GestureDetector(
                 onTap: () => _showAddEventDialog(context, selected),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: AppSize.paddingH(12, 6),
                   decoration: BoxDecoration(
                     color: AppColors.citrusOrange.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: AppSize.radius(12),
                   ),
                   child: Text(
                     'Добавить',
                     style: TextStyle(
-                      fontSize: 13,
+                      fontSize: AppSize.s(13),
                       fontWeight: FontWeight.w500,
                       color: AppColors.citrusOrange,
                     ),
@@ -371,7 +372,7 @@ class _CalendarScreenState extends State<CalendarScreen> with WidgetsBindingObse
             ],
           ),
           if (dayEvents.isNotEmpty) ...[
-            SizedBox(height: 12),
+            AppSize.gapH(12),
             ...dayEvents.map((event) => _buildEventCard(event)),
           ],
         ],
@@ -381,28 +382,28 @@ class _CalendarScreenState extends State<CalendarScreen> with WidgetsBindingObse
 
   Widget _buildEventCard(CalendarEventModel event, {bool showActions = false}) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
+      margin: AppSize.paddingOnly(bottom: 8),
+      padding: AppSize.padding(12),
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.04),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppSize.radius(12),
       ),
       child: Row(
         children: [
-          Text('📌', style: TextStyle(fontSize: 18)),
-          SizedBox(width: 8),
+          Text('📌', style: TextStyle(fontSize: AppSize.s(18))),
+          AppSize.gapW(8),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   event.title,
-                  style: TextStyle(fontSize: 14, color: AppColors.foreground),
+                  style: TextStyle(fontSize: AppSize.s(14), color: AppColors.foreground),
                 ),
                 if (event.description != null && event.description!.isNotEmpty)
                   Text(
                     event.description!,
-                    style: TextStyle(fontSize: 12, color: AppColors.mutedForeground),
+                    style: TextStyle(fontSize: AppSize.s(12), color: AppColors.mutedForeground),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -411,10 +412,10 @@ class _CalendarScreenState extends State<CalendarScreen> with WidgetsBindingObse
           ),
           if (event.startTime != null)
             Padding(
-              padding: const EdgeInsets.only(right: 8),
+              padding: AppSize.paddingOnly(right: 8),
               child: Text(
                 event.startTime!.substring(0, 5),
-                style: TextStyle(fontSize: 12, color: AppColors.dimForeground),
+                style: TextStyle(fontSize: AppSize.s(12), color: AppColors.dimForeground),
               ),
             ),
           if (showActions) ...[
@@ -438,11 +439,11 @@ class _CalendarScreenState extends State<CalendarScreen> with WidgetsBindingObse
     if (events.isEmpty) {
       return Center(
         child: Padding(
-          padding: const EdgeInsets.all(32),
+          padding: AppSize.padding(32),
           child: Column(
             children: [
               Icon(Icons.event_note, size: 48, color: AppColors.dimForeground),
-              SizedBox(height: 8),
+              AppSize.gapH(8),
               Text(
                 'Нет событий',
                 style: TextStyle(color: AppColors.mutedForeground),
@@ -459,13 +460,13 @@ class _CalendarScreenState extends State<CalendarScreen> with WidgetsBindingObse
         Text(
           'СОБЫТИЯ МЕСЯЦА',
           style: TextStyle(
-            fontSize: 11,
+            fontSize: AppSize.s(11),
             fontWeight: FontWeight.w700,
             letterSpacing: 1.5,
             color: AppColors.mutedForeground,
           ),
         ),
-        SizedBox(height: 12),
+        AppSize.gapH(12),
         ...events.take(10).map((event) => _buildEventCard(event, showActions: true)),
       ],
     );
@@ -483,7 +484,7 @@ class _CalendarScreenState extends State<CalendarScreen> with WidgetsBindingObse
         builder: (context, setDialogState) => AlertDialog(
         backgroundColor: AppColors.surface1,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: AppSize.radius(16),
           side: BorderSide(color: AppColors.citrusOrange.withOpacity(0.2)),
         ),
         title: Text(
@@ -503,13 +504,13 @@ class _CalendarScreenState extends State<CalendarScreen> with WidgetsBindingObse
                   filled: true,
                   fillColor: AppColors.surface2,
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: AppSize.radius(12),
                     borderSide: BorderSide.none,
                   ),
                 ),
                 autofocus: true,
               ),
-              SizedBox(height: 12),
+              AppSize.gapH(12),
               TextField(
                 controller: descriptionController,
                 style: TextStyle(color: AppColors.foreground),
@@ -519,16 +520,16 @@ class _CalendarScreenState extends State<CalendarScreen> with WidgetsBindingObse
                   filled: true,
                   fillColor: AppColors.surface2,
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: AppSize.radius(12),
                     borderSide: BorderSide.none,
                   ),
                 ),
                 maxLines: 3,
               ),
-              SizedBox(height: 12),
+              AppSize.gapH(12),
               ListTile(
                 leading: Icon(Icons.access_time, color: AppColors.mutedForeground),
-                title: Text('Время', style: TextStyle(color: AppColors.mutedForeground, fontSize: 13)),
+                title: Text('Время', style: TextStyle(color: AppColors.mutedForeground, fontSize: AppSize.s(13))),
                 subtitle: Text(
                   selectedTime != null ? 'Выбрано: ${selectedTime!.format(context)}' : 'Не выбрано',
                   style: TextStyle(color: AppColors.foreground),
@@ -548,10 +549,10 @@ class _CalendarScreenState extends State<CalendarScreen> with WidgetsBindingObse
                   notificationEnabled ? Icons.notifications_active : Icons.notifications_off,
                   color: notificationEnabled ? AppColors.citrusOrange : AppColors.mutedForeground,
                 ),
-                title: Text('Напоминание', style: TextStyle(color: AppColors.foreground, fontSize: 14)),
+                title: Text('Напоминание', style: TextStyle(color: AppColors.foreground, fontSize: AppSize.s(14))),
                 subtitle: Text(
                   notificationEnabled ? 'Уведомление перед событием' : 'Без уведомления',
-                  style: TextStyle(color: AppColors.mutedForeground, fontSize: 12),
+                  style: TextStyle(color: AppColors.mutedForeground, fontSize: AppSize.s(12)),
                 ),
                 value: notificationEnabled,
                 activeColor: AppColors.citrusOrange,
@@ -569,7 +570,7 @@ class _CalendarScreenState extends State<CalendarScreen> with WidgetsBindingObse
             onPressed: () {
               if (titleController.text.trim().isEmpty) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Введите название')),
+                  SnackBar(content: Text('Введите название')),
                 );
                 return;
               }
@@ -601,7 +602,7 @@ class _CalendarScreenState extends State<CalendarScreen> with WidgetsBindingObse
               Navigator.pop(context);
 
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
+                SnackBar(
                   content: Text('Событие добавлено'),
                   backgroundColor: Colors.green,
                 ),
@@ -622,7 +623,7 @@ class _CalendarScreenState extends State<CalendarScreen> with WidgetsBindingObse
     TimeOfDay? selectedTime;
     if (event.startTime != null) {
       final parts = event.startTime!.split(':');
-      selectedTime = TimeOfDay(hour: int.parse(parts[0]), minute: int.parse(parts[1]));
+      final selectedTime = TimeOfDay(hour: int.parse(parts[0]), minute: int.parse(parts[1]));
     }
     bool notificationEnabled = event.notificationEnabled;
 
@@ -632,7 +633,7 @@ class _CalendarScreenState extends State<CalendarScreen> with WidgetsBindingObse
         builder: (context, setModalState) => AlertDialog(
           backgroundColor: AppColors.surface1,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: AppSize.radius(16),
             side: BorderSide(color: AppColors.citrusOrange.withOpacity(0.2)),
           ),
           title: Text(
@@ -651,11 +652,11 @@ class _CalendarScreenState extends State<CalendarScreen> with WidgetsBindingObse
                     hintStyle: TextStyle(color: AppColors.mutedForeground),
                     filled: true,
                     fillColor: AppColors.surface2,
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                    border: OutlineInputBorder(borderRadius: AppSize.radius(12), borderSide: BorderSide.none),
                   ),
                   autofocus: true,
                 ),
-                SizedBox(height: 12),
+                AppSize.gapH(12),
                 TextField(
                   controller: descriptionController,
                   style: TextStyle(color: AppColors.foreground),
@@ -664,14 +665,14 @@ class _CalendarScreenState extends State<CalendarScreen> with WidgetsBindingObse
                     hintStyle: TextStyle(color: AppColors.mutedForeground),
                     filled: true,
                     fillColor: AppColors.surface2,
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                    border: OutlineInputBorder(borderRadius: AppSize.radius(12), borderSide: BorderSide.none),
                   ),
                   maxLines: 3,
                 ),
-                SizedBox(height: 12),
+                AppSize.gapH(12),
                 ListTile(
                   leading: Icon(Icons.access_time, color: AppColors.mutedForeground),
-                  title: Text('Время', style: TextStyle(color: AppColors.mutedForeground, fontSize: 13)),
+                  title: Text('Время', style: TextStyle(color: AppColors.mutedForeground, fontSize: AppSize.s(13))),
                   subtitle: Text(
                     selectedTime != null ? 'Выбрано: ${selectedTime!.format(context)}' : 'Не выбрано',
                     style: TextStyle(color: AppColors.foreground),
@@ -686,10 +687,10 @@ class _CalendarScreenState extends State<CalendarScreen> with WidgetsBindingObse
                     notificationEnabled ? Icons.notifications_active : Icons.notifications_off,
                     color: notificationEnabled ? AppColors.citrusOrange : AppColors.mutedForeground,
                   ),
-                  title: Text('Напоминание', style: TextStyle(color: AppColors.foreground, fontSize: 14)),
+                  title: Text('Напоминание', style: TextStyle(color: AppColors.foreground, fontSize: AppSize.s(14))),
                   subtitle: Text(
                     notificationEnabled ? 'Уведомление перед событием' : 'Без уведомления',
-                    style: TextStyle(color: AppColors.mutedForeground, fontSize: 12),
+                    style: TextStyle(color: AppColors.mutedForeground, fontSize: AppSize.s(12)),
                   ),
                   value: notificationEnabled,
                   activeColor: AppColors.citrusOrange,
@@ -717,7 +718,7 @@ class _CalendarScreenState extends State<CalendarScreen> with WidgetsBindingObse
                 );
                 context.read<CalendarBloc>().add(UpdateEvent(updated));
                 Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Событие обновлено'), backgroundColor: Colors.green));
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Событие обновлено'), backgroundColor: Colors.green));
               },
               style: FilledButton.styleFrom(backgroundColor: AppColors.citrusOrange),
               child: Text('Сохранить'),
@@ -733,7 +734,7 @@ class _CalendarScreenState extends State<CalendarScreen> with WidgetsBindingObse
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: AppColors.surface1,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide(color: AppColors.destructive.withOpacity(0.3))),
+        shape: RoundedRectangleBorder(borderRadius: AppSize.radius(16), side: BorderSide(color: AppColors.destructive.withOpacity(0.3))),
         title: Text('Удалить событие?', style: TextStyle(color: AppColors.foreground)),
         content: Text('«${event.title}» будет удалено навсегда.', style: TextStyle(color: AppColors.mutedForeground)),
         actions: [
@@ -742,7 +743,7 @@ class _CalendarScreenState extends State<CalendarScreen> with WidgetsBindingObse
             onPressed: () {
               context.read<CalendarBloc>().add(DeleteEvent(event.id));
               Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Событие удалено'), backgroundColor: Colors.orange));
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Событие удалено'), backgroundColor: Colors.orange));
             },
             style: FilledButton.styleFrom(backgroundColor: AppColors.destructive),
             child: Text('Удалить'),

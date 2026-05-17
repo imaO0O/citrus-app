@@ -3,11 +3,12 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/config/api_config.dart';
+import '../../../core/utils/app_size.dart';
 
 class ResetPasswordPage extends StatefulWidget {
   final String email;
 
-  const ResetPasswordPage({super.key, required this.email});
+  ResetPasswordPage({super.key, required this.email});
 
   @override
   State<ResetPasswordPage> createState() => _ResetPasswordPageState();
@@ -36,7 +37,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
 
     if (code.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           content: Text('Введите код из email'),
           backgroundColor: AppColors.destructive,
         ),
@@ -46,7 +47,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
 
     if (newPassword.length < 6) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           content: Text('Пароль должен быть не менее 6 символов'),
           backgroundColor: AppColors.destructive,
         ),
@@ -56,7 +57,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
 
     if (newPassword != confirmPassword) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           content: Text('Пароли не совпадают'),
           backgroundColor: AppColors.destructive,
         ),
@@ -80,7 +81,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
       if (response.statusCode == 200) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
+            SnackBar(
               content: Text('Пароль успешно изменён!'),
               backgroundColor: AppColors.citrusGreen,
             ),
@@ -130,9 +131,9 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
+            padding: AppSize.padding(24),
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 400),
+              constraints: BoxConstraints(maxWidth: 400),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -141,34 +142,34 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                     width: 64,
                     height: 64,
                     decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(20),
-                      gradient: const LinearGradient(
+                      borderRadius: AppSize.radius(20),
+                      gradient: LinearGradient(
                         colors: [AppColors.citrusOrange, AppColors.citrusAmber],
                       ),
                     ),
-                    child: const Center(
+                    child: Center(
                       child: Icon(Icons.key, color: Colors.white, size: 32),
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  AppSize.gapH(24),
                   Text(
                     'Новый пароль',
                     style: TextStyle(
-                      fontSize: 28,
+                      fontSize: AppSize.s(28),
                       fontWeight: FontWeight.w700,
                       color: AppColors.foreground,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  AppSize.gapH(8),
                   Text(
                     'Введите код из email и задайте новый пароль для аккаунта ${widget.email}',
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: AppSize.s(14),
                       color: AppColors.mutedForeground,
                       height: 1.5,
                     ),
                   ),
-                  const SizedBox(height: 32),
+                  AppSize.gapH(32),
 
                   // Код
                   Column(
@@ -177,18 +178,18 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                       Text(
                         'Код подтверждения',
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: AppSize.s(12),
                           fontWeight: FontWeight.w500,
                           color: AppColors.mutedForeground,
                         ),
                       ),
-                      const SizedBox(height: 6),
+                      AppSize.gapH(6),
                       TextField(
                         controller: _codeController,
                         keyboardType: TextInputType.number,
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          fontSize: 24,
+                          fontSize: AppSize.s(24),
                           fontWeight: FontWeight.w700,
                           letterSpacing: 8,
                           color: AppColors.citrusOrange,
@@ -196,7 +197,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                         decoration: InputDecoration(
                           hintText: '000000',
                           hintStyle: TextStyle(
-                            fontSize: 24,
+                            fontSize: AppSize.s(24),
                             fontWeight: FontWeight.w700,
                             letterSpacing: 8,
                             color: AppColors.mutedForeground.withOpacity(0.3),
@@ -204,16 +205,16 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                           filled: true,
                           fillColor: AppColors.inputFieldBackground,
                           border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(AppColors.radius),
+                            borderRadius: BorderRadius.circular(AppSize.s(AppColors.radius)),
                             borderSide: BorderSide.none,
                           ),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                          contentPadding: AppSize.paddingH(16, 14),
                         ),
                         maxLength: 6,
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
+                  AppSize.gapH(16),
 
                   // Новый пароль
                   Column(
@@ -222,12 +223,12 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                       Text(
                         'Новый пароль',
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: AppSize.s(12),
                           fontWeight: FontWeight.w500,
                           color: AppColors.mutedForeground,
                         ),
                       ),
-                      const SizedBox(height: 6),
+                      AppSize.gapH(6),
                       TextField(
                         controller: _passwordController,
                         obscureText: _obscurePassword,
@@ -236,10 +237,10 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                           filled: true,
                           fillColor: AppColors.inputFieldBackground,
                           border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(AppColors.radius),
+                            borderRadius: BorderRadius.circular(AppSize.s(AppColors.radius)),
                             borderSide: BorderSide.none,
                           ),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                          contentPadding: AppSize.paddingH(16, 14),
                           prefixIcon: Icon(Icons.lock_outlined, color: AppColors.mutedForeground, size: 20),
                           suffixIcon: IconButton(
                             icon: Icon(
@@ -250,11 +251,11 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                             onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
                           ),
                         ),
-                        style: TextStyle(fontSize: 15, color: AppColors.foreground),
+                        style: TextStyle(fontSize: AppSize.s(15), color: AppColors.foreground),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
+                  AppSize.gapH(16),
 
                   // Подтверждение пароля
                   Column(
@@ -263,12 +264,12 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                       Text(
                         'Подтвердите пароль',
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: AppSize.s(12),
                           fontWeight: FontWeight.w500,
                           color: AppColors.mutedForeground,
                         ),
                       ),
-                      const SizedBox(height: 6),
+                      AppSize.gapH(6),
                       TextField(
                         controller: _confirmPasswordController,
                         obscureText: _obscureConfirm,
@@ -277,10 +278,10 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                           filled: true,
                           fillColor: AppColors.inputFieldBackground,
                           border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(AppColors.radius),
+                            borderRadius: BorderRadius.circular(AppSize.s(AppColors.radius)),
                             borderSide: BorderSide.none,
                           ),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                          contentPadding: AppSize.paddingH(16, 14),
                           prefixIcon: Icon(Icons.lock_outlined, color: AppColors.mutedForeground, size: 20),
                           suffixIcon: IconButton(
                             icon: Icon(
@@ -291,11 +292,11 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                             onPressed: () => setState(() => _obscureConfirm = !_obscureConfirm),
                           ),
                         ),
-                        style: TextStyle(fontSize: 15, color: AppColors.foreground),
+                        style: TextStyle(fontSize: AppSize.s(15), color: AppColors.foreground),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 24),
+                  AppSize.gapH(24),
 
                   // Кнопка
                   Container(
@@ -303,18 +304,18 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                     decoration: BoxDecoration(
                       gradient: _isLoading
                           ? null
-                          : const LinearGradient(
+                          : LinearGradient(
                               colors: [AppColors.citrusOrange, AppColors.citrusAmber],
                             ),
                       color: _isLoading ? AppColors.citrusOrange.withOpacity(0.3) : null,
-                      borderRadius: BorderRadius.circular(AppColors.radius),
+                      borderRadius: BorderRadius.circular(AppSize.s(AppColors.radius)),
                       boxShadow: _isLoading
                           ? null
                           : [
                               BoxShadow(
                                 color: AppColors.glowOrange,
                                 blurRadius: 20,
-                                offset: const Offset(0, 4),
+                                offset: Offset(0, 4),
                               ),
                             ],
                     ),
@@ -325,14 +326,14 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                         shadowColor: Colors.transparent,
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(AppColors.radius),
+                          borderRadius: BorderRadius.circular(AppSize.s(AppColors.radius)),
                         ),
                       ),
                       child: _isLoading
-                          ? const CircularProgressIndicator(color: Colors.white, strokeWidth: 2)
-                          : const Text(
+                          ? CircularProgressIndicator(color: Colors.white, strokeWidth: 2)
+                          : Text(
                               'Сбросить пароль',
-                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                              style: TextStyle(fontSize: AppSize.s(16), fontWeight: FontWeight.w600),
                             ),
                     ),
                   ),

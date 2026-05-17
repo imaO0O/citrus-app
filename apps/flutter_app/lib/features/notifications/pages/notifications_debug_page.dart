@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../../services/notification_service.dart';
+import '../../../core/utils/app_size.dart';
 
 /// Страница для отладки уведомлений
 class NotificationsDebugPage extends StatefulWidget {
-  const NotificationsDebugPage({super.key});
+  NotificationsDebugPage({super.key});
 
   @override
   State<NotificationsDebugPage> createState() => _NotificationsDebugPageState();
@@ -86,25 +87,25 @@ class _NotificationsDebugPageState extends State<NotificationsDebugPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Отладка уведомлений'),
+        title: Text('Отладка уведомлений'),
       ),
       body: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: AppSize.padding(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Card(
               child: Padding(
-                padding: const EdgeInsets.all(16.0),
+                padding: AppSize.padding(16.0),
                 child: Column(
                   children: [
-                    const Icon(Icons.notifications, size: 48),
-                    const SizedBox(height: 8),
+                    Icon(Icons.notifications, size: 48),
+                    AppSize.gapH(8),
                     Text(
                       'Статус',
                       style: Theme.of(context).textTheme.titleMedium,
                     ),
-                    const SizedBox(height: 8),
+                    AppSize.gapH(8),
                     Text(
                       _status,
                       textAlign: TextAlign.center,
@@ -114,39 +115,39 @@ class _NotificationsDebugPageState extends State<NotificationsDebugPage> {
                 ),
               ),
             ),
-            const SizedBox(height: 16),
+            AppSize.gapH(16),
             ElevatedButton.icon(
               onPressed: _loading ? null : _testInstantNotification,
               icon: _loading
-                  ? const SizedBox(
+                  ? SizedBox(
                       width: 20,
                       height: 20,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : const Icon(Icons.send),
-              label: const Text('Отправить тестовое уведомление'),
+                  : Icon(Icons.send),
+              label: Text('Отправить тестовое уведомление'),
             ),
-            const SizedBox(height: 8),
+            AppSize.gapH(8),
             ElevatedButton.icon(
               onPressed: _loading ? null : _checkPermissions,
-              icon: const Icon(Icons.security),
-              label: const Text('Проверить разрешения'),
+              icon: Icon(Icons.security),
+              label: Text('Проверить разрешения'),
             ),
-            const SizedBox(height: 8),
+            AppSize.gapH(8),
             ElevatedButton.icon(
               onPressed: _loading ? null : _requestPermissions,
-              icon: const Icon(Icons.key),
-              label: const Text('Запросить разрешения'),
+              icon: Icon(Icons.key),
+              label: Text('Запросить разрешения'),
             ),
-            const SizedBox(height: 8),
+            AppSize.gapH(8),
             ElevatedButton.icon(
               onPressed: _loading ? null : _getPendingNotifications,
-              icon: const Icon(Icons.list),
-              label: const Text('Список запланированных'),
+              icon: Icon(Icons.list),
+              label: Text('Список запланированных'),
             ),
-            const SizedBox(height: 16),
-            const Divider(),
-            const Text(
+            AppSize.gapH(16),
+            Divider(),
+            Text(
               'Если уведомления не приходят:\n'
               '1. Проверьте разрешения в настройках Android\n'
               '2. Убедитесь, что канал уведомлений включен\n'

@@ -4,9 +4,10 @@ import 'dart:convert';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/config/api_config.dart';
 import 'reset_password_page.dart';
+import '../../../core/utils/app_size.dart';
 
 class ForgotPasswordPage extends StatefulWidget {
-  const ForgotPasswordPage({super.key});
+  ForgotPasswordPage({super.key});
 
   @override
   State<ForgotPasswordPage> createState() => _ForgotPasswordPageState();
@@ -27,7 +28,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
     final email = _emailController.text.trim();
     if (email.isEmpty || !email.contains('@')) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           content: Text('Введите корректный email'),
           backgroundColor: AppColors.destructive,
         ),
@@ -59,7 +60,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
           setState(() => _codeSent = true);
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
+              SnackBar(
                 content: Text('Код отправлен на ваш email'),
                 backgroundColor: AppColors.citrusGreen,
               ),
@@ -110,9 +111,9 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
+            padding: AppSize.padding(24),
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 400),
+              constraints: BoxConstraints(maxWidth: 400),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -121,34 +122,34 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                     width: 64,
                     height: 64,
                     decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(20),
-                      gradient: const LinearGradient(
+                      borderRadius: AppSize.radius(20),
+                      gradient: LinearGradient(
                         colors: [AppColors.citrusOrange, AppColors.citrusAmber],
                       ),
                     ),
-                    child: const Center(
+                    child: Center(
                       child: Icon(Icons.lock_reset, color: Colors.white, size: 32),
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  AppSize.gapH(24),
                   Text(
                     'Сброс пароля',
                     style: TextStyle(
-                      fontSize: 28,
+                      fontSize: AppSize.s(28),
                       fontWeight: FontWeight.w700,
                       color: AppColors.foreground,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  AppSize.gapH(8),
                   Text(
                     'Введите email вашего аккаунта. Мы отправим код подтверждения для установки нового пароля.',
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: AppSize.s(14),
                       color: AppColors.mutedForeground,
                       height: 1.5,
                     ),
                   ),
-                  const SizedBox(height: 32),
+                  AppSize.gapH(32),
 
                   // Email
                   Column(
@@ -157,12 +158,12 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                       Text(
                         'Email',
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: AppSize.s(12),
                           fontWeight: FontWeight.w500,
                           color: AppColors.mutedForeground,
                         ),
                       ),
-                      const SizedBox(height: 6),
+                      AppSize.gapH(6),
                       TextField(
                         controller: _emailController,
                         keyboardType: TextInputType.emailAddress,
@@ -171,17 +172,17 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                           filled: true,
                           fillColor: AppColors.inputFieldBackground,
                           border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(AppColors.radius),
+                            borderRadius: BorderRadius.circular(AppSize.s(AppColors.radius)),
                             borderSide: BorderSide.none,
                           ),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                          contentPadding: AppSize.paddingH(16, 14),
                           prefixIcon: Icon(Icons.email_outlined, color: AppColors.mutedForeground, size: 20),
                         ),
-                        style: TextStyle(fontSize: 15, color: AppColors.foreground),
+                        style: TextStyle(fontSize: AppSize.s(15), color: AppColors.foreground),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 24),
+                  AppSize.gapH(24),
 
                   // Кнопка отправки
                   Container(
@@ -189,18 +190,18 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                     decoration: BoxDecoration(
                       gradient: _isLoading
                           ? null
-                          : const LinearGradient(
+                          : LinearGradient(
                               colors: [AppColors.citrusOrange, AppColors.citrusAmber],
                             ),
                       color: _isLoading ? AppColors.citrusOrange.withOpacity(0.3) : null,
-                      borderRadius: BorderRadius.circular(AppColors.radius),
+                      borderRadius: BorderRadius.circular(AppSize.s(AppColors.radius)),
                       boxShadow: _isLoading
                           ? null
                           : [
                               BoxShadow(
                                 color: AppColors.glowOrange,
                                 blurRadius: 20,
-                                offset: const Offset(0, 4),
+                                offset: Offset(0, 4),
                               ),
                             ],
                     ),
@@ -211,18 +212,18 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                         shadowColor: Colors.transparent,
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(AppColors.radius),
+                          borderRadius: BorderRadius.circular(AppSize.s(AppColors.radius)),
                         ),
                       ),
                       child: _isLoading
-                          ? const CircularProgressIndicator(color: Colors.white, strokeWidth: 2)
-                          : const Text(
+                          ? CircularProgressIndicator(color: Colors.white, strokeWidth: 2)
+                          : Text(
                               'Отправить код',
-                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                              style: TextStyle(fontSize: AppSize.s(16), fontWeight: FontWeight.w600),
                             ),
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  AppSize.gapH(24),
 
                   // Назад
                   Row(
@@ -230,7 +231,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                     children: [
                       Text(
                         'Вспомнили пароль? ',
-                        style: TextStyle(color: AppColors.mutedForeground, fontSize: 14),
+                        style: TextStyle(color: AppColors.mutedForeground, fontSize: AppSize.s(14)),
                       ),
                       GestureDetector(
                         onTap: () => Navigator.of(context).pop(),
@@ -238,7 +239,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                           'Войти',
                           style: TextStyle(
                             color: AppColors.citrusOrange,
-                            fontSize: 14,
+                            fontSize: AppSize.s(14),
                             fontWeight: FontWeight.w600,
                           ),
                         ),

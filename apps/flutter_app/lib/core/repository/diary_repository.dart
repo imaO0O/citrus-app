@@ -82,8 +82,8 @@ class DiaryEntry {
     }
 
     return DiaryEntry(
-      id: json['id'] as String,
-      userId: json['user_id'] as String,
+      id: json['id']?.toString() ?? '',
+      userId: json['user_id']?.toString() ?? '',
       content: json['content'] as String? ?? '',
       moodValue: json['mood_value'] as int?,
       entryDate: entryDate,

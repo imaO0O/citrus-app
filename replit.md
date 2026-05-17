@@ -22,7 +22,7 @@ docker-compose.yml         Локальная Postgres для разработк
 
 - **Язык:** Dart 3.10 (модуль Replit `dart-3.10`)
 - **Бэкенд:** один файл `server.dart` на пакете `dart_frog`
-- **БД:** Supabase Postgres (через секреты `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`)
+- **БД:** Supabase Postgres (через секреты `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_SSL`)
 - **Прочее:** GigaChat (ИИ-чат), Cloudinary (фото), JWT, Mailer (Yandex SMTP)
 
 ## Запуск на Replit
@@ -35,7 +35,7 @@ cd apps/dart_frog_backend && dart run server.dart
 
 Конфигурация:
 - `PORT=5000` задан в Replit Secrets — `server.dart` читает его и слушает 5000.
-- `DB_*` секреты указывают на Supabase (`aws-1-eu-central-1.pooler.supabase.com:6543/postgres`).
+- `DB_*` секреты указывают на Supabase (`db.<project>.supabase.co:5432/postgres` — прямое подключение).
 - В `.replit` настроены: модули `dart-3.10`/`postgresql-16`, проброс порта `5000 → 80`, workflow и развёртывание.
 
 Перезапуск — кнопка **Restart** рядом с workflow «Start application» в панели Workflows.
@@ -57,6 +57,6 @@ cd apps/dart_frog_backend && dart run server.dart
 
 ## Известные нюансы
 
-- **Supabase Pooler в transaction mode (порт 6543)** иногда даёт `prepared statement "000000000000" already exists` на первом запросе после рестарта — это коллизия имён prepared statements в `postgres ^2.6` Dart-драйвере. Если станет мешать — использовать direct connection (`db.<project>.supabase.co:5432`) или session-mode pooler.
+- **Supabase Pooler в transaction mode (порт 6543)** даёт ошибку `42P05 duplicate_prepared_statement` — коллизия имён prepared statements в `postgres ^2.6` Dart-драйвере при работе через Supavisor. **Решение:** использовать прямое подключение (`db.<project>.supabase.co:5432`) вместо transaction-mode pooler. В коде добавлен автоматический ретри при 42P05 (закрытие + переподключение + повторный запрос). SSL включается автоматически если хост содержит `supabase`, или явно через `DB_SSL=true`.
 - **`.env` не нужен на Replit** — в логах будет `[dotenv] Load failed: file not found: '.env'`, это нормально, переменные подтягиваются из Secrets через `includePlatformEnvironment: true`.
 - **Replit-овская встроенная Postgres** не используется (бэкенд работает только с Supabase). Её можно удалить из панели Database в UI.

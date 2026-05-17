@@ -4,9 +4,10 @@ import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/services/storage_service.dart';
 import '../bloc/auth_bloc.dart';
+import '../../../core/utils/app_size.dart';
 
 class RegisterPage extends StatefulWidget {
-  const RegisterPage({Key? key}) : super(key: key);
+  RegisterPage({Key? key}) : super(key: key);
 
   @override
   State<RegisterPage> createState() => _RegisterPageState();
@@ -61,9 +62,9 @@ class _RegisterPageState extends State<RegisterPage> {
         ),
         body: SafeArea(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
+            padding: AppSize.padding(24),
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 400),
+              constraints: BoxConstraints(maxWidth: 400),
               child: Form(
                 key: _formKey,
                 child: Column(
@@ -75,8 +76,8 @@ class _RegisterPageState extends State<RegisterPage> {
                         width: 64,
                         height: 64,
                         decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(20),
-                          gradient: const LinearGradient(
+                          borderRadius: AppSize.radius(20),
+                          gradient: LinearGradient(
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                             colors: [AppColors.citrusOrange, AppColors.citrusAmber],
@@ -85,38 +86,38 @@ class _RegisterPageState extends State<RegisterPage> {
                             BoxShadow(
                               color: AppColors.glowOrange,
                               blurRadius: 20,
-                              offset: const Offset(0, 4),
+                              offset: Offset(0, 4),
                             ),
                           ],
                         ),
-                        child: const Center(
+                        child: Center(
                           child: Text(
                             '🍊',
-                            style: TextStyle(fontSize: 32),
+                            style: TextStyle(fontSize: AppSize.s(32)),
                           ),
                         ),
                       ),
                     ),
-                    const SizedBox(height: 24),
+                    AppSize.gapH(24),
                     Text(
                       'Создать аккаунт',
                       style: TextStyle(
-                        fontSize: 24,
+                        fontSize: AppSize.s(24),
                         fontWeight: FontWeight.w700,
                         color: AppColors.foreground,
                       ),
                       textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: 8),
+                    AppSize.gapH(8),
                     Text(
                       'Присоединяйтесь к Цитрусу',
                       style: TextStyle(
-                        fontSize: 14,
+                        fontSize: AppSize.s(14),
                         color: AppColors.mutedForeground,
                       ),
                       textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: 32),
+                    AppSize.gapH(32),
                     
                     // Email field
                     _buildTextField(
@@ -135,7 +136,7 @@ class _RegisterPageState extends State<RegisterPage> {
                         return null;
                       },
                     ),
-                    const SizedBox(height: 16),
+                    AppSize.gapH(16),
                     
                     // Name field
                     _buildTextField(
@@ -144,7 +145,7 @@ class _RegisterPageState extends State<RegisterPage> {
                       hint: 'Введите ваше имя (необязательно)',
                       prefixIcon: Icons.person_outlined,
                     ),
-                    const SizedBox(height: 16),
+                    AppSize.gapH(16),
                     
                     // Password field
                     _buildTextField(
@@ -177,7 +178,7 @@ class _RegisterPageState extends State<RegisterPage> {
                         return null;
                       },
                     ),
-                    const SizedBox(height: 16),
+                    AppSize.gapH(16),
                     
                     // Confirm password field
                     _buildTextField(
@@ -210,7 +211,7 @@ class _RegisterPageState extends State<RegisterPage> {
                         return null;
                       },
                     ),
-                    const SizedBox(height: 16),
+                    AppSize.gapH(16),
                     
                     // Terms checkbox
                     Row(
@@ -231,7 +232,7 @@ class _RegisterPageState extends State<RegisterPage> {
                             side: BorderSide(color: AppColors.mutedForeground),
                           ),
                         ),
-                        const SizedBox(width: 8),
+                        AppSize.gapW(8),
                         Expanded(
                           child: GestureDetector(
                             onTap: () {
@@ -243,7 +244,7 @@ class _RegisterPageState extends State<RegisterPage> {
                               text: TextSpan(
                                 text: 'Я согласен с ',
                                 style: TextStyle(
-                                  fontSize: 13,
+                                  fontSize: AppSize.s(13),
                                   color: AppColors.mutedForeground,
                                 ),
                                 children: [
@@ -274,7 +275,7 @@ class _RegisterPageState extends State<RegisterPage> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 24),
+                    AppSize.gapH(24),
                     
                     // Register button
                     BlocConsumer<AuthBloc, AuthState>(
@@ -286,7 +287,7 @@ class _RegisterPageState extends State<RegisterPage> {
                               backgroundColor: AppColors.destructive,
                               behavior: SnackBarBehavior.floating,
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(AppColors.radius),
+                                borderRadius: BorderRadius.circular(AppSize.s(AppColors.radius)),
                               ),
                             ),
                           );
@@ -298,9 +299,9 @@ class _RegisterPageState extends State<RegisterPage> {
                             height: 56,
                             decoration: BoxDecoration(
                               color: AppColors.citrusOrange.withOpacity(0.3),
-                              borderRadius: BorderRadius.circular(AppColors.radius),
+                              borderRadius: BorderRadius.circular(AppSize.s(AppColors.radius)),
                             ),
-                            child: const Center(
+                            child: Center(
                               child: CircularProgressIndicator(
                                 color: Colors.white,
                                 strokeWidth: 2,
@@ -311,15 +312,15 @@ class _RegisterPageState extends State<RegisterPage> {
                         return Container(
                           height: 56,
                           decoration: BoxDecoration(
-                            gradient: const LinearGradient(
+                            gradient: LinearGradient(
                               colors: [AppColors.citrusOrange, AppColors.citrusAmber],
                             ),
-                            borderRadius: BorderRadius.circular(AppColors.radius),
+                            borderRadius: BorderRadius.circular(AppSize.s(AppColors.radius)),
                             boxShadow: [
                               BoxShadow(
                                 color: AppColors.glowOrange,
                                 blurRadius: 20,
-                                offset: const Offset(0, 4),
+                                offset: Offset(0, 4),
                               ),
                             ],
                           ),
@@ -332,13 +333,13 @@ class _RegisterPageState extends State<RegisterPage> {
                               disabledBackgroundColor: Colors.transparent,
                               disabledForegroundColor: Colors.white.withOpacity(0.5),
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(AppColors.radius),
+                                borderRadius: BorderRadius.circular(AppSize.s(AppColors.radius)),
                               ),
                             ),
-                            child: const Text(
+                            child: Text(
                               'Зарегистрироваться',
                               style: TextStyle(
-                                fontSize: 16,
+                                fontSize: AppSize.s(16),
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
@@ -346,7 +347,7 @@ class _RegisterPageState extends State<RegisterPage> {
                         );
                       },
                     ),
-                    const SizedBox(height: 24),
+                    AppSize.gapH(24),
                     
                     // Login link
                     Row(
@@ -356,7 +357,7 @@ class _RegisterPageState extends State<RegisterPage> {
                           'Уже есть аккаунт? ',
                           style: TextStyle(
                             color: AppColors.mutedForeground,
-                            fontSize: 14,
+                            fontSize: AppSize.s(14),
                           ),
                         ),
                         GestureDetector(
@@ -365,7 +366,7 @@ class _RegisterPageState extends State<RegisterPage> {
                             'Войти',
                             style: TextStyle(
                               color: AppColors.citrusOrange,
-                              fontSize: 14,
+                              fontSize: AppSize.s(14),
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -398,25 +399,25 @@ class _RegisterPageState extends State<RegisterPage> {
         Text(
           label,
           style: TextStyle(
-            fontSize: 12,
+            fontSize: AppSize.s(12),
             fontWeight: FontWeight.w500,
             color: AppColors.foreground,
           ),
         ),
-        const SizedBox(height: 8),
+        AppSize.gapH(8),
         TextFormField(
           controller: controller,
           keyboardType: keyboardType,
           obscureText: obscureText,
           style: TextStyle(
             color: AppColors.foreground,
-            fontSize: 14,
+            fontSize: AppSize.s(14),
           ),
           decoration: InputDecoration(
             hintText: hint,
             hintStyle: TextStyle(
               color: AppColors.mutedForeground,
-              fontSize: 14,
+              fontSize: AppSize.s(14),
             ),
             prefixIcon: Icon(
               prefixIcon,
@@ -427,32 +428,29 @@ class _RegisterPageState extends State<RegisterPage> {
             filled: true,
             fillColor: AppColors.surface1,
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppColors.radius),
+              borderRadius: BorderRadius.circular(AppSize.s(AppColors.radius)),
               borderSide: BorderSide.none,
             ),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppColors.radius),
+              borderRadius: BorderRadius.circular(AppSize.s(AppColors.radius)),
               borderSide: BorderSide(
                 color: AppColors.subtleBorder,
               ),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppColors.radius),
-              borderSide: const BorderSide(
+              borderRadius: BorderRadius.circular(AppSize.s(AppColors.radius)),
+              borderSide: BorderSide(
                 color: AppColors.citrusOrange,
                 width: 1.5,
               ),
             ),
             errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppColors.radius),
+              borderRadius: BorderRadius.circular(AppSize.s(AppColors.radius)),
               borderSide: BorderSide(
                 color: AppColors.destructive,
               ),
             ),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 16,
-            ),
+            contentPadding: AppSize.paddingH(16, 16),
           ),
           validator: validator,
         ),
@@ -468,11 +466,11 @@ class _RegisterPageState extends State<RegisterPage> {
     if (!_agreedToTerms) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('Необходимо согласиться с условиями использования'),
+          content: Text('Необходимо согласиться с условиями использования'),
           backgroundColor: AppColors.destructive,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppColors.radius),
+            borderRadius: BorderRadius.circular(AppSize.s(AppColors.radius)),
           ),
         ),
       );

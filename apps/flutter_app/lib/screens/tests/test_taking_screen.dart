@@ -5,12 +5,13 @@ import '../../core/api/test_api_service.dart';
 import '../../core/services/test_scoring_service.dart';
 import '../../core/theme/app_colors.dart';
 import 'test_result_screen.dart';
+import '../../core/utils/app_size.dart';
 
 class TestTakingScreen extends StatefulWidget {
   final String testId;
   final String? token;
 
-  const TestTakingScreen({
+  TestTakingScreen({
     super.key,
     required this.testId,
     this.token,
@@ -145,7 +146,7 @@ class _TestTakingScreenState extends State<TestTakingScreen> {
           _test.title,
           style: TextStyle(
             color: AppColors.foreground,
-            fontSize: 16,
+            fontSize: AppSize.s(16),
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -154,7 +155,7 @@ class _TestTakingScreenState extends State<TestTakingScreen> {
         children: [
           // Прогресс-бар
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
+            padding: AppSize.paddingH(20, 0),
             child: Column(
               children: [
                 Row(
@@ -164,20 +165,20 @@ class _TestTakingScreenState extends State<TestTakingScreen> {
                       'Вопрос ${_currentQuestion + 1} из ${_test.questions.length}',
                       style: TextStyle(
                         color: AppColors.mutedForeground,
-                        fontSize: 12,
+                        fontSize: AppSize.s(12),
                       ),
                     ),
                     Text(
                       '${(progress * 100).toInt()}%',
                       style: TextStyle(
                         color: AppColors.citrusOrange,
-                        fontSize: 12,
+                        fontSize: AppSize.s(12),
                         fontWeight: FontWeight.w600,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 8),
+                AppSize.gapH(8),
                 LinearProgressIndicator(
                   value: progress,
                   backgroundColor: AppColors.card,
@@ -185,31 +186,31 @@ class _TestTakingScreenState extends State<TestTakingScreen> {
                     AppColors.citrusOrange,
                   ),
                   minHeight: 6,
-                  borderRadius: BorderRadius.circular(3),
+                  borderRadius: AppSize.radius(3),
                 ),
               ],
             ),
           ),
 
-          const SizedBox(height: 24),
+          AppSize.gapH(24),
 
           // Вопрос
           Expanded(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
+              padding: AppSize.paddingH(20, 0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     question.text,
                     style: TextStyle(
-                      fontSize: 20,
+                      fontSize: AppSize.s(20),
                       fontWeight: FontWeight.w600,
                       color: AppColors.foreground,
                       height: 1.4,
                     ),
                   ),
-                  const SizedBox(height: 32),
+                  AppSize.gapH(32),
                   // Варианты ответов
                   ...question.options.asMap().entries.map((entry) {
                     final index = entry.key;
@@ -217,7 +218,7 @@ class _TestTakingScreenState extends State<TestTakingScreen> {
                     final isSelected = _answers[question.id] == index;
 
                     return Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
+                      padding: AppSize.paddingOnly(bottom: 12),
                       child: _AnswerOption(
                         text: option,
                         isSelected: isSelected,
@@ -232,7 +233,7 @@ class _TestTakingScreenState extends State<TestTakingScreen> {
 
           // Навигация
           Padding(
-            padding: const EdgeInsets.all(20),
+            padding: AppSize.padding(20),
             child: Row(
               children: [
                 // Назад
@@ -243,15 +244,15 @@ class _TestTakingScreenState extends State<TestTakingScreen> {
                       style: OutlinedButton.styleFrom(
                         foregroundColor: AppColors.foreground,
                         side: BorderSide(color: AppColors.dimForeground),
-                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        padding: AppSize.paddingH(0, 16),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: AppSize.radius(12),
                         ),
                       ),
-                      child: const Text('Назад'),
+                      child: Text('Назад'),
                     ),
                   ),
-                if (_currentQuestion > 0) const SizedBox(width: 12),
+                if (_currentQuestion > 0) AppSize.gapW(12),
 
                 // Далее / Завершить
                 Expanded(
@@ -263,13 +264,13 @@ class _TestTakingScreenState extends State<TestTakingScreen> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.citrusOrange,
                       foregroundColor: AppColors.primaryForeground,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      padding: AppSize.paddingH(0, 16),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: AppSize.radius(12),
                       ),
                     ),
                     child: _isSubmitting
-                        ? const SizedBox(
+                        ? SizedBox(
                             height: 20,
                             width: 20,
                             child: CircularProgressIndicator(
@@ -298,7 +299,7 @@ class _AnswerOption extends StatelessWidget {
   final bool isSelected;
   final VoidCallback onTap;
 
-  const _AnswerOption({
+  _AnswerOption({
     required this.text,
     required this.isSelected,
     required this.onTap,
@@ -310,12 +311,12 @@ class _AnswerOption extends StatelessWidget {
       color: isSelected
           ? AppColors.citrusOrange.withOpacity(0.2)
           : AppColors.card,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: AppSize.radius(12),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppSize.radius(12),
         child: Container(
-          padding: const EdgeInsets.all(16),
+          padding: AppSize.padding(16),
           decoration: BoxDecoration(
             border: Border.all(
               color: isSelected
@@ -323,7 +324,7 @@ class _AnswerOption extends StatelessWidget {
                   : AppColors.foreground.withOpacity(0.05),
               width: isSelected ? 2 : 1,
             ),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: AppSize.radius(12),
           ),
           child: Row(
             children: [
@@ -345,7 +346,7 @@ class _AnswerOption extends StatelessWidget {
                         child: Container(
                           width: 12,
                           height: 12,
-                          decoration: const BoxDecoration(
+                          decoration: BoxDecoration(
                             color: AppColors.citrusOrange,
                             shape: BoxShape.circle,
                           ),
@@ -353,12 +354,12 @@ class _AnswerOption extends StatelessWidget {
                       )
                     : null,
               ),
-              const SizedBox(width: 12),
+              AppSize.gapW(12),
               Expanded(
                 child: Text(
                   text,
                   style: TextStyle(
-                    fontSize: 14,
+                    fontSize: AppSize.s(14),
                     color: isSelected
                         ? AppColors.citrusOrange
                         : AppColors.foreground,

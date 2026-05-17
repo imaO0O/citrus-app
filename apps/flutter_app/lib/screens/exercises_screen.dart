@@ -10,6 +10,7 @@ import '../core/theme/app_colors.dart';
 import '../core/services/casino_coins_service.dart';
 import '../core/services/exercise_tracker_service.dart';
 import '../core/config/api_config.dart';
+import '../core/utils/app_size.dart';
 
 class ExerciseItem {
   final String id;
@@ -35,7 +36,7 @@ class ExerciseItem {
   final List<double>? phaseScales; // масштаб круга для каждой фазы
   final List<String>? phaseLabels; // короткие названия фаз для круга
 
-  const ExerciseItem({
+  ExerciseItem({
     required this.id,
     required this.icon,
     required this.title,
@@ -62,7 +63,7 @@ class ExerciseItem {
 
 const _categories = ['Все', 'Дыхание', 'Видео', 'Аудио'];
 
-const _exercises = [
+final _exercises = [
   // === САМЫЕ ПОПУЛЯРНЫЕ ДЫХАТЕЛЬНЫЕ УПРАЖНЕНИЯ ===
 
   // 1. Квадратное дыхание — Navy SEALs, фокус и концентрация
@@ -83,15 +84,15 @@ const _exercises = [
       'Задержка дыхания',
     ],
     durationSeconds: 300,
-    phaseDurations: const [4, 4, 4, 4],
+    phaseDurations: [4, 4, 4, 4],
     phaseLabels: ['Вдох', 'Задержка', 'Выдох', 'Задержка'],
-    phaseColors: const [
+    phaseColors: [
       Color(0xFF8BC34A), // Вдох — зелёный (рост, энергия)
       Color(0xFFFFD93D), // Задержка — жёлтый (внимание)
       Color(0xFF74B9FF), // Выдох — голубой (расслабление)
       Color(0xFFFFD93D), // Задержка — жёлтый
     ],
-    phaseScales: const [
+    phaseScales: [
       1.0,  // Вдох — круг полный
       1.0,  // Задержка — круг полный, замирание
       0.6,  // Выдох — круг пустой
@@ -117,14 +118,14 @@ const _exercises = [
       'Медленный выдох через рот',
     ],
     durationSeconds: 300,
-    phaseDurations: const [4, 7, 8],
+    phaseDurations: [4, 7, 8],
     phaseLabels: ['Вдох', 'Задержка', 'Выдох'],
-    phaseColors: const [
+    phaseColors: [
       Color(0xFF9C88FF), // Вдох — фиолетовый (спокойствие)
       Color(0xFFFFD93D), // Задержка — жёлтый
       Color(0xFF74B9FF), // Выдох — голубой (глубокое расслабление)
     ],
-    phaseScales: const [
+    phaseScales: [
       1.0,  // Вдох — полный
       1.0,  // Задержка — полный, замирание
       0.6,  // Выдох — пустой (долгий)
@@ -148,13 +149,13 @@ const _exercises = [
       'Полный выдох',
     ],
     durationSeconds: 300,
-    phaseDurations: const [2, 2],
+    phaseDurations: [2, 2],
     phaseLabels: ['Вдох', 'Выдох'],
-    phaseColors: const [
+    phaseColors: [
       Color(0xFFFF8C42), // Вдох — оранжевый (энергия)
       Color(0xFF5A5468), // Выдох — тёмный (освобождение)
     ],
-    phaseScales: const [
+    phaseScales: [
       1.0,  // Вдох — полный
       0.5,  // Выдох — пустой
     ],
@@ -177,13 +178,13 @@ const _exercises = [
       'Медленный выдох',
     ],
     durationSeconds: 420,
-    phaseDurations: const [5, 5],
+    phaseDurations: [5, 5],
     phaseLabels: ['Вдох', 'Выдох'],
-    phaseColors: const [
+    phaseColors: [
       Color(0xFF00CEC9), // Вдох — бирюзовый (свежесть)
       Color(0xFF74B9FF), // Выдох — голубой (расслабление)
     ],
-    phaseScales: const [
+    phaseScales: [
       1.0,  // Вдох — полный
       0.6,  // Выдох — пустой
     ],
@@ -206,13 +207,13 @@ const _exercises = [
       'Мягкий выдох через нос',
     ],
     durationSeconds: 300,
-    phaseDurations: const [5, 5],
+    phaseDurations: [5, 5],
     phaseLabels: ['Вдох', 'Выдох'],
-    phaseColors: const [
+    phaseColors: [
       Color(0xFF9B59B6), // Вдох — фиолетовый (баланс)
       Color(0xFFBB8FCE), // Выдох — светло-фиолетовый
     ],
-    phaseScales: const [
+    phaseScales: [
       1.0,  // Вдох — полный
       0.6,  // Выдох — пустой
     ],
@@ -236,14 +237,14 @@ const _exercises = [
       'Мощный выдох',
     ],
     durationSeconds: 180,
-    phaseDurations: const [6, 2, 6],
+    phaseDurations: [6, 2, 6],
     phaseLabels: ['Вдох', 'Задержка', 'Выдох'],
-    phaseColors: const [
+    phaseColors: [
       Color(0xFFFF6B6B), // Вдох — красный (энергия)
       Color(0xFFFFD93D), // Задержка — жёлтый
       Color(0xFF74B9FF), // Выдох — голубой
     ],
-    phaseScales: const [
+    phaseScales: [
       1.0,  // Вдох — полный
       1.0,  // Задержка — полный
       0.5,  // Выдох — пустой
@@ -267,13 +268,13 @@ const _exercises = [
       'Длинный медленный выдох',
     ],
     durationSeconds: 300,
-    phaseDurations: const [4, 8],
+    phaseDurations: [4, 8],
     phaseLabels: ['Вдох', 'Выдох'],
-    phaseColors: const [
+    phaseColors: [
       Color(0xFF5DADE2), // Вдох — голубой (ночное небо)
       Color(0xFF2C3E50), // Выдох — тёмно-синий (сон)
     ],
-    phaseScales: const [
+    phaseScales: [
       1.0,  // Вдох — полный
       0.5,  // Выдох — пустой (медленный)
     ],
@@ -475,7 +476,7 @@ const _exercises = [
 ];
 
 class ExercisesScreen extends StatefulWidget {
-  const ExercisesScreen({super.key});
+  ExercisesScreen({super.key});
 
   @override
   State<ExercisesScreen> createState() => _ExercisesScreenState();
@@ -529,7 +530,7 @@ class _ExercisesScreenState extends State<ExercisesScreen> {
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 480),
+            constraints: BoxConstraints(maxWidth: 480),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -537,19 +538,19 @@ class _ExercisesScreenState extends State<ExercisesScreen> {
                   padding: EdgeInsets.fromLTRB(20, 16, 20, 0),
                   child: Text(
                     'Упражнения',
-                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700, color: AppColors.foreground),
+                    style: TextStyle(fontSize: AppSize.s(24), fontWeight: FontWeight.w700, color: AppColors.foreground),
                   ),
                 ),
                 _buildQuickStartCard(),
-                SizedBox(height: 16),
+                AppSize.gapH(16),
                 _buildCategoryChips(),
-                SizedBox(height: 16),
+                AppSize.gapH(16),
                 Expanded(
                   child: ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 20).copyWith(bottom: 80),
+                    padding: AppSize.paddingH(20, 0).copyWith(bottom: 80),
                     itemCount: _filteredExercises.length,
                     itemBuilder: (context, index) => Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
+                      padding: AppSize.paddingOnly(bottom: 12),
                       child: _buildExerciseCard(_filteredExercises[index]),
                     ),
                   ),
@@ -564,11 +565,11 @@ class _ExercisesScreenState extends State<ExercisesScreen> {
 
   Widget _buildQuickStartCard() {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20),
-      padding: const EdgeInsets.all(16),
+      margin: AppSize.paddingH(20, 0),
+      padding: AppSize.padding(16),
       decoration: BoxDecoration(
         color: AppColors.citrusPurple.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: AppSize.radius(16),
         border: Border.all(color: AppColors.citrusPurple.withOpacity(0.15)),
       ),
       child: Row(
@@ -579,31 +580,31 @@ class _ExercisesScreenState extends State<ExercisesScreen> {
               children: [
                 Text(
                   'Нужна помощь прямо сейчас?',
-                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: AppColors.foreground),
+                  style: TextStyle(fontSize: AppSize.s(15), fontWeight: FontWeight.w600, color: AppColors.foreground),
                 ),
-                SizedBox(height: 4),
+                AppSize.gapH(4),
                 Text(
                   'Начните с дыхательного упражнения',
-                  style: TextStyle(fontSize: 12, color: AppColors.mutedForeground),
+                  style: TextStyle(fontSize: AppSize.s(12), color: AppColors.mutedForeground),
                 ),
               ],
             ),
           ),
-          SizedBox(width: 12),
+          AppSize.gapW(12),
           GestureDetector(
             onTap: () {
               if (_filteredExercises.isNotEmpty) _showExerciseDetail(_filteredExercises.first);
             },
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              padding: AppSize.paddingH(20, 10),
               decoration: BoxDecoration(
                 color: AppColors.citrusPurple.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: AppSize.radius(10),
                 border: Border.all(color: AppColors.citrusPurple.withOpacity(0.3)),
               ),
-              child: const Text(
+              child: Text(
                 'Начать',
-                style: TextStyle(color: AppColors.citrusPurple, fontSize: 13, fontWeight: FontWeight.w600),
+                style: TextStyle(color: AppColors.citrusPurple, fontSize: AppSize.s(13), fontWeight: FontWeight.w600),
               ),
             ),
           ),
@@ -617,25 +618,25 @@ class _ExercisesScreenState extends State<ExercisesScreen> {
       height: 36,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 20),
+        padding: AppSize.paddingH(20, 0),
         itemCount: _categories.length,
-        separatorBuilder: (_, __) => SizedBox(width: 8),
+        separatorBuilder: (_, __) => AppSize.gapW(8),
         itemBuilder: (context, index) {
           final category = _categories[index];
           final isSelected = category == _selectedCategory;
           return GestureDetector(
             onTap: () => setState(() => _selectedCategory = category),
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+              padding: AppSize.paddingH(16, 6),
               decoration: BoxDecoration(
                 color: isSelected ? AppColors.citrusOrange.withOpacity(0.15) : Colors.white.withOpacity(0.06),
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: AppSize.radius(20),
               ),
               child: Text(
                 category,
                 style: TextStyle(
                   color: isSelected ? AppColors.citrusOrange : AppColors.mutedForeground,
-                  fontSize: 12,
+                  fontSize: AppSize.s(12),
                   fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
                 ),
               ),
@@ -650,10 +651,10 @@ class _ExercisesScreenState extends State<ExercisesScreen> {
     return GestureDetector(
       onTap: () => _showExerciseDetail(exercise),
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: AppSize.padding(16),
         decoration: BoxDecoration(
           color: AppColors.surface1,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: AppSize.radius(16),
           border: Border.all(color: AppColors.subtleBorder),
         ),
         child: Column(
@@ -664,18 +665,18 @@ class _ExercisesScreenState extends State<ExercisesScreen> {
                 Stack(
                   alignment: Alignment.center,
                   children: [
-                    Text(exercise.icon, style: const TextStyle(fontSize: 32)),
+                    Text(exercise.icon, style: TextStyle(fontSize: AppSize.s(32))),
                     if (exercise.type == 'Видео')
                       Positioned(
                         right: 0,
                         bottom: 0,
                         child: Container(
-                          padding: const EdgeInsets.all(2),
+                          padding: AppSize.padding(2),
                           decoration: BoxDecoration(
                             color: AppColors.citrusOrange,
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(Icons.play_arrow, size: 12, color: Colors.white),
+                          child: Icon(Icons.play_arrow, size: 12, color: Colors.white),
                         ),
                       )
                     else if (exercise.type == 'Аудио')
@@ -683,17 +684,17 @@ class _ExercisesScreenState extends State<ExercisesScreen> {
                         right: 0,
                         bottom: 0,
                         child: Container(
-                          padding: const EdgeInsets.all(2),
+                          padding: AppSize.padding(2),
                           decoration: BoxDecoration(
                             color: AppColors.citrusPurple,
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(Icons.headphones, size: 12, color: Colors.white),
+                          child: Icon(Icons.headphones, size: 12, color: Colors.white),
                         ),
                       ),
                   ],
                 ),
-                const SizedBox(width: 12),
+                AppSize.gapW(12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -703,42 +704,42 @@ class _ExercisesScreenState extends State<ExercisesScreen> {
                           Expanded(
                             child: Text(
                               exercise.title,
-                              style: TextStyle(color: AppColors.foreground, fontSize: 15, fontWeight: FontWeight.w600),
+                              style: TextStyle(color: AppColors.foreground, fontSize: AppSize.s(15), fontWeight: FontWeight.w600),
                             ),
                           ),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            padding: AppSize.paddingH(8, 2),
                             decoration: BoxDecoration(
                               color: exercise.color.withOpacity(0.15),
-                              borderRadius: BorderRadius.circular(6),
+                              borderRadius: AppSize.radius(6),
                             ),
                             child: Text(
                               exercise.type,
-                              style: TextStyle(color: exercise.color, fontSize: 10, fontWeight: FontWeight.w600),
+                              style: TextStyle(color: exercise.color, fontSize: AppSize.s(10), fontWeight: FontWeight.w600),
                             ),
                           ),
                         ],
                       ),
-                      SizedBox(height: 4),
+                      AppSize.gapH(4),
                       Text(
                         exercise.description,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(color: AppColors.mutedForeground, fontSize: 12),
+                        style: TextStyle(color: AppColors.mutedForeground, fontSize: AppSize.s(12)),
                       ),
-                      SizedBox(height: 8),
+                      AppSize.gapH(8),
                       GestureDetector(
                         onTap: () => _showExerciseDetail(exercise),
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                          padding: AppSize.paddingH(14, 7),
                           decoration: BoxDecoration(
                             color: exercise.color.withOpacity(0.15),
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: AppSize.radius(8),
                           ),
                           child: Text(
                             exercise.type == 'Видео' ? '▶ Смотреть' :
                             exercise.type == 'Аудио' ? '🎧 Слушать' : 'Открыть',
-                            style: TextStyle(color: exercise.color, fontSize: 12, fontWeight: FontWeight.w600),
+                            style: TextStyle(color: exercise.color, fontSize: AppSize.s(12), fontWeight: FontWeight.w600),
                           ),
                         ),
                       ),
@@ -757,7 +758,7 @@ class _ExercisesScreenState extends State<ExercisesScreen> {
 // Экран для видео упражнений с WebView (RuTube, VK Video)
 class VideoExerciseScreen extends StatefulWidget {
   final ExerciseItem exercise;
-  const VideoExerciseScreen({super.key, required this.exercise});
+  VideoExerciseScreen({super.key, required this.exercise});
 
   @override
   State<VideoExerciseScreen> createState() => _VideoExerciseScreenState();
@@ -805,11 +806,11 @@ class _VideoExerciseScreenState extends State<VideoExerciseScreen> {
         ),
         title: Text(
           widget.exercise.title,
-          style: TextStyle(color: AppColors.foreground, fontSize: 16, fontWeight: FontWeight.w600),
+          style: TextStyle(color: AppColors.foreground, fontSize: AppSize.s(16), fontWeight: FontWeight.w600),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.open_in_browser, color: AppColors.citrusOrange),
+            icon: Icon(Icons.open_in_browser, color: AppColors.citrusOrange),
             onPressed: _openInBrowser,
           ),
         ],
@@ -823,7 +824,7 @@ class _VideoExerciseScreenState extends State<VideoExerciseScreen> {
               children: [
                 WebViewWidget(controller: _controller),
                 if (_isLoading)
-                  const Center(
+                  Center(
                     child: CircularProgressIndicator(
                       valueColor: AlwaysStoppedAnimation<Color>(AppColors.citrusOrange),
                     ),
@@ -835,30 +836,30 @@ class _VideoExerciseScreenState extends State<VideoExerciseScreen> {
           Expanded(
             flex: 2,
             child: Container(
-              padding: const EdgeInsets.all(20),
+              padding: AppSize.padding(20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     widget.exercise.description,
-                    style: TextStyle(color: AppColors.mutedForeground, fontSize: 14),
+                    style: TextStyle(color: AppColors.mutedForeground, fontSize: AppSize.s(14)),
                   ),
-                  const SizedBox(height: 16),
+                  AppSize.gapH(16),
                   Text(
                     'Шаги выполнения',
                     style: TextStyle(
                       color: AppColors.foreground,
-                      fontSize: 16,
+                      fontSize: AppSize.s(16),
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  AppSize.gapH(12),
                   Expanded(
                     child: ListView.builder(
                       itemCount: widget.exercise.steps.length,
                       itemBuilder: (context, index) {
                         return Padding(
-                          padding: const EdgeInsets.only(bottom: 8),
+                          padding: AppSize.paddingOnly(bottom: 8),
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -872,21 +873,21 @@ class _VideoExerciseScreenState extends State<VideoExerciseScreen> {
                                 child: Center(
                                   child: Text(
                                     '${index + 1}',
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       color: AppColors.citrusOrange,
-                                      fontSize: 12,
+                                      fontSize: AppSize.s(12),
                                       fontWeight: FontWeight.w600,
                                     ),
                                   ),
                                 ),
                               ),
-                              const SizedBox(width: 12),
+                              AppSize.gapW(12),
                               Expanded(
                                 child: Text(
                                   widget.exercise.steps[index],
                                   style: TextStyle(
                                     color: AppColors.mutedForeground,
-                                    fontSize: 13,
+                                    fontSize: AppSize.s(13),
                                     height: 1.5,
                                   ),
                                 ),
@@ -910,7 +911,7 @@ class _VideoExerciseScreenState extends State<VideoExerciseScreen> {
 // Экран для аудио упражнений - Freesound API
 class AudioExerciseScreen extends StatefulWidget {
   final ExerciseItem exercise;
-  const AudioExerciseScreen({super.key, required this.exercise});
+  AudioExerciseScreen({super.key, required this.exercise});
 
   @override
   State<AudioExerciseScreen> createState() => _AudioExerciseScreenState();
@@ -1159,12 +1160,12 @@ class _AudioExerciseScreenState extends State<AudioExerciseScreen> {
   }
 
   Future<void> _seekBack() async {
-    final pos = _position - const Duration(seconds: 10);
+    final pos = _position - Duration(seconds: 10);
     await _audioPlayer.seek(pos < Duration.zero ? Duration.zero : pos);
   }
 
   Future<void> _seekForward() async {
-    final pos = _position + const Duration(seconds: 10);
+    final pos = _position + Duration(seconds: 10);
     await _audioPlayer.seek(pos > _duration ? _duration : pos);
   }
 
@@ -1193,12 +1194,12 @@ class _AudioExerciseScreenState extends State<AudioExerciseScreen> {
         ),
         title: Text(
           widget.exercise.audioTitle ?? widget.exercise.title,
-          style: TextStyle(color: AppColors.foreground, fontSize: 16, fontWeight: FontWeight.w600),
+          style: TextStyle(color: AppColors.foreground, fontSize: AppSize.s(16), fontWeight: FontWeight.w600),
         ),
         actions: [
           if (!_isSearching && _isLoaded)
             IconButton(
-              icon: const Icon(Icons.refresh, color: AppColors.citrusOrange),
+              icon: Icon(Icons.refresh, color: AppColors.citrusOrange),
               onPressed: _refreshAudio,
               tooltip: 'Найти другое аудио',
             ),
@@ -1210,7 +1211,7 @@ class _AudioExerciseScreenState extends State<AudioExerciseScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(AppColors.citrusOrange)),
-                  SizedBox(height: 16),
+                  AppSize.gapH(16),
                   Text('Поиск аудио...', style: TextStyle(color: AppColors.mutedForeground)),
                 ],
               ),
@@ -1220,13 +1221,13 @@ class _AudioExerciseScreenState extends State<AudioExerciseScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.error_outline, size: 64, color: AppColors.destructive),
-                      const SizedBox(height: 16),
+                      Icon(Icons.error_outline, size: 64, color: AppColors.destructive),
+                      AppSize.gapH(16),
                       Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 32),
+                        padding: AppSize.paddingH(32, 0),
                         child: Text(_error!, textAlign: TextAlign.center, style: TextStyle(color: AppColors.mutedForeground)),
                       ),
-                      const SizedBox(height: 16),
+                      AppSize.gapH(16),
                       ElevatedButton(
                         onPressed: () {
                           setState(() {
@@ -1235,7 +1236,7 @@ class _AudioExerciseScreenState extends State<AudioExerciseScreen> {
                           });
                           _searchAndPlay();
                         },
-                        child: const Text('Повторить'),
+                        child: Text('Повторить'),
                       ),
                     ],
                   ),
@@ -1262,24 +1263,24 @@ class _AudioExerciseScreenState extends State<AudioExerciseScreen> {
                           ],
                         ),
                         child: Center(
-                          child: Text(widget.exercise.icon, style: const TextStyle(fontSize: 72)),
+                          child: Text(widget.exercise.icon, style: TextStyle(fontSize: AppSize.s(72))),
                         ),
                       ),
-                      const SizedBox(height: 40),
+                      AppSize.gapH(40),
                       Text(
                         '${_fmt(_position)} / ${_fmt(_duration)}',
-                        style: TextStyle(color: AppColors.foreground, fontSize: 20, fontWeight: FontWeight.w600),
+                        style: TextStyle(color: AppColors.foreground, fontSize: AppSize.s(20), fontWeight: FontWeight.w600),
                       ),
-                      const SizedBox(height: 40),
+                      AppSize.gapH(40),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           IconButton(
-                            icon: const Icon(Icons.replay_10, size: 40),
+                            icon: Icon(Icons.replay_10, size: 40),
                             color: AppColors.mutedForeground,
                             onPressed: _seekBack,
                           ),
-                          const SizedBox(width: 24),
+                          AppSize.gapW(24),
                           GestureDetector(
                             onTap: _isCompleted ? _restart : (_isPlaying ? _stop : _play),
                             child: Container(
@@ -1289,9 +1290,9 @@ class _AudioExerciseScreenState extends State<AudioExerciseScreen> {
                                 shape: BoxShape.circle,
                                 gradient: LinearGradient(
                                   colors: _isCompleted
-                                      ? [AppColors.citrusGreen, const Color(0xFF6BCB77)]
+                                      ? [AppColors.citrusGreen, Color(0xFF6BCB77)]
                                       : _isPlaying
-                                          ? [AppColors.destructive, const Color(0xFFE74C3C)]
+                                          ? [AppColors.destructive, Color(0xFFE74C3C)]
                                           : [AppColors.citrusOrange, AppColors.citrusAmber],
                                 ),
                                 boxShadow: [
@@ -1314,9 +1315,9 @@ class _AudioExerciseScreenState extends State<AudioExerciseScreen> {
                               ),
                             ),
                           ),
-                          const SizedBox(width: 24),
+                          AppSize.gapW(24),
                           IconButton(
-                            icon: const Icon(Icons.forward_10, size: 40),
+                            icon: Icon(Icons.forward_10, size: 40),
                             color: AppColors.mutedForeground,
                             onPressed: _seekForward,
                           ),
@@ -1331,7 +1332,7 @@ class _AudioExerciseScreenState extends State<AudioExerciseScreen> {
 
 class ExerciseDetailSheet extends StatefulWidget {
   final ExerciseItem exercise;
-  const ExerciseDetailSheet({super.key, required this.exercise});
+  ExerciseDetailSheet({super.key, required this.exercise});
 
   @override
   State<ExerciseDetailSheet> createState() => _ExerciseDetailSheetState();
@@ -1344,7 +1345,7 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
   int _currentStepIndex = 0;
   Color _currentPhaseColor = AppColors.citrusGreen;
   double _targetScale = 0.8;
-  Duration _animationDuration = const Duration(milliseconds: 1000);
+  Duration _animationDuration = Duration(milliseconds: 1000);
   bool _isRunning = false;
   bool _isFinished = false;
   ScrollController? _stepsScrollController;
@@ -1381,7 +1382,7 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
       for (int i = 0; i < phaseDurations.length; i++) {
         accumulated += phaseDurations[i];
         if (elapsedInCycle < accumulated) {
-          newStepIndex = i;
+          final newStepIndex = i;
           break;
         }
       }
@@ -1415,7 +1416,7 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
         if (_stepsScrollController?.hasClients == true) {
           _stepsScrollController!.animateTo(
             _currentStepIndex * 60.0,
-            duration: const Duration(milliseconds: 500),
+            duration: Duration(milliseconds: 500),
             curve: Curves.easeInOutCubic,
           );
         }
@@ -1437,7 +1438,7 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
         if (_stepsScrollController?.hasClients == true) {
           _stepsScrollController!.animateTo(
             _currentStepIndex * 60.0,
-            duration: const Duration(milliseconds: 500),
+            duration: Duration(milliseconds: 500),
             curve: Curves.easeInOutCubic,
           );
         }
@@ -1449,11 +1450,11 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
     setState(() {
       _isRunning = true;
       _currentStepIndex = 0;
-      _animationDuration = const Duration(milliseconds: 1000);
+      _animationDuration = Duration(milliseconds: 1000);
       _updateCurrentStep();
     });
 
-    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+    _timer = Timer.periodic(Duration(seconds: 1), (timer) {
       if (_remainingSeconds > 0) {
         setState(() {
           _remainingSeconds--;
@@ -1490,7 +1491,7 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
       _isFinished = false;
       _currentPhaseColor = widget.exercise.color;
       _targetScale = 0.8;
-      _animationDuration = const Duration(milliseconds: 1000);
+      _animationDuration = Duration(milliseconds: 1000);
     });
   }
 
@@ -1567,19 +1568,19 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
         return Container(
           decoration: BoxDecoration(
             color: AppColors.background,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
             border: Border(top: BorderSide(color: AppColors.subtleBorder, width: 1)),
           ),
           child: Column(
             children: [
               // Handle
               Container(
-                margin: const EdgeInsets.only(top: 12),
+                margin: AppSize.paddingOnly(top: 12),
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
                   color: AppColors.dimForeground,
-                  borderRadius: BorderRadius.circular(2),
+                  borderRadius: AppSize.radius(2),
                 ),
               ),
 
@@ -1587,10 +1588,10 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
                 // === НОВЫЙ ЭКРАН ДЫХАТЕЛЬНОГО УПРАЖНЕНИЯ ===
                 Expanded(
                   child: SingleChildScrollView(
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    padding: AppSize.paddingH(24, 0),
                     child: Column(
                       children: [
-                        const SizedBox(height: 24),
+                        AppSize.gapH(24),
 
                         // Индикаторы фаз (точки)
                         if (widget.exercise.phaseLabels != null)
@@ -1607,9 +1608,9 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
                                     : color;
                                 
                                 return AnimatedContainer(
-                                  duration: const Duration(milliseconds: 400),
+                                  duration: Duration(milliseconds: 400),
                                   curve: Curves.easeInOutCubic,
-                                  margin: const EdgeInsets.symmetric(horizontal: 6),
+                                  margin: AppSize.paddingH(6, 0),
                                   width: isActive ? 32 : 8,
                                   height: 8,
                                   decoration: BoxDecoration(
@@ -1618,18 +1619,18 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
                                         : (isCompleted
                                             ? phaseColor.withOpacity(0.4)
                                             : AppColors.mutedForeground.withOpacity(0.2)),
-                                    borderRadius: BorderRadius.circular(4),
+                                    borderRadius: AppSize.radius(4),
                                   ),
                                 );
                               },
                             ),
                           ),
                         
-                        const SizedBox(height: 16),
+                        AppSize.gapH(16),
 
                         // Название текущей фазы
                         AnimatedSwitcher(
-                          duration: const Duration(milliseconds: 500),
+                          duration: Duration(milliseconds: 500),
                           child: Text(
                             _isFinished 
                                 ? 'Готово!'
@@ -1643,14 +1644,14 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
                                   : _isRunning 
                                       ? _currentPhaseColor 
                                       : AppColors.foreground,
-                              fontSize: 28,
+                              fontSize: AppSize.s(28),
                               fontWeight: FontWeight.w300,
                               letterSpacing: 1,
                             ),
                           ),
                         ),
                         
-                        const SizedBox(height: 8),
+                        AppSize.gapH(8),
                         
                         // Подсказка
                         Text(
@@ -1659,12 +1660,12 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
                               : widget.exercise.description,
                           style: TextStyle(
                             color: AppColors.mutedForeground,
-                            fontSize: 14,
+                            fontSize: AppSize.s(14),
                             fontWeight: FontWeight.w400,
                           ),
                         ),
 
-                        const SizedBox(height: 32),
+                        AppSize.gapH(32),
 
                         // Главный круг дыхания
                         SizedBox(
@@ -1689,7 +1690,7 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
                                           _currentPhaseColor.withOpacity(0.3),
                                           _currentPhaseColor.withOpacity(0.0),
                                         ],
-                                        stops: const [0.0, 1.0],
+                                        stops: [0.0, 1.0],
                                       ),
                                     ),
                                   );
@@ -1770,7 +1771,7 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
                                   child: Center(
                                     child: Text(
                                       widget.exercise.icon,
-                                      style: const TextStyle(fontSize: 64),
+                                      style: TextStyle(fontSize: AppSize.s(64)),
                                     ),
                                   ),
                                 ),
@@ -1778,26 +1779,26 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
                           ),
                         ),
 
-                        const SizedBox(height: 32),
+                        AppSize.gapH(32),
 
                         // Общий таймер
                         Text(
                           _formatTime(_remainingSeconds),
                           style: TextStyle(
                             color: AppColors.foreground.withOpacity(0.6),
-                            fontSize: 18,
+                            fontSize: AppSize.s(18),
                             fontWeight: FontWeight.w500,
-                            fontFeatures: [const FontFeature.tabularFigures()],
+                            fontFeatures: [FontFeature.tabularFigures()],
                           ),
                         ),
 
-                        const SizedBox(height: 32),
+                        AppSize.gapH(32),
 
                         // Кнопка управления
                         GestureDetector(
                           onTap: _isRunning ? _stopTimer : _startTimer,
                           child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 300),
+                            duration: Duration(milliseconds: 300),
                             width: 200,
                             height: 56,
                             decoration: BoxDecoration(
@@ -1806,7 +1807,7 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
                                   : _isRunning 
                                       ? Colors.transparent 
                                       : color,
-                              borderRadius: BorderRadius.circular(28),
+                              borderRadius: AppSize.radius(28),
                               border: _isRunning && !_isFinished
                                   ? Border.all(color: color, width: 2)
                                   : null,
@@ -1824,7 +1825,7 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
                                     color: _isRunning && !_isFinished ? color : Colors.white,
                                     size: 24,
                                   ),
-                                  const SizedBox(width: 8),
+                                  AppSize.gapW(8),
                                   Text(
                                     _isFinished 
                                         ? 'Заново'
@@ -1833,7 +1834,7 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
                                             : 'Начать',
                                     style: TextStyle(
                                       color: _isRunning && !_isFinished ? color : Colors.white,
-                                      fontSize: 16,
+                                      fontSize: AppSize.s(16),
                                       fontWeight: FontWeight.w600,
                                     ),
                                   ),
@@ -1843,15 +1844,15 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
                           ),
                         ),
 
-                        const SizedBox(height: 24),
+                        AppSize.gapH(24),
 
                         // Карточка с шагами (компактная)
                         if (widget.exercise.steps.isNotEmpty && !_isFinished)
                           Container(
-                            padding: const EdgeInsets.all(16),
+                            padding: AppSize.padding(16),
                             decoration: BoxDecoration(
                               color: AppColors.surface1,
-                              borderRadius: BorderRadius.circular(20),
+                              borderRadius: AppSize.radius(20),
                             ),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1860,19 +1861,19 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
                                   'Последовательность',
                                   style: TextStyle(
                                     color: AppColors.mutedForeground,
-                                    fontSize: 12,
+                                    fontSize: AppSize.s(12),
                                     fontWeight: FontWeight.w500,
                                     letterSpacing: 0.5,
                                   ),
                                 ),
-                                const SizedBox(height: 12),
+                                AppSize.gapH(12),
                                 Row(
                                   children: List.generate(
                                     widget.exercise.steps.length * 2 - 1,
                                     (index) {
                                       if (index.isOdd) {
                                         return Padding(
-                                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                                          padding: AppSize.paddingH(8, 0),
                                           child: Icon(
                                             Icons.arrow_forward_ios,
                                             size: 12,
@@ -1889,12 +1890,12 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
                                       
                                       return Expanded(
                                         child: Container(
-                                          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                                          padding: AppSize.paddingH(4, 8),
                                           decoration: BoxDecoration(
                                             color: isActive 
                                                 ? stepColor.withOpacity(0.15)
                                                 : Colors.transparent,
-                                            borderRadius: BorderRadius.circular(8),
+                                            borderRadius: AppSize.radius(8),
                                             border: isActive
                                                 ? Border.all(color: stepColor.withOpacity(0.3))
                                                 : null,
@@ -1906,7 +1907,7 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
                                                 textAlign: TextAlign.center,
                                                 style: TextStyle(
                                                   color: isActive ? stepColor : AppColors.mutedForeground,
-                                                  fontSize: 11,
+                                                  fontSize: AppSize.s(11),
                                                   fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
                                                 ),
                                               ),
@@ -1918,7 +1919,7 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
                                                     color: isActive 
                                                         ? stepColor.withOpacity(0.7)
                                                         : AppColors.mutedForeground.withOpacity(0.5),
-                                                    fontSize: 10,
+                                                    fontSize: AppSize.s(10),
                                                   ),
                                                 ),
                                             ],
@@ -1935,10 +1936,10 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
                         // Сообщение о завершении
                         if (_isFinished)
                           Container(
-                            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+                            padding: AppSize.paddingH(24, 16),
                             decoration: BoxDecoration(
                               color: AppColors.citrusGreen.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(16),
+                              borderRadius: AppSize.radius(16),
                               border: Border.all(
                                 color: AppColors.citrusGreen.withOpacity(0.2),
                               ),
@@ -1951,12 +1952,12 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
                                   color: AppColors.citrusGreen,
                                   size: 20,
                                 ),
-                                const SizedBox(width: 8),
+                                AppSize.gapW(8),
                                 Text(
                                   'Упражнение завершено',
                                   style: TextStyle(
                                     color: AppColors.citrusGreen,
-                                    fontSize: 14,
+                                    fontSize: AppSize.s(14),
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
@@ -1964,7 +1965,7 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
                             ),
                           ),
 
-                        const SizedBox(height: 24),
+                        AppSize.gapH(24),
                       ],
                     ),
                   ),
@@ -1974,25 +1975,25 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
                 Expanded(
                   child: ListView(
                     controller: scrollController,
-                    padding: const EdgeInsets.all(20),
+                    padding: AppSize.padding(20),
                     children: [
                       Row(
                         children: [
-                          Text(widget.exercise.icon, style: const TextStyle(fontSize: 28)),
-                          const SizedBox(width: 12),
+                          Text(widget.exercise.icon, style: TextStyle(fontSize: AppSize.s(28))),
+                          AppSize.gapW(12),
                           Expanded(
                             child: Text(
                               widget.exercise.title,
                               style: TextStyle(
                                 color: AppColors.foreground,
-                                fontSize: 18,
+                                fontSize: AppSize.s(18),
                                 fontWeight: FontWeight.w700,
                               ),
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 20),
+                      AppSize.gapH(20),
                       Center(
                         child: Container(
                           width: 120,
@@ -2003,50 +2004,50 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
                             border: Border.all(color: color.withOpacity(0.3)),
                           ),
                           child: Center(
-                            child: Text(widget.exercise.icon, style: const TextStyle(fontSize: 56)),
+                            child: Text(widget.exercise.icon, style: TextStyle(fontSize: AppSize.s(56))),
                           ),
                         ),
                       ),
-                      const SizedBox(height: 20),
+                      AppSize.gapH(20),
                       Center(
                         child: Text(
                           _isRunning || _isFinished ? _formatTime(_remainingSeconds) : widget.exercise.title,
                           style: TextStyle(
                             color: AppColors.foreground,
-                            fontSize: 32,
+                            fontSize: AppSize.s(32),
                             fontWeight: FontWeight.w700,
                           ),
                         ),
                       ),
                       if (_phaseText.isNotEmpty && _isRunning) ...[
-                        const SizedBox(height: 8),
+                        AppSize.gapH(8),
                         Center(
                           child: Text(
                             _phaseText,
                             style: TextStyle(
                               color: color,
-                              fontSize: 15,
+                              fontSize: AppSize.s(15),
                               fontWeight: FontWeight.w500,
                             ),
                           ),
                         ),
                       ],
-                      const SizedBox(height: 20),
+                      AppSize.gapH(20),
                       Text(
                         'Шаги выполнения',
                         style: TextStyle(
                           color: AppColors.foreground,
-                          fontSize: 16,
+                          fontSize: AppSize.s(16),
                           fontWeight: FontWeight.w600,
                         ),
                       ),
-                      const SizedBox(height: 12),
+                      AppSize.gapH(12),
                       ...widget.exercise.steps.asMap().entries.map((entry) {
                         final index = entry.key;
                         final step = entry.value;
                         final isCurrentStep = _isRunning && index == _currentStepIndex;
                         return Padding(
-                          padding: const EdgeInsets.only(bottom: 12),
+                          padding: AppSize.paddingOnly(bottom: 12),
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -2062,19 +2063,19 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
                                     '${index + 1}',
                                     style: TextStyle(
                                       color: isCurrentStep ? Colors.white : AppColors.citrusOrange,
-                                      fontSize: 12,
+                                      fontSize: AppSize.s(12),
                                       fontWeight: FontWeight.w600,
                                     ),
                                   ),
                                 ),
                               ),
-                              const SizedBox(width: 12),
+                              AppSize.gapW(12),
                               Expanded(
                                 child: Text(
                                   step,
                                   style: TextStyle(
                                     color: isCurrentStep ? color : AppColors.mutedForeground,
-                                    fontSize: 13,
+                                    fontSize: AppSize.s(13),
                                     height: 1.5,
                                     fontWeight: isCurrentStep ? FontWeight.w600 : FontWeight.normal,
                                   ),
@@ -2085,47 +2086,47 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
                         );
                       }),
                       if (_isFinished) ...[
-                        const SizedBox(height: 16),
+                        AppSize.gapH(16),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                          padding: AppSize.paddingH(16, 10),
                           decoration: BoxDecoration(
                             color: AppColors.citrusGreen.withOpacity(0.15),
-                            borderRadius: BorderRadius.circular(10),
+                            borderRadius: AppSize.radius(10),
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(Icons.check_circle, color: AppColors.citrusGreen, size: 20),
-                              const SizedBox(width: 8),
+                              Icon(Icons.check_circle, color: AppColors.citrusGreen, size: 20),
+                              AppSize.gapW(8),
                               Text(
                                 'Отличная работа!',
                                 style: TextStyle(
                                   color: AppColors.citrusGreen,
-                                  fontSize: 14,
+                                  fontSize: AppSize.s(14),
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
                             ],
                           ),
                         ),
-                        const SizedBox(height: 12),
+                        AppSize.gapH(12),
                       ],
-                      const SizedBox(height: 16),
+                      AppSize.gapH(16),
                       Row(
                         children: [
                           Expanded(
                             child: GestureDetector(
                               onTap: _isRunning ? _stopTimer : _startTimer,
                               child: Container(
-                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                padding: AppSize.paddingH(0, 14),
                                 decoration: BoxDecoration(
                                   gradient: _isRunning
                                       ? null
-                                      : const LinearGradient(
+                                      : LinearGradient(
                                           colors: [AppColors.citrusOrange, AppColors.citrusAmber],
                                         ),
                                   color: _isRunning ? AppColors.surface2 : null,
-                                  borderRadius: BorderRadius.circular(12),
+                                  borderRadius: AppSize.radius(12),
                                   border: _isRunning
                                       ? Border.all(color: AppColors.citrusOrange.withOpacity(0.3))
                                       : null,
@@ -2135,7 +2136,7 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
                                           BoxShadow(
                                             color: AppColors.citrusOrange.withOpacity(0.3),
                                             blurRadius: 16,
-                                            offset: const Offset(0, 4),
+                                            offset: Offset(0, 4),
                                           ),
                                         ],
                                 ),
@@ -2144,7 +2145,7 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
                                   textAlign: TextAlign.center,
                                   style: TextStyle(
                                     color: _isRunning ? AppColors.citrusOrange : AppColors.background,
-                                    fontSize: 15,
+                                    fontSize: AppSize.s(15),
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),

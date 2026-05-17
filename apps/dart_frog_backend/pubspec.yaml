@@ -13,7 +13,6 @@ dependencies:
   dart_jsonwebtoken: ^2.11.0
   http: ^1.6.0
   mime: ^1.0.4
-  dotenv: ^4.2.0
   mailer: ^6.2.1
 
 dev_dependencies:
