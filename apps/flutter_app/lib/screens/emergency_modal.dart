@@ -109,20 +109,29 @@ class _EmergencyModalState extends State<EmergencyModal> {
   }
 
   Future<void> _sendSosMessage() async {
-    String? trustedPhone;
+    // Собираем все доверенные контакты — если их несколько, отправляем
+    // одно SMS на всех получателей сразу.
+    final phones = <String>[];
 
-    // Сначала пробуем из БД
-    if (_trustedContacts.isNotEmpty) {
-      trustedPhone = _trustedContacts.first['phone'] as String?;
+    for (final contact in _trustedContacts) {
+      final raw = contact['phone'];
+      if (raw is String && raw.trim().isNotEmpty) {
+        final normalized = raw.replaceAll(RegExp(r'[^0-9+]'), '');
+        if (normalized.isNotEmpty) phones.add(normalized);
+      }
     }
 
-    // Fallback на SharedPreferences
-    if (trustedPhone == null || trustedPhone.isEmpty) {
+    // Fallback на SharedPreferences, если из БД не пришло ничего
+    if (phones.isEmpty) {
       final storage = StorageService();
-      trustedPhone = await storage.getString('trusted_contact');
+      final stored = await storage.getString('trusted_contact');
+      if (stored != null && stored.isNotEmpty) {
+        final normalized = stored.replaceAll(RegExp(r'[^0-9+]'), '');
+        if (normalized.isNotEmpty) phones.add(normalized);
+      }
     }
 
-    if (trustedPhone == null || trustedPhone.isEmpty) {
+    if (phones.isEmpty) {
       if (mounted) {
         showDialog(
           context: context,
@@ -144,16 +153,17 @@ class _EmergencyModalState extends State<EmergencyModal> {
       return;
     }
 
-    // Нормализуем телефон и корректно кодируем тело — без этого Android может
-    // отказаться открывать SMS-приложение (тело содержит эмодзи и пробелы).
-    final normalizedPhone = trustedPhone.replaceAll(RegExp(r'[^0-9+]'), '');
-    final smsUri = Uri(
-      scheme: 'sms',
-      path: normalizedPhone,
-      queryParameters: {
-        'body': '🆘 SOS! Мне нужна помощь. Я отправляю это из приложения Citrus.',
-      },
+    // Несколько получателей — через запятую (Android SMS-приложения это
+    // поддерживают). Тело собираем вручную с percent-кодированием, иначе
+    // Uri.queryParameters использует form-urlencoding и заменяет пробелы
+    // на «+» — некоторые приложения (Samsung Messages) показывают их
+    // буквально.
+    final recipients = phones.join(',');
+    final body = Uri.encodeComponent(
+      '🆘 SOS! Мне нужна помощь. Я отправляю это из приложения Citrus.',
     );
+    final smsUri = Uri.parse('sms:$recipients?body=$body');
+
     if (await canLaunchUrl(smsUri)) {
       await launchUrl(smsUri);
     } else {
