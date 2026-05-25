@@ -274,32 +274,48 @@ class CalendarBloc extends Bloc<CalendarEvent, CalendarState> {
     DeleteEvent event,
     Emitter<CalendarState> emit,
   ) async {
+    final previousState = state;
     try {
       await _repository.deleteEvent(event.eventId);
 
-      // Отменяем уведомление для удалённого события
-      await _notificationRepository.cancelCalendarEventNotification(event.eventId);
+      // Отменяем уведомление для удалённого события (не критично — не должно
+      // ронять успешное удаление, если на устройстве нет разрешения).
+      try {
+        await _notificationRepository.cancelCalendarEventNotification(event.eventId);
+      } catch (e) {
+        debugPrint('CalendarBloc: не удалось отменить уведомление: $e');
+      }
 
-      if (state is CalendarLoaded) {
-        final loadedState = state as CalendarLoaded;
-        final updatedEvents = Map<DateTime, List<CalendarEventModel>>.from(loadedState.events);
-        
-        // Удаляем событие из всех дней
-        for (final day in updatedEvents.keys) {
-          updatedEvents[day]?.removeWhere((e) => e.id == event.eventId);
+      if (previousState is CalendarLoaded) {
+        // Глубокая копия: пересоздаём внутренние списки, чтобы не мутировать
+        // предыдущее состояние (иначе BlocListener мог не сработать).
+        final updatedEvents = <DateTime, List<CalendarEventModel>>{};
+        for (final entry in previousState.events.entries) {
+          final filtered = entry.value
+              .where((e) => e.id != event.eventId)
+              .toList();
+          if (filtered.isNotEmpty) {
+            updatedEvents[entry.key] = filtered;
+          }
         }
-        // Очищаем пустые списки
-        updatedEvents.removeWhere((day, events) => events.isEmpty);
 
         emit(CalendarLoaded(
           events: updatedEvents,
-          selectedDay: loadedState.selectedDay,
-          focusedDay: loadedState.focusedDay,
-          moodAverages: loadedState.moodAverages,
+          selectedDay: previousState.selectedDay,
+          focusedDay: previousState.focusedDay,
+          moodAverages: previousState.moodAverages,
         ));
       }
     } catch (e) {
-      emit(CalendarError('Ошибка удаления события: $e'));
+      debugPrint('CalendarBloc: ошибка удаления события: $e');
+      // Не затираем загруженный календарь экраном ошибки — иначе пользователь
+      // теряет все события. Перезагружаем месяц, чтобы UI остался в согласии
+      // с сервером: если удаление не прошло, событие останется видимым.
+      if (previousState is CalendarLoaded) {
+        add(LoadCalendar(month: previousState.focusedDay));
+      } else {
+        emit(CalendarError('Ошибка удаления события: $e'));
+      }
     }
   }
 

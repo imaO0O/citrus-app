@@ -1382,7 +1382,7 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
       for (int i = 0; i < phaseDurations.length; i++) {
         accumulated += phaseDurations[i];
         if (elapsedInCycle < accumulated) {
-          final newStepIndex = i;
+          newStepIndex = i;
           break;
         }
       }

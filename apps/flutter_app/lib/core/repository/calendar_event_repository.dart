@@ -108,13 +108,11 @@ class CalendarEventRepository {
 
   /// Удалить событие
   Future<void> deleteEvent(String eventId) async {
-    try {
-      await _apiService.deleteEvent(eventId);
-    } catch (e) {
-      // Игнорируем ошибку API, удаляем только локально
-    } finally {
-      await _removeFromCache(eventId);
-    }
+    // Сначала подтверждаем удаление на сервере. Локальный кэш чистим только
+    // при успехе — иначе UI будет показывать удаление, а событие вернётся
+    // на следующем обновлении с сервера.
+    await _apiService.deleteEvent(eventId);
+    await _removeFromCache(eventId);
   }
 
   /// Удалить событие из кэша
