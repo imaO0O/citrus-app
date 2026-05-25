@@ -574,17 +574,20 @@ class _ArticleCard extends StatelessWidget {
                 ],
               ),
               AppSize.gapH(8),
-              Text(
-                article.content.length > 120
-                    ? '${article.content.substring(0, 120)}...'
-                    : article.content,
-                style: TextStyle(
-                  color: AppColors.mutedForeground,
-                  fontSize: AppSize.s(14),
-                ),
-                maxLines: 3,
-                overflow: TextOverflow.ellipsis,
-              ),
+              Builder(builder: (_) {
+                final preview = _stripMarkdown(article.content);
+                return Text(
+                  preview.length > 120
+                      ? '${preview.substring(0, 120)}...'
+                      : preview,
+                  style: TextStyle(
+                    color: AppColors.mutedForeground,
+                    fontSize: AppSize.s(14),
+                  ),
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                );
+              }),
               AppSize.gapH(8),
               Text(
                 'Создано: ${_formatDate(article.createdAt)}',
@@ -616,5 +619,38 @@ class _ArticleCard extends StatelessWidget {
       'custom': 'Пользовательские',
     };
     return categories[category.toLowerCase()] ?? category;
+  }
+
+  /// Убирает markdown-разметку, чтобы текст превью статьи выглядел как
+  /// обычный текст (без «**», «##», «[…](…)» и т.п.). Покрывает форматирование,
+  /// которое встречается в источниках статей.
+  String _stripMarkdown(String input) {
+    var s = input;
+    // Блоки кода ```...``` целиком
+    s = s.replaceAll(RegExp(r'```[\s\S]*?```'), '');
+    // Инлайн-код `code`
+    s = s.replaceAllMapped(RegExp(r'`([^`]+)`'), (m) => m[1]!);
+    // Картинки ![alt](url) — выкидываем целиком
+    s = s.replaceAll(RegExp(r'!\[[^\]]*\]\([^)]*\)'), '');
+    // Ссылки [text](url) → text
+    s = s.replaceAllMapped(RegExp(r'\[([^\]]+)\]\([^)]+\)'), (m) => m[1]!);
+    // Жирный/курсив: **, __, *, _
+    s = s.replaceAllMapped(RegExp(r'\*\*([^*]+)\*\*'), (m) => m[1]!);
+    s = s.replaceAllMapped(RegExp(r'__([^_]+)__'), (m) => m[1]!);
+    s = s.replaceAllMapped(RegExp(r'\*([^*]+)\*'), (m) => m[1]!);
+    s = s.replaceAllMapped(RegExp(r'(?<!\w)_([^_\n]+)_(?!\w)'), (m) => m[1]!);
+    // Зачёркивание
+    s = s.replaceAllMapped(RegExp(r'~~([^~]+)~~'), (m) => m[1]!);
+    // Заголовки, цитаты, маркеры списков в начале строки
+    s = s.replaceAll(RegExp(r'^[ \t]*#{1,6}[ \t]+', multiLine: true), '');
+    s = s.replaceAll(RegExp(r'^[ \t]*>[ \t]?', multiLine: true), '');
+    s = s.replaceAll(RegExp(r'^[ \t]*[-*+][ \t]+', multiLine: true), '');
+    s = s.replaceAll(RegExp(r'^[ \t]*\d+\.[ \t]+', multiLine: true), '');
+    // Горизонтальные разделители
+    s = s.replaceAll(
+        RegExp(r'^[ \t]*[-*_]{3,}[ \t]*$', multiLine: true), '');
+    // Сворачиваем пробелы и переводы строк в один пробел
+    s = s.replaceAll(RegExp(r'\s+'), ' ').trim();
+    return s;
   }
 }
