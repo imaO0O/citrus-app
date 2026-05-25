@@ -40,8 +40,8 @@ class _EmergencyModalState extends State<EmergencyModal> {
     final saved = await storage.getString('curator_phone');
     if (saved != null && saved.isNotEmpty && mounted) {
       setState(() {
-        final curatorPhone = saved;
-        final inputValue = saved;
+        curatorPhone = saved;
+        inputValue = saved;
         _phoneController.text = saved;
       });
     }
@@ -85,9 +85,9 @@ class _EmergencyModalState extends State<EmergencyModal> {
     final trimmed = _phoneController.text.trim();
     if (trimmed.isEmpty) return;
     setState(() {
-      final curatorPhone = trimmed;
-      final inputValue = trimmed;
-      const isEditing = false;
+      curatorPhone = trimmed;
+      inputValue = trimmed;
+      isEditing = false;
     });
     _saveCuratorPhone();
   }
@@ -113,13 +113,13 @@ class _EmergencyModalState extends State<EmergencyModal> {
 
     // Сначала пробуем из БД
     if (_trustedContacts.isNotEmpty) {
-      final trustedPhone = _trustedContacts.first['phone'];
+      trustedPhone = _trustedContacts.first['phone'] as String?;
     }
 
     // Fallback на SharedPreferences
     if (trustedPhone == null || trustedPhone.isEmpty) {
       final storage = StorageService();
-      final trustedPhone = await storage.getString('trusted_contact');
+      trustedPhone = await storage.getString('trusted_contact');
     }
 
     if (trustedPhone == null || trustedPhone.isEmpty) {
@@ -144,8 +144,15 @@ class _EmergencyModalState extends State<EmergencyModal> {
       return;
     }
 
-    final smsUri = Uri.parse(
-      'sms:$trustedPhone?body=🆘 SOS! Мне нужна помощь. Я отправляю это из приложения Citrus.',
+    // Нормализуем телефон и корректно кодируем тело — без этого Android может
+    // отказаться открывать SMS-приложение (тело содержит эмодзи и пробелы).
+    final normalizedPhone = trustedPhone.replaceAll(RegExp(r'[^0-9+]'), '');
+    final smsUri = Uri(
+      scheme: 'sms',
+      path: normalizedPhone,
+      queryParameters: {
+        'body': '🆘 SOS! Мне нужна помощь. Я отправляю это из приложения Citrus.',
+      },
     );
     if (await canLaunchUrl(smsUri)) {
       await launchUrl(smsUri);
@@ -546,9 +553,9 @@ class _EmergencyModalState extends State<EmergencyModal> {
                       GestureDetector(
                         onTap: () {
                           setState(() {
-                            final inputValue = curatorPhone;
+                            inputValue = curatorPhone;
                             _phoneController.text = curatorPhone;
-                            const isEditing = true;
+                            isEditing = true;
                           });
                         },
                         child: Container(
