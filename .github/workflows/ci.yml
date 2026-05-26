@@ -1,0 +1,30 @@
+name: CI
+
+on:
+  push:
+    branches: [ develop, staging, main ]
+  pull_request:
+    branches: [ develop, staging, main ]
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: stable
+      - run: cd apps/dart_frog_backend && dart pub get
+      - run: cd apps/dart_frog_backend && dart test
+
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.16'
+          channel: 'stable'
+      - run: cd apps/flutter_app && flutter pub get
+      - run: cd apps/flutter_app && flutter analyze
+      - run: cd apps/flutter_app && flutter build apk --debug
