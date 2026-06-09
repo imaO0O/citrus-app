@@ -45,17 +45,17 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   // Ключ для AnalyticsScreen, чтобы вызывать refresh при навигации
   final GlobalKey _analyticsKey = GlobalKey();
 
-  final List<Widget> _screens = [];
-
   /// Публичный метод для навигации на аналитику (используется из MoreScreen)
   void navigateToAnalytics() {
     _setIndex(11);
   }
 
-  @override
-  void initState() {
-    super.initState();
-    _screens.addAll([
+  /// Экраны строятся заново на каждый build(), а не кэшируются в поле — иначе при
+  /// смене темы IndexedStack получает те же экземпляры виджетов, и Flutter пропускает
+  /// их перестроение (статические AppColors остаются в старой теме). State экранов
+  /// при этом сохраняется, т.к. их тип и позиция в списке не меняются.
+  List<Widget> _buildScreens() {
+    return [
       HomePage(                 // 0 — homepage
         onNavigateToExercises: () => _setIndex(9),
         onNavigateToChat: () => _setIndex(2),
@@ -75,7 +75,12 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       AnalyticsScreen(key: _analyticsKey),           // 10
       SettingsScreen(),            // 11
       ArticlesPage(showBackButton: false),  // 12
-    ]);
+    ];
+  }
+
+  @override
+  void initState() {
+    super.initState();
 
     // Инициализация BLoC при старте
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -213,7 +218,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                           Expanded(
                             child: IndexedStack(
                               index: _currentIndex,
-                              children: _screens,
+                              children: _buildScreens(),
                             ),
                           ),
                           _buildBottomNav(),

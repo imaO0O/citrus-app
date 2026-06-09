@@ -63,17 +63,16 @@ class _ToyScreenState extends State<ToyScreen> {
     const labels = ['Цитрус', 'Пузыри', 'Песок', 'Дождь', 'Шарики', 'Казино'];
     return Padding(
       padding: AppSize.paddingH(0, 16),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          children: List.generate(6, (i) {
-            final isActive = _activeTab == i;
-            return GestureDetector(
+      child: Row(
+        children: List.generate(6, (i) {
+          final isActive = _activeTab == i;
+          return Expanded(
+            child: GestureDetector(
               onTap: () => _onTabChanged(i),
               child: AnimatedContainer(
                 duration: Duration(milliseconds: 200),
-                margin: AppSize.paddingH(4, 0),
-                padding: AppSize.paddingH(16, 10),
+                margin: AppSize.paddingH(2, 0),
+                padding: AppSize.paddingH(2, 8),
                 decoration: BoxDecoration(
                   color: isActive ? AppColors.citrusOrange.withOpacity(0.15) : Colors.transparent,
                   borderRadius: AppSize.radius(12),
@@ -83,13 +82,15 @@ class _ToyScreenState extends State<ToyScreen> {
                   children: [
                     Text(
                       emojis[i],
-                      style: TextStyle(fontSize: AppSize.s(24), color: isActive ? AppColors.citrusOrange : AppColors.mutedForeground),
+                      style: TextStyle(fontSize: AppSize.s(22), color: isActive ? AppColors.citrusOrange : AppColors.mutedForeground),
                     ),
                     AppSize.gapH(4),
                     Text(
                       labels[i],
+                      maxLines: 1,
+                      textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontSize: AppSize.s(10),
+                        fontSize: AppSize.s(9),
                         color: isActive ? AppColors.citrusOrange : AppColors.dimForeground,
                         fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
                       ),
@@ -97,9 +98,9 @@ class _ToyScreenState extends State<ToyScreen> {
                   ],
                 ),
               ),
-            );
-          }),
-        ),
+            ),
+          );
+        }),
       ),
     );
   }
@@ -184,7 +185,8 @@ class _SqueezeCitrusToyState extends State<SqueezeCitrusToy>
 
   @override
   Widget build(BuildContext context) {
-    return Center(
+    return SingleChildScrollView(
+      child: Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -352,6 +354,7 @@ class _SqueezeCitrusToyState extends State<SqueezeCitrusToy>
             style: TextStyle(color: AppColors.mutedForeground, fontSize: AppSize.s(12)),
           ),
         ],
+      ),
       ),
     );
   }
@@ -530,7 +533,7 @@ class _BubbleWrapToyState extends State<BubbleWrapToy> {
         // Сетка
         Expanded(
           child: GridView.builder(
-            physics: NeverScrollableScrollPhysics(),
+            physics: const ClampingScrollPhysics(),
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: gridSize,
               crossAxisSpacing: 8,

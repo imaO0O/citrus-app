@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'app/routes.dart';
+import 'core/theme/app_colors.dart';
 import 'core/utils/theme.dart';
 import 'core/utils/theme_service.dart';
 import 'core/utils/app_size.dart';
@@ -160,8 +162,27 @@ class _MyAppState extends State<MyApp> {
                   theme: lightTheme,
                   darkTheme: darkTheme,
                   themeMode: ThemeService().themeMode,
+                  // Мгновенная смена темы без анимации: иначе Material-виджеты плавно
+                  // переходят ~200мс, а виджеты на AppColors переключаются сразу — из-за
+                  // этого тема какое-то время выглядит «наполовину».
+                  themeAnimationDuration: Duration.zero,
                   routerConfig: _appRouter.router,
                   debugShowCheckedModeBanner: false,
+                  builder: (context, child) {
+                    if (child == null) return const SizedBox.shrink();
+                    if (!kIsWeb) return child;
+                    // На web ограничиваем приложение телефонной шириной и центрируем,
+                    // иначе мобильная вёрстка растягивается на весь широкий экран ПК.
+                    return ColoredBox(
+                      color: AppColors.background,
+                      child: Center(
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 480),
+                          child: child,
+                        ),
+                      ),
+                    );
+                  },
                   locale: Locale('ru', 'RU'),
                   localizationsDelegates: [
                     GlobalMaterialLocalizations.delegate,

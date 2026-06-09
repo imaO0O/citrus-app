@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/widgets.dart';
 
 /// Адаптивные размеры — масштабирование относительно базового экрана (390pt — iPhone 14)
@@ -12,6 +13,18 @@ class AppSize {
   /// Вызывать один раз при запуске приложения (в builder MaterialApp или в первом экране)
   static void init(BuildContext context) {
     final size = MediaQuery.of(context).size;
+    if (kIsWeb) {
+      // На web вьюпорт переменный: на телефоне высоту «съедает» адресная строка,
+      // на десктопе окно намного шире телефона. Поэтому используем единый масштаб
+      // по ширине, ограниченной телефонной (_baseWidth), — это убирает раздувание
+      // горизонтальных отступов на ПК и сжатие по высоте на телефоне.
+      final effectiveWidth = size.width < _baseWidth ? size.width : _baseWidth;
+      final webScale = effectiveWidth / _baseWidth;
+      scaleW = webScale;
+      scaleH = webScale;
+      scale = webScale;
+      return;
+    }
     scaleW = size.width / _baseWidth;
     scaleH = size.height / _baseHeight;
     scale = scaleW < scaleH ? scaleW : scaleH;
