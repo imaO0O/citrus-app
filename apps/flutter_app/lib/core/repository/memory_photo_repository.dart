@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'dart:typed_data';
 import 'package:intl/intl.dart';
 import '../../models/memory_photo.dart';
 import '../../core/api/memory_photo_api_service.dart';
@@ -34,12 +34,14 @@ class MemoryPhotoRepository {
 
   /// Загрузить фото с устройства
   Future<MemoryPhoto> uploadPhoto({
-    required File imageFile,
+    required Uint8List bytes,
+    required String filename,
     String? caption,
     DateTime? photoDate,
   }) async {
     final data = await _apiService.uploadPhoto(
-      imageFile: imageFile,
+      bytes: bytes,
+      filename: filename,
       caption: caption,
       photoDate: photoDate != null ? DateFormat('yyyy-MM-dd').format(photoDate) : null,
     );

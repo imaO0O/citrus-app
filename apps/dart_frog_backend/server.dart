@@ -1733,9 +1733,34 @@ Future<Response> _deleteDiaryEntry(RequestContext context, _AuthContext auth, St
   }
 }
 
+const _corsHeaders = <String, String>{
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
+  'Access-Control-Allow-Headers': 'Origin, Content-Type, Authorization, Accept',
+  'Access-Control-Max-Age': '86400',
+};
+
+/// Оборачивает обработчик: отвечает на preflight-запросы (OPTIONS) и добавляет
+/// CORS-заголовки ко всем ответам, чтобы веб-версия (PWA) могла обращаться к API
+/// из браузера. На нативных платформах (Android/iOS) CORS не действует и обёртка
+/// не мешает.
+Future<Response> _handleWithCors(RequestContext context) async {
+  if (context.request.method == HttpMethod.options) {
+    return Response(statusCode: 204, headers: _corsHeaders);
+  }
+  final res = await _handleRequest(context);
+  final chunks = await res.bytes().toList();
+  final bodyBytes = chunks.expand((e) => e).toList();
+  return Response.bytes(
+    body: bodyBytes,
+    statusCode: res.statusCode,
+    headers: {...res.headers, ..._corsHeaders},
+  );
+}
+
 void main() async {
   final port = int.tryParse(Platform.environment['PORT'] ?? '8081') ?? 8081;
-  final server = await serve(_handleRequest, InternetAddress.anyIPv4, port);
+  final server = await serve(_handleWithCors, InternetAddress.anyIPv4, port);
   print('Server running on http://${server.address.host}:${server.port}');
 }
 

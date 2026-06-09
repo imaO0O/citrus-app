@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -99,9 +98,12 @@ class _PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
       // Показать диалог для caption
       final caption = await _showCaptionDialog();
 
+      // Читаем байты из XFile — работает и на мобильных, и на web.
+      final bytes = await image.readAsBytes();
       final repo = context.read<MemoryPhotoRepository>();
       await repo.uploadPhoto(
-        imageFile: File(image.path),
+        bytes: bytes,
+        filename: image.name,
         caption: caption,
         photoDate: DateTime.now(),
       );

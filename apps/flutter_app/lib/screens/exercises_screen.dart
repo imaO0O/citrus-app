@@ -1,11 +1,13 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:ui';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:just_audio/just_audio.dart';
+import '../core/web/web_iframe_view.dart';
 import '../core/theme/app_colors.dart';
 import '../core/services/casino_coins_service.dart';
 import '../core/services/exercise_tracker_service.dart';
@@ -765,12 +767,17 @@ class VideoExerciseScreen extends StatefulWidget {
 }
 
 class _VideoExerciseScreenState extends State<VideoExerciseScreen> {
-  late final WebViewController _controller;
+  WebViewController? _controller;
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
+    if (kIsWeb) {
+      // На вебе webview_flutter недоступен — видео встраивается через <iframe>.
+      _isLoading = false;
+      return;
+    }
     _controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setNavigationDelegate(
@@ -820,17 +827,19 @@ class _VideoExerciseScreenState extends State<VideoExerciseScreen> {
           // Видео плеер
           Expanded(
             flex: 3,
-            child: Stack(
-              children: [
-                WebViewWidget(controller: _controller),
-                if (_isLoading)
-                  Center(
-                    child: CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(AppColors.citrusOrange),
-                    ),
+            child: kIsWeb
+                ? buildWebIframe(widget.exercise.videoEmbedUrl!)
+                : Stack(
+                    children: [
+                      WebViewWidget(controller: _controller!),
+                      if (_isLoading)
+                        Center(
+                          child: CircularProgressIndicator(
+                            valueColor: AlwaysStoppedAnimation<Color>(AppColors.citrusOrange),
+                          ),
+                        ),
+                    ],
                   ),
-              ],
-            ),
           ),
           // Информация
           Expanded(
