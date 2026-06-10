@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'app/routes.dart';
@@ -170,15 +169,20 @@ class _MyAppState extends State<MyApp> {
                   debugShowCheckedModeBanner: false,
                   builder: (context, child) {
                     if (child == null) return const SizedBox.shrink();
-                    if (!kIsWeb) return child;
-                    // На web ограничиваем приложение телефонной шириной и центрируем,
-                    // иначе мобильная вёрстка растягивается на весь широкий экран ПК.
-                    return ColoredBox(
-                      color: AppColors.background,
-                      child: Center(
-                        child: ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: 480),
-                          child: child,
+                    // 1) Ограничиваем системный масштаб текста, чтобы крупный шрифт не ломал вёрстку.
+                    // 2) На широких экранах (десктоп/планшет) показываем приложение колонкой по центру;
+                    //    на телефоне (ширина < maxContentWidth) ограничение не действует.
+                    return MediaQuery(
+                      data: MediaQuery.of(context).copyWith(
+                        textScaler: TextScaler.linear(AppSize.textScale),
+                      ),
+                      child: ColoredBox(
+                        color: AppColors.background,
+                        child: Center(
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: AppSize.maxContentWidth),
+                            child: child,
+                          ),
                         ),
                       ),
                     );

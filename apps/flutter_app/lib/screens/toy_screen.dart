@@ -20,22 +20,63 @@ class _ToyScreenState extends State<ToyScreen> {
     setState(() => _activeTab = index);
   }
 
+  static const _toyLabels = ['Цитрус', 'Пузыри', 'Песок', 'Дождь', 'Шарики', 'Казино'];
+
+  Widget _buildToy(int index) {
+    switch (index) {
+      case 0: return SqueezeCitrusToy();
+      case 1: return BubbleWrapToy();
+      case 2: return SandboxToy();
+      case 3: return RainToy();
+      case 4: return OrbsToy();
+      case 5: return CasinoToy();
+      default: return SqueezeCitrusToy();
+    }
+  }
+
+  /// Открыть текущую игрушку на весь экран — максимальное игровое поле
+  /// (без шапки приложения и нижней навигации).
+  void _openFullscreen() {
+    Navigator.of(context).push(MaterialPageRoute(
+      builder: (_) => _FullscreenToyPage(
+        title: _toyLabels[_activeTab],
+        child: _buildToy(_activeTab),
+      ),
+    ));
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
         child: Padding(
-          padding: AppSize.padding(20),
+          padding: AppSize.padding(12),
           child: ConstrainedBox(
             constraints: BoxConstraints(maxWidth: 480),
             child: Column(
               children: [
-                Text(
-                  'Антистресс',
-                  style: TextStyle(fontSize: AppSize.s(24), fontWeight: FontWeight.w700, color: AppColors.foreground),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Антистресс',
+                      style: TextStyle(fontSize: AppSize.s(18), fontWeight: FontWeight.w700, color: AppColors.foreground),
+                    ),
+                    GestureDetector(
+                      onTap: _openFullscreen,
+                      child: Container(
+                        padding: AppSize.padding(6),
+                        decoration: BoxDecoration(
+                          color: AppColors.citrusOrange.withOpacity(0.12),
+                          borderRadius: AppSize.radius(10),
+                        ),
+                        child: Icon(Icons.fullscreen, size: AppSize.s(20), color: AppColors.citrusOrange),
+                      ),
+                    ),
+                  ],
                 ),
-                AppSize.gapH(20),
+                AppSize.gapH(8),
                 Expanded(
                 child: IndexedStack(
                     index: _activeTab,
@@ -62,7 +103,7 @@ class _ToyScreenState extends State<ToyScreen> {
     const emojis = ['🍊', '🫧', '🏖️', '🌧️', '🔮', '🎰'];
     const labels = ['Цитрус', 'Пузыри', 'Песок', 'Дождь', 'Шарики', 'Казино'];
     return Padding(
-      padding: AppSize.paddingH(0, 16),
+      padding: AppSize.paddingH(0, 8),
       child: Row(
         children: List.generate(6, (i) {
           final isActive = _activeTab == i;
@@ -101,6 +142,62 @@ class _ToyScreenState extends State<ToyScreen> {
             ),
           );
         }),
+      ),
+    );
+  }
+}
+
+// ============================================================
+// Полноэкранный режим игрушки — максимальное поле
+// ============================================================
+class _FullscreenToyPage extends StatelessWidget {
+  final String title;
+  final Widget child;
+  const _FullscreenToyPage({required this.title, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      body: SafeArea(
+        child: Column(
+          children: [
+            Padding(
+              padding: AppSize.padding(12),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: AppSize.s(18),
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.foreground,
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: () => Navigator.of(context).pop(),
+                    child: Container(
+                      padding: AppSize.padding(8),
+                      decoration: BoxDecoration(
+                        color: AppColors.surface2,
+                        borderRadius: AppSize.radius(12),
+                      ),
+                      child: Icon(Icons.close, size: AppSize.s(20), color: AppColors.foreground),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: Padding(
+                padding: AppSize.paddingH(12, 0),
+                child: child,
+              ),
+            ),
+            AppSize.gapH(12),
+          ],
+        ),
       ),
     );
   }
@@ -231,14 +328,14 @@ class _SqueezeCitrusToyState extends State<SqueezeCitrusToy>
                 return Transform.scale(
                   scale: _scaleAnimation.value,
                   child: SizedBox(
-                    width: 180,
-                    height: 180,
+                    width: AppSize.s(180),
+                    height: AppSize.s(180),
                     child: Stack(
                       alignment: Alignment.center,
                       children: [
                         Container(
-                          width: 160,
-                          height: 160,
+                          width: AppSize.s(160),
+                          height: AppSize.s(160),
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
                               begin: Alignment.topLeft,
@@ -260,8 +357,8 @@ class _SqueezeCitrusToyState extends State<SqueezeCitrusToy>
                         ),
                         // Капли сока
                         ..._drops.map((drop) => Positioned(
-                          left: 90 + drop.dx * 80,
-                          top: 60 + drop.dy * 80,
+                          left: AppSize.s(90) + drop.dx * AppSize.s(80),
+                          top: AppSize.s(60) + drop.dy * AppSize.s(80),
                           child: AnimatedOpacity(
                             opacity: drop.opacity,
                             duration: Duration(milliseconds: 200),
@@ -278,8 +375,8 @@ class _SqueezeCitrusToyState extends State<SqueezeCitrusToy>
                         // Всплеск при нажатии
                         if (_showSplash)
                           Container(
-                            width: 180,
-                            height: 180,
+                            width: AppSize.s(180),
+                            height: AppSize.s(180),
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               border: Border.all(
@@ -300,8 +397,8 @@ class _SqueezeCitrusToyState extends State<SqueezeCitrusToy>
 
           // Стакан с прогрессом
           Container(
-            width: 56,
-            height: 72,
+            width: AppSize.s(56),
+            height: AppSize.s(72),
             decoration: BoxDecoration(
               color: Colors.white.withOpacity(0.05),
               borderRadius: BorderRadius.only(
@@ -318,7 +415,7 @@ class _SqueezeCitrusToyState extends State<SqueezeCitrusToy>
                 AnimatedContainer(
                   duration: Duration(milliseconds: 300),
                   curve: Curves.easeOut,
-                  height: 68 * _glassProgress,
+                  height: AppSize.s(68) * _glassProgress,
                   width: double.infinity,
                   margin: AppSize.padding(2),
                   decoration: BoxDecoration(
