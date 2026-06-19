@@ -81,7 +81,7 @@ class HelpScreen extends StatelessWidget {
         borderRadius: AppSize.radius(16),
         boxShadow: [
           BoxShadow(
-            color: AppColors.glowOrange.withOpacity(0.3),
+            color: AppColors.glowOrange.withValues(alpha: 0.3),
             blurRadius: 20,
             offset: Offset(0, 8),
           ),
@@ -95,7 +95,7 @@ class HelpScreen extends StatelessWidget {
               Container(
                 padding: AppSize.padding(10),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
+                  color: Colors.white.withValues(alpha: 0.2),
                   borderRadius: AppSize.radius(12),
                 ),
                 child: Icon(
@@ -122,7 +122,7 @@ class HelpScreen extends StatelessWidget {
                       'Найдите ответы на вопросы или свяжитесь с нами',
                       style: TextStyle(
                         fontSize: AppSize.s(13),
-                        color: Colors.white.withOpacity(0.9),
+                        color: Colors.white.withValues(alpha: 0.9),
                       ),
                     ),
                   ],
@@ -547,7 +547,7 @@ class HelpScreen extends StatelessWidget {
                     width: 40,
                     height: 4,
                     decoration: BoxDecoration(
-                      color: AppColors.mutedForeground.withOpacity(0.3),
+                      color: AppColors.mutedForeground.withValues(alpha: 0.3),
                       borderRadius: AppSize.radius(2),
                     ),
                   ),
@@ -624,7 +624,7 @@ class HelpScreen extends StatelessWidget {
             width: 28,
             height: 28,
             decoration: BoxDecoration(
-              color: AppColors.citrusOrange.withOpacity(0.2),
+              color: AppColors.citrusOrange.withValues(alpha: 0.2),
               shape: BoxShape.circle,
             ),
             child: Center(

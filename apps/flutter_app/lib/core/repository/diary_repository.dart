@@ -105,20 +105,17 @@ class DiaryEntry {
 class DiaryRepository {
   DiaryApiService _apiService;
   String _userId;
-  String? _token;
 
   DiaryRepository({
     required String userId,
     String? token,
     DiaryApiService? apiService,
   })  : _userId = userId,
-        _token = token,
         _apiService = apiService ?? DiaryApiService(token: token);
 
   void setUserId(String userId, {String? token}) {
     _userId = userId;
     if (token != null && token.isNotEmpty) {
-      _token = token;
       _apiService = DiaryApiService(token: token);
     }
   }

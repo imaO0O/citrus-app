@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../config/api_config.dart';
 
@@ -55,7 +56,7 @@ class DiaryApiService {
       if (moodValue != null) 'mood_value': moodValue,
       if (entryDate != null) 'entry_date': entryDate,
     };
-    print('DiaryAPI createEntry body: $body');
+    debugPrint('DiaryAPI createEntry body: $body');
 
     final response = await _client.post(
       Uri.parse('$baseUrl/diary/entries'),

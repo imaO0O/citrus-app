@@ -116,8 +116,8 @@ class CalendarBloc extends Bloc<CalendarEvent, CalendarState> {
 
   /// Обновить userId и перезагрузить календарь
   void updateUserId(String newUserId, {String? token}) {
-    print('CalendarBloc: обновление userId на $newUserId');
-    print('  - получен token: ${token != null ? "length=${token.length}" : "null"}');
+    debugPrint('CalendarBloc: обновление userId на $newUserId');
+    debugPrint('  - получен token: ${token != null ? "length=${token.length}" : "null"}');
     _repository.setUserId(newUserId, token: token);
     // Очищаем состояние
     emit(const CalendarInitial());
@@ -129,12 +129,12 @@ class CalendarBloc extends Bloc<CalendarEvent, CalendarState> {
     LoadCalendar event,
     Emitter<CalendarState> emit,
   ) async {
-    print('CalendarBloc: загрузка календаря для userId=${_repository.userId}, месяц=${event.month}');
+    debugPrint('CalendarBloc: загрузка календаря для userId=${_repository.userId}, месяц=${event.month}');
     emit(const CalendarLoading());
 
     try {
       final events = await _repository.getEventsForMonth(event.month);
-      print('CalendarBloc: загружено ${events.length} событий');
+      debugPrint('CalendarBloc: загружено ${events.length} событий');
 
       // Группируем события по дням
       final Map<DateTime, List<CalendarEventModel>> eventsByDay = {};
@@ -142,7 +142,7 @@ class CalendarBloc extends Bloc<CalendarEvent, CalendarState> {
         final day = DateTime(event.eventDate.year, event.eventDate.month, event.eventDate.day);
         eventsByDay.putIfAbsent(day, () => []).add(event);
       }
-      print('CalendarBloc: сгруппировано по ${eventsByDay.length} дням');
+      debugPrint('CalendarBloc: сгруппировано по ${eventsByDay.length} дням');
 
       // Загружаем средние настроения по дням для всего месяца
       final monthStart = DateTime(event.month.year, event.month.month, 1);
@@ -151,7 +151,7 @@ class CalendarBloc extends Bloc<CalendarEvent, CalendarState> {
         startDate: monthStart,
         endDate: monthEnd,
       );
-      print('CalendarBloc: загружены данные настроения для ${moodAverages.length} дней');
+      debugPrint('CalendarBloc: загружены данные настроения для ${moodAverages.length} дней');
 
       final now = DateTime.now();
       emit(CalendarLoaded(
@@ -179,7 +179,7 @@ class CalendarBloc extends Bloc<CalendarEvent, CalendarState> {
         debugPrint('CalendarBloc: ошибка перепланирования уведомлений: $e');
       }
     } catch (e) {
-      print('CalendarBloc: ошибка загрузки: $e');
+      debugPrint('CalendarBloc: ошибка загрузки: $e');
       emit(CalendarError('Ошибка загрузки календаря: $e'));
     }
   }

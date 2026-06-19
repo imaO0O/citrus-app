@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../models/article.dart';
 import '../bloc/article_bloc.dart';
@@ -141,7 +141,7 @@ class _CreateEditArticlePageState extends State<CreateEditArticlePage> {
                     padding: AppSize.paddingH(12, 8),
                     decoration: BoxDecoration(
                       color: isSelected
-                          ? AppColors.citrusOrange.withOpacity(0.2)
+                          ? AppColors.citrusOrange.withValues(alpha: 0.2)
                           : AppColors.surface2,
                       borderRadius: AppSize.radius(20),
                       border: Border.all(
@@ -300,9 +300,9 @@ class _CreateEditArticlePageState extends State<CreateEditArticlePage> {
           Container(
             padding: AppSize.paddingH(12, 6),
             decoration: BoxDecoration(
-              color: AppColors.accent.withOpacity(0.15),
+              color: AppColors.accent.withValues(alpha: 0.15),
               borderRadius: AppSize.radius(20),
-              border: Border.all(color: AppColors.accent.withOpacity(0.3)),
+              border: Border.all(color: AppColors.accent.withValues(alpha: 0.3)),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,

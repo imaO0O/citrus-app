@@ -103,7 +103,7 @@ class _TestsListScreenState extends State<TestsListScreen> {
                 setState(() => _selectedCategory = entry.key);
               },
               backgroundColor: AppColors.card,
-              selectedColor: AppColors.citrusOrange.withOpacity(0.3),
+              selectedColor: AppColors.citrusOrange.withValues(alpha: 0.3),
               labelStyle: TextStyle(
                 color: isSelected ? AppColors.citrusOrange : AppColors.dimForeground,
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
@@ -198,7 +198,7 @@ class _TestsListScreenState extends State<TestsListScreen> {
                   width: 56,
                   height: 56,
                   decoration: BoxDecoration(
-                    color: accentColor.withOpacity(0.15),
+                    color: accentColor.withValues(alpha: 0.15),
                     borderRadius: AppSize.radius(12),
                   ),
                   child: Center(
@@ -239,7 +239,7 @@ class _TestsListScreenState extends State<TestsListScreen> {
                           Container(
                             padding: AppSize.paddingH(8, 2),
                             decoration: BoxDecoration(
-                              color: accentColor.withOpacity(0.2),
+                              color: accentColor.withValues(alpha: 0.2),
                               borderRadius: AppSize.radius(8),
                             ),
                             child: Text(

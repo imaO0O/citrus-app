@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:intl/intl.dart';
 import '../core/theme/app_colors.dart';
 import '../features/calendar/bloc/calendar_bloc.dart';
 import '../features/auth/bloc/auth_bloc.dart';
@@ -179,7 +178,7 @@ class _CalendarScreenState extends State<CalendarScreen> with WidgetsBindingObse
             decoration: BoxDecoration(
               color: AppColors.surface1,
               borderRadius: AppSize.radius(12),
-              border: Border.all(color: Colors.white.withOpacity(0.07)),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
             ),
             child: Icon(Icons.chevron_left, color: AppColors.foreground, size: 18),
           ),
@@ -201,7 +200,7 @@ class _CalendarScreenState extends State<CalendarScreen> with WidgetsBindingObse
             decoration: BoxDecoration(
               color: AppColors.surface1,
               borderRadius: AppSize.radius(12),
-              border: Border.all(color: Colors.white.withOpacity(0.07)),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
             ),
             child: Icon(Icons.chevron_right, color: AppColors.foreground, size: 18),
           ),
@@ -260,11 +259,11 @@ class _CalendarScreenState extends State<CalendarScreen> with WidgetsBindingObse
         Color borderColor = Colors.transparent;
 
         if (isSelected) {
-          final bgColor = AppColors.citrusOrange.withOpacity(0.2);
-          final borderColor = AppColors.citrusOrange.withOpacity(0.5);
+          final bgColor = AppColors.citrusOrange.withValues(alpha: 0.2);
+          final borderColor = AppColors.citrusOrange.withValues(alpha: 0.5);
         } else if (isToday) {
-          final bgColor = AppColors.citrusOrange.withOpacity(0.08);
-          final borderColor = AppColors.citrusOrange.withOpacity(0.25);
+          final bgColor = AppColors.citrusOrange.withValues(alpha: 0.08);
+          final borderColor = AppColors.citrusOrange.withValues(alpha: 0.25);
         }
 
         // Определяем цвет фона на основе среднего настроения
@@ -272,7 +271,7 @@ class _CalendarScreenState extends State<CalendarScreen> with WidgetsBindingObse
           // Округляем до ближайшего целого moodId
           final roundedMoodId = avgMood!.round().clamp(0, Mood.all.length - 1);
           final moodColor = Mood.all[roundedMoodId].color;
-          final bgColor = moodColor.withOpacity(0.15);
+          final bgColor = moodColor.withValues(alpha: 0.15);
         }
 
         return GestureDetector(
@@ -335,7 +334,7 @@ class _CalendarScreenState extends State<CalendarScreen> with WidgetsBindingObse
       decoration: BoxDecoration(
         color: AppColors.surface1,
         borderRadius: AppSize.radius(16),
-        border: Border.all(color: Colors.white.withOpacity(0.06)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -356,7 +355,7 @@ class _CalendarScreenState extends State<CalendarScreen> with WidgetsBindingObse
                 child: Container(
                   padding: AppSize.paddingH(12, 6),
                   decoration: BoxDecoration(
-                    color: AppColors.citrusOrange.withOpacity(0.15),
+                    color: AppColors.citrusOrange.withValues(alpha: 0.15),
                     borderRadius: AppSize.radius(12),
                   ),
                   child: Text(
@@ -385,7 +384,7 @@ class _CalendarScreenState extends State<CalendarScreen> with WidgetsBindingObse
       margin: AppSize.paddingOnly(bottom: 8),
       padding: AppSize.padding(12),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.04),
+        color: Colors.white.withValues(alpha: 0.04),
         borderRadius: AppSize.radius(12),
       ),
       child: Row(
@@ -485,7 +484,7 @@ class _CalendarScreenState extends State<CalendarScreen> with WidgetsBindingObse
         backgroundColor: AppColors.surface1,
         shape: RoundedRectangleBorder(
           borderRadius: AppSize.radius(16),
-          side: BorderSide(color: AppColors.citrusOrange.withOpacity(0.2)),
+          side: BorderSide(color: AppColors.citrusOrange.withValues(alpha: 0.2)),
         ),
         title: Text(
           'Новое событие',
@@ -634,7 +633,7 @@ class _CalendarScreenState extends State<CalendarScreen> with WidgetsBindingObse
           backgroundColor: AppColors.surface1,
           shape: RoundedRectangleBorder(
             borderRadius: AppSize.radius(16),
-            side: BorderSide(color: AppColors.citrusOrange.withOpacity(0.2)),
+            side: BorderSide(color: AppColors.citrusOrange.withValues(alpha: 0.2)),
           ),
           title: Text(
             'Редактировать событие',
@@ -734,7 +733,7 @@ class _CalendarScreenState extends State<CalendarScreen> with WidgetsBindingObse
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: AppColors.surface1,
-        shape: RoundedRectangleBorder(borderRadius: AppSize.radius(16), side: BorderSide(color: AppColors.destructive.withOpacity(0.3))),
+        shape: RoundedRectangleBorder(borderRadius: AppSize.radius(16), side: BorderSide(color: AppColors.destructive.withValues(alpha: 0.3))),
         title: Text('Удалить событие?', style: TextStyle(color: AppColors.foreground)),
         content: Text('«${event.title}» будет удалено навсегда.', style: TextStyle(color: AppColors.mutedForeground)),
         actions: [

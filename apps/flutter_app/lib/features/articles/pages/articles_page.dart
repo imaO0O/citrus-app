@@ -151,7 +151,7 @@ class _ArticlesPageState extends State<ArticlesPage> {
                           padding: AppSize.paddingH(14, 8),
                           decoration: BoxDecoration(
                             color: isSelected
-                                ? AppColors.citrusOrange.withOpacity(0.2)
+                                ? AppColors.citrusOrange.withValues(alpha: 0.2)
                                 : AppColors.surface2,
                             borderRadius: AppSize.radius(20),
                             border: Border.all(
@@ -475,7 +475,7 @@ class _ArticleCard extends StatelessWidget {
                     Container(
                       padding: AppSize.paddingH(6, 2),
                       decoration: BoxDecoration(
-                        color: AppColors.citrusPurple.withOpacity(0.2),
+                        color: AppColors.citrusPurple.withValues(alpha: 0.2),
                         borderRadius: AppSize.radius(8),
                       ),
                       child: Row(
@@ -498,7 +498,7 @@ class _ArticleCard extends StatelessWidget {
                     Container(
                       padding: AppSize.paddingH(6, 2),
                       decoration: BoxDecoration(
-                        color: AppColors.citrusOrange.withOpacity(0.2),
+                        color: AppColors.citrusOrange.withValues(alpha: 0.2),
                         borderRadius: AppSize.radius(8),
                       ),
                       child: Row(
@@ -521,7 +521,7 @@ class _ArticleCard extends StatelessWidget {
                     ...article.tags!.map((tag) => Container(
                           padding: AppSize.paddingH(6, 2),
                           decoration: BoxDecoration(
-                            color: AppColors.accent.withOpacity(0.15),
+                            color: AppColors.accent.withValues(alpha: 0.15),
                             borderRadius: AppSize.radius(8),
                           ),
                           child: Text(

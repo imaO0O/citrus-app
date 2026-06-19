@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
@@ -10,10 +11,10 @@ import '../core/utils/phone_formatter.dart';
 import '../core/config/api_config.dart';
 import '../features/auth/bloc/auth_bloc.dart';
 import '../core/repository/auth_repository.dart';
-import '../core/repository/notification_preferences_repository.dart';
 import '../features/notifications/pages/notifications_page.dart';
 import 'help_screen.dart';
 import '../core/utils/app_size.dart';
+import '../core/utils/network_error.dart';
 
 class SettingsScreen extends StatefulWidget {
   SettingsScreen({super.key});
@@ -122,6 +123,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         token: authState.user.token,
       );
 
+      if (!mounted) return;
       context.read<AuthBloc>().add(AuthProfileUpdated(updatedUser));
 
       setState(() => _isEditingProfile = false);
@@ -163,6 +165,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     setState(() => _isUploadingAvatar = true);
 
     try {
+      if (!mounted) return;
       final authState = context.read<AuthBloc>().state;
       if (authState is! AuthAuthenticated) return;
 
@@ -187,6 +190,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         token: authState.user.token,
       );
 
+      if (!mounted) return;
       context.read<AuthBloc>().add(AuthProfileUpdated(updatedUser));
 
       setState(() => _profileAvatarUrl = avatarUrl);
@@ -271,6 +275,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                   AppSize.gapH(24),
                   _buildSection(
+                    title: 'ДАННЫЕ И ПРИВАТНОСТЬ',
+                    children: [
+                      _buildSettingsItem(
+                        icon: Icons.download_outlined,
+                        label: 'Экспорт моих данных',
+                        subtitle: 'Все записи одним JSON в буфер обмена',
+                        onTap: _exportMyData,
+                      ),
+                      _buildSettingsItem(
+                        icon: Icons.delete_forever_outlined,
+                        label: 'Удалить аккаунт',
+                        subtitle: 'Безвозвратно удалить все данные',
+                        onTap: _confirmDeleteAccount,
+                      ),
+                    ],
+                  ),
+                  AppSize.gapH(24),
+                  _buildSection(
                     title: 'ПОДДЕРЖКА',
                     children: [
                       _buildSettingsItem(
@@ -301,6 +323,108 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
       ),
     );
+  }
+
+  /// Экспорт всех данных пользователя: JSON копируется в буфер обмена
+  Future<void> _exportMyData() async {
+    final authState = context.read<AuthBloc>().state;
+    if (authState is! AuthAuthenticated) return;
+    final token = authState.user.token;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Готовим экспорт данных...')),
+    );
+
+    try {
+      final response = await http.get(
+        Uri.parse('${ApiConfig.baseUrl}/user/data-export'),
+        headers: {'Authorization': 'Bearer $token'},
+      );
+      if (response.statusCode != 200) {
+        throw Exception('HTTP ${response.statusCode}');
+      }
+      final pretty = const JsonEncoder.withIndent('  ')
+          .convert(jsonDecode(utf8.decode(response.bodyBytes)));
+      await Clipboard.setData(ClipboardData(text: pretty));
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Данные скопированы в буфер обмена (JSON)'),
+          backgroundColor: AppColors.citrusGreen,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(friendlyError(e, fallback: 'Не удалось выполнить экспорт данных.')),
+          backgroundColor: AppColors.destructive,
+        ),
+      );
+    }
+  }
+
+  /// Удаление аккаунта со всеми данными (с подтверждением)
+  Future<void> _confirmDeleteAccount() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.surface1,
+        shape: RoundedRectangleBorder(
+          borderRadius: AppSize.radius(16),
+          side: BorderSide(color: AppColors.destructive.withValues(alpha: 0.3)),
+        ),
+        title: Text('Удалить аккаунт?', style: TextStyle(color: AppColors.foreground)),
+        content: Text(
+          'Будут безвозвратно удалены все ваши данные: настроение, сон, дневник, '
+          'календарь, фото, результаты тестов и история чата. '
+          'Это действие нельзя отменить.',
+          style: TextStyle(color: AppColors.mutedForeground),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text('Отмена', style: TextStyle(color: AppColors.mutedForeground)),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: FilledButton.styleFrom(backgroundColor: AppColors.destructive),
+            child: Text('Удалить навсегда'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    final authState = context.read<AuthBloc>().state;
+    if (authState is! AuthAuthenticated) return;
+    final token = authState.user.token;
+
+    try {
+      final response = await http.delete(
+        Uri.parse('${ApiConfig.baseUrl}/user/account'),
+        headers: {'Authorization': 'Bearer $token'},
+      );
+      if (response.statusCode != 200) {
+        throw Exception('HTTP ${response.statusCode}');
+      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Аккаунт и все данные удалены'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      context.read<AuthBloc>().add(AuthLogout());
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(friendlyError(e, fallback: 'Не удалось удалить аккаунт.')),
+          backgroundColor: AppColors.destructive,
+        ),
+      );
+    }
   }
 
   Widget _buildHeader() {
@@ -486,7 +610,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           onPressed: _isSavingProfile ? null : _saveProfile,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.citrusGreen,
-                            disabledBackgroundColor: AppColors.citrusGreen.withOpacity(0.5),
+                            disabledBackgroundColor: AppColors.citrusGreen.withValues(alpha: 0.5),
                             padding: AppSize.paddingH(0, 10),
                             shape: RoundedRectangleBorder(borderRadius: AppSize.radius(10)),
                           ),
@@ -853,7 +977,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 showSelectedIcon: false,
                 style: SegmentedButton.styleFrom(
                   backgroundColor: AppColors.surface2,
-                  selectedBackgroundColor: AppColors.citrusOrange.withOpacity(0.2),
+                  selectedBackgroundColor: AppColors.citrusOrange.withValues(alpha: 0.2),
                   foregroundColor: AppColors.foreground,
                   selectedForegroundColor: AppColors.citrusOrange,
                 ),
@@ -950,9 +1074,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget _buildLogoutButton() {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.destructive.withOpacity(0.1),
+        color: AppColors.destructive.withValues(alpha: 0.1),
         borderRadius: AppSize.radius(16),
-        border: Border.all(color: AppColors.destructive.withOpacity(0.3)),
+        border: Border.all(color: AppColors.destructive.withValues(alpha: 0.3)),
       ),
       child: Material(
         color: Colors.transparent,
@@ -989,7 +1113,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         backgroundColor: AppColors.surface1,
         shape: RoundedRectangleBorder(
           borderRadius: AppSize.radius(16),
-          side: BorderSide(color: AppColors.destructive.withOpacity(0.3)),
+          side: BorderSide(color: AppColors.destructive.withValues(alpha: 0.3)),
         ),
         icon: Icon(Icons.logout, color: AppColors.destructive, size: 32),
         title: Text(

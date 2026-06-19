@@ -50,7 +50,10 @@ dependencies:
   printing: ^5.11.0
   
   # Markdown
-  flutter_markdown: ^0.7.7+1
+  flutter_markdown_plus: ^1.0.0
+
+  # Данные здоровья: импорт сна с часов (Health Connect / HealthKit)
+  health: ^13.1.1
 
   # Отслеживание видимости виджетов
   visibility_detector: ^0.4.0+2

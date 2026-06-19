@@ -570,9 +570,9 @@ class _ExercisesScreenState extends State<ExercisesScreen> {
       margin: AppSize.paddingH(20, 0),
       padding: AppSize.padding(16),
       decoration: BoxDecoration(
-        color: AppColors.citrusPurple.withOpacity(0.1),
+        color: AppColors.citrusPurple.withValues(alpha: 0.1),
         borderRadius: AppSize.radius(16),
-        border: Border.all(color: AppColors.citrusPurple.withOpacity(0.15)),
+        border: Border.all(color: AppColors.citrusPurple.withValues(alpha: 0.15)),
       ),
       child: Row(
         children: [
@@ -600,9 +600,9 @@ class _ExercisesScreenState extends State<ExercisesScreen> {
             child: Container(
               padding: AppSize.paddingH(20, 10),
               decoration: BoxDecoration(
-                color: AppColors.citrusPurple.withOpacity(0.2),
+                color: AppColors.citrusPurple.withValues(alpha: 0.2),
                 borderRadius: AppSize.radius(10),
-                border: Border.all(color: AppColors.citrusPurple.withOpacity(0.3)),
+                border: Border.all(color: AppColors.citrusPurple.withValues(alpha: 0.3)),
               ),
               child: Text(
                 'Начать',
@@ -631,7 +631,7 @@ class _ExercisesScreenState extends State<ExercisesScreen> {
             child: Container(
               padding: AppSize.paddingH(16, 6),
               decoration: BoxDecoration(
-                color: isSelected ? AppColors.citrusOrange.withOpacity(0.15) : Colors.white.withOpacity(0.06),
+                color: isSelected ? AppColors.citrusOrange.withValues(alpha: 0.15) : Colors.white.withValues(alpha: 0.06),
                 borderRadius: AppSize.radius(20),
               ),
               child: Text(
@@ -712,7 +712,7 @@ class _ExercisesScreenState extends State<ExercisesScreen> {
                           Container(
                             padding: AppSize.paddingH(8, 2),
                             decoration: BoxDecoration(
-                              color: exercise.color.withOpacity(0.15),
+                              color: exercise.color.withValues(alpha: 0.15),
                               borderRadius: AppSize.radius(6),
                             ),
                             child: Text(
@@ -735,7 +735,7 @@ class _ExercisesScreenState extends State<ExercisesScreen> {
                         child: Container(
                           padding: AppSize.paddingH(14, 7),
                           decoration: BoxDecoration(
-                            color: exercise.color.withOpacity(0.15),
+                            color: exercise.color.withValues(alpha: 0.15),
                             borderRadius: AppSize.radius(8),
                           ),
                           child: Text(
@@ -876,7 +876,7 @@ class _VideoExerciseScreenState extends State<VideoExerciseScreen> {
                                 width: 24,
                                 height: 24,
                                 decoration: BoxDecoration(
-                                  color: AppColors.citrusOrange.withOpacity(0.15),
+                                  color: AppColors.citrusOrange.withValues(alpha: 0.15),
                                   shape: BoxShape.circle,
                                 ),
                                 child: Center(
@@ -1260,12 +1260,12 @@ class _AudioExerciseScreenState extends State<AudioExerciseScreen> {
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           gradient: RadialGradient(colors: [
-                            widget.exercise.color.withOpacity(0.3),
-                            widget.exercise.color.withOpacity(0.1),
+                            widget.exercise.color.withValues(alpha: 0.3),
+                            widget.exercise.color.withValues(alpha: 0.1),
                           ]),
                           boxShadow: [
                             BoxShadow(
-                              color: widget.exercise.color.withOpacity(0.3),
+                              color: widget.exercise.color.withValues(alpha: 0.3),
                               blurRadius: 50,
                               spreadRadius: 5,
                             ),
@@ -1311,7 +1311,7 @@ class _AudioExerciseScreenState extends State<AudioExerciseScreen> {
                                             : _isPlaying
                                                 ? AppColors.destructive
                                                 : AppColors.citrusOrange)
-                                        .withOpacity(0.4),
+                                        .withValues(alpha: 0.4),
                                     blurRadius: 30,
                                     spreadRadius: 5,
                                   ),
@@ -1458,7 +1458,9 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
   void _startTimer() {
     setState(() {
       _isRunning = true;
-      _currentStepIndex = 0;
+      // -1, чтобы первая фаза (вдох) в _updateCurrentStep распозналась как смена
+      // и применила свой масштаб/цвет/длительность уже на первом цикле.
+      _currentStepIndex = -1;
       _animationDuration = Duration(milliseconds: 1000);
       _updateCurrentStep();
     });
@@ -1626,8 +1628,8 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
                                     color: isActive
                                         ? phaseColor 
                                         : (isCompleted
-                                            ? phaseColor.withOpacity(0.4)
-                                            : AppColors.mutedForeground.withOpacity(0.2)),
+                                            ? phaseColor.withValues(alpha: 0.4)
+                                            : AppColors.mutedForeground.withValues(alpha: 0.2)),
                                     borderRadius: AppSize.radius(4),
                                   ),
                                 );
@@ -1696,8 +1698,8 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
                                       shape: BoxShape.circle,
                                       gradient: RadialGradient(
                                         colors: [
-                                          _currentPhaseColor.withOpacity(0.3),
-                                          _currentPhaseColor.withOpacity(0.0),
+                                          _currentPhaseColor.withValues(alpha: 0.3),
+                                          _currentPhaseColor.withValues(alpha: 0.0),
                                         ],
                                         stops: [0.0, 1.0],
                                       ),
@@ -1718,7 +1720,7 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
                                     decoration: BoxDecoration(
                                       shape: BoxShape.circle,
                                       border: Border.all(
-                                        color: _currentPhaseColor.withOpacity(0.3),
+                                        color: _currentPhaseColor.withValues(alpha: 0.3),
                                         width: 1,
                                       ),
                                     ),
@@ -1741,13 +1743,13 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
                                         begin: Alignment.topLeft,
                                         end: Alignment.bottomRight,
                                         colors: [
-                                          _currentPhaseColor.withOpacity(0.9),
-                                          _currentPhaseColor.withOpacity(0.5),
+                                          _currentPhaseColor.withValues(alpha: 0.9),
+                                          _currentPhaseColor.withValues(alpha: 0.5),
                                         ],
                                       ),
                                       boxShadow: [
                                         BoxShadow(
-                                          color: _currentPhaseColor.withOpacity(0.4),
+                                          color: _currentPhaseColor.withValues(alpha: 0.4),
                                           blurRadius: 40,
                                           spreadRadius: 5,
                                         ),
@@ -1773,7 +1775,7 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
                                     shape: BoxShape.circle,
                                     color: AppColors.surface1,
                                     border: Border.all(
-                                      color: color.withOpacity(0.3),
+                                      color: color.withValues(alpha: 0.3),
                                       width: 2,
                                     ),
                                   ),
@@ -1794,7 +1796,7 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
                         Text(
                           _formatTime(_remainingSeconds),
                           style: TextStyle(
-                            color: AppColors.foreground.withOpacity(0.6),
+                            color: AppColors.foreground.withValues(alpha: 0.6),
                             fontSize: AppSize.s(18),
                             fontWeight: FontWeight.w500,
                             fontFeatures: [FontFeature.tabularFigures()],
@@ -1886,7 +1888,7 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
                                           child: Icon(
                                             Icons.arrow_forward_ios,
                                             size: 12,
-                                            color: AppColors.mutedForeground.withOpacity(0.3),
+                                            color: AppColors.mutedForeground.withValues(alpha: 0.3),
                                           ),
                                         );
                                       }
@@ -1902,11 +1904,11 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
                                           padding: AppSize.paddingH(4, 8),
                                           decoration: BoxDecoration(
                                             color: isActive 
-                                                ? stepColor.withOpacity(0.15)
+                                                ? stepColor.withValues(alpha: 0.15)
                                                 : Colors.transparent,
                                             borderRadius: AppSize.radius(8),
                                             border: isActive
-                                                ? Border.all(color: stepColor.withOpacity(0.3))
+                                                ? Border.all(color: stepColor.withValues(alpha: 0.3))
                                                 : null,
                                           ),
                                           child: Column(
@@ -1926,8 +1928,8 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
                                                   '${widget.exercise.phaseDurations![stepIndex]}с',
                                                   style: TextStyle(
                                                     color: isActive 
-                                                        ? stepColor.withOpacity(0.7)
-                                                        : AppColors.mutedForeground.withOpacity(0.5),
+                                                        ? stepColor.withValues(alpha: 0.7)
+                                                        : AppColors.mutedForeground.withValues(alpha: 0.5),
                                                     fontSize: AppSize.s(10),
                                                   ),
                                                 ),
@@ -1947,10 +1949,10 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
                           Container(
                             padding: AppSize.paddingH(24, 16),
                             decoration: BoxDecoration(
-                              color: AppColors.citrusGreen.withOpacity(0.1),
+                              color: AppColors.citrusGreen.withValues(alpha: 0.1),
                               borderRadius: AppSize.radius(16),
                               border: Border.all(
-                                color: AppColors.citrusGreen.withOpacity(0.2),
+                                color: AppColors.citrusGreen.withValues(alpha: 0.2),
                               ),
                             ),
                             child: Row(
@@ -2008,9 +2010,9 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
                           width: 120,
                           height: 120,
                           decoration: BoxDecoration(
-                            color: color.withOpacity(0.1),
+                            color: color.withValues(alpha: 0.1),
                             shape: BoxShape.circle,
-                            border: Border.all(color: color.withOpacity(0.3)),
+                            border: Border.all(color: color.withValues(alpha: 0.3)),
                           ),
                           child: Center(
                             child: Text(widget.exercise.icon, style: TextStyle(fontSize: AppSize.s(56))),
@@ -2064,7 +2066,7 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
                                 width: 24,
                                 height: 24,
                                 decoration: BoxDecoration(
-                                  color: isCurrentStep ? color : AppColors.citrusOrange.withOpacity(0.15),
+                                  color: isCurrentStep ? color : AppColors.citrusOrange.withValues(alpha: 0.15),
                                   shape: BoxShape.circle,
                                 ),
                                 child: Center(
@@ -2099,7 +2101,7 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
                         Container(
                           padding: AppSize.paddingH(16, 10),
                           decoration: BoxDecoration(
-                            color: AppColors.citrusGreen.withOpacity(0.15),
+                            color: AppColors.citrusGreen.withValues(alpha: 0.15),
                             borderRadius: AppSize.radius(10),
                           ),
                           child: Row(
@@ -2137,13 +2139,13 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
                                   color: _isRunning ? AppColors.surface2 : null,
                                   borderRadius: AppSize.radius(12),
                                   border: _isRunning
-                                      ? Border.all(color: AppColors.citrusOrange.withOpacity(0.3))
+                                      ? Border.all(color: AppColors.citrusOrange.withValues(alpha: 0.3))
                                       : null,
                                   boxShadow: _isRunning
                                       ? null
                                       : [
                                           BoxShadow(
-                                            color: AppColors.citrusOrange.withOpacity(0.3),
+                                            color: AppColors.citrusOrange.withValues(alpha: 0.3),
                                             blurRadius: 16,
                                             offset: Offset(0, 4),
                                           ),

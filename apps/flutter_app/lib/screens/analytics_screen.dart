@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:http/http.dart' as http;
@@ -16,6 +17,49 @@ import '../core/services/test_tracking_service.dart';
 import '../core/config/api_config.dart';
 import '../services/stats_api_client.dart';
 import '../core/utils/app_size.dart';
+import 'models/mood.dart';
+
+/// День с парой «часы сна ↔ среднее настроение» для корреляции.
+class _SleepMoodDay {
+  final DateTime date;
+  final double sleepHours;
+  final double avgMood; // 0 (отлично) … 5 (очень плохо)
+  _SleepMoodDay({required this.date, required this.sleepHours, required this.avgMood});
+}
+
+/// Точка истории клинического теста: дата прохождения и суммарный балл.
+class _TestPoint {
+  final DateTime date;
+  final int total;
+  _TestPoint({required this.date, required this.total});
+}
+
+/// Тренд по клиническому тесту (PHQ-9 / GAD-7).
+class _TestTrend {
+  final String testId;
+  final String title;
+  final int maxScore;
+  final List<_TestPoint> points; // по возрастанию даты
+  _TestTrend({required this.testId, required this.title, required this.maxScore, required this.points});
+}
+
+/// Зона тяжести на шкале клинического теста.
+class _SeverityBand {
+  final int upTo; // верхняя граница зоны (включительно)
+  final String label;
+  final Color color;
+  const _SeverityBand(this.upTo, this.label, this.color);
+}
+
+const List<String> _ruMonths = [
+  'янв', 'фев', 'мар', 'апр', 'май', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'
+];
+
+/// Клинические тесты с единым баллом (выше = хуже).
+const Map<String, Map<String, Object>> _clinicalTests = {
+  'phq9': {'title': 'PHQ-9 · депрессия', 'max': 27},
+  'gad7': {'title': 'GAD-7 · тревожность', 'max': 21},
+};
 
 class AnalyticsScreen extends StatefulWidget {
   AnalyticsScreen({super.key});
@@ -30,6 +74,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   bool _isGeneratingPdf = false;
   bool _isLoading = true;
   AnalyticsReport? _report;
+  List<_SleepMoodDay> _sleepMoodDays = [];
+  List<_TestTrend> _testTrends = [];
 
   @override
   void initState() {
@@ -256,8 +302,21 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         ),
       ];
 
+      final sleepMoodDays = _computeSleepMood(moodRecords, sleepRecords);
+
+      List<_TestTrend> testTrends = [];
+      try {
+        final storage = StorageService();
+        final token = await storage.getString('auth_token');
+        testTrends = await _loadTestTrends(token);
+      } catch (e) {
+        debugPrint('Error loading test trends: $e');
+      }
+
       if (mounted) {
         setState(() {
+          _sleepMoodDays = sleepMoodDays;
+          _testTrends = testTrends;
           _report = AnalyticsReport(
             period: ReportPeriod(
               label: _periods[_selectedPeriod],
@@ -333,11 +392,23 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   }
 
   Color _getMoodBarColor(double value) {
-    if (value >= 5) return AppColors.moodExcellent;
-    if (value >= 4) return AppColors.moodGood;
-    if (value >= 3) return AppColors.citrusOrange;
-    if (value >= 2) return AppColors.moodAnxious;
-    return AppColors.moodVeryBad;
+    // Цвет столбца — как у соответствующей дольки на главной (палитра Mood):
+    // 0 = отлично (зелёный) … 5 = очень плохо (красный).
+    return Mood.all[value.round().clamp(0, 5).toInt()].color;
+  }
+
+  /// Период в родительном падеже для заголовка графика.
+  String _periodGenitive() {
+    switch (_selectedPeriod) {
+      case 0:
+        return 'неделю';
+      case 1:
+        return 'месяц';
+      case 2:
+        return '3 месяца';
+      default:
+        return 'год';
+    }
   }
 
   /// Сгенерировать и показать PDF отчёт
@@ -551,6 +622,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                                 AppSize.gapH(20),
                                 _buildSleepSection(),
                                 AppSize.gapH(20),
+                                _buildSleepMoodCorrelation(),
+                                AppSize.gapH(20),
+                                _buildTestDynamics(),
                                 _buildActivitySection(),
                                 AppSize.gapH(20),
                                 _buildExportButtons(),
@@ -564,6 +638,397 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                   ],
                 ),
         ),
+      ),
+    );
+  }
+
+  /// Сопоставляет ночи сна и среднее настроение по дате для корреляции.
+  List<_SleepMoodDay> _computeSleepMood(
+    List<MoodRecord> moods,
+    List<SleepRecord> sleeps,
+  ) {
+    final moodByDay = <String, List<int>>{};
+    for (final m in moods) {
+      moodByDay.putIfAbsent(_dayKey(m.moodDate), () => []).add(m.moodId);
+    }
+    final result = <_SleepMoodDay>[];
+    for (final s in sleeps) {
+      final hours = _sleepHours(s);
+      if (hours <= 0) continue;
+      final moodList = moodByDay[_dayKey(s.sleepDate)];
+      if (moodList == null || moodList.isEmpty) continue;
+      final avgMood = moodList.reduce((a, b) => a + b) / moodList.length;
+      result.add(_SleepMoodDay(date: s.sleepDate, sleepHours: hours, avgMood: avgMood));
+    }
+    result.sort((a, b) => a.date.compareTo(b.date));
+    return result;
+  }
+
+  String _dayKey(DateTime d) => '${d.year}-${d.month}-${d.day}';
+
+  double _sleepHours(SleepRecord r) {
+    if (r.bedTime == null || r.wakeTime == null) return 0;
+    double? parse(String t) {
+      final p = t.split(':');
+      if (p.length < 2) return null;
+      final h = int.tryParse(p[0]);
+      final m = int.tryParse(p[1]);
+      if (h == null || m == null) return null;
+      return h + m / 60.0;
+    }
+    final bed = parse(r.bedTime!);
+    final wake = parse(r.wakeTime!);
+    if (bed == null || wake == null) return 0;
+    var hours = wake - bed;
+    if (hours < 0) hours += 24;
+    return hours;
+  }
+
+  /// Коэффициент Пирсона между часами сна и moodId (0=отлично…5=плохо).
+  /// Отрицательный r = больше сна → ниже moodId → лучше настроение.
+  double? _pearson(List<_SleepMoodDay> days) {
+    final n = days.length;
+    if (n < 3) return null;
+    final xs = days.map((d) => d.sleepHours).toList();
+    final ys = days.map((d) => d.avgMood).toList();
+    final mx = xs.reduce((a, b) => a + b) / n;
+    final my = ys.reduce((a, b) => a + b) / n;
+    double sxy = 0, sxx = 0, syy = 0;
+    for (var i = 0; i < n; i++) {
+      final dx = xs[i] - mx;
+      final dy = ys[i] - my;
+      sxy += dx * dy;
+      sxx += dx * dx;
+      syy += dy * dy;
+    }
+    if (sxx == 0 || syy == 0) return null;
+    return sxy / (sqrt(sxx) * sqrt(syy));
+  }
+
+  Widget _buildSleepMoodCorrelation() {
+    final days = _sleepMoodDays;
+
+    Widget card(Widget child) => Container(
+          width: double.infinity,
+          padding: AppSize.padding(16),
+          decoration: BoxDecoration(
+            color: AppColors.surface1,
+            borderRadius: AppSize.radius(16),
+            border: Border.all(color: AppColors.subtleBorder),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.insights, size: AppSize.s(18), color: AppColors.citrusPurple),
+                  AppSize.gapW(8),
+                  Text('Сон и настроение',
+                      style: TextStyle(
+                          fontSize: AppSize.s(16),
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.foreground)),
+                ],
+              ),
+              AppSize.gapH(12),
+              child,
+            ],
+          ),
+        );
+
+    if (days.length < 3) {
+      return card(Text(
+        'Отмечайте сон и настроение хотя бы несколько дней подряд — здесь появится связь между качеством сна и вашим состоянием.',
+        style: TextStyle(fontSize: AppSize.s(13), color: AppColors.mutedForeground, height: 1.5),
+      ));
+    }
+
+    final shortNights = days.where((d) => d.sleepHours < 7).toList();
+    final goodNights = days.where((d) => d.sleepHours >= 7).toList();
+    double? avgOf(List<_SleepMoodDay> l) =>
+        l.isEmpty ? null : l.map((e) => e.avgMood).reduce((a, b) => a + b) / l.length;
+    final shortAvg = avgOf(shortNights);
+    final goodAvg = avgOf(goodNights);
+    final r = _pearson(days);
+
+    String insight;
+    if (shortAvg != null && goodAvg != null) {
+      final diff = shortAvg - goodAvg; // >0: после короткого сна настроение хуже
+      if (diff > 0.4) {
+        insight = 'После полноценного сна (≥ 7 ч) ваше настроение заметно лучше. Сон стоит беречь 💤';
+      } else if (diff < -0.4) {
+        insight = 'Пока более долгий сон не улучшает ваше настроение — понаблюдайте ещё.';
+      } else {
+        insight = 'Связь между длительностью сна и настроением у вас выражена слабо.';
+      }
+    } else {
+      insight = goodAvg == null
+          ? 'Пока мало ночей с полноценным сном (≥ 7 ч) для сравнения.'
+          : 'Пока мало ночей с коротким сном (< 7 ч) для сравнения.';
+    }
+
+    return card(Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (shortAvg != null) _moodSleepRow('После сна < 7 ч', shortAvg, shortNights.length),
+        if (shortAvg != null) AppSize.gapH(8),
+        if (goodAvg != null) _moodSleepRow('После сна ≥ 7 ч', goodAvg, goodNights.length),
+        AppSize.gapH(12),
+        if (r != null) ...[
+          Text('Коэффициент корреляции: r = ${r.toStringAsFixed(2)}',
+              style: TextStyle(fontSize: AppSize.s(11), color: AppColors.dimForeground)),
+          AppSize.gapH(8),
+        ],
+        Text(insight,
+            style: TextStyle(fontSize: AppSize.s(13), color: AppColors.mutedForeground, height: 1.5)),
+      ],
+    ));
+  }
+
+  Widget _moodSleepRow(String label, double avgMood, int count) {
+    final mood = Mood.all[avgMood.round().clamp(0, 5)];
+    return Row(
+      children: [
+        Expanded(
+          child: Text(label,
+              style: TextStyle(fontSize: AppSize.s(13), color: AppColors.foreground)),
+        ),
+        Text(mood.emoji, style: TextStyle(fontSize: AppSize.s(18))),
+        AppSize.gapW(6),
+        Text(mood.label,
+            style: TextStyle(
+                fontSize: AppSize.s(13), fontWeight: FontWeight.w600, color: mood.color)),
+        AppSize.gapW(6),
+        Text('($count)',
+            style: TextStyle(fontSize: AppSize.s(11), color: AppColors.dimForeground)),
+      ],
+    );
+  }
+
+  /// Загружает историю клинических тестов и собирает тренды (суммарный балл по датам).
+  Future<List<_TestTrend>> _loadTestTrends(String? token) async {
+    if (token == null || token.isEmpty) return [];
+    try {
+      final resp = await http.get(
+        Uri.parse('${ApiConfig.baseUrl}/tests/results'),
+        headers: {'Authorization': 'Bearer $token'},
+      );
+      if (resp.statusCode != 200) return [];
+      final list = jsonDecode(utf8.decode(resp.bodyBytes)) as List<dynamic>;
+      final byTest = <String, List<_TestPoint>>{};
+      for (final item in list) {
+        if (item is! Map) continue;
+        final testId = item['testId'] as String?;
+        if (testId == null || !_clinicalTests.containsKey(testId)) continue;
+        final rawScores = item['scores'];
+        Map<String, dynamic> scores;
+        if (rawScores is String) {
+          scores = jsonDecode(rawScores) as Map<String, dynamic>;
+        } else if (rawScores is Map) {
+          scores = Map<String, dynamic>.from(rawScores);
+        } else {
+          continue;
+        }
+        var total = 0;
+        for (final v in scores.values) {
+          if (v is num) total += v.toInt();
+        }
+        final date = DateTime.tryParse('${item['completedAt']}');
+        if (date == null) continue;
+        byTest.putIfAbsent(testId, () => []).add(_TestPoint(date: date, total: total));
+      }
+      final trends = <_TestTrend>[];
+      byTest.forEach((testId, points) {
+        points.sort((a, b) => a.date.compareTo(b.date));
+        final meta = _clinicalTests[testId]!;
+        trends.add(_TestTrend(
+          testId: testId,
+          title: meta['title'] as String,
+          maxScore: meta['max'] as int,
+          points: points,
+        ));
+      });
+      return trends;
+    } catch (e) {
+      debugPrint('Error loading test trends: $e');
+      return [];
+    }
+  }
+
+  Widget _buildTestDynamics() {
+    final trends = _testTrends.where((t) => t.points.isNotEmpty).toList();
+    if (trends.isEmpty) return const SizedBox.shrink();
+    return Column(
+      children: [
+        Container(
+          width: double.infinity,
+          padding: AppSize.padding(16),
+          decoration: BoxDecoration(
+            color: AppColors.surface1,
+            borderRadius: AppSize.radius(16),
+            border: Border.all(color: AppColors.subtleBorder),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.timeline, size: AppSize.s(18), color: AppColors.citrusOrange),
+                  AppSize.gapW(8),
+                  Text('Динамика тестов',
+                      style: TextStyle(
+                          fontSize: AppSize.s(16),
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.foreground)),
+                ],
+              ),
+              AppSize.gapH(4),
+              Text('Чем ниже балл — тем лучше состояние',
+                  style: TextStyle(fontSize: AppSize.s(11), color: AppColors.dimForeground)),
+              AppSize.gapH(12),
+              ...trends.map(_buildTrendItem),
+              Text(
+                'Это скрининг, а не диагноз. При устойчивом ухудшении обратитесь к специалисту.',
+                style: TextStyle(fontSize: AppSize.s(10), color: AppColors.dimForeground, height: 1.4),
+              ),
+            ],
+          ),
+        ),
+        AppSize.gapH(20),
+      ],
+    );
+  }
+
+  /// Зоны тяжести для шкалы (выше = хуже). Цвета — из палитры Mood/citrus.
+  List<_SeverityBand> _bandsFor(String testId) {
+    if (testId == 'gad7') {
+      return [
+        _SeverityBand(4, 'Минимальная', AppColors.citrusGreen),
+        _SeverityBand(9, 'Лёгкая', AppColors.citrusYellow),
+        _SeverityBand(14, 'Умеренная', AppColors.citrusAmber),
+        _SeverityBand(21, 'Тяжёлая', AppColors.destructive),
+      ];
+    }
+    return [
+      _SeverityBand(4, 'Минимальная', AppColors.citrusGreen),
+      _SeverityBand(9, 'Лёгкая', AppColors.citrusYellow),
+      _SeverityBand(14, 'Умеренная', AppColors.citrusAmber),
+      _SeverityBand(19, 'Умеренно-тяжёлая', AppColors.citrusOrange),
+      _SeverityBand(27, 'Тяжёлая', AppColors.destructive),
+    ];
+  }
+
+  String _fmtDate(DateTime d) => '${d.day} ${_ruMonths[d.month - 1]}';
+
+  Widget _buildTrendItem(_TestTrend t) {
+    final bands = _bandsFor(t.testId);
+    final latest = t.points.last;
+    final band = bands.firstWhere((b) => latest.total <= b.upTo, orElse: () => bands.last);
+    final fraction = (latest.total / t.maxScore).clamp(0.0, 1.0).toDouble();
+
+    // Сегменты шкалы тяжести (ширина пропорциональна диапазону зоны)
+    final segments = <Widget>[];
+    var prevMax = -1;
+    for (final b in bands) {
+      final span = b.upTo - prevMax;
+      prevMax = b.upTo;
+      segments.add(Expanded(
+        flex: span,
+        child: Container(height: AppSize.s(12), color: b.color),
+      ));
+    }
+
+    // Подпись динамики между прохождениями
+    final prev = t.points.length >= 2 ? t.points[t.points.length - 2] : null;
+    Widget footer;
+    if (prev != null) {
+      final diff = latest.total - prev.total;
+      late Color c;
+      late IconData icon;
+      late String text;
+      if (diff >= 3) {
+        c = AppColors.destructive;
+        icon = Icons.arrow_upward;
+        text = '+$diff с прошлого — если так держится, подумайте о поддержке';
+      } else if (diff <= -3) {
+        c = AppColors.citrusGreen;
+        icon = Icons.arrow_downward;
+        text = '−${-diff} с прошлого — хорошая динамика';
+      } else {
+        c = AppColors.mutedForeground;
+        icon = Icons.remove;
+        text = 'как в прошлый раз';
+      }
+      footer = Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: AppSize.s(13), color: c),
+          AppSize.gapW(4),
+          Expanded(
+            child: Text('$text · ${_fmtDate(prev.date)} → ${_fmtDate(latest.date)}',
+                style: TextStyle(fontSize: AppSize.s(11), color: c)),
+          ),
+        ],
+      );
+    } else {
+      footer = Text('первое прохождение · ${_fmtDate(latest.date)}',
+          style: TextStyle(fontSize: AppSize.s(11), color: AppColors.dimForeground));
+    }
+
+    return Padding(
+      padding: AppSize.paddingOnly(bottom: 18),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(t.title,
+                    style: TextStyle(
+                        fontSize: AppSize.s(13),
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.foreground)),
+              ),
+              Text('${latest.total}',
+                  style: TextStyle(
+                      fontSize: AppSize.s(15),
+                      fontWeight: FontWeight.w700,
+                      color: band.color)),
+              Text(' / ${t.maxScore}',
+                  style: TextStyle(fontSize: AppSize.s(11), color: AppColors.dimForeground)),
+            ],
+          ),
+          AppSize.gapH(9),
+          SizedBox(
+            height: AppSize.s(12),
+            child: Align(
+              alignment: Alignment(fraction * 2 - 1, 1),
+              child: Icon(Icons.arrow_drop_down, size: AppSize.s(20), color: AppColors.foreground),
+            ),
+          ),
+          ClipRRect(
+            borderRadius: AppSize.radius(7),
+            child: Row(children: segments),
+          ),
+          AppSize.gapH(10),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Container(
+              padding: AppSize.paddingH(10, 3),
+              decoration: BoxDecoration(
+                color: band.color.withValues(alpha: 0.15),
+                borderRadius: AppSize.radius(8),
+              ),
+              child: Text(band.label,
+                  style: TextStyle(
+                      fontSize: AppSize.s(12),
+                      fontWeight: FontWeight.w500,
+                      color: band.color)),
+            ),
+          ),
+          AppSize.gapH(8),
+          footer,
+        ],
       ),
     );
   }
@@ -602,7 +1067,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
               child: Container(
                 padding: AppSize.paddingH(0, 8),
                 decoration: BoxDecoration(
-                  color: isSelected ? AppColors.citrusOrange.withOpacity(0.15) : Colors.transparent,
+                  color: isSelected ? AppColors.citrusOrange.withValues(alpha: 0.15) : Colors.transparent,
                   borderRadius: AppSize.radius(10),
                 ),
                 child: Text(
@@ -708,9 +1173,12 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            '\u0413\u0440\u0430\u0444\u0438\u043A \u043D\u0430\u0441\u0442\u0440\u043E\u0435\u043D\u0438\u044F (${moodByDay.length} \u0434\u043D\u0435\u0439)',
+            '\u041D\u0430\u0441\u0442\u0440\u043E\u0435\u043D\u0438\u0435 \u0437\u0430 ${_periodGenitive()}',
             style: TextStyle(fontSize: AppSize.s(16), fontWeight: FontWeight.w600, color: AppColors.foreground),
           ),
+          AppSize.gapH(2),
+          Text('\u0432\u044B\u0448\u0435 \u0441\u0442\u043E\u043B\u0431\u0438\u043A \u2014 \u043B\u0443\u0447\u0448\u0435 \u0434\u0435\u043D\u044C',
+              style: TextStyle(fontSize: AppSize.s(11), color: AppColors.dimForeground)),
           AppSize.gapH(16),
           SizedBox(
             height: 150,
@@ -728,9 +1196,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                         mainAxisAlignment: MainAxisAlignment.end,
                         children: [
                           Container(
-                            height: value > 0 ? 110 * (value / 5) : 4,
+                            height: 110.0 * ((5 - value) / 5).clamp(0.12, 1.0),
                             decoration: BoxDecoration(
-                              color: value > 0 ? _getMoodBarColor(value) : AppColors.surface3,
+                              color: _getMoodBarColor(value),
                               borderRadius: BorderRadius.vertical(top: Radius.circular(6)),
                             ),
                           ),
@@ -836,7 +1304,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
               ],
             ),
             borderRadius: AppSize.radius(16),
-            border: Border.all(color: AppColors.citrusOrange.withOpacity(0.1)),
+            border: Border.all(color: AppColors.citrusOrange.withValues(alpha: 0.1)),
           ),
           child: Column(
             children: _report!.insights.map((insight) => Padding(
@@ -976,9 +1444,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     return Container(
       padding: AppSize.padding(12),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.08),
+        color: color.withValues(alpha: 0.08),
         borderRadius: AppSize.radius(12),
-        border: Border.all(color: color.withOpacity(0.15)),
+        border: Border.all(color: color.withValues(alpha: 0.15)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

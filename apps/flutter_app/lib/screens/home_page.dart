@@ -90,12 +90,12 @@ class _HomePageState extends State<HomePage> {
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              _dailyAffirmation!.color.withOpacity(0.15),
-              _dailyAffirmation!.color.withOpacity(0.05),
+              _dailyAffirmation!.color.withValues(alpha: 0.15),
+              _dailyAffirmation!.color.withValues(alpha: 0.05),
             ],
           ),
           border: Border.all(
-            color: _dailyAffirmation!.color.withOpacity(0.2),
+            color: _dailyAffirmation!.color.withValues(alpha: 0.2),
           ),
         ),
         child: Column(
@@ -229,7 +229,7 @@ class _HomePageState extends State<HomePage> {
                                 key: ValueKey('mood_${state.selectedMoodId}_${state.selectionKey}'),
                                 padding: AppSize.paddingH(12, 4),
                                 decoration: BoxDecoration(
-                                  color: AppColors.foreground.withOpacity(0.06),
+                                  color: AppColors.foreground.withValues(alpha: 0.06),
                                   borderRadius: AppSize.radius(20),
                                 ),
                                 child: Text(

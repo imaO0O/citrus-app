@@ -201,7 +201,7 @@ class _EmergencyModalState extends State<EmergencyModal> {
     return GestureDetector(
       onTap: widget.onClose,
       child: Container(
-        color: Colors.black.withOpacity(0.85),
+        color: Colors.black.withValues(alpha: 0.85),
         child: GestureDetector(
           onTap: () {},
           child: SafeArea(
@@ -264,7 +264,7 @@ class _EmergencyModalState extends State<EmergencyModal> {
           ],
         ),
         border: Border(
-          bottom: BorderSide(color: AppColors.destructive.withOpacity(0.15)),
+          bottom: BorderSide(color: AppColors.destructive.withValues(alpha: 0.15)),
         ),
       ),
       child: Row(
@@ -274,9 +274,9 @@ class _EmergencyModalState extends State<EmergencyModal> {
             width: 48,
             height: 48,
             decoration: BoxDecoration(
-              color: AppColors.destructive.withOpacity(0.2),
+              color: AppColors.destructive.withValues(alpha: 0.2),
               borderRadius: AppSize.radius(16),
-              border: Border.all(color: AppColors.destructive.withOpacity(0.3)),
+              border: Border.all(color: AppColors.destructive.withValues(alpha: 0.3)),
             ),
             child: Center(child: Text('\u{1F198}', style: TextStyle(fontSize: AppSize.s(24)))),
           ),
@@ -307,7 +307,7 @@ class _EmergencyModalState extends State<EmergencyModal> {
               width: 32,
               height: 32,
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.07),
+                color: Colors.white.withValues(alpha: 0.07),
                 borderRadius: AppSize.radius(12),
               ),
               child: Icon(Icons.close, color: AppColors.mutedForeground, size: 18),
@@ -322,9 +322,9 @@ class _EmergencyModalState extends State<EmergencyModal> {
     return Container(
       padding: AppSize.padding(16),
       decoration: BoxDecoration(
-        color: AppColors.destructive.withOpacity(0.08),
+        color: AppColors.destructive.withValues(alpha: 0.08),
         borderRadius: AppSize.radius(16),
-        border: Border.all(color: AppColors.destructive.withOpacity(0.2)),
+        border: Border.all(color: AppColors.destructive.withValues(alpha: 0.2)),
       ),
       child: Text(
         '\u0415\u0441\u043B\u0438 \u0442\u044B \u0432 \u043A\u0440\u0438\u0437\u0438\u0441\u043D\u043E\u0439 \u0441\u0438\u0442\u0443\u0430\u0446\u0438\u0438 \u2014 \u043D\u0435\u043C\u0435\u0434\u043B\u0435\u043D\u043D\u043E \u043E\u0431\u0440\u0430\u0442\u0438\u0441\u044C \u0437\u0430 \u043F\u043E\u043C\u043E\u0449\u044C\u044E. \u0422\u044B \u0432\u0430\u0436\u0435\u043D, \u0438 \u0442\u0435\u0431\u0435 \u043F\u043E\u043C\u043E\u0433\u0443\u0442 24/7.',
@@ -386,9 +386,9 @@ class _EmergencyModalState extends State<EmergencyModal> {
         margin: AppSize.paddingOnly(bottom: 8),
         padding: AppSize.paddingH(16, 14),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.07),
+          color: color.withValues(alpha: 0.07),
           borderRadius: AppSize.radius(16),
-          border: Border.all(color: color.withOpacity(0.15)),
+          border: Border.all(color: color.withValues(alpha: 0.15)),
         ),
         child: Row(
           children: [
@@ -396,7 +396,7 @@ class _EmergencyModalState extends State<EmergencyModal> {
               width: 44,
               height: 44,
               decoration: BoxDecoration(
-                color: color.withOpacity(0.12),
+                color: color.withValues(alpha: 0.12),
                 borderRadius: AppSize.radius(12),
               ),
               child: Icon(icon, color: color, size: 22),
@@ -435,7 +435,7 @@ class _EmergencyModalState extends State<EmergencyModal> {
               width: 32,
               height: 32,
               decoration: BoxDecoration(
-                color: color.withOpacity(0.12),
+                color: color.withValues(alpha: 0.12),
                 borderRadius: AppSize.radius(12),
               ),
               child: Icon(Icons.phone, color: color, size: 16),
@@ -451,9 +451,9 @@ class _EmergencyModalState extends State<EmergencyModal> {
     return Container(
       padding: AppSize.paddingH(16, 14),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.07),
+        color: color.withValues(alpha: 0.07),
         borderRadius: AppSize.radius(16),
-        border: Border.all(color: color.withOpacity(0.15)),
+        border: Border.all(color: color.withValues(alpha: 0.15)),
       ),
       child: Row(
         children: [
@@ -461,7 +461,7 @@ class _EmergencyModalState extends State<EmergencyModal> {
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              color: color.withOpacity(0.12),
+              color: color.withValues(alpha: 0.12),
               borderRadius: AppSize.radius(12),
             ),
             child: Icon(Icons.school, color: color, size: 22),
@@ -492,10 +492,10 @@ class _EmergencyModalState extends State<EmergencyModal> {
                             hintText: '+7 (___) ___-__-__',
                             hintStyle: TextStyle(fontSize: AppSize.s(12), color: AppColors.dimForeground),
                             filled: true,
-                            fillColor: Colors.white.withOpacity(0.07),
+                            fillColor: Colors.white.withValues(alpha: 0.07),
                             border: OutlineInputBorder(
                               borderRadius: AppSize.radius(12),
-                              borderSide: BorderSide(color: color.withOpacity(0.25)),
+                              borderSide: BorderSide(color: color.withValues(alpha: 0.25)),
                             ),
                             contentPadding: AppSize.paddingH(12, 8),
                             isDense: true,
@@ -512,9 +512,9 @@ class _EmergencyModalState extends State<EmergencyModal> {
                           width: 28,
                           height: 28,
                           decoration: BoxDecoration(
-                            color: color.withOpacity(0.2),
+                            color: color.withValues(alpha: 0.2),
                             borderRadius: AppSize.radius(8),
-                            border: Border.all(color: color.withOpacity(0.3)),
+                            border: Border.all(color: color.withValues(alpha: 0.3)),
                           ),
                           child: Icon(Icons.check, size: 16),
                         ),
@@ -553,7 +553,7 @@ class _EmergencyModalState extends State<EmergencyModal> {
                           width: 32,
                           height: 32,
                           decoration: BoxDecoration(
-                            color: color.withOpacity(0.12),
+                            color: color.withValues(alpha: 0.12),
                             borderRadius: AppSize.radius(12),
                           ),
                           child: Icon(Icons.phone, color: color, size: 16),
@@ -572,7 +572,7 @@ class _EmergencyModalState extends State<EmergencyModal> {
                           width: 32,
                           height: 32,
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.07),
+                            color: Colors.white.withValues(alpha: 0.07),
                             borderRadius: AppSize.radius(12),
                           ),
                           child: Icon(Icons.edit, color: AppColors.mutedForeground, size: 14),
@@ -587,9 +587,9 @@ class _EmergencyModalState extends State<EmergencyModal> {
                     child: Container(
                       padding: AppSize.paddingH(12, 6),
                       decoration: BoxDecoration(
-                        color: color.withOpacity(0.12),
+                        color: color.withValues(alpha: 0.12),
                         borderRadius: AppSize.radius(12),
-                        border: Border.all(color: color.withOpacity(0.2)),
+                        border: Border.all(color: color.withValues(alpha: 0.2)),
                       ),
                       child: Text(
                         'Добавить',
@@ -621,7 +621,7 @@ class _EmergencyModalState extends State<EmergencyModal> {
           borderRadius: AppSize.radius(16),
           boxShadow: [
             BoxShadow(
-              color: AppColors.destructive.withOpacity(0.3),
+              color: AppColors.destructive.withValues(alpha: 0.3),
               blurRadius: 12,
               offset: Offset(0, 4),
             ),
@@ -670,9 +670,9 @@ class _EmergencyModalState extends State<EmergencyModal> {
             width: double.infinity,
             padding: AppSize.padding(14),
             decoration: BoxDecoration(
-              color: AppColors.citrusGreen.withOpacity(0.06),
+              color: AppColors.citrusGreen.withValues(alpha: 0.06),
               borderRadius: AppSize.radius(16),
-              border: Border.all(color: AppColors.citrusGreen.withOpacity(0.12)),
+              border: Border.all(color: AppColors.citrusGreen.withValues(alpha: 0.12)),
             ),
             child: Row(
               children: [
@@ -680,7 +680,7 @@ class _EmergencyModalState extends State<EmergencyModal> {
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: AppColors.citrusGreen.withOpacity(0.12),
+                    color: AppColors.citrusGreen.withValues(alpha: 0.12),
                     borderRadius: AppSize.radius(12),
                   ),
                   child: Icon(Icons.favorite, color: AppColors.citrusGreen, size: 22),
@@ -719,9 +719,9 @@ class _EmergencyModalState extends State<EmergencyModal> {
     return Container(
       padding: AppSize.padding(20),
       decoration: BoxDecoration(
-        color: AppColors.citrusGreen.withOpacity(0.06),
+        color: AppColors.citrusGreen.withValues(alpha: 0.06),
         borderRadius: AppSize.radius(20),
-        border: Border.all(color: AppColors.citrusGreen.withOpacity(0.2)),
+        border: Border.all(color: AppColors.citrusGreen.withValues(alpha: 0.2)),
       ),
       child: Column(
         children: [
@@ -742,7 +742,7 @@ class _EmergencyModalState extends State<EmergencyModal> {
                   width: 28,
                   height: 28,
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.07),
+                    color: Colors.white.withValues(alpha: 0.07),
                     borderRadius: AppSize.radius(8),
                   ),
                   child: Icon(Icons.close, size: 16, color: AppColors.mutedForeground),
@@ -812,7 +812,7 @@ class _EmergencyModalState extends State<EmergencyModal> {
           width: 36,
           height: 36,
           decoration: BoxDecoration(
-            color: color.withOpacity(0.12),
+            color: color.withValues(alpha: 0.12),
             borderRadius: AppSize.radius(10),
           ),
           child: Center(
@@ -852,9 +852,9 @@ class _EmergencyModalState extends State<EmergencyModal> {
     return Container(
       padding: AppSize.padding(16),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.03),
+        color: Colors.white.withValues(alpha: 0.03),
         borderRadius: AppSize.radius(16),
-        border: Border.all(color: Colors.white.withOpacity(0.06)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -899,7 +899,7 @@ class _EmergencyModalState extends State<EmergencyModal> {
         width: double.infinity,
         padding: AppSize.paddingH(0, 14),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.07),
+          color: Colors.white.withValues(alpha: 0.07),
           borderRadius: AppSize.radius(16),
         ),
         child: Text(

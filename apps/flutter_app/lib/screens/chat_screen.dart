@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../core/theme/app_colors.dart';
@@ -308,7 +308,7 @@ class _ChatScreenState extends State<ChatScreen> {
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.citrusOrange.withOpacity(0.3),
+                  color: AppColors.citrusOrange.withValues(alpha: 0.3),
                   blurRadius: 8,
                   offset: Offset(0, 2),
                 ),
@@ -381,10 +381,10 @@ class _ChatScreenState extends State<ChatScreen> {
                   : null,
               color: isUser ? null : AppColors.surface1,
               borderRadius: AppSize.radius(16),
-              border: isUser ? null : Border.all(color: Colors.white.withOpacity(0.06)),
+              border: isUser ? null : Border.all(color: Colors.white.withValues(alpha: 0.06)),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.15),
+                  color: Colors.black.withValues(alpha: 0.15),
                   blurRadius: 8,
                   offset: Offset(0, 2),
                 ),
@@ -417,14 +417,14 @@ class _ChatScreenState extends State<ChatScreen> {
                         child: Icon(
                           Icons.copy_rounded,
                           size: 14,
-                          color: (isUser ? Colors.white : AppColors.mutedForeground).withOpacity(0.5),
+                          color: (isUser ? Colors.white : AppColors.mutedForeground).withValues(alpha: 0.5),
                         ),
                       ),
                     Spacer(),
                     Text(
                       msg.time,
                       style: TextStyle(
-                        color: (isUser ? Colors.white : AppColors.mutedForeground).withOpacity(0.5),
+                        color: (isUser ? Colors.white : AppColors.mutedForeground).withValues(alpha: 0.5),
                         fontSize: AppSize.s(10),
                       ),
                     ),
@@ -510,9 +510,9 @@ class _ChatScreenState extends State<ChatScreen> {
             child: Container(
               padding: AppSize.paddingH(14, 8),
               decoration: BoxDecoration(
-                color: AppColors.citrusOrange.withOpacity(0.1),
+                color: AppColors.citrusOrange.withValues(alpha: 0.1),
                 borderRadius: AppSize.radius(999),
-                border: Border.all(color: AppColors.citrusOrange.withOpacity(0.2)),
+                border: Border.all(color: AppColors.citrusOrange.withValues(alpha: 0.2)),
               ),
               child: Text(
                 hint,
@@ -547,9 +547,9 @@ class _ChatScreenState extends State<ChatScreen> {
                   minLines: 1,
                   decoration: InputDecoration(
                     hintText: '\u0412\u0432\u0435\u0434\u0438\u0442\u0435 \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u0435...',
-                    hintStyle: TextStyle(color: AppColors.mutedForeground.withOpacity(0.5)),
+                    hintStyle: TextStyle(color: AppColors.mutedForeground.withValues(alpha: 0.5)),
                     filled: true,
-                    fillColor: Colors.white.withOpacity(0.04),
+                    fillColor: Colors.white.withValues(alpha: 0.04),
                     border: OutlineInputBorder(
                       borderRadius: AppSize.radius(16),
                       borderSide: BorderSide(color: AppColors.surface3),
@@ -583,12 +583,12 @@ class _ChatScreenState extends State<ChatScreen> {
                             colors: [AppColors.citrusOrange, AppColors.citrusAmber],
                           )
                         : null,
-                    color: hasText ? null : Colors.white.withOpacity(0.06),
+                    color: hasText ? null : Colors.white.withValues(alpha: 0.06),
                     borderRadius: AppSize.radius(12),
                     boxShadow: hasText
                         ? [
                             BoxShadow(
-                              color: AppColors.citrusOrange.withOpacity(0.35),
+                              color: AppColors.citrusOrange.withValues(alpha: 0.35),
                               blurRadius: 16,
                               offset: Offset(0, 4),
                             ),
@@ -627,9 +627,9 @@ class _ChatScreenState extends State<ChatScreen> {
       child: Container(
         padding: AppSize.paddingH(12, 8),
         decoration: BoxDecoration(
-          color: AppColors.citrusPurple.withOpacity(_isLoadingAnalytics ? 0.05 : 0.1),
+          color: AppColors.citrusPurple.withValues(alpha: _isLoadingAnalytics ? 0.05 : 0.1),
           borderRadius: AppSize.radius(999),
-          border: Border.all(color: AppColors.citrusPurple.withOpacity(0.2)),
+          border: Border.all(color: AppColors.citrusPurple.withValues(alpha: 0.2)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -662,9 +662,9 @@ class _ChatScreenState extends State<ChatScreen> {
       child: Container(
         padding: AppSize.paddingH(12, 8),
         decoration: BoxDecoration(
-          color: AppColors.citrusAmber.withOpacity(_isLoadingDiary ? 0.05 : 0.1),
+          color: AppColors.citrusAmber.withValues(alpha: _isLoadingDiary ? 0.05 : 0.1),
           borderRadius: AppSize.radius(999),
-          border: Border.all(color: AppColors.citrusAmber.withOpacity(0.2)),
+          border: Border.all(color: AppColors.citrusAmber.withValues(alpha: 0.2)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -728,7 +728,7 @@ class _TypingIndicatorState extends State<_TypingIndicator>
           decoration: BoxDecoration(
             color: AppColors.surface1,
             borderRadius: AppSize.radius(16),
-            border: Border.all(color: Colors.white.withOpacity(0.06)),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -911,13 +911,13 @@ class _DiarySelectionDialogState extends State<_DiarySelectionDialog> {
                       padding: AppSize.padding(12),
                       decoration: BoxDecoration(
                         color: isSelected
-                            ? AppColors.citrusOrange.withOpacity(0.15)
-                            : Colors.white.withOpacity(0.04),
+                            ? AppColors.citrusOrange.withValues(alpha: 0.15)
+                            : Colors.white.withValues(alpha: 0.04),
                         borderRadius: AppSize.radius(12),
                         border: Border.all(
                           color: isSelected
                               ? AppColors.citrusOrange
-                              : Colors.white.withOpacity(0.06),
+                              : Colors.white.withValues(alpha: 0.06),
                           width: isSelected ? 2 : 1,
                         ),
                       ),

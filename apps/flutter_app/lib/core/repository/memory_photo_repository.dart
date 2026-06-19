@@ -6,20 +6,17 @@ import '../../core/api/memory_photo_api_service.dart';
 class MemoryPhotoRepository {
   MemoryPhotoApiService _apiService;
   String _userId;
-  String? _token;
 
   MemoryPhotoRepository({
     required String userId,
     String? token,
     MemoryPhotoApiService? apiService,
   })  : _userId = userId,
-        _token = token,
         _apiService = apiService ?? MemoryPhotoApiService(token: token);
 
   void setUserId(String userId, {String? token}) {
     _userId = userId;
     if (token != null && token.isNotEmpty) {
-      _token = token;
       _apiService = MemoryPhotoApiService(token: token);
     }
   }

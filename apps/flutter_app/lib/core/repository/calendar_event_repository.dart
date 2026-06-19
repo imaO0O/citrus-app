@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import '../../../models/calendar_event.dart';
 import '../api/calendar_event_api_service.dart';
 
@@ -20,17 +21,17 @@ class CalendarEventRepository {
 
   /// Обновить userId и токен (при входе нового пользователя)
   void setUserId(String userId, {String? token}) {
-    print('CalendarEventRepository: смена userId с $_userId на $userId');
-    print('  - получен token: ${token != null ? "length=${token.length}" : "null"}');
+    debugPrint('CalendarEventRepository: смена userId с $_userId на $userId');
+    debugPrint('  - получен token: ${token != null ? "length=${token.length}" : "null"}');
     _userId = userId;
     if (token != null) {
       _token = token;
-      print('  - _token обновлён (length=${_token!.length})');
+      debugPrint('  - _token обновлён (length=${_token!.length})');
       // Обновляем токен в API сервисе
       _apiService = CalendarEventApiService(token: token);
-      print('  - _apiService пересоздан с новым токеном');
+      debugPrint('  - _apiService пересоздан с новым токеном');
     } else {
-      print('  - token is null, _apiService не обновляется с токеном');
+      debugPrint('  - token is null, _apiService не обновляется с токеном');
     }
     // Очищаем кэш при смене пользователя — будем загружать из БД
     _cache = {};
@@ -56,7 +57,7 @@ class CalendarEventRepository {
 
       return events;
     } catch (e) {
-      print('Ошибка загрузки событий: $e');
+      debugPrint('Ошибка загрузки событий: $e');
       // Возвращаем кэш при ошибке
       return _getAllCachedEvents();
     }

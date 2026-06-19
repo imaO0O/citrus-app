@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../models/article.dart';
@@ -52,7 +52,7 @@ class ArticleDetailPage extends StatelessWidget {
               child: Container(
                 padding: AppSize.paddingH(8, 4),
                 decoration: BoxDecoration(
-                  color: AppColors.citrusPurple.withOpacity(0.2),
+                  color: AppColors.citrusPurple.withValues(alpha: 0.2),
                   borderRadius: AppSize.radius(8),
                 ),
                 child: Row(
@@ -78,7 +78,7 @@ class ArticleDetailPage extends StatelessWidget {
               child: Container(
                 padding: AppSize.paddingH(8, 4),
                 decoration: BoxDecoration(
-                  color: AppColors.citrusOrange.withOpacity(0.2),
+                  color: AppColors.citrusOrange.withValues(alpha: 0.2),
                   borderRadius: AppSize.radius(8),
                 ),
                 child: Text(
@@ -107,9 +107,9 @@ class ArticleDetailPage extends StatelessWidget {
           Container(
             padding: AppSize.paddingH(12, 6),
             decoration: BoxDecoration(
-              color: AppColors.accent.withOpacity(0.15),
+              color: AppColors.accent.withValues(alpha: 0.15),
               borderRadius: AppSize.radius(20),
-              border: Border.all(color: AppColors.accent.withOpacity(0.3)),
+              border: Border.all(color: AppColors.accent.withValues(alpha: 0.3)),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -164,9 +164,9 @@ class ArticleDetailPage extends StatelessWidget {
                   .map((tag) => Container(
                         padding: AppSize.paddingH(10, 4),
                         decoration: BoxDecoration(
-                          color: AppColors.accent.withOpacity(0.15),
+                          color: AppColors.accent.withValues(alpha: 0.15),
                           borderRadius: AppSize.radius(12),
-                          border: Border.all(color: AppColors.accent.withOpacity(0.3)),
+                          border: Border.all(color: AppColors.accent.withValues(alpha: 0.3)),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,

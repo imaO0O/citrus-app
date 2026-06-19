@@ -7,7 +7,10 @@
 ```
 apps/
   dart_frog_backend/
-    server.dart            Главный файл бэкенда (один большой файл с маршрутами)
+    server.dart            Точка входа: конфиг, БД, роутинг, CORS, main
+    handlers/              Обработчики маршрутов по модулям (part-файлы):
+                           auth, user, sleep, mood, diary, calendar,
+                           media (фото/контакты), tests, exercises, casino, content
     lib/services/          GigaChat и Email сервисы
     pubspec.yaml           Зависимости Dart
   flutter_app/             Flutter мобильный клиент (на Replit не запускается)
@@ -21,7 +24,7 @@ docker-compose.yml         Локальная Postgres для разработк
 ## Стек
 
 - **Язык:** Dart 3.10 (модуль Replit `dart-3.10`)
-- **Бэкенд:** один файл `server.dart` на пакете `dart_frog`
+- **Бэкенд:** `server.dart` (точка входа + роутинг) и `handlers/*.dart` (part-файлы одной библиотеки) на пакете `dart_frog`
 - **БД:** Supabase Postgres (через секреты `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_SSL`)
 - **Прочее:** GigaChat (ИИ-чат), Cloudinary (фото), JWT, Mailer (Yandex SMTP)
 

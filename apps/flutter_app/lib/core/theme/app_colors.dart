@@ -109,8 +109,8 @@ class AppColors {
 
   // === Common helper ===
   static Color get inputFieldBackground => _isDark
-      ? const Color(0xFFFFFFFF).withOpacity(0.06)
-      : const Color(0xFF000000).withOpacity(0.05);
+      ? const Color(0xFFFFFFFF).withValues(alpha: 0.06)
+      : const Color(0xFF000000).withValues(alpha: 0.05);
   static Color get subtleBg => _isDark
       ? const Color.fromRGBO(255, 255, 255, 0.04)
       : const Color.fromRGBO(0, 0, 0, 0.03);

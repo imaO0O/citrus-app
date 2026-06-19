@@ -1,7 +1,11 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../core/theme/app_colors.dart';
+import '../core/repository/sleep_repository.dart';
 import '../core/services/casino_coins_service.dart';
+import '../core/services/health_sync_service.dart';
+import '../core/utils/network_error.dart';
 import '../features/sleep/bloc/sleep_bloc.dart';
 import '../features/auth/bloc/auth_bloc.dart';
 import '../models/sleep_record.dart';
@@ -16,6 +20,7 @@ class SleepTrackerScreen extends StatefulWidget {
 
 class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
   final List<String> _days = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+  bool _isImporting = false;
 
   final List<String> _sleepTips = [
     'Ложитесь и вставайте в одно и то же время каждый день.',
@@ -230,6 +235,10 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
               _buildSleepChart(last7Days),
               AppSize.gapH(24),
               _buildLogSleepButton(),
+              if (!kIsWeb) ...[
+                AppSize.gapH(12),
+                _buildImportFromWatchButton(),
+              ],
               AppSize.gapH(24),
               _buildSleepHistoryHeader(),
               AppSize.gapH(12),
@@ -421,9 +430,9 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [AppColors.citrusPurple.withOpacity(0.12), AppColors.citrusOrange.withOpacity(0.08)],
+          colors: [AppColors.citrusPurple.withValues(alpha: 0.12), AppColors.citrusOrange.withValues(alpha: 0.08)],
         ),
-        border: Border.all(color: AppColors.citrusPurple.withOpacity(0.25)),
+        border: Border.all(color: AppColors.citrusPurple.withValues(alpha: 0.25)),
         borderRadius: AppSize.radius(14),
       ),
       child: Material(
@@ -445,6 +454,119 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
                 Text(
                   'Записать сон',
                   style: TextStyle(fontSize: AppSize.s(14), fontWeight: FontWeight.w600, color: AppColors.foreground),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Импорт сна с часов через Health Connect (Android) / HealthKit (iOS).
+  /// Дедупликация по дате: ручные записи не перезаписываются.
+  Future<void> _importFromWatch() async {
+    final messenger = ScaffoldMessenger.of(context);
+    final bloc = context.read<SleepBloc>();
+    final repo = context.read<SleepRepository>();
+    final blocState = bloc.state;
+    final existing =
+        blocState is SleepLoaded ? blocState.records : <SleepRecord>[];
+
+    setState(() => _isImporting = true);
+    try {
+      final service = HealthSyncService();
+      final granted = await service.requestPermission();
+      if (!granted) {
+        messenger.showSnackBar(SnackBar(
+          content: Text(
+              'Нет доступа к данным о сне. Установите Health Connect, подключите к нему приложение часов и разрешите чтение сна.'),
+          backgroundColor: Colors.orange,
+        ));
+        return;
+      }
+
+      final now = DateTime.now();
+      final imported = await service.fetchSleepRecords(
+        from: now.subtract(Duration(days: 14)),
+        to: now,
+      );
+      if (imported.isEmpty) {
+        messenger.showSnackBar(SnackBar(
+          content: Text('Данных о сне за последние 14 дней не найдено'),
+        ));
+        return;
+      }
+
+      String dateKey(DateTime d) => '${d.year}-${d.month}-${d.day}';
+      final existingDates = existing.map((r) => dateKey(r.sleepDate)).toSet();
+      final newRecords = imported
+          .where((r) => !existingDates.contains(dateKey(r.sleepDate)))
+          .toList();
+
+      if (newRecords.isEmpty) {
+        messenger.showSnackBar(SnackBar(
+          content: Text('Все записи с часов уже есть в дневнике сна'),
+        ));
+        return;
+      }
+
+      for (final record in newRecords) {
+        await repo.createSleepRecord(record);
+      }
+
+      messenger.showSnackBar(SnackBar(
+        content: Text('Импортировано записей с часов: ${newRecords.length} ⌚'),
+        backgroundColor: Colors.green,
+      ));
+      _loadSleepData();
+    } catch (e) {
+      messenger.showSnackBar(SnackBar(
+        content: Text(friendlyError(e,
+            fallback:
+                'Не удалось получить данные с часов. Проверьте, что Health Connect установлен.')),
+        backgroundColor: Colors.red,
+      ));
+    } finally {
+      if (mounted) setState(() => _isImporting = false);
+    }
+  }
+
+  Widget _buildImportFromWatchButton() {
+    return Container(
+      decoration: BoxDecoration(
+        border: Border.all(color: AppColors.citrusPurple.withValues(alpha: 0.35)),
+        borderRadius: AppSize.radius(14),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: _isImporting ? null : _importFromWatch,
+          borderRadius: AppSize.radius(14),
+          child: Padding(
+            padding: AppSize.paddingH(0, 14),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (_isImporting)
+                  SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: AppColors.citrusPurple,
+                    ),
+                  )
+                else
+                  Icon(Icons.watch, color: AppColors.citrusPurple, size: 20),
+                AppSize.gapW(8),
+                Text(
+                  _isImporting ? 'Импортируем...' : 'Импорт с часов',
+                  style: TextStyle(
+                    fontSize: AppSize.s(14),
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.foreground,
+                  ),
                 ),
               ],
             ),
@@ -508,11 +630,13 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
                   IconButton(
                     icon: Icon(Icons.edit, size: 18),
                     color: AppColors.citrusOrange,
+                    tooltip: 'Редактировать запись',
                     onPressed: () => _showEditSleepDialog(context, record),
                   ),
                   IconButton(
                     icon: Icon(Icons.delete, size: 18),
                     color: AppColors.destructive,
+                    tooltip: 'Удалить запись',
                     onPressed: () => _confirmDeleteSleep(context, record),
                   ),
                 ],
@@ -556,8 +680,8 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
     return Container(
       padding: AppSize.padding(16),
       decoration: BoxDecoration(
-        color: AppColors.citrusOrange.withOpacity(0.05),
-        border: Border.all(color: AppColors.citrusOrange.withOpacity(0.1)),
+        color: AppColors.citrusOrange.withValues(alpha: 0.05),
+        border: Border.all(color: AppColors.citrusOrange.withValues(alpha: 0.1)),
         borderRadius: AppSize.radius(14),
       ),
       child: Column(
@@ -602,7 +726,7 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
           backgroundColor: AppColors.surface1,
           shape: RoundedRectangleBorder(
             borderRadius: AppSize.radius(16),
-            side: BorderSide(color: AppColors.citrusPurple.withOpacity(0.2)),
+            side: BorderSide(color: AppColors.citrusPurple.withValues(alpha: 0.2)),
           ),
           title: Text(
             'Добавить запись о сне',
@@ -789,7 +913,7 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
           backgroundColor: AppColors.surface1,
           shape: RoundedRectangleBorder(
             borderRadius: AppSize.radius(16),
-            side: BorderSide(color: AppColors.citrusPurple.withOpacity(0.2)),
+            side: BorderSide(color: AppColors.citrusPurple.withValues(alpha: 0.2)),
           ),
           title: Text(
             'Редактировать запись',
@@ -945,7 +1069,7 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: AppColors.surface1,
-        shape: RoundedRectangleBorder(borderRadius: AppSize.radius(16), side: BorderSide(color: AppColors.destructive.withOpacity(0.3))),
+        shape: RoundedRectangleBorder(borderRadius: AppSize.radius(16), side: BorderSide(color: AppColors.destructive.withValues(alpha: 0.3))),
         title: Text('Удалить запись?', style: TextStyle(color: AppColors.foreground)),
         content: Text('Запись о сне будет удалена навсегда.', style: TextStyle(color: AppColors.mutedForeground)),
         actions: [

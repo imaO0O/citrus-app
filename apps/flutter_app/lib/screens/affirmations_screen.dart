@@ -190,7 +190,7 @@ class _AffirmationsScreenState extends State<AffirmationsScreen> {
                       Icon(
                         Icons.format_quote,
                         size: 64,
-                        color: AppColors.mutedForeground.withOpacity(0.3),
+                        color: AppColors.mutedForeground.withValues(alpha: 0.3),
                       ),
                       AppSize.gapH(16),
                       Text(
@@ -241,7 +241,7 @@ class _AffirmationsScreenState extends State<AffirmationsScreen> {
             child: Container(
               padding: AppSize.paddingH(16, 6),
               decoration: BoxDecoration(
-                color: isSelected ? AppColors.citrusOrange.withOpacity(0.15) : Colors.white.withOpacity(0.06),
+                color: isSelected ? AppColors.citrusOrange.withValues(alpha: 0.15) : Colors.white.withValues(alpha: 0.06),
                 borderRadius: AppSize.radius(999),
               ),
               child: Text(
@@ -266,9 +266,9 @@ class _AffirmationsScreenState extends State<AffirmationsScreen> {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [affirmation.color.withOpacity(0.15), affirmation.color.withOpacity(0.05)],
+          colors: [affirmation.color.withValues(alpha: 0.15), affirmation.color.withValues(alpha: 0.05)],
         ),
-        border: Border.all(color: affirmation.color.withOpacity(0.2)),
+        border: Border.all(color: affirmation.color.withValues(alpha: 0.2)),
       ),
       child: Stack(
         children: [
@@ -283,7 +283,7 @@ class _AffirmationsScreenState extends State<AffirmationsScreen> {
                 gradient: RadialGradient(
                   center: Alignment.topCenter,
                   radius: 1.2,
-                  colors: [affirmation.color.withOpacity(0.25), affirmation.color.withOpacity(0)],
+                  colors: [affirmation.color.withValues(alpha: 0.25), affirmation.color.withValues(alpha: 0)],
                   stops: [0.0, 0.7],
                 ),
               ),
@@ -315,7 +315,7 @@ class _AffirmationsScreenState extends State<AffirmationsScreen> {
                     Container(
                       padding: AppSize.paddingH(12, 4),
                       decoration: BoxDecoration(
-                        color: affirmation.color.withOpacity(0.1),
+                        color: affirmation.color.withValues(alpha: 0.1),
                         borderRadius: AppSize.radius(12),
                       ),
                       child: Text(

@@ -448,7 +448,7 @@ class _DiaryScreenState extends State<DiaryScreen> with SingleTickerProviderStat
                     if (ctrl.text.trim().isEmpty) return;
                     final now = DateTime.now();
                     final entryWithTime = DateTime(date.year, date.month, date.day, now.hour, now.minute, now.second);
-                    print('Creating entry with date: $entryWithTime');
+                    debugPrint('Creating entry with date: $entryWithTime');
                     context.read<DiaryBloc>().add(CreateDiaryEntry(content: ctrl.text.trim(), moodValue: mood, entryDate: entryWithTime));
                     CasinoCoinsService().completeQuest('diary').then((_) {
                       CasinoCoinsService().refreshStatus();

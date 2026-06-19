@@ -45,7 +45,7 @@ class MoodLog extends StatelessWidget {
           color: AppColors.card,
           borderRadius: AppSize.radius(16),
           border: Border.all(
-            color: AppColors.foreground.withOpacity(0.05),
+            color: AppColors.foreground.withValues(alpha: 0.05),
           ),
         ),
         child: Row(

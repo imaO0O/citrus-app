@@ -115,7 +115,7 @@ class TestResultScreen extends StatelessWidget {
                 color: AppColors.card,
                 borderRadius: AppSize.radius(12),
                 border: Border.all(
-                  color: AppColors.citrusOrange.withOpacity(0.3),
+                  color: AppColors.citrusOrange.withValues(alpha: 0.3),
                 ),
               ),
               child: Row(
@@ -252,7 +252,7 @@ class _ScaleResultCard extends StatelessWidget {
         color: AppColors.card,
         borderRadius: AppSize.radius(16),
         border: Border.all(
-          color: AppColors.foreground.withOpacity(0.05),
+          color: AppColors.foreground.withValues(alpha: 0.05),
         ),
       ),
       child: Column(
@@ -301,7 +301,7 @@ class _ScaleResultCard extends StatelessWidget {
             Container(
               padding: AppSize.paddingH(10, 4),
               decoration: BoxDecoration(
-                color: _levelColor.withOpacity(0.15),
+                color: _levelColor.withValues(alpha: 0.15),
                 borderRadius: AppSize.radius(8),
               ),
               child: Text(

@@ -74,7 +74,7 @@ class _StatCard extends StatelessWidget {
         color: AppColors.card,
         borderRadius: AppSize.radius(16),
         border: Border.all(
-          color: AppColors.citrusOrange.withOpacity(0.1),
+          color: AppColors.citrusOrange.withValues(alpha: 0.1),
         ),
       ),
       child: Column(

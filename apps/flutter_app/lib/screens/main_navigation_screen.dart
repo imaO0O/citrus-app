@@ -20,7 +20,6 @@ import '../screens/settings_screen.dart';
 import '../screens/emergency_modal.dart';
 import '../features/auth/bloc/auth_bloc.dart';
 import '../bloc/dashboard_bloc.dart';
-import '../core/repository/sleep_repository.dart';
 import '../features/diary/bloc/diary_bloc.dart';
 import '../features/sleep/bloc/sleep_bloc.dart';
 import '../features/articles/pages/articles_page.dart';
@@ -44,11 +43,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
   // Ключ для AnalyticsScreen, чтобы вызывать refresh при навигации
   final GlobalKey _analyticsKey = GlobalKey();
-
-  /// Публичный метод для навигации на аналитику (используется из MoreScreen)
-  void navigateToAnalytics() {
-    _setIndex(11);
-  }
 
   /// Экраны строятся заново на каждый build(), а не кэшируются в поле — иначе при
   /// смене темы IndexedStack получает те же экземпляры виджетов, и Flutter пропускает
@@ -140,7 +134,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             if (state is AuthAuthenticated) {
               debugPrint('MainNav: AuthAuthenticated, userId=${state.user.id}');
               Future.microtask(() {
-                if (mounted) {
+                if (context.mounted) {
                   try {
                     context.read<DashboardBloc>().updateUserId(state.user.id, token: state.user.token);
                   } catch (e) {}
@@ -157,7 +151,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
               });
             } else if (state is AuthUnauthenticated) {
               Future.microtask(() {
-                if (mounted) {
+                if (context.mounted) {
                   context.go('/auth');
                 }
               });
@@ -247,12 +241,12 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            AppColors.citrusOrange.withOpacity(0.08),
+            AppColors.citrusOrange.withValues(alpha: 0.08),
             Colors.transparent,
           ],
         ),
         border: Border(
-          bottom: BorderSide(color: AppColors.citrusOrange.withOpacity(0.1)),
+          bottom: BorderSide(color: AppColors.citrusOrange.withValues(alpha: 0.1)),
         ),
       ),
       child: Row(
@@ -272,7 +266,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.citrusOrange.withOpacity(0.4),
+                      color: AppColors.citrusOrange.withValues(alpha: 0.4),
                       blurRadius: 16,
                     ),
                   ],
@@ -295,7 +289,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
               Container(
                 padding: AppSize.paddingH(8, 2),
                 decoration: BoxDecoration(
-                  color: AppColors.citrusOrange.withOpacity(0.15),
+                  color: AppColors.citrusOrange.withValues(alpha: 0.15),
                   borderRadius: AppSize.radius(999),
                 ),
                 child: Text(
@@ -315,7 +309,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                 width: 32,
                 height: 32,
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.05),
+                  color: Colors.white.withValues(alpha: 0.05),
                   borderRadius: AppSize.radius(12),
                 ),
                 child: Icon(Icons.notifications_none,
@@ -327,9 +321,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                 child: Container(
                   padding: AppSize.paddingH(12, 6),
                   decoration: BoxDecoration(
-                    color: AppColors.destructive.withOpacity(0.15),
+                    color: AppColors.destructive.withValues(alpha: 0.15),
                     borderRadius: AppSize.radius(12),
-                    border: Border.all(color: AppColors.destructive.withOpacity(0.3)),
+                    border: Border.all(color: AppColors.destructive.withValues(alpha: 0.3)),
                   ),
                   child: Row(
                     children: [
@@ -366,9 +360,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     return Container(
       padding: EdgeInsets.fromLTRB(16, 8, 16, 16),
       decoration: BoxDecoration(
-        color: AppColors.background.withOpacity(0.95),
+        color: AppColors.background.withValues(alpha: 0.95),
         border: Border(
-          top: BorderSide(color: AppColors.citrusOrange.withOpacity(0.1)),
+          top: BorderSide(color: AppColors.citrusOrange.withValues(alpha: 0.1)),
         ),
       ),
       child: ClipRRect(
@@ -378,7 +372,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           child: Container(
             padding: AppSize.paddingH(4, 4),
             decoration: BoxDecoration(
-              color: AppColors.foreground.withOpacity(0.03),
+              color: AppColors.foreground.withValues(alpha: 0.03),
               borderRadius: AppSize.radius(16),
             ),
             child: Row(
@@ -394,7 +388,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                         padding: AppSize.paddingH(0, 8),
                         decoration: BoxDecoration(
                           color: active
-                              ? AppColors.citrusOrange.withOpacity(0.15)
+                              ? AppColors.citrusOrange.withValues(alpha: 0.15)
                               : Colors.transparent,
                           borderRadius: AppSize.radius(12),
                         ),
@@ -435,7 +429,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                       padding: AppSize.paddingH(0, 8),
                       decoration: BoxDecoration(
                         color: _isMenuActive
-                            ? AppColors.citrusOrange.withOpacity(0.15)
+                            ? AppColors.citrusOrange.withValues(alpha: 0.15)
                             : Colors.transparent,
                         borderRadius: AppSize.radius(12),
                       ),
@@ -477,7 +471,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     return GestureDetector(
       onTap: () => setState(() => _showMenu = false),
       child: Container(
-        color: Colors.black.withOpacity(0.75),
+        color: Colors.black.withValues(alpha: 0.75),
         child: SafeArea(
           child: Align(
             alignment: Alignment.bottomCenter,
@@ -492,7 +486,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                   color: AppColors.surface2,
                   borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
                   border: Border(
-                    top: BorderSide(color: AppColors.citrusOrange.withOpacity(0.15)),
+                    top: BorderSide(color: AppColors.citrusOrange.withValues(alpha: 0.15)),
                   ),
                 ),
                 padding: EdgeInsets.fromLTRB(24, 24, 24, 32),
@@ -528,7 +522,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                             width: 32,
                             height: 32,
                             decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.08),
+                              color: Colors.white.withValues(alpha: 0.08),
                               borderRadius: AppSize.radius(12),
                             ),
                             child: Icon(Icons.close,
@@ -556,13 +550,13 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                             padding: AppSize.paddingH(8, 10),
                             decoration: BoxDecoration(
                               color: isActive
-                                  ? AppColors.citrusOrange.withOpacity(0.15)
-                                  : Colors.white.withOpacity(0.04),
+                                  ? AppColors.citrusOrange.withValues(alpha: 0.15)
+                                  : Colors.white.withValues(alpha: 0.04),
                               borderRadius: AppSize.radius(16),
                               border: Border.all(
                                 color: isActive
-                                    ? AppColors.citrusOrange.withOpacity(0.35)
-                                    : Colors.white.withOpacity(0.06),
+                                    ? AppColors.citrusOrange.withValues(alpha: 0.35)
+                                    : Colors.white.withValues(alpha: 0.06),
                               ),
                             ),
                             child: Column(
