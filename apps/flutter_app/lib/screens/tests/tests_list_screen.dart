@@ -18,6 +18,7 @@ class _TestsListScreenState extends State<TestsListScreen> {
   bool _isLoading = true;
   String? _error;
   String? _selectedCategory = 'all';
+  Map<String, DateTime> _lastTaken = {};
 
   static const _categories = {
     'all': 'Все тесты',
@@ -36,16 +37,41 @@ class _TestsListScreenState extends State<TestsListScreen> {
     try {
       final api = TestApiService(token: widget.token);
       final tests = await api.getAvailableTests();
+      // Подтягиваем последние прохождения (для бейджа «Пройден»)
+      final lastTaken = <String, DateTime>{};
+      try {
+        final results = await api.getTestResults();
+        for (final r in results) {
+          final id = r['testId']?.toString();
+          final d = DateTime.tryParse(r['completedAt']?.toString() ?? '');
+          // results отсортированы по дате DESC → первое вхождение = последнее прохождение
+          if (id != null && d != null && !lastTaken.containsKey(id)) {
+            lastTaken[id] = d;
+          }
+        }
+      } catch (_) {}
+      if (!mounted) return;
       setState(() {
         _tests = tests;
+        _lastTaken = lastTaken;
         _isLoading = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _error = e.toString();
         _isLoading = false;
       });
     }
+  }
+
+  String _relativeDate(DateTime d) {
+    final days = DateTime.now().difference(d).inDays;
+    if (days <= 0) return 'сегодня';
+    if (days == 1) return 'вчера';
+    if (days < 7) return '$days дн. назад';
+    if (days < 30) return '${(days / 7).floor()} нед. назад';
+    return '${d.day.toString().padLeft(2, '0')}.${d.month.toString().padLeft(2, '0')}.${d.year}';
   }
 
   List<Map<String, dynamic>> get _filteredTests {
@@ -177,8 +203,8 @@ class _TestsListScreenState extends State<TestsListScreen> {
         color: AppColors.card,
         borderRadius: AppSize.radius(16),
         child: InkWell(
-          onTap: () {
-            Navigator.push(
+          onTap: () async {
+            await Navigator.push(
               context,
               MaterialPageRoute(
                 builder: (context) => TestTakingScreen(
@@ -187,6 +213,7 @@ class _TestsListScreenState extends State<TestsListScreen> {
                 ),
               ),
             );
+            _loadTests(); // обновляем «Пройден» после возврата
           },
           borderRadius: AppSize.radius(16),
           child: Container(
@@ -265,6 +292,17 @@ class _TestsListScreenState extends State<TestsListScreen> {
                           ),
                         ],
                       ),
+                      if (_lastTaken[test['id']] != null) ...[
+                        AppSize.gapH(8),
+                        Row(children: [
+                          Icon(Icons.check_circle, size: AppSize.s(13), color: AppColors.citrusGreen),
+                          AppSize.gapW(4),
+                          Text(
+                            'Пройден · ${_relativeDate(_lastTaken[test['id']]!)}',
+                            style: TextStyle(fontSize: AppSize.s(11), color: AppColors.citrusGreen, fontWeight: FontWeight.w600),
+                          ),
+                        ]),
+                      ],
                     ],
                   ),
                 ),

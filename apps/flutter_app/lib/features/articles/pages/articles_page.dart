@@ -11,15 +11,16 @@ import '../../../core/services/article_prefs_service.dart';
 
 class ArticlesPage extends StatefulWidget {
   final bool showBackButton;
+  final String? initialCategory;
 
-  ArticlesPage({super.key, this.showBackButton = true});
+  ArticlesPage({super.key, this.showBackButton = true, this.initialCategory});
 
   @override
   State<ArticlesPage> createState() => _ArticlesPageState();
 }
 
 class _ArticlesPageState extends State<ArticlesPage> {
-  String _selectedCategory = 'all';
+  late String _selectedCategory = widget.initialCategory ?? 'all';
   String _searchQuery = '';
   bool _onlyFavorites = false;
   final TextEditingController _searchController = TextEditingController();
