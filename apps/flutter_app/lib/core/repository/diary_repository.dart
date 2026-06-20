@@ -9,6 +9,7 @@ class DiaryEntry {
   final int? moodValue;
   final DateTime entryDate;
   final DateTime createdAt;
+  final List<String> tags;
 
   DiaryEntry({
     required this.id,
@@ -17,6 +18,7 @@ class DiaryEntry {
     this.moodValue,
     required this.entryDate,
     required this.createdAt,
+    this.tags = const [],
   });
 
   Color get moodColor {
@@ -48,11 +50,6 @@ class DiaryEntry {
   String get title {
     final lines = content.split('\n');
     return lines.first.length > 50 ? '${lines.first.substring(0, 50)}...' : lines.first;
-  }
-
-  List<String> get tags {
-    final regex = RegExp(r'#(\w+)');
-    return regex.allMatches(content).map((m) => m.group(1)!).toList();
   }
 
   factory DiaryEntry.fromJson(Map<String, dynamic> json) {
@@ -88,6 +85,7 @@ class DiaryEntry {
       moodValue: json['mood_value'] as int?,
       entryDate: entryDate,
       createdAt: createdAt,
+      tags: (json['tags'] as List?)?.map((e) => e.toString()).toList() ?? const [],
     );
   }
 
@@ -98,6 +96,7 @@ class DiaryEntry {
       'content': content,
       'mood_value': moodValue,
       'entry_date': entryDate.toIso8601String().split('T').first,
+      'tags': tags,
     };
   }
 }
@@ -140,11 +139,13 @@ class DiaryRepository {
     required String content,
     int? moodValue,
     DateTime? entryDate,
+    List<String>? tags,
   }) async {
     final data = await _apiService.createEntry(
       content: content,
       moodValue: moodValue,
       entryDate: entryDate?.toIso8601String(),
+      tags: tags,
     );
     return DiaryEntry.fromJson(data);
   }
@@ -153,11 +154,13 @@ class DiaryRepository {
     required String id,
     required String content,
     int? moodValue,
+    List<String>? tags,
   }) async {
     final data = await _apiService.updateEntry(
       id: id,
       content: content,
       moodValue: moodValue,
+      tags: tags,
     );
     return DiaryEntry.fromJson(data);
   }

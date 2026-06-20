@@ -66,5 +66,9 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Доступ к микрофону нужен для голосового ввода записей в дневник.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Распознавание речи преобразует ваш голос в текст записи дневника.</string>
 </dict>
 </plist>

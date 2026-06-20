@@ -50,11 +50,13 @@ class DiaryApiService {
     required String content,
     int? moodValue,
     String? entryDate,
+    List<String>? tags,
   }) async {
     final body = {
       'content': content,
       if (moodValue != null) 'mood_value': moodValue,
       if (entryDate != null) 'entry_date': entryDate,
+      if (tags != null) 'tags': tags,
     };
     debugPrint('DiaryAPI createEntry body: $body');
 
@@ -74,10 +76,12 @@ class DiaryApiService {
     required String id,
     required String content,
     int? moodValue,
+    List<String>? tags,
   }) async {
     final body = {
       'content': content,
       if (moodValue != null) 'mood_value': moodValue,
+      if (tags != null) 'tags': tags,
     };
 
     final response = await _client.put(

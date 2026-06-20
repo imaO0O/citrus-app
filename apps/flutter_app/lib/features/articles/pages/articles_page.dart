@@ -6,6 +6,8 @@ import '../bloc/article_bloc.dart';
 import 'article_detail_page.dart';
 import 'create_edit_article_page.dart';
 import '../../../core/utils/app_size.dart';
+import '../../../core/utils/article_visuals.dart';
+import '../../../core/services/article_prefs_service.dart';
 
 class ArticlesPage extends StatefulWidget {
   final bool showBackButton;
@@ -19,7 +21,44 @@ class ArticlesPage extends StatefulWidget {
 class _ArticlesPageState extends State<ArticlesPage> {
   String _selectedCategory = 'all';
   String _searchQuery = '';
+  bool _onlyFavorites = false;
   final TextEditingController _searchController = TextEditingController();
+  final ArticlePrefsService _prefs = ArticlePrefsService();
+  Set<String> _favorites = {};
+  Set<String> _readIds = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPrefs();
+  }
+
+  Future<void> _loadPrefs() async {
+    final fav = await _prefs.getFavorites();
+    final read = await _prefs.getRead();
+    if (mounted) setState(() { _favorites = fav; _readIds = read; });
+  }
+
+  Future<void> _toggleFavorite(Article a) async {
+    final nowFav = await _prefs.toggleFavorite(a.id);
+    if (mounted) {
+      setState(() {
+        if (nowFav) {
+          _favorites.add(a.id);
+        } else {
+          _favorites.remove(a.id);
+        }
+      });
+    }
+  }
+
+  Future<void> _openArticle(Article article) async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => ArticleDetailPage(article: article)),
+    );
+    await _prefs.markRead(article.id);
+    if (mounted) setState(() => _readIds.add(article.id));
+  }
 
   static const _categories = [
     {'value': 'all', 'label': 'Все', 'icon': Icons.library_books},
@@ -44,6 +83,11 @@ class _ArticlesPageState extends State<ArticlesPage> {
     // Фильтр по категории
     if (_selectedCategory != 'all') {
       filtered = filtered.where((a) => a.category == _selectedCategory).toList();
+    }
+
+    // Только избранное
+    if (_onlyFavorites) {
+      filtered = filtered.where((a) => _favorites.contains(a.id)).toList();
     }
 
     // Фильтр по поиску
@@ -82,6 +126,14 @@ class _ArticlesPageState extends State<ArticlesPage> {
               ),
             ),
             actions: [
+              IconButton(
+                icon: Icon(
+                  _onlyFavorites ? Icons.bookmark : Icons.bookmark_border,
+                  color: _onlyFavorites ? AppColors.citrusAmber : AppColors.foreground,
+                ),
+                tooltip: 'Избранное',
+                onPressed: () => setState(() => _onlyFavorites = !_onlyFavorites),
+              ),
               IconButton(
                 icon: Icon(Icons.add, color: AppColors.citrusOrange),
                 onPressed: () {
@@ -202,10 +254,9 @@ class _ArticlesPageState extends State<ArticlesPage> {
 
   Widget _buildBody(BuildContext context, ArticleState state) {
     if (state is ArticleLoading) {
-      return Center(
-        child: CircularProgressIndicator(
-          valueColor: AlwaysStoppedAnimation<Color>(AppColors.citrusOrange),
-        ),
+      return ListView(
+        padding: AppSize.padding(16),
+        children: List.generate(5, (_) => _buildSkeletonCard()),
       );
     }
 
@@ -239,7 +290,7 @@ class _ArticlesPageState extends State<ArticlesPage> {
       final filteredArticles = _filterArticles(state.articles);
 
       if (filteredArticles.isEmpty) {
-        final hasFilters = _selectedCategory != 'all' || _searchQuery.isNotEmpty;
+        final hasFilters = _selectedCategory != 'all' || _searchQuery.isNotEmpty || _onlyFavorites;
         return Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -289,106 +340,164 @@ class _ArticlesPageState extends State<ArticlesPage> {
         );
       }
 
+      // Hero — рекомендуемая статья (только на общем экране без фильтров)
+      final showHero = _selectedCategory == 'all' &&
+          _searchQuery.isEmpty &&
+          !_onlyFavorites &&
+          filteredArticles.length > 2;
+      final sortedByDate = List<Article>.from(filteredArticles)
+        ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      final Article? featured = showHero ? sortedByDate.first : null;
+      final listArticles = featured == null
+          ? filteredArticles
+          : filteredArticles.where((a) => a.id != featured.id).toList();
+
       // Группируем статьи по категориям
       final articlesByCategory = <String, List<Article>>{};
-      for (final article in filteredArticles) {
+      for (final article in listArticles) {
         articlesByCategory.putIfAbsent(article.category, () => []).add(article);
       }
 
-      // Показываем количество найденных статей
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      return ListView(
+        padding: AppSize.paddingH(16, 0),
         children: [
+          if (featured != null) ...[
+            AppSize.gapH(4),
+            _buildHero(featured),
+          ],
           Padding(
-            padding: AppSize.paddingOnly(left: 16, bottom: 8),
+            padding: AppSize.paddingOnly(top: 8, bottom: 8),
             child: Text(
               'Найдено: ${filteredArticles.length}',
-              style: TextStyle(
-                color: AppColors.dimForeground,
-                fontSize: AppSize.s(13),
-              ),
+              style: TextStyle(color: AppColors.dimForeground, fontSize: AppSize.s(13)),
             ),
           ),
-          Expanded(
-            child: ListView.builder(
-              padding: AppSize.paddingH(16, 0),
-              itemCount: articlesByCategory.length,
-              itemBuilder: (context, index) {
-                final category = articlesByCategory.keys.elementAt(index);
-                final articles = articlesByCategory[category]!;
-
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Padding(
-                      padding: AppSize.paddingOnly(top: 8, bottom: 8),
-                      child: Row(
-                        children: [
-                          Icon(
-                            _getCategoryIcon(category),
-                            color: AppColors.citrusAmber,
-                            size: 20,
-                          ),
-                          AppSize.gapW(8),
-                          Text(
-                            _getCategoryName(category),
-                            style: TextStyle(
-                              color: AppColors.accent,
-                              fontSize: AppSize.s(16),
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          AppSize.gapW(8),
-                          Container(
-                            padding: AppSize.paddingH(8, 2),
-                            decoration: BoxDecoration(
-                              color: AppColors.muted,
-                              borderRadius: AppSize.radius(12),
-                            ),
-                            child: Text(
-                              '${articles.length}',
-                              style: TextStyle(
-                                color: AppColors.mutedForeground,
-                                fontSize: AppSize.s(12),
-                              ),
-                            ),
-                          ),
-                        ],
+          ...articlesByCategory.entries.map((entry) {
+            final category = entry.key;
+            final articles = entry.value;
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: AppSize.paddingOnly(top: 8, bottom: 8),
+                  child: Row(
+                    children: [
+                      Icon(ArticleVisuals.icon(category), color: ArticleVisuals.color(category), size: 20),
+                      AppSize.gapW(8),
+                      Text(
+                        ArticleVisuals.name(category),
+                        style: TextStyle(color: AppColors.foreground, fontSize: AppSize.s(16), fontWeight: FontWeight.w700),
                       ),
-                    ),
-                    ...articles.map((article) => _ArticleCard(
-                          article: article,
-                          onTap: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) => ArticleDetailPage(article: article),
-                              ),
-                            );
-                          },
-                          onDelete: article.isCustom
-                              ? () => _confirmDelete(context, article)
-                              : null,
-                          onEdit: article.isCustom
-                              ? () {
-                                  Navigator.of(context).push(
-                                    MaterialPageRoute(
-                                      builder: (_) => CreateEditArticlePage(article: article),
-                                    ),
-                                  );
-                                }
-                              : null,
-                        )),
-                    AppSize.gapH(8),
-                  ],
-                );
-              },
-            ),
-          ),
+                      AppSize.gapW(8),
+                      Container(
+                        padding: AppSize.paddingH(8, 2),
+                        decoration: BoxDecoration(color: AppColors.muted, borderRadius: AppSize.radius(12)),
+                        child: Text('${articles.length}', style: TextStyle(color: AppColors.mutedForeground, fontSize: AppSize.s(12))),
+                      ),
+                    ],
+                  ),
+                ),
+                ...articles.map((article) => _ArticleCard(
+                      article: article,
+                      isFavorite: _favorites.contains(article.id),
+                      isRead: _readIds.contains(article.id),
+                      onToggleFavorite: () => _toggleFavorite(article),
+                      onTap: () => _openArticle(article),
+                      onDelete: article.isCustom ? () => _confirmDelete(context, article) : null,
+                      onEdit: article.isCustom
+                          ? () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(builder: (_) => CreateEditArticlePage(article: article)),
+                              );
+                            }
+                          : null,
+                    )),
+                AppSize.gapH(8),
+              ],
+            );
+          }),
         ],
       );
     }
 
     return SizedBox.shrink();
+  }
+
+  Widget _buildHero(Article article) {
+    final color = ArticleVisuals.color(article.category);
+    final minutes = ArticleVisuals.readingMinutes(article.content);
+    return GestureDetector(
+      onTap: () => _openArticle(article),
+      child: Container(
+        margin: AppSize.paddingOnly(bottom: 4),
+        padding: AppSize.padding(18),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [color.withValues(alpha: 0.30), color.withValues(alpha: 0.10)],
+          ),
+          borderRadius: AppSize.radius(18),
+          border: Border.all(color: color.withValues(alpha: 0.4)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(children: [
+              Icon(Icons.auto_awesome, size: AppSize.s(15), color: color),
+              AppSize.gapW(6),
+              Text('Рекомендуем', style: TextStyle(color: color, fontSize: AppSize.s(12), fontWeight: FontWeight.w700)),
+              const Spacer(),
+              Icon(ArticleVisuals.icon(article.category), size: AppSize.s(15), color: color),
+              AppSize.gapW(5),
+              Text(ArticleVisuals.name(article.category), style: TextStyle(color: color, fontSize: AppSize.s(12), fontWeight: FontWeight.w600)),
+            ]),
+            AppSize.gapH(12),
+            Text(
+              article.title,
+              style: TextStyle(color: AppColors.foreground, fontSize: AppSize.s(19), fontWeight: FontWeight.w800, height: 1.25),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            AppSize.gapH(10),
+            Row(children: [
+              Icon(Icons.schedule, size: AppSize.s(13), color: AppColors.mutedForeground),
+              AppSize.gapW(4),
+              Text('$minutes мин чтения', style: TextStyle(color: AppColors.mutedForeground, fontSize: AppSize.s(12))),
+              const Spacer(),
+              Text('Читать →', style: TextStyle(color: color, fontSize: AppSize.s(13), fontWeight: FontWeight.w700)),
+            ]),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSkeletonCard() {
+    Widget bar(double w, double h) => Container(
+          width: w,
+          height: h,
+          margin: AppSize.paddingOnly(bottom: 8),
+          decoration: BoxDecoration(color: AppColors.surface2, borderRadius: AppSize.radius(6)),
+        );
+    return Container(
+      margin: AppSize.paddingOnly(bottom: 10),
+      padding: AppSize.padding(16),
+      decoration: BoxDecoration(
+        color: AppColors.card,
+        borderRadius: AppSize.radius(AppColors.radiusMd.toDouble()),
+        border: Border.all(color: AppColors.border, width: 0.5),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          bar(AppSize.s(90), AppSize.s(12)),
+          bar(double.infinity, AppSize.s(16)),
+          bar(AppSize.s(220), AppSize.s(12)),
+          bar(AppSize.s(120), AppSize.s(12)),
+        ],
+      ),
+    );
   }
 
   void _confirmDelete(BuildContext context, Article article) {
@@ -419,21 +528,6 @@ class _ArticlesPageState extends State<ArticlesPage> {
     );
   }
 
-  String _getCategoryName(String category) {
-    final cat = _categories.firstWhere(
-      (c) => c['value'] == category,
-      orElse: () => {'label': category},
-    );
-    return cat['label'] as String;
-  }
-
-  IconData _getCategoryIcon(String category) {
-    final cat = _categories.firstWhere(
-      (c) => c['value'] == category,
-      orElse: () => {'icon': Icons.article},
-    );
-    return cat['icon'] as IconData;
-  }
 }
 
 class _ArticleCard extends StatelessWidget {
@@ -441,159 +535,129 @@ class _ArticleCard extends StatelessWidget {
   final VoidCallback onTap;
   final VoidCallback? onDelete;
   final VoidCallback? onEdit;
+  final bool isFavorite;
+  final bool isRead;
+  final VoidCallback onToggleFavorite;
 
   _ArticleCard({
     required this.article,
     required this.onTap,
+    required this.isFavorite,
+    required this.isRead,
+    required this.onToggleFavorite,
     this.onDelete,
     this.onEdit,
   });
 
   @override
   Widget build(BuildContext context) {
+    final color = ArticleVisuals.color(article.category);
+    final minutes = ArticleVisuals.readingMinutes(article.content);
+    final preview = _stripMarkdown(article.content);
     return Card(
       color: AppColors.card,
-      margin: AppSize.paddingOnly(bottom: 8),
+      margin: AppSize.paddingOnly(bottom: 10),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppSize.s(AppColors.radiusMd)),
         side: BorderSide(color: AppColors.border, width: 0.5),
       ),
+      clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(AppSize.s(AppColors.radiusMd)),
-        child: Padding(
-          padding: AppSize.padding(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+        child: IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Метки источника и тегов
-              Wrap(
-                spacing: 6,
-                runSpacing: 4,
-                children: [
-                  if (article.source == 'wikipedia')
-                    Container(
-                      padding: AppSize.paddingH(6, 2),
-                      decoration: BoxDecoration(
-                        color: AppColors.citrusPurple.withValues(alpha: 0.2),
-                        borderRadius: AppSize.radius(8),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
+              // Цветовой акцент категории
+              Container(width: AppSize.s(4), color: color),
+              Expanded(
+                child: Padding(
+                  padding: AppSize.padding(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Категория + прочитано + избранное
+                      Row(
                         children: [
-                          Icon(Icons.language, size: 10, color: AppColors.citrusPurple),
-                          AppSize.gapW(3),
-                          Text(
-                            'Wikipedia',
-                            style: TextStyle(
-                              color: AppColors.citrusPurple,
-                              fontSize: AppSize.s(10),
-                              fontWeight: FontWeight.w500,
+                          Icon(ArticleVisuals.icon(article.category), size: AppSize.s(15), color: color),
+                          AppSize.gapW(6),
+                          Flexible(
+                            child: Text(
+                              ArticleVisuals.name(article.category),
+                              style: TextStyle(color: color, fontSize: AppSize.s(12), fontWeight: FontWeight.w600),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          if (isRead) ...[
+                            AppSize.gapW(8),
+                            Icon(Icons.check_circle, size: AppSize.s(13), color: AppColors.citrusGreen),
+                          ],
+                          const Spacer(),
+                          GestureDetector(
+                            onTap: onToggleFavorite,
+                            behavior: HitTestBehavior.opaque,
+                            child: Icon(
+                              isFavorite ? Icons.bookmark : Icons.bookmark_border,
+                              size: AppSize.s(20),
+                              color: isFavorite ? AppColors.citrusAmber : AppColors.dimForeground,
                             ),
                           ),
                         ],
                       ),
-                    ),
-                  if (article.isCustom)
-                    Container(
-                      padding: AppSize.paddingH(6, 2),
-                      decoration: BoxDecoration(
-                        color: AppColors.citrusOrange.withValues(alpha: 0.2),
-                        borderRadius: AppSize.radius(8),
+                      AppSize.gapH(8),
+                      Text(
+                        article.title,
+                        style: TextStyle(color: AppColors.foreground, fontSize: AppSize.s(16), fontWeight: FontWeight.w700, height: 1.3),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
+                      AppSize.gapH(6),
+                      Text(
+                        preview.length > 110 ? '${preview.substring(0, 110)}...' : preview,
+                        style: TextStyle(color: AppColors.mutedForeground, fontSize: AppSize.s(13), height: 1.4),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      AppSize.gapH(10),
+                      Row(
                         children: [
-                          Icon(Icons.edit, size: 10, color: AppColors.citrusOrange),
-                          AppSize.gapW(3),
-                          Text(
-                            'Пользовательская',
-                            style: TextStyle(
-                              color: AppColors.citrusOrange,
-                              fontSize: AppSize.s(10),
-                              fontWeight: FontWeight.w500,
+                          Icon(Icons.schedule, size: AppSize.s(13), color: AppColors.dimForeground),
+                          AppSize.gapW(4),
+                          Text('$minutes мин', style: TextStyle(color: AppColors.dimForeground, fontSize: AppSize.s(12))),
+                          if (article.source == 'wikipedia') ...[
+                            AppSize.gapW(10),
+                            Icon(Icons.language, size: AppSize.s(13), color: AppColors.citrusPurple),
+                            AppSize.gapW(3),
+                            Text('Wikipedia', style: TextStyle(color: AppColors.citrusPurple, fontSize: AppSize.s(11))),
+                          ] else if (article.isCustom) ...[
+                            AppSize.gapW(10),
+                            Icon(Icons.person, size: AppSize.s(13), color: AppColors.citrusOrange),
+                            AppSize.gapW(3),
+                            Text('Моя', style: TextStyle(color: AppColors.citrusOrange, fontSize: AppSize.s(11))),
+                          ],
+                          const Spacer(),
+                          if (article.isCustom && onEdit != null)
+                            GestureDetector(
+                              onTap: onEdit,
+                              behavior: HitTestBehavior.opaque,
+                              child: Padding(
+                                padding: AppSize.paddingH(6, 4),
+                                child: Icon(Icons.edit, size: AppSize.s(17), color: AppColors.mutedForeground),
+                              ),
                             ),
-                          ),
+                          if (article.isCustom && onDelete != null)
+                            GestureDetector(
+                              onTap: onDelete,
+                              behavior: HitTestBehavior.opaque,
+                              child: Padding(
+                                padding: AppSize.paddingH(6, 4),
+                                child: Icon(Icons.delete_outline, size: AppSize.s(17), color: AppColors.destructive),
+                              ),
+                            ),
                         ],
                       ),
-                    ),
-                  if (article.tags != null && article.tags!.isNotEmpty)
-                    ...article.tags!.map((tag) => Container(
-                          padding: AppSize.paddingH(6, 2),
-                          decoration: BoxDecoration(
-                            color: AppColors.accent.withValues(alpha: 0.15),
-                            borderRadius: AppSize.radius(8),
-                          ),
-                          child: Text(
-                            _getCategoryName(tag),
-                            style: TextStyle(
-                              color: AppColors.accent,
-                              fontSize: AppSize.s(10),
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        )),
-                ],
-              ),
-              AppSize.gapH(8),
-
-              // Заголовок
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      article.title,
-                      style: TextStyle(
-                        color: AppColors.foreground,
-                        fontSize: AppSize.s(16),
-                        fontWeight: FontWeight.w600,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
+                    ],
                   ),
-                  if (article.isCustom) ...[
-                    if (onEdit != null)
-                      IconButton(
-                        icon: Icon(Icons.edit, size: 20),
-                        onPressed: onEdit,
-                        color: AppColors.mutedForeground,
-                        padding: EdgeInsets.zero,
-                        constraints: BoxConstraints(),
-                      ),
-                    AppSize.gapW(12),
-                    if (onDelete != null)
-                      IconButton(
-                        icon: Icon(Icons.delete_outline, size: 20),
-                        onPressed: onDelete,
-                        color: AppColors.destructive,
-                        padding: EdgeInsets.zero,
-                        constraints: BoxConstraints(),
-                      ),
-                  ],
-                ],
-              ),
-              AppSize.gapH(8),
-              Builder(builder: (_) {
-                final preview = _stripMarkdown(article.content);
-                return Text(
-                  preview.length > 120
-                      ? '${preview.substring(0, 120)}...'
-                      : preview,
-                  style: TextStyle(
-                    color: AppColors.mutedForeground,
-                    fontSize: AppSize.s(14),
-                  ),
-                  maxLines: 3,
-                  overflow: TextOverflow.ellipsis,
-                );
-              }),
-              AppSize.gapH(8),
-              Text(
-                'Создано: ${_formatDate(article.createdAt)}',
-                style: TextStyle(
-                  color: AppColors.dimForeground,
-                  fontSize: AppSize.s(12),
                 ),
               ),
             ],
@@ -601,24 +665,6 @@ class _ArticleCard extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  String _formatDate(DateTime date) {
-    return '${date.day.toString().padLeft(2, '0')}.${date.month.toString().padLeft(2, '0')}.${date.year}';
-  }
-
-  String _getCategoryName(String category) {
-    final categories = {
-      'anxiety': 'Тревожность',
-      'depression': 'Депрессия',
-      'sleep': 'Сон',
-      'stress': 'Стресс',
-      'self-esteem': 'Самооценка',
-      'relationships': 'Отношения',
-      'mindfulness': 'Осознанность',
-      'custom': 'Пользовательские',
-    };
-    return categories[category.toLowerCase()] ?? category;
   }
 
   /// Убирает markdown-разметку, чтобы текст превью статьи выглядел как

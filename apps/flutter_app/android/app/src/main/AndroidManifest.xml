@@ -13,7 +13,10 @@
 
     <!-- Health Connect: чтение сна с часов/фитнес-браслетов -->
     <uses-permission android:name="android.permission.health.READ_SLEEP" />
-    
+
+    <!-- Распознавание речи: голосовые заметки в дневнике -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+
     <application
         android:label="Цитрус"
         android:name="${applicationName}"
@@ -70,8 +73,8 @@
         <receiver 
             android:exported="false" 
             android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver" />
-        <receiver 
-            android:exported="false" 
+        <receiver
+            android:exported="false"
             android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationBootReceiver">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
@@ -85,6 +88,10 @@
 
          In particular, this is used by the Flutter engine in io.flutter.plugin.text.ProcessTextPlugin. -->
     <queries>
+        <!-- Распознавание речи: видимость сервиса speech-to-text (Android 11+) -->
+        <intent>
+            <action android:name="android.speech.RecognitionService" />
+        </intent>
         <!-- Health Connect: видимость приложения-хаба данных здоровья -->
         <package android:name="com.google.android.apps.healthdata" />
         <intent>

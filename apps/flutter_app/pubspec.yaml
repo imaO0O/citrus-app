@@ -66,6 +66,9 @@ dependencies:
   rxdart: ^0.28.0
   audioplayers: ^6.6.0
 
+  # Распознавание речи в текст (голосовые заметки в дневнике)
+  speech_to_text: ^7.0.0
+
   # Локальные уведомления
   flutter_local_notifications: ^18.0.0
   timezone: ^0.10.0

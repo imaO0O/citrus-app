@@ -1,5 +1,12 @@
 part of '../server.dart';
 
+/// Строит SQL-литерал массива тегов (с экранированием).
+String _diaryTagsSql(dynamic tags) {
+  if (tags is! List || tags.isEmpty) return "'{}'";
+  final items = tags.map((t) => "'${t.toString().replaceAll("'", "''")}'").join(',');
+  return "ARRAY[$items]::text[]";
+}
+
 Future<Response> _getDiaryEntries(RequestContext context, _AuthContext auth) async {
   final userId = auth.userId;
   if (userId == null) return Response(statusCode: 401, body: 'Unauthorized');
@@ -19,7 +26,7 @@ Future<Response> _getDiaryEntries(RequestContext context, _AuthContext auth) asy
     }
 
     final results = await _dbQuery(
-      "SELECT id, user_id, content, mood_value, entry_date::text, created_at::text "
+      "SELECT id, user_id, content, mood_value, entry_date::text, created_at::text, tags "
       "FROM diary_entries $whereClause ORDER BY entry_date DESC, created_at DESC",
     );
     print('DB entry_date values: ${results.map((r) => r[4]).toList()}');
@@ -31,6 +38,7 @@ Future<Response> _getDiaryEntries(RequestContext context, _AuthContext auth) asy
       'mood_value': row[3] as int?,
       'entry_date': row[4],
       'created_at': row[5],
+      'tags': row[6] is List ? row[6] : <String>[],
       'title': (row[2] as String?)?.substring(0, row[2].toString().length > 50 ? 50 : null) ?? 'Без заголовка',
     }).toList();
 
@@ -49,6 +57,7 @@ Future<Response> _createDiaryEntry(RequestContext context, _AuthContext auth) as
     final content = body['content'] as String?;
     final moodValue = body['mood_value'] as int?;
     final entryDate = body['entry_date'] as String?;
+    final tags = body['tags'];
 
     if (content == null || content.isEmpty) {
       return Response(statusCode: 400, body: 'content is required');
@@ -61,10 +70,11 @@ Future<Response> _createDiaryEntry(RequestContext context, _AuthContext auth) as
     final dateSql = "'$dateStr'";
     final contentSql = "'${content.replaceAll("'", "''")}'";
     final moodSql = moodValue != null ? moodValue.toString() : 'NULL';
+    final tagsSql = _diaryTagsSql(tags);
 
     await _dbQuery(
-      "INSERT INTO diary_entries (id, user_id, content, mood_value, entry_date) "
-      "VALUES ('$recordId', '$userId', $contentSql, $moodSql, $dateSql)",
+      "INSERT INTO diary_entries (id, user_id, content, mood_value, entry_date, tags) "
+      "VALUES ('$recordId', '$userId', $contentSql, $moodSql, $dateSql, $tagsSql)",
     );
 
     final returnedDate = dateStr;
@@ -74,6 +84,7 @@ Future<Response> _createDiaryEntry(RequestContext context, _AuthContext auth) as
       'content': content,
       'mood_value': moodValue,
       'entry_date': returnedDate,
+      'tags': tags is List ? tags : <String>[],
     });
   } catch (e, stackTrace) {
     print('diary create error: $e');
@@ -90,6 +101,7 @@ Future<Response> _updateDiaryEntry(RequestContext context, _AuthContext auth, St
     final body = await context.request.json();
     final content = body['content'] as String?;
     final moodValue = body['mood_value'] as int?;
+    final tags = body['tags'];
 
     if (content == null) {
       return Response(statusCode: 400, body: 'content is required');
@@ -97,14 +109,15 @@ Future<Response> _updateDiaryEntry(RequestContext context, _AuthContext auth, St
 
     final contentSql = "'${content.replaceAll("'", "''")}'";
     final moodSql = moodValue != null ? moodValue.toString() : 'NULL';
+    final tagsSql = _diaryTagsSql(tags);
 
     await _dbQuery(
-      "UPDATE diary_entries SET content = $contentSql, mood_value = $moodSql "
+      "UPDATE diary_entries SET content = $contentSql, mood_value = $moodSql, tags = $tagsSql "
       "WHERE id = '$id' AND user_id = '$userId'",
     );
 
     final results = await _dbQuery(
-      "SELECT id, user_id, content, mood_value, entry_date::text as entry_date, created_at::text as created_at "
+      "SELECT id, user_id, content, mood_value, entry_date::text as entry_date, created_at::text as created_at, tags "
       "FROM diary_entries WHERE id = '$id' AND user_id = '$userId'",
     );
 
@@ -120,6 +133,7 @@ Future<Response> _updateDiaryEntry(RequestContext context, _AuthContext auth, St
       'mood_value': row[3] as int?,
       'entry_date': row[4] as String?,
       'created_at': row[5] as String?,
+      'tags': row[6] is List ? row[6] : <String>[],
     });
   } catch (e) {
     return Response(statusCode: 500, body: 'Error: $e');
