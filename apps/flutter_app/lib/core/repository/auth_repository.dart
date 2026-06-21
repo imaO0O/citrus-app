@@ -41,6 +41,7 @@ class User {
   final String? avatarUrl;
   final String? phone;
   final String token;
+  final bool isAdmin;
 
   User({
     required this.id,
@@ -50,6 +51,7 @@ class User {
     this.avatarUrl,
     this.phone,
     required this.token,
+    this.isAdmin = false,
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
@@ -61,6 +63,7 @@ class User {
       avatarUrl: json['avatar_url'] as String?,
       phone: json['phone'] as String?,
       token: json['token'] as String,
+      isAdmin: json['is_admin'] == true,
     );
   }
 }
@@ -287,6 +290,10 @@ class AuthRepository {
         const Duration(seconds: 5),
         onTimeout: () => null,
       );
+      final savedIsAdmin = await storage.getString('auth_user_is_admin').timeout(
+        const Duration(seconds: 5),
+        onTimeout: () => null,
+      );
 
       if (savedToken != null && savedToken.isNotEmpty && savedUserId != null) {
         _currentUser = User(
@@ -297,6 +304,7 @@ class AuthRepository {
           avatarUrl: savedAvatarUrl,
           phone: savedPhone,
           token: savedToken,
+          isAdmin: savedIsAdmin == 'true',
         );
         debugPrint('AuthRepository: session restored, userId=$savedUserId');
       } else {
@@ -329,6 +337,7 @@ class AuthRepository {
       if (user.themeId != null) await storage.setString('auth_user_theme_id', user.themeId!);
       if (user.avatarUrl != null) await storage.setString('auth_user_avatar_url', user.avatarUrl!);
       if (user.phone != null) await storage.setString('auth_user_phone', user.phone!);
+      await storage.setString('auth_user_is_admin', user.isAdmin ? 'true' : 'false');
     } catch (e) {
       debugPrint('AuthRepository save error: $e');
     }

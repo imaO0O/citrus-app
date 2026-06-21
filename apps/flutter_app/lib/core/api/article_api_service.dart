@@ -78,6 +78,39 @@ class ArticleApiService {
     }
   }
 
+  /// Очередь модерации (только для админа) — статьи в статусе pending
+  Future<List<Article>> getModerationQueue() async {
+    final response = await _client.get(
+      Uri.parse('$baseUrl/articles/moderation'),
+      headers: _headers,
+    );
+
+    if (response.statusCode == 200) {
+      final decoded = jsonDecode(response.body);
+      if (decoded is List) {
+        return decoded.map((json) => Article.fromJson(json)).toList();
+      }
+      return [];
+    } else if (response.statusCode == 403) {
+      throw Exception('Нет прав модератора');
+    } else {
+      throw Exception('Ошибка загрузки очереди: ${response.statusCode}');
+    }
+  }
+
+  /// Одобрить/отклонить статью (только для админа). action: 'approve' | 'reject'
+  Future<void> moderateArticle(String articleId, String action) async {
+    final response = await _client.post(
+      Uri.parse('$baseUrl/articles/$articleId/moderate'),
+      headers: _headers,
+      body: jsonEncode({'action': action}),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Ошибка модерации: ${response.statusCode}');
+    }
+  }
+
   /// Удалить статью
   Future<void> deleteArticle(String articleId) async {
     final response = await _client.delete(

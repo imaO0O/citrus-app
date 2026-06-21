@@ -28,6 +28,10 @@ part 'handlers/user.dart';
 PostgreSQLConnection? _db;
 const _jwtSecret = 'citrus-app-secret-key-change-in-production';
 
+/// Email администратора-модератора (видит очередь модерации статей сообщества
+/// и одобряет/отклоняет их). Чтобы сменить модератора — поменяйте этот email.
+const _adminEmail = 'tsykunova.svetlana05@gmail.com';
+
 // Параметры БД из переменных окружения (с fallback на локальную БД для разработки)
 String get _dbHost => Platform.environment['DB_HOST'] ?? 'localhost';
 int get _dbPort => int.tryParse(Platform.environment['DB_PORT'] ?? '5432') ?? 5432;
@@ -89,6 +93,7 @@ const _cacheDurationMinutes = 60;
 
 class _AuthContext {
   String? userId;
+  String? email;
 }
 
 String? _extractToken(RequestContext context) {
@@ -548,9 +553,21 @@ Future<Response> _handleRequest(RequestContext context) async {
     try {
       final jwt = JWT.verify(token, SecretKey(_jwtSecret));
       authContext.userId = jwt.payload['user_id'] as String;
+      authContext.email = jwt.payload['email'] as String?;
     } catch (e) {
       return Response(statusCode: 401, body: 'Invalid token');
     }
+  }
+
+  // GET /articles/moderation — очередь модерации (только админ)
+  if (path == '/articles/moderation' && method == HttpMethod.get) {
+    return _getModerationQueue(context, authContext);
+  }
+
+  // POST /articles/{id}/moderate — одобрить/отклонить (только админ)
+  if (path.startsWith('/articles/') && path.endsWith('/moderate') && method == HttpMethod.post) {
+    final id = path.substring('/articles/'.length, path.length - '/moderate'.length);
+    return _moderateArticle(context, authContext, id);
   }
 
   // GET /articles

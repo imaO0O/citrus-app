@@ -5,6 +5,8 @@ import '../../../models/article.dart';
 import '../bloc/article_bloc.dart';
 import 'article_detail_page.dart';
 import 'create_edit_article_page.dart';
+import 'moderation_screen.dart';
+import '../../auth/bloc/auth_bloc.dart';
 import '../../../core/utils/app_size.dart';
 import '../../../core/utils/article_visuals.dart';
 import '../../../core/services/article_prefs_service.dart';
@@ -27,6 +29,7 @@ class _ArticlesPageState extends State<ArticlesPage> {
   final ArticlePrefsService _prefs = ArticlePrefsService();
   Set<String> _favorites = {};
   Set<String> _readIds = {};
+  String? _currentUserId;
 
   @override
   void initState() {
@@ -106,6 +109,9 @@ class _ArticlesPageState extends State<ArticlesPage> {
   Widget build(BuildContext context) {
     return BlocBuilder<ArticleBloc, ArticleState>(
       builder: (context, state) {
+        final auth = context.watch<AuthBloc>().state;
+        final isAdmin = auth is AuthAuthenticated && auth.user.isAdmin;
+        _currentUserId = auth is AuthAuthenticated ? auth.user.id : null;
         return Scaffold(
           backgroundColor: AppColors.background,
           appBar: AppBar(
@@ -127,6 +133,18 @@ class _ArticlesPageState extends State<ArticlesPage> {
               ),
             ),
             actions: [
+              if (isAdmin)
+                IconButton(
+                  icon: Icon(Icons.fact_check_outlined, color: AppColors.citrusOrange),
+                  tooltip: 'Модерация',
+                  onPressed: () async {
+                    final token = auth.user.token;
+                    await Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => ModerationScreen(token: token)),
+                    );
+                    if (mounted) context.read<ArticleBloc>().add(const LoadArticles());
+                  },
+                ),
               IconButton(
                 icon: Icon(
                   _onlyFavorites ? Icons.bookmark : Icons.bookmark_border,
@@ -398,21 +416,25 @@ class _ArticlesPageState extends State<ArticlesPage> {
                     ],
                   ),
                 ),
-                ...articles.map((article) => _ArticleCard(
-                      article: article,
-                      isFavorite: _favorites.contains(article.id),
-                      isRead: _readIds.contains(article.id),
-                      onToggleFavorite: () => _toggleFavorite(article),
-                      onTap: () => _openArticle(article),
-                      onDelete: article.isCustom ? () => _confirmDelete(context, article) : null,
-                      onEdit: article.isCustom
-                          ? () {
-                              Navigator.of(context).push(
-                                MaterialPageRoute(builder: (_) => CreateEditArticlePage(article: article)),
-                              );
-                            }
-                          : null,
-                    )),
+                ...articles.map((article) {
+                  final isOwn = article.userId != null && article.userId == _currentUserId;
+                  return _ArticleCard(
+                    article: article,
+                    currentUserId: _currentUserId,
+                    isFavorite: _favorites.contains(article.id),
+                    isRead: _readIds.contains(article.id),
+                    onToggleFavorite: () => _toggleFavorite(article),
+                    onTap: () => _openArticle(article),
+                    onDelete: (article.isCustom && isOwn) ? () => _confirmDelete(context, article) : null,
+                    onEdit: (article.isCustom && isOwn)
+                        ? () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(builder: (_) => CreateEditArticlePage(article: article)),
+                            );
+                          }
+                        : null,
+                  );
+                }),
                 AppSize.gapH(8),
               ],
             );
@@ -539,6 +561,7 @@ class _ArticleCard extends StatelessWidget {
   final bool isFavorite;
   final bool isRead;
   final VoidCallback onToggleFavorite;
+  final String? currentUserId;
 
   _ArticleCard({
     required this.article,
@@ -546,6 +569,7 @@ class _ArticleCard extends StatelessWidget {
     required this.isFavorite,
     required this.isRead,
     required this.onToggleFavorite,
+    this.currentUserId,
     this.onDelete,
     this.onEdit,
   });
@@ -555,6 +579,8 @@ class _ArticleCard extends StatelessWidget {
     final color = ArticleVisuals.color(article.category);
     final minutes = ArticleVisuals.readingMinutes(article.content);
     final preview = _stripMarkdown(article.content);
+    final isOwn = article.userId != null && article.userId == currentUserId;
+    final isCommunity = article.userId != null && !isOwn;
     return Card(
       color: AppColors.card,
       margin: AppSize.paddingOnly(bottom: 10),
@@ -612,6 +638,20 @@ class _ArticleCard extends StatelessWidget {
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
+                      if (isCommunity) ...[
+                        AppSize.gapH(5),
+                        Row(children: [
+                          Icon(Icons.groups, size: AppSize.s(13), color: AppColors.citrusPurple),
+                          AppSize.gapW(4),
+                          Flexible(
+                            child: Text(
+                              'Сообщество · ${article.author ?? 'автор'}',
+                              style: TextStyle(color: AppColors.citrusPurple, fontSize: AppSize.s(11), fontWeight: FontWeight.w500),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ]),
+                      ],
                       AppSize.gapH(6),
                       Text(
                         preview.length > 110 ? '${preview.substring(0, 110)}...' : preview,
@@ -625,12 +665,27 @@ class _ArticleCard extends StatelessWidget {
                           Icon(Icons.schedule, size: AppSize.s(13), color: AppColors.dimForeground),
                           AppSize.gapW(4),
                           Text('$minutes мин', style: TextStyle(color: AppColors.dimForeground, fontSize: AppSize.s(12))),
-                          if (article.source == 'wikipedia') ...[
+                          if (isOwn && article.isPublic && article.moderationStatus == 'pending') ...[
+                            AppSize.gapW(10),
+                            Icon(Icons.hourglass_top, size: AppSize.s(13), color: AppColors.citrusAmber),
+                            AppSize.gapW(3),
+                            Text('На модерации', style: TextStyle(color: AppColors.citrusAmber, fontSize: AppSize.s(11))),
+                          ] else if (isOwn && article.isPublic && article.moderationStatus == 'rejected') ...[
+                            AppSize.gapW(10),
+                            Icon(Icons.block, size: AppSize.s(13), color: AppColors.destructive),
+                            AppSize.gapW(3),
+                            Text('Отклонено', style: TextStyle(color: AppColors.destructive, fontSize: AppSize.s(11))),
+                          ] else if (isOwn && article.isPublic && article.moderationStatus == 'approved') ...[
+                            AppSize.gapW(10),
+                            Icon(Icons.public, size: AppSize.s(13), color: AppColors.citrusGreen),
+                            AppSize.gapW(3),
+                            Text('В сообществе', style: TextStyle(color: AppColors.citrusGreen, fontSize: AppSize.s(11))),
+                          ] else if (article.source == 'wikipedia') ...[
                             AppSize.gapW(10),
                             Icon(Icons.language, size: AppSize.s(13), color: AppColors.citrusPurple),
                             AppSize.gapW(3),
                             Text('Wikipedia', style: TextStyle(color: AppColors.citrusPurple, fontSize: AppSize.s(11))),
-                          ] else if (article.isCustom) ...[
+                          ] else if (isOwn && article.isCustom) ...[
                             AppSize.gapW(10),
                             Icon(Icons.person, size: AppSize.s(13), color: AppColors.citrusOrange),
                             AppSize.gapW(3),

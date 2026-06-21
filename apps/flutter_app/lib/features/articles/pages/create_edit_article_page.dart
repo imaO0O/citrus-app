@@ -22,6 +22,7 @@ class _CreateEditArticlePageState extends State<CreateEditArticlePage> {
   late String _selectedCategory;
   bool _isSaving = false;
   bool _isPreviewMode = false;
+  bool _isPublic = false;
 
   final List<CategoryOption> _categories = [
     CategoryOption(value: 'anxiety', label: 'Тревожность', icon: Icons.psychology),
@@ -39,6 +40,7 @@ class _CreateEditArticlePageState extends State<CreateEditArticlePage> {
     _titleController = TextEditingController(text: widget.article?.title ?? '');
     _contentController = TextEditingController(text: widget.article?.content ?? '');
     _selectedCategory = widget.article?.category ?? 'anxiety';
+    _isPublic = widget.article?.isPublic ?? false;
   }
 
   @override
@@ -253,7 +255,55 @@ class _CreateEditArticlePageState extends State<CreateEditArticlePage> {
               maxLines: 20,
               minLines: 10,
             ),
-            AppSize.gapH(32),
+            AppSize.gapH(24),
+
+            // Публикация в сообщество
+            Container(
+              decoration: BoxDecoration(
+                color: AppColors.surface2,
+                borderRadius: BorderRadius.circular(AppSize.s(AppColors.radiusMd)),
+                border: Border.all(
+                  color: _isPublic ? AppColors.citrusOrange.withValues(alpha: 0.5) : AppColors.border,
+                ),
+              ),
+              child: Column(
+                children: [
+                  SwitchListTile(
+                    value: _isPublic,
+                    onChanged: (v) => setState(() => _isPublic = v),
+                    activeColor: AppColors.citrusOrange,
+                    contentPadding: AppSize.paddingH(16, 0),
+                    title: Text(
+                      'Опубликовать для всех',
+                      style: TextStyle(color: AppColors.foreground, fontSize: AppSize.s(15), fontWeight: FontWeight.w600),
+                    ),
+                    subtitle: Text(
+                      'Статья пройдёт модерацию и станет видна в сообществе',
+                      style: TextStyle(color: AppColors.mutedForeground, fontSize: AppSize.s(12)),
+                    ),
+                  ),
+                  if (widget.article != null &&
+                      widget.article!.isPublic &&
+                      widget.article!.moderationStatus != 'private')
+                    Padding(
+                      padding: AppSize.paddingH(16, 12),
+                      child: Row(
+                        children: [
+                          Icon(_statusIcon(widget.article!.moderationStatus), size: AppSize.s(16), color: _statusColor(widget.article!.moderationStatus)),
+                          AppSize.gapW(8),
+                          Expanded(
+                            child: Text(
+                              _statusText(widget.article!.moderationStatus),
+                              style: TextStyle(color: _statusColor(widget.article!.moderationStatus), fontSize: AppSize.s(12), fontWeight: FontWeight.w500),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            AppSize.gapH(24),
 
             // Кнопка сохранения
             SizedBox(
@@ -440,6 +490,7 @@ class _CreateEditArticlePageState extends State<CreateEditArticlePage> {
               title: title,
               content: content,
               category: _selectedCategory,
+              isPublic: _isPublic,
             ),
           );
     } else {
@@ -449,6 +500,7 @@ class _CreateEditArticlePageState extends State<CreateEditArticlePage> {
               title: title,
               content: content,
               category: _selectedCategory,
+              isPublic: _isPublic,
             ),
           );
     }
@@ -464,6 +516,39 @@ class _CreateEditArticlePageState extends State<CreateEditArticlePage> {
         }
       }
     });
+  }
+}
+
+IconData _statusIcon(String status) {
+  switch (status) {
+    case 'approved':
+      return Icons.public;
+    case 'rejected':
+      return Icons.block;
+    default:
+      return Icons.hourglass_top;
+  }
+}
+
+Color _statusColor(String status) {
+  switch (status) {
+    case 'approved':
+      return AppColors.citrusGreen;
+    case 'rejected':
+      return AppColors.destructive;
+    default:
+      return AppColors.citrusAmber;
+  }
+}
+
+String _statusText(String status) {
+  switch (status) {
+    case 'approved':
+      return 'Опубликовано в сообществе';
+    case 'rejected':
+      return 'Отклонено модератором. Отредактируйте и сохраните, чтобы отправить снова.';
+    default:
+      return 'На модерации — ожидает проверки';
   }
 }
 

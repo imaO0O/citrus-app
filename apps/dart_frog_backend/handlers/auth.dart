@@ -48,6 +48,7 @@ Future<Response> _register(RequestContext context) async {
         'avatar_url': null,
         'phone': null,
         'token': token,
+        'is_admin': email.toLowerCase() == _adminEmail.toLowerCase(),
       },
     );
   } catch (e) {
@@ -95,6 +96,7 @@ Future<Response> _login(RequestContext context) async {
       'avatar_url': row[5] as String?,
       'phone': row[6] as String?,
       'token': token,
+      'is_admin': (row[1] as String).toLowerCase() == _adminEmail.toLowerCase(),
     });
   } catch (e) {
     return Response(statusCode: 500, body: 'Error: $e');

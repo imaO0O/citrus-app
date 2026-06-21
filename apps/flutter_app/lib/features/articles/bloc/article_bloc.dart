@@ -14,11 +14,13 @@ class CreateArticle extends ArticleEvent {
   final String title;
   final String content;
   final String category;
+  final bool isPublic;
 
   const CreateArticle({
     required this.title,
     required this.content,
     this.category = 'custom',
+    this.isPublic = false,
   });
 }
 
@@ -27,12 +29,14 @@ class UpdateArticle extends ArticleEvent {
   final String title;
   final String content;
   final String category;
+  final bool isPublic;
 
   const UpdateArticle({
     required this.id,
     required this.title,
     required this.content,
     this.category = 'custom',
+    this.isPublic = false,
   });
 }
 
@@ -103,6 +107,7 @@ class ArticleBloc extends Bloc<ArticleEvent, ArticleState> {
         category: event.category,
         isCustom: true,
         createdAt: DateTime.now(),
+        isPublic: event.isPublic,
       );
 
       await _repository.createArticle(article);
@@ -125,6 +130,7 @@ class ArticleBloc extends Bloc<ArticleEvent, ArticleState> {
         category: event.category,
         isCustom: true,
         createdAt: existing.createdAt,
+        isPublic: event.isPublic,
       );
 
       await _repository.updateArticle(article);

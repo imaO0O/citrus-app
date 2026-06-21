@@ -516,9 +516,14 @@ Future<Response> _getArticles(RequestContext context, _AuthContext auth) async {
   if (userId == null) return Response(statusCode: 401, body: 'Unauthorized');
 
   try {
-    // Загружаем статьи из БД
+    // Системные (user_id IS NULL) + свои + одобренные публичные статьи сообщества.
     final results = await _dbQuery(
-      "SELECT id, user_id, title, content, category, is_custom, source, tags, created_at FROM articles WHERE user_id = '$userId' OR user_id IS NULL ORDER BY created_at DESC",
+      "SELECT a.id, a.user_id, a.title, a.content, a.category, a.is_custom, a.source, a.tags, a.created_at, "
+      "a.is_public, a.moderation_status, COALESCE(NULLIF(u.name, ''), split_part(u.email, '@', 1)) AS author "
+      "FROM articles a LEFT JOIN users u ON a.user_id = u.id "
+      "WHERE a.user_id = '$userId' OR a.user_id IS NULL "
+      "OR (a.is_public = TRUE AND a.moderation_status = 'approved') "
+      "ORDER BY a.created_at DESC",
     );
 
     final articles = results.map((row) {
@@ -532,6 +537,9 @@ Future<Response> _getArticles(RequestContext context, _AuthContext auth) async {
         'source': row[6],
         'tags': row[7],
         'created_at': row[8].toString(),
+        'is_public': row[9] ?? false,
+        'moderation_status': row[10] ?? 'private',
+        'author': row[11],
       };
     }).toList();
 
@@ -554,6 +562,7 @@ Future<Response> _createArticle(RequestContext context, _AuthContext auth) async
   final title = body['title'] as String?;
   final content = body['content'] as String?;
   final category = body['category'] as String? ?? 'custom';
+  final isPublic = body['is_public'] == true;
 
   if (title == null || title.isEmpty || content == null || content.isEmpty) {
     return Response(statusCode: 400, body: 'title and content are required');
@@ -564,9 +573,13 @@ Future<Response> _createArticle(RequestContext context, _AuthContext auth) async
     final titleSql = title.replaceAll("'", "''");
     final contentSql = content.replaceAll("'", "''");
     final categorySql = category.replaceAll("'", "''");
+    // Публичная статья уходит на премодерацию; приватная — обычная.
+    final status = isPublic ? 'pending' : 'private';
 
     final result = await _dbQuery(
-      "INSERT INTO articles (id, user_id, title, content, category, is_custom) VALUES ('$articleId', '$userId', '$titleSql', '$contentSql', '$categorySql', true) RETURNING id, user_id, title, content, category, is_custom, source, tags, created_at",
+      "INSERT INTO articles (id, user_id, title, content, category, is_custom, is_public, moderation_status) "
+      "VALUES ('$articleId', '$userId', '$titleSql', '$contentSql', '$categorySql', true, $isPublic, '$status') "
+      "RETURNING id, user_id, title, content, category, is_custom, source, tags, created_at, is_public, moderation_status",
     );
 
     final row = result.first;
@@ -582,6 +595,8 @@ Future<Response> _createArticle(RequestContext context, _AuthContext auth) async
         'source': row[6],
         'tags': row[7],
         'created_at': row[8].toString(),
+        'is_public': row[9] ?? false,
+        'moderation_status': row[10] ?? 'private',
       },
     );
   } catch (e) {
@@ -598,8 +613,9 @@ Future<Response> _updateArticle(RequestContext context, _AuthContext auth, Strin
   final title = body['title'] as String?;
   final content = body['content'] as String?;
   final category = body['category'] as String?;
+  final bool? isPublic = body.containsKey('is_public') ? body['is_public'] == true : null;
 
-  if (title == null && content == null && category == null) {
+  if (title == null && content == null && category == null && isPublic == null) {
     return Response(statusCode: 400, body: 'At least one field must be provided');
   }
 
@@ -622,8 +638,15 @@ Future<Response> _updateArticle(RequestContext context, _AuthContext auth, Strin
     final finalContent = contentSql ?? "'${(currentRow[1] as String).replaceAll("'", "''")}'";
     final finalCategory = categorySql ?? "'${(currentRow[2] as String).replaceAll("'", "''")}'";
 
+    // При смене публичности: публичная → снова на премодерацию, приватная → private.
+    final publicSet = isPublic == null
+        ? ''
+        : ", is_public = $isPublic, moderation_status = '${isPublic ? 'pending' : 'private'}'";
+
     final result = await _dbQuery(
-      "UPDATE articles SET title = $finalTitle, content = $finalContent, category = $finalCategory WHERE id = '$id' AND user_id = '$userId' RETURNING id, user_id, title, content, category, is_custom, source, tags, created_at",
+      "UPDATE articles SET title = $finalTitle, content = $finalContent, category = $finalCategory$publicSet "
+      "WHERE id = '$id' AND user_id = '$userId' "
+      "RETURNING id, user_id, title, content, category, is_custom, source, tags, created_at, is_public, moderation_status",
     );
 
     final row = result.first;
@@ -637,6 +660,8 @@ Future<Response> _updateArticle(RequestContext context, _AuthContext auth, Strin
       'source': row[6],
       'tags': row[7],
       'created_at': row[8].toString(),
+      'is_public': row[9] ?? false,
+      'moderation_status': row[10] ?? 'private',
     });
   } catch (e) {
     return Response(statusCode: 500, body: 'Error: $e');
@@ -658,6 +683,70 @@ Future<Response> _deleteArticle(RequestContext context, _AuthContext auth, Strin
     }
 
     return Response.json(body: {'success': true});
+  } catch (e) {
+    return Response(statusCode: 500, body: 'Error: $e');
+  }
+}
+
+/// Проверка прав модератора (по email из JWT).
+bool _isAdmin(_AuthContext auth) =>
+    auth.email != null && auth.email!.toLowerCase() == _adminEmail.toLowerCase();
+
+/// GET /articles/moderation — статьи, ожидающие модерации (только админ).
+Future<Response> _getModerationQueue(RequestContext context, _AuthContext auth) async {
+  if (auth.userId == null) return Response(statusCode: 401, body: 'Unauthorized');
+  if (!_isAdmin(auth)) return Response(statusCode: 403, body: 'Forbidden');
+
+  try {
+    final results = await _dbQuery(
+      "SELECT a.id, a.user_id, a.title, a.content, a.category, a.is_custom, a.source, a.tags, a.created_at, "
+      "a.is_public, a.moderation_status, COALESCE(NULLIF(u.name, ''), split_part(u.email, '@', 1)) AS author "
+      "FROM articles a LEFT JOIN users u ON a.user_id = u.id "
+      "WHERE a.is_public = TRUE AND a.moderation_status = 'pending' "
+      "ORDER BY a.created_at ASC",
+    );
+
+    final articles = results.map((row) => {
+          'id': row[0] is String ? row[0] : Uuid.unparse(row[0] as Uint8List),
+          'user_id': row[1] != null ? (row[1] is String ? row[1] : Uuid.unparse(row[1] as Uint8List)) : null,
+          'title': row[2],
+          'content': row[3],
+          'category': row[4],
+          'is_custom': row[5],
+          'source': row[6],
+          'tags': row[7],
+          'created_at': row[8].toString(),
+          'is_public': row[9] ?? false,
+          'moderation_status': row[10] ?? 'pending',
+          'author': row[11],
+        }).toList();
+
+    return Response.json(body: articles);
+  } catch (e) {
+    return Response(statusCode: 500, body: 'Error: $e');
+  }
+}
+
+/// POST /articles/{id}/moderate — одобрить/отклонить статью (только админ).
+Future<Response> _moderateArticle(RequestContext context, _AuthContext auth, String id) async {
+  if (auth.userId == null) return Response(statusCode: 401, body: 'Unauthorized');
+  if (!_isAdmin(auth)) return Response(statusCode: 403, body: 'Forbidden');
+
+  try {
+    final body = await context.request.json();
+    final action = body['action'] as String?;
+    if (action != 'approve' && action != 'reject') {
+      return Response(statusCode: 400, body: 'action must be approve or reject');
+    }
+    final status = action == 'approve' ? 'approved' : 'rejected';
+
+    final result = await _dbQuery(
+      "UPDATE articles SET moderation_status = '$status' WHERE id = '$id' AND is_public = TRUE",
+    );
+    if (result.affectedRowCount == 0) {
+      return Response(statusCode: 404, body: 'Article not found');
+    }
+    return Response.json(body: {'success': true, 'moderation_status': status});
   } catch (e) {
     return Response(statusCode: 500, body: 'Error: $e');
   }
