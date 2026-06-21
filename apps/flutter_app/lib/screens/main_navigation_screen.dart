@@ -117,20 +117,20 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     } catch (_) {}
   }
 
-  final List<Map<String, String>> _allFeatures = [
-    {'path': '4',  'label': 'Аффирмации',    'icon': '💫', 'desc': 'Позитивные установки', 'color': '0xFF9C6ADE'},
-    {'path': '5',  'label': 'Галерея',       'icon': '📸', 'desc': 'Счастливые моменты',   'color': '0xFFEC6A8C'},
-    {'path': '6',  'label': 'Антистресс',    'icon': '🎮', 'desc': 'Снять напряжение',     'color': '0xFF4A90D9'},
-    {'path': '7',  'label': 'Сон',           'icon': '🌙', 'desc': 'Трекер сна',           'color': '0xFF5C6BC0'},
-    {'path': '8',  'label': 'Тесты',         'icon': '📋', 'desc': 'Психотесты',           'color': '0xFF26A69A'},
-    {'path': '9',  'label': 'Упражнения',    'icon': '🧘', 'desc': 'Практики',             'color': '0xFF66BB6A'},
-    {'path': '10', 'label': 'Аналитика',     'icon': '📊', 'desc': 'Статистика',           'color': '0xFFFFB74D'},
-    {'path': '11', 'label': 'Настройки',     'icon': '⚙️', 'desc': 'Параметры',            'color': '0xFF8A8A99'},
-    {'path': '12', 'label': 'Статьи',        'icon': '📖', 'desc': 'Самопомощь',           'color': '0xFFFF8C42'},
-    {'path': '13', 'label': 'Программы',     'icon': '🎓', 'desc': 'Мини-курсы',           'color': '0xFF7E57C2'},
-    {'path': '14', 'label': 'ИИ-инсайты',    'icon': '✨', 'desc': 'Сводка недели',        'color': '0xFF9C6ADE'},
-    {'path': '15', 'label': 'Дерево',        'icon': '🌳', 'desc': 'Забота о себе',        'color': '0xFF66BB6A'},
-    {'path': '16', 'label': 'Студенту',      'icon': '📚', 'desc': 'Pomodoro, экзамены',   'color': '0xFF4A90D9'},
+  final List<Map<String, dynamic>> _allFeatures = [
+    {'path': '4',  'label': 'Аффирмации', 'icon': Icons.auto_awesome,           'desc': 'Позитивные установки', 'color': const Color(0xFF9C6ADE)},
+    {'path': '5',  'label': 'Галерея',    'icon': Icons.photo_library_outlined, 'desc': 'Счастливые моменты',   'color': const Color(0xFFEC6A8C)},
+    {'path': '6',  'label': 'Антистресс', 'icon': Icons.sports_esports_outlined,'desc': 'Снять напряжение',     'color': const Color(0xFF4A90D9)},
+    {'path': '7',  'label': 'Сон',        'icon': Icons.bedtime_outlined,       'desc': 'Трекер сна',           'color': const Color(0xFF5C6BC0)},
+    {'path': '8',  'label': 'Тесты',      'icon': Icons.fact_check_outlined,    'desc': 'Психотесты',           'color': const Color(0xFF26A69A)},
+    {'path': '9',  'label': 'Упражнения', 'icon': Icons.self_improvement,       'desc': 'Практики',             'color': const Color(0xFF66BB6A)},
+    {'path': '10', 'label': 'Аналитика',  'icon': Icons.insights,               'desc': 'Статистика',           'color': const Color(0xFFFFB74D)},
+    {'path': '11', 'label': 'Настройки',  'icon': Icons.settings_outlined,      'desc': 'Параметры',            'color': const Color(0xFF8A8A99)},
+    {'path': '12', 'label': 'Статьи',     'icon': Icons.menu_book_outlined,     'desc': 'Самопомощь',           'color': const Color(0xFFFF8C42)},
+    {'path': '13', 'label': 'Программы',  'icon': Icons.school_outlined,        'desc': 'Мини-курсы',           'color': const Color(0xFF7E57C2)},
+    {'path': '14', 'label': 'ИИ-инсайты', 'icon': Icons.tips_and_updates_outlined, 'desc': 'Сводка недели',     'color': const Color(0xFF9C6ADE)},
+    {'path': '15', 'label': 'Дерево',     'icon': Icons.park_outlined,          'desc': 'Забота о себе',        'color': const Color(0xFF66BB6A)},
+    {'path': '16', 'label': 'Студенту',   'icon': Icons.timer_outlined,         'desc': 'Pomodoro, экзамены',   'color': const Color(0xFF4A90D9)},
   ];
 
   void _setIndex(int index) {
@@ -567,9 +567,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                       crossAxisSpacing: 12,
                       childAspectRatio: 0.85,
                       children: _allFeatures.map((feature) {
-                        final featureIndex = int.parse(feature['path']!);
+                        final featureIndex = int.parse(feature['path'] as String);
                         final isActive = _currentIndex == featureIndex;
-                        final featColor = Color(int.parse(feature['color'] ?? '0xFFFF8C42'));
+                        final featColor = feature['color'] as Color;
                         return GestureDetector(
                         onTap: () {
                           _setIndex(featureIndex);
@@ -597,7 +597,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                                     color: featColor.withValues(alpha: 0.16),
                                     borderRadius: AppSize.radius(14),
                                   ),
-                                  child: Center(child: Text(feature['icon'] as String, style: TextStyle(fontSize: AppSize.s(22)))),
+                                  child: Center(child: Icon(feature['icon'] as IconData, size: AppSize.s(23), color: featColor)),
                                 ),
                                 AppSize.gapH(8),
                                 Text(

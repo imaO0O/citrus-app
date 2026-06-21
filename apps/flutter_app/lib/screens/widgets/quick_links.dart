@@ -21,11 +21,11 @@ class QuickLinks extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final links = [
-      _QuickLinkItem(icon: '🌬️', label: 'Дыхание', color: AppColors.citrusGreen, onTap: onExerciseTap ?? () {}),
-      _QuickLinkItem(icon: '🤖', label: 'ИИ Чат', color: AppColors.citrusPurple, onTap: onChatTap ?? () {}),
-      _QuickLinkItem(icon: '📝', label: 'Дневник', color: AppColors.citrusOrange, onTap: onDiaryTap ?? () {}),
-      _QuickLinkItem(icon: '🌙', label: 'Сон', color: const Color(0xFF5C6BC0), onTap: onSleepTap ?? () {}),
-      _QuickLinkItem(icon: '🧪', label: 'Тесты', color: const Color(0xFF4A90D9), onTap: onTestsTap ?? () {}),
+      _QuickLinkItem(icon: Icons.air_rounded, label: 'Дыхание', color: AppColors.citrusGreen, onTap: onExerciseTap ?? () {}),
+      _QuickLinkItem(icon: Icons.smart_toy_outlined, label: 'ИИ Чат', color: AppColors.citrusPurple, onTap: onChatTap ?? () {}),
+      _QuickLinkItem(icon: Icons.edit_note_rounded, label: 'Дневник', color: AppColors.citrusOrange, onTap: onDiaryTap ?? () {}),
+      _QuickLinkItem(icon: Icons.bedtime_rounded, label: 'Сон', color: const Color(0xFF5C6BC0), onTap: onSleepTap ?? () {}),
+      _QuickLinkItem(icon: Icons.fact_check_outlined, label: 'Тесты', color: const Color(0xFF4A90D9), onTap: onTestsTap ?? () {}),
     ];
 
     return Padding(
@@ -45,7 +45,7 @@ class QuickLinks extends StatelessWidget {
 }
 
 class _QuickLinkItem extends StatelessWidget {
-  final String icon;
+  final IconData icon;
   final String label;
   final Color color;
   final VoidCallback onTap;
@@ -78,7 +78,7 @@ class _QuickLinkItem extends StatelessWidget {
                 color: color.withValues(alpha: 0.15),
                 borderRadius: AppSize.radius(13),
               ),
-              child: Center(child: Text(icon, style: TextStyle(fontSize: AppSize.s(20)))),
+              child: Icon(icon, size: AppSize.s(21), color: color),
             ),
             AppSize.gapH(7),
             Text(
