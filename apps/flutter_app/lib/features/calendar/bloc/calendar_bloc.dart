@@ -66,18 +66,15 @@ class CalendarLoaded extends CalendarState {
     return events[normalizedDay] ?? [];
   }
 
-  /// Получить события месяца
+  /// Получить уникальные события месяца (повторяющиеся — один раз).
   List<CalendarEventModel> getEventsForMonth(DateTime month) {
-    final allEvents = events.values.expand((e) => e).toList();
-    final monthStart = DateTime(month.year, month.month, 1);
-    final monthEnd = DateTime(month.year, month.month + 1, 0, 23, 59, 59, 999);
-    
-    return allEvents.where((event) {
-      final eventDate = event.eventDate;
-      final eventDay = DateTime(eventDate.year, eventDate.month, eventDate.day);
-      return (eventDay.isAtSameMomentAs(monthStart) || eventDay.isAfter(monthStart)) &&
-             (eventDay.isAtSameMomentAs(monthEnd) || eventDay.isBefore(monthEnd));
-    }).toList();
+    final seen = <String>{};
+    final unique = <CalendarEventModel>[];
+    for (final e in events.values.expand((e) => e)) {
+      if (seen.add(e.id)) unique.add(e);
+    }
+    unique.sort((a, b) => a.eventDate.compareTo(b.eventDate));
+    return unique;
   }
 
   /// Получить все события (отсортированные по дате)
@@ -136,11 +133,12 @@ class CalendarBloc extends Bloc<CalendarEvent, CalendarState> {
       final events = await _repository.getEventsForMonth(event.month);
       debugPrint('CalendarBloc: загружено ${events.length} событий');
 
-      // Группируем события по дням
+      // Группируем события по дням, разворачивая повторяющиеся в даты текущего месяца
       final Map<DateTime, List<CalendarEventModel>> eventsByDay = {};
-      for (final event in events) {
-        final day = DateTime(event.eventDate.year, event.eventDate.month, event.eventDate.day);
-        eventsByDay.putIfAbsent(day, () => []).add(event);
+      for (final ev in events) {
+        for (final day in _occurrencesInMonth(ev, event.month)) {
+          eventsByDay.putIfAbsent(day, () => []).add(ev);
+        }
       }
       debugPrint('CalendarBloc: сгруппировано по ${eventsByDay.length} дням');
 
@@ -223,6 +221,42 @@ class CalendarBloc extends Bloc<CalendarEvent, CalendarState> {
     } catch (e) {
       emit(CalendarError('Ошибка добавления события: $e'));
     }
+  }
+
+  /// Даты, на которые приходится событие в указанном месяце (с учётом повтора).
+  List<DateTime> _occurrencesInMonth(CalendarEventModel e, DateTime month) {
+    final monthStart = DateTime(month.year, month.month, 1);
+    final monthEnd = DateTime(month.year, month.month + 1, 0);
+    final base = DateTime(e.eventDate.year, e.eventDate.month, e.eventDate.day);
+    final result = <DateTime>[];
+
+    if (e.recurrence == 'none' || e.recurrence.isEmpty) {
+      if (!base.isBefore(monthStart) && !base.isAfter(monthEnd)) result.add(base);
+      return result;
+    }
+
+    for (DateTime d = monthStart.isAfter(base) ? monthStart : base;
+        !d.isAfter(monthEnd);
+        d = DateTime(d.year, d.month, d.day + 1)) {
+      if (d.isBefore(base)) continue;
+      final diff = d.difference(base).inDays;
+      bool match;
+      switch (e.recurrence) {
+        case 'daily':
+          match = true;
+          break;
+        case 'weekly':
+          match = diff % 7 == 0;
+          break;
+        case 'monthly':
+          match = d.day == base.day;
+          break;
+        default:
+          match = d.isAtSameMomentAs(base);
+      }
+      if (match) result.add(DateTime(d.year, d.month, d.day));
+    }
+    return result;
   }
 
   /// Парсит строку времени в TimeOfDay

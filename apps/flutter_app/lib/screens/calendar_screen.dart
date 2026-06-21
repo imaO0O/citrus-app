@@ -358,6 +358,42 @@ class _CalendarScreenState extends State<CalendarScreen> with WidgetsBindingObse
     Navigator.of(context).push(MaterialPageRoute(builder: (_) => DiaryScreen()));
   }
 
+  static const Map<String, String> _recurrenceLabels = {
+    'none': 'Не повторять',
+    'daily': 'Каждый день',
+    'weekly': 'Каждую неделю',
+    'monthly': 'Каждый месяц',
+  };
+
+  Widget _recurrenceSelector(String selected, ValueChanged<String> onChanged) {
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: _recurrenceLabels.entries.map((e) {
+        final active = selected == e.key;
+        return GestureDetector(
+          onTap: () => onChanged(e.key),
+          child: Container(
+            padding: AppSize.paddingH(12, 7),
+            decoration: BoxDecoration(
+              color: active ? AppColors.citrusOrange.withValues(alpha: 0.18) : AppColors.surface2,
+              borderRadius: AppSize.radius(999),
+              border: Border.all(color: active ? AppColors.citrusOrange : Colors.transparent),
+            ),
+            child: Text(
+              e.value,
+              style: TextStyle(
+                fontSize: AppSize.s(12),
+                color: active ? AppColors.citrusOrange : AppColors.mutedForeground,
+                fontWeight: active ? FontWeight.w600 : FontWeight.w500,
+              ),
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
   Widget _buildSkeleton() {
     Widget box({double? w, double h = 0, double r = 10}) => Container(
           width: w,
@@ -580,6 +616,18 @@ class _CalendarScreenState extends State<CalendarScreen> with WidgetsBindingObse
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
+                if (event.recurrence != 'none')
+                  Padding(
+                    padding: AppSize.paddingOnly(top: 3),
+                    child: Row(mainAxisSize: MainAxisSize.min, children: [
+                      Icon(Icons.repeat, size: AppSize.s(11), color: AppColors.citrusOrange),
+                      AppSize.gapW(4),
+                      Text(
+                        _recurrenceLabels[event.recurrence] ?? '',
+                        style: TextStyle(fontSize: AppSize.s(10), color: AppColors.citrusOrange),
+                      ),
+                    ]),
+                  ),
               ],
             ),
           ),
@@ -650,6 +698,7 @@ class _CalendarScreenState extends State<CalendarScreen> with WidgetsBindingObse
     final descriptionController = TextEditingController();
     TimeOfDay? selectedTime;
     bool notificationEnabled = true;
+    String recurrence = 'none';
 
     showDialog(
       context: context,
@@ -731,6 +780,13 @@ class _CalendarScreenState extends State<CalendarScreen> with WidgetsBindingObse
                 activeColor: AppColors.citrusOrange,
                 onChanged: (v) => setDialogState(() => notificationEnabled = v),
               ),
+              AppSize.gapH(8),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text('Повтор', style: TextStyle(color: AppColors.mutedForeground, fontSize: AppSize.s(13))),
+              ),
+              AppSize.gapH(8),
+              _recurrenceSelector(recurrence, (v) => setDialogState(() => recurrence = v)),
             ],
           ),
         ),
@@ -769,6 +825,7 @@ class _CalendarScreenState extends State<CalendarScreen> with WidgetsBindingObse
                     : null,
                 endTime: null,
                 notificationEnabled: notificationEnabled,
+                recurrence: recurrence,
               );
 
               context.read<CalendarBloc>().add(AddEvent(event));
@@ -799,6 +856,7 @@ class _CalendarScreenState extends State<CalendarScreen> with WidgetsBindingObse
       selectedTime = TimeOfDay(hour: int.parse(parts[0]), minute: int.parse(parts[1]));
     }
     bool notificationEnabled = event.notificationEnabled;
+    String recurrence = event.recurrence;
 
     showDialog(
       context: context,
@@ -869,6 +927,13 @@ class _CalendarScreenState extends State<CalendarScreen> with WidgetsBindingObse
                   activeColor: AppColors.citrusOrange,
                   onChanged: (v) => setModalState(() => notificationEnabled = v),
                 ),
+                AppSize.gapH(8),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text('Повтор', style: TextStyle(color: AppColors.mutedForeground, fontSize: AppSize.s(13))),
+                ),
+                AppSize.gapH(8),
+                _recurrenceSelector(recurrence, (v) => setModalState(() => recurrence = v)),
               ],
             ),
           ),
@@ -888,6 +953,7 @@ class _CalendarScreenState extends State<CalendarScreen> with WidgetsBindingObse
                       : event.startTime,
                   endTime: event.endTime,
                   notificationEnabled: notificationEnabled,
+                  recurrence: recurrence,
                 );
                 context.read<CalendarBloc>().add(UpdateEvent(updated));
                 Navigator.pop(context);
