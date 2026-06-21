@@ -6,9 +6,12 @@ import '../bloc/dashboard_bloc.dart';
 import '../core/theme/app_colors.dart';
 import '../core/repository/mood_repository.dart';
 import '../core/services/storage_service.dart';
+import '../core/services/course_prefs_service.dart';
+import '../data/courses/courses.dart';
 import '../services/affirmations_service.dart';
 import '../features/auth/bloc/auth_bloc.dart';
 import 'help_screen.dart';
+import 'courses/courses_screen.dart';
 import 'models/mood.dart';
 import 'widgets/citrus_wheel.dart';
 import 'widgets/stats_strip.dart';
@@ -44,6 +47,11 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
   bool _revealed = false;
   bool _showWarning = false;
 
+  // Карточка «Продолжить» — незавершённый курс
+  Course? _continueCourse;
+  int _continueDay = 0;
+  bool _continueLocked = false;
+
   @override
   void initState() {
     super.initState();
@@ -52,7 +60,37 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
       context.read<DashboardBloc>().add(DashboardLoad());
       _loadDailyAffirmation();
       _checkEarlyWarning();
+      _loadContinue();
     });
+  }
+
+  /// Ищем начатый, но не завершённый курс — для карточки «Продолжить».
+  Future<void> _loadContinue() async {
+    try {
+      final prefs = CoursePrefsService();
+      for (final c in kCourses) {
+        final p = await prefs.getProgress(c.id);
+        final done = p.doneDays.length;
+        if (done == 0 || done >= c.days.length) continue;
+        int? idx;
+        for (int i = 0; i < c.days.length; i++) {
+          if (!p.isDone(i)) {
+            idx = i;
+            break;
+          }
+        }
+        if (idx == null) continue;
+        if (mounted) {
+          setState(() {
+            _continueCourse = c;
+            _continueDay = idx!;
+            _continueLocked = !p.isUnlocked(idx!);
+          });
+        }
+        return;
+      }
+      if (mounted && _continueCourse != null) setState(() => _continueCourse = null);
+    } catch (_) {}
   }
 
   /// Раннее предупреждение: если за последние дни много «плохих» дней — мягко
@@ -282,6 +320,59 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                 style: TextStyle(fontSize: AppSize.s(12), color: AppColors.dimForeground),
               ),
             ),
+    );
+  }
+
+  // ─────────────────────── Continue card ────────────────────────
+
+  Widget _buildContinueCard() {
+    final c = _continueCourse!;
+    return Padding(
+      padding: AppSize.paddingH(20, 0),
+      child: GestureDetector(
+        onTap: _continueLocked
+            ? null
+            : () async {
+                await Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => CourseDayScreen(course: c, dayIndex: _continueDay)),
+                );
+                _loadContinue();
+              },
+        child: Container(
+          padding: AppSize.padding(16),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [c.color.withValues(alpha: 0.18), c.color.withValues(alpha: 0.06)],
+            ),
+            borderRadius: AppSize.radius(18),
+            border: Border.all(color: c.color.withValues(alpha: 0.3)),
+          ),
+          child: Row(children: [
+            Container(
+              width: AppSize.s(48),
+              height: AppSize.s(48),
+              decoration: BoxDecoration(color: c.color.withValues(alpha: 0.18), borderRadius: AppSize.radius(14)),
+              child: Center(child: Text(c.emoji, style: TextStyle(fontSize: AppSize.s(24)))),
+            ),
+            AppSize.gapW(14),
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('Продолжить курс', style: TextStyle(color: c.color, fontSize: AppSize.s(12), fontWeight: FontWeight.w700)),
+                AppSize.gapH(2),
+                Text(c.title, style: TextStyle(color: AppColors.foreground, fontSize: AppSize.s(15), fontWeight: FontWeight.w700), maxLines: 1, overflow: TextOverflow.ellipsis),
+                AppSize.gapH(2),
+                Text(
+                  _continueLocked ? 'День ${_continueDay + 1} · откроется завтра' : 'День ${_continueDay + 1} из ${c.days.length}',
+                  style: TextStyle(color: AppColors.mutedForeground, fontSize: AppSize.s(12)),
+                ),
+              ]),
+            ),
+            Icon(_continueLocked ? Icons.lock_clock : Icons.chevron_right, color: AppColors.dimForeground, size: AppSize.s(22)),
+          ]),
+        ),
+      ),
     );
   }
 
@@ -525,6 +616,10 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                   if (_showWarning) ...[
                     AppSize.gapH(16),
                     _buildEarlyWarning(),
+                  ],
+                  if (_continueCourse != null) ...[
+                    AppSize.gapH(16),
+                    _buildContinueCard(),
                   ],
                   AppSize.gapH(20),
                   _reveal(2, _buildRecommendation(state)),

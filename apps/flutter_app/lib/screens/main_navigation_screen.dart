@@ -21,7 +21,9 @@ import '../screens/courses/courses_screen.dart';
 import '../screens/insights/weekly_insights_screen.dart';
 import '../screens/tree/citrus_tree_screen.dart';
 import '../screens/student/student_screen.dart';
+import '../screens/onboarding/onboarding_screen.dart';
 import '../screens/emergency_modal.dart';
+import '../core/services/storage_service.dart';
 import '../features/auth/bloc/auth_bloc.dart';
 import '../bloc/dashboard_bloc.dart';
 import '../features/diary/bloc/diary_bloc.dart';
@@ -99,7 +101,20 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       } catch (e) {
         debugPrint('MainNav: ошибка init BLoC: $e');
       }
+      _maybeShowOnboarding();
     });
+  }
+
+  /// Показываем короткий тур при первом запуске.
+  Future<void> _maybeShowOnboarding() async {
+    try {
+      final seen = await StorageService().getString('onboarding_seen');
+      if (seen == 'true' || !mounted) return;
+      await Navigator.of(context).push(
+        MaterialPageRoute(fullscreenDialog: true, builder: (_) => const OnboardingScreen()),
+      );
+      await StorageService().setString('onboarding_seen', 'true');
+    } catch (_) {}
   }
 
   final List<Map<String, String>> _allFeatures = [
