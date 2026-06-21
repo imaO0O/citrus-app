@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/app_size.dart';
+import '../../core/widgets/citrus_button.dart';
 
 class _Slide {
   final String emoji;
@@ -123,19 +124,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             AppSize.gapH(24),
             Padding(
               padding: AppSize.padding(24),
-              child: SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _next,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: _slides[_page].color,
-                    foregroundColor: Colors.white,
-                    padding: AppSize.paddingH(0, 16),
-                    shape: RoundedRectangleBorder(borderRadius: AppSize.radius(16)),
-                    elevation: 0,
-                  ),
-                  child: Text(_isLast ? 'Начать' : 'Далее', style: TextStyle(fontSize: AppSize.s(16), fontWeight: FontWeight.w700)),
-                ),
+              child: CitrusButton(
+                label: _isLast ? 'Начать' : 'Далее',
+                color: _slides[_page].color,
+                onPressed: _next,
               ),
             ),
           ],

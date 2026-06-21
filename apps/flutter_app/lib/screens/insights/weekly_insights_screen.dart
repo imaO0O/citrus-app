@@ -3,6 +3,7 @@ import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/app_size.dart';
+import '../../core/widgets/citrus_button.dart';
 import '../../core/config/api_config.dart';
 import '../../core/services/storage_service.dart';
 import '../../core/repository/mood_repository.dart';
@@ -179,19 +180,11 @@ class _WeeklyInsightsScreenState extends State<WeeklyInsightsScreen> {
             Text(_error!, textAlign: TextAlign.center, style: TextStyle(color: AppColors.destructive, fontSize: AppSize.s(13))),
           ],
           AppSize.gapH(24),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: _generate,
-              icon: Icon(Icons.auto_awesome),
-              label: Text('Сгенерировать сводку'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.citrusPurple,
-                foregroundColor: Colors.white,
-                padding: AppSize.paddingH(0, 15),
-                shape: RoundedRectangleBorder(borderRadius: AppSize.radius(14)),
-              ),
-            ),
+          CitrusButton(
+            label: 'Сгенерировать сводку',
+            icon: Icons.auto_awesome,
+            color: AppColors.citrusPurple,
+            onPressed: _generate,
           ),
         ]),
       ),

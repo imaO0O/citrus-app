@@ -16,7 +16,7 @@ class AppColors {
   }
 
   // === Background & surfaces ===
-  static Color get background => _isDark ? const Color(0xFF0C0C14) : const Color(0xFFF9FAFB);
+  static Color get background => _isDark ? const Color(0xFF0C0C14) : const Color(0xFFF1F3F6);
   static Color get foreground => _isDark ? const Color(0xFFEDE8E0) : const Color(0xFF111827);
   static Color get card => _isDark ? const Color(0xFF131320) : const Color(0xFFFFFFFF);
   static Color get cardForeground => _isDark ? const Color(0xFFEDE8E0) : const Color(0xFF111827);
