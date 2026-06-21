@@ -17,6 +17,7 @@ import '../screens/tests_screen.dart';
 import '../screens/exercises_screen.dart';
 import '../screens/analytics_screen.dart';
 import '../screens/settings_screen.dart';
+import '../screens/courses/courses_screen.dart';
 import '../screens/emergency_modal.dart';
 import '../features/auth/bloc/auth_bloc.dart';
 import '../bloc/dashboard_bloc.dart';
@@ -69,6 +70,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       AnalyticsScreen(key: _analyticsKey),           // 10
       SettingsScreen(),            // 11
       ArticlesPage(showBackButton: false),  // 12
+      const CoursesListScreen(),   // 13
     ];
   }
 
@@ -104,6 +106,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     {'path': '10', 'label': 'Аналитика',     'icon': '📊', 'desc': 'Статистика'},
     {'path': '11', 'label': 'Настройки',     'icon': '⚙️', 'desc': 'Параметры'},
     {'path': '12', 'label': 'Статьи',        'icon': '📖', 'desc': 'Самопомощь'},
+    {'path': '13', 'label': 'Программы',     'icon': '🎓', 'desc': 'Мини-курсы'},
   ];
 
   void _setIndex(int index) {
