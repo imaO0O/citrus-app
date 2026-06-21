@@ -13,8 +13,10 @@ import '../features/auth/bloc/auth_bloc.dart';
 import '../core/repository/auth_repository.dart';
 import '../features/notifications/pages/notifications_page.dart';
 import 'help_screen.dart';
+import 'lock/pin_screen.dart';
 import '../core/utils/app_size.dart';
 import '../core/utils/network_error.dart';
+import '../core/services/pin_service.dart';
 
 class SettingsScreen extends StatefulWidget {
   SettingsScreen({super.key});
@@ -38,6 +40,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
   String? _profileAvatarUrl;
 
   String? _token;
+  bool _pinOn = false;
+
+  Future<void> _loadPin() async {
+    final on = await PinService().isEnabled();
+    if (mounted) setState(() => _pinOn = on);
+  }
+
+  Future<void> _togglePin(bool value) async {
+    if (value) {
+      // Включение — установка нового PIN
+      final ok = await Navigator.of(context).push<bool>(
+        MaterialPageRoute(builder: (_) => const PinScreen(setup: true, canCancel: true)),
+      );
+      if (ok == true && mounted) setState(() => _pinOn = true);
+    } else {
+      // Отключение — подтверждаем текущим PIN
+      final ok = await Navigator.of(context).push<bool>(
+        MaterialPageRoute(builder: (_) => const PinScreen(setup: false, canCancel: true)),
+      );
+      if (ok == true) {
+        await PinService().disable();
+        if (mounted) setState(() => _pinOn = false);
+      }
+    }
+  }
 
   Future<String?> _getToken(BuildContext context) async {
     if (_token != null) return _token;
@@ -63,6 +90,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _getToken(context).then((_) => _loadTrustedContacts());
     });
+    _loadPin();
   }
 
   @override
@@ -277,6 +305,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   _buildSection(
                     title: 'ДАННЫЕ И ПРИВАТНОСТЬ',
                     children: [
+                      _buildToggleItem(
+                        icon: Icons.lock_outline,
+                        label: 'Блокировка PIN-кодом',
+                        value: _pinOn,
+                        onChanged: _togglePin,
+                      ),
                       _buildSettingsItem(
                         icon: Icons.download_outlined,
                         label: 'Экспорт моих данных',

@@ -22,8 +22,10 @@ import '../screens/insights/weekly_insights_screen.dart';
 import '../screens/tree/citrus_tree_screen.dart';
 import '../screens/student/student_screen.dart';
 import '../screens/onboarding/onboarding_screen.dart';
+import '../screens/lock/pin_screen.dart';
 import '../screens/emergency_modal.dart';
 import '../core/services/storage_service.dart';
+import '../core/services/pin_service.dart';
 import '../features/auth/bloc/auth_bloc.dart';
 import '../bloc/dashboard_bloc.dart';
 import '../features/diary/bloc/diary_bloc.dart';
@@ -39,9 +41,13 @@ class MainNavigationScreen extends StatefulWidget {
   State<MainNavigationScreen> createState() => _MainNavigationScreenState();
 }
 
-class _MainNavigationScreenState extends State<MainNavigationScreen> {
+class _MainNavigationScreenState extends State<MainNavigationScreen> with WidgetsBindingObserver {
   int _currentIndex = 0;
   bool _showMenu = false;
+  // Блокировка PIN-кодом
+  bool _pinEnabled = false;
+  bool _pinChecked = false;
+  bool _unlocked = false;
   bool _showEmergency = false;
 
   // 0-3: main nav screens, 4+: feature screens
@@ -85,6 +91,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _loadLock();
 
     // Инициализация BLoC при старте
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -103,6 +111,25 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       }
       _maybeShowOnboarding();
     });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Перезапираем при возврате из фона
+    if (state == AppLifecycleState.resumed && _pinEnabled && mounted) {
+      setState(() => _unlocked = false);
+    }
+  }
+
+  Future<void> _loadLock() async {
+    final en = await PinService().isEnabled();
+    if (mounted) setState(() { _pinEnabled = en; _pinChecked = true; });
   }
 
   /// Показываем короткий тур при первом запуске.
@@ -153,6 +180,16 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Экран блокировки PIN-кодом (до загрузки данных и до контента приложения)
+    if (!_pinChecked) {
+      return Scaffold(
+        backgroundColor: AppColors.background,
+        body: Center(child: Text('🍊', style: TextStyle(fontSize: AppSize.s(48)))),
+      );
+    }
+    if (_pinEnabled && !_unlocked) {
+      return PinScreen(canCancel: false, onSuccess: () => setState(() => _unlocked = true));
+    }
     return ListenableBuilder(
       listenable: ThemeService(),
       builder: (context, _) {
