@@ -46,7 +46,7 @@ class _CoursesListScreenState extends State<CoursesListScreen> {
         padding: AppSize.padding(16),
         children: [
           Text(
-            'Короткие курсы по 5 дней: теория, упражнение и рефлексия каждый день. Проходи по одному дню.',
+            'Короткие курсы по 5 дней: теория, упражнение и рефлексия. Открывается по одному дню в день — так привычка закрепляется.',
             style: TextStyle(color: AppColors.mutedForeground, fontSize: AppSize.s(13), height: 1.5),
           ),
           AppSize.gapH(16),
@@ -133,7 +133,7 @@ class CourseDetailScreen extends StatefulWidget {
 
 class _CourseDetailScreenState extends State<CourseDetailScreen> {
   final CoursePrefsService _prefs = CoursePrefsService();
-  CourseProgress _progress = CourseProgress(<int>{}, <int, String>{});
+  CourseProgress _progress = CourseProgress(<int, DateTime>{}, <int, String>{});
   bool _loading = true;
 
   Course get course => widget.course;
@@ -197,9 +197,88 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                   ]),
                 ),
                 AppSize.gapH(20),
+                if (done >= total && total > 0) ...[
+                  _buildCompletedBanner(),
+                  AppSize.gapH(20),
+                ],
                 ...List.generate(course.days.length, (i) => _buildDayTile(i)),
               ],
             ),
+    );
+  }
+
+  Widget _buildCompletedBanner() {
+    return Container(
+      padding: AppSize.padding(18),
+      decoration: BoxDecoration(
+        color: AppColors.citrusGreen.withValues(alpha: 0.12),
+        borderRadius: AppSize.radius(18),
+        border: Border.all(color: AppColors.citrusGreen.withValues(alpha: 0.4)),
+      ),
+      child: Column(children: [
+        Text('🎉', style: TextStyle(fontSize: AppSize.s(40))),
+        AppSize.gapH(8),
+        Text('Курс пройден!', style: TextStyle(color: AppColors.foreground, fontSize: AppSize.s(18), fontWeight: FontWeight.w800)),
+        AppSize.gapH(6),
+        Text(
+          'Ты прошёл(а) все дни 🌟 Возвращайся к материалам когда угодно или начни курс заново.',
+          textAlign: TextAlign.center,
+          style: TextStyle(color: AppColors.mutedForeground, fontSize: AppSize.s(13), height: 1.4),
+        ),
+        AppSize.gapH(14),
+        Row(children: [
+          Expanded(
+            child: OutlinedButton.icon(
+              onPressed: _confirmRestart,
+              icon: Icon(Icons.replay, size: AppSize.s(18)),
+              label: Text('Заново'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: course.color,
+                side: BorderSide(color: course.color.withValues(alpha: 0.5)),
+                padding: AppSize.paddingH(0, 12),
+                shape: RoundedRectangleBorder(borderRadius: AppSize.radius(12)),
+              ),
+            ),
+          ),
+          AppSize.gapW(10),
+          Expanded(
+            child: ElevatedButton.icon(
+              onPressed: () => Navigator.pop(context),
+              icon: Icon(Icons.grid_view, size: AppSize.s(18)),
+              label: Text('К курсам'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: course.color,
+                foregroundColor: Colors.white,
+                padding: AppSize.paddingH(0, 12),
+                shape: RoundedRectangleBorder(borderRadius: AppSize.radius(12)),
+              ),
+            ),
+          ),
+        ]),
+      ]),
+    );
+  }
+
+  void _confirmRestart() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surface1,
+        title: Text('Начать заново?', style: TextStyle(color: AppColors.foreground)),
+        content: Text('Прогресс по курсу будет сброшен.', style: TextStyle(color: AppColors.mutedForeground)),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text('Отмена', style: TextStyle(color: AppColors.mutedForeground))),
+          FilledButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              await _prefs.resetCourse(course.id);
+              _load();
+            },
+            style: FilledButton.styleFrom(backgroundColor: course.color),
+            child: Text('Сбросить'),
+          ),
+        ],
+      ),
     );
   }
 
@@ -207,9 +286,15 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
     final day = course.days[i];
     final isDone = _progress.isDone(i);
     final unlocked = _progress.isUnlocked(i);
+    final unlockDate = _progress.unlockDate(i);
+    final lockNote = unlocked
+        ? null
+        : (unlockDate != null ? 'Откроется завтра' : 'Сначала пройди предыдущий день');
 
     final Color leadColor = isDone ? AppColors.citrusGreen : (unlocked ? course.color : AppColors.dimForeground);
-    final IconData leadIcon = isDone ? Icons.check_circle : (unlocked ? Icons.play_circle_fill : Icons.lock);
+    final IconData leadIcon = isDone
+        ? Icons.check_circle
+        : (unlocked ? Icons.play_circle_fill : (unlockDate != null ? Icons.lock_clock : Icons.lock));
 
     return Padding(
       padding: AppSize.paddingOnly(bottom: 10),
@@ -239,6 +324,10 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                   Text('День ${i + 1}', style: TextStyle(color: AppColors.dimForeground, fontSize: AppSize.s(11), fontWeight: FontWeight.w600)),
                   AppSize.gapH(2),
                   Text(day.title, style: TextStyle(color: AppColors.foreground, fontSize: AppSize.s(15), fontWeight: FontWeight.w600)),
+                  if (lockNote != null) ...[
+                    AppSize.gapH(2),
+                    Text(lockNote, style: TextStyle(color: unlockDate != null ? AppColors.citrusAmber : AppColors.dimForeground, fontSize: AppSize.s(11))),
+                  ],
                 ]),
               ),
               if (unlocked) Icon(Icons.chevron_right, color: AppColors.dimForeground, size: AppSize.s(20)),
