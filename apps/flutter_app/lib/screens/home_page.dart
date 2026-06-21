@@ -4,8 +4,11 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import '../bloc/dashboard_bloc.dart';
 import '../core/theme/app_colors.dart';
+import '../core/repository/mood_repository.dart';
+import '../core/services/storage_service.dart';
 import '../services/affirmations_service.dart';
 import '../features/auth/bloc/auth_bloc.dart';
+import 'help_screen.dart';
 import 'models/mood.dart';
 import 'widgets/citrus_wheel.dart';
 import 'widgets/stats_strip.dart';
@@ -39,6 +42,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
   bool _isLoadingAffirmation = true;
   late final AnimationController _anim;
   bool _revealed = false;
+  bool _showWarning = false;
 
   @override
   void initState() {
@@ -47,7 +51,34 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<DashboardBloc>().add(DashboardLoad());
       _loadDailyAffirmation();
+      _checkEarlyWarning();
     });
+  }
+
+  /// Раннее предупреждение: если за последние дни много «плохих» дней — мягко
+  /// предложить заботу. Показывается не чаще раза в день (после закрытия).
+  Future<void> _checkEarlyWarning() async {
+    try {
+      final moodRepo = context.read<MoodRepository>();
+      final today = DateTime.now();
+      final dKey = 'ew_dismissed_${today.year}-${today.month}-${today.day}';
+      final dismissed = await StorageService().getString(dKey);
+      if (dismissed == 'true') return;
+
+      final from = today.subtract(const Duration(days: 6));
+      final map = await moodRepo.getAverageMoodByDay(startDate: from, endDate: today);
+      if (map.length < 3) return; // мало данных — не тревожим
+
+      // moodId: 0 — лучше, 5 — хуже. «Плохой» день: средний >= 3.
+      final badDays = map.values.where((v) => v >= 3.0).length;
+      if (badDays >= 3 && mounted) setState(() => _showWarning = true);
+    } catch (_) {}
+  }
+
+  Future<void> _dismissWarning() async {
+    final t = DateTime.now();
+    await StorageService().setString('ew_dismissed_${t.year}-${t.month}-${t.day}', 'true');
+    if (mounted) setState(() => _showWarning = false);
   }
 
   @override
@@ -254,6 +285,55 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     );
   }
 
+  // ─────────────────────── Early warning ────────────────────────
+
+  Widget _buildEarlyWarning() {
+    final color = AppColors.citrusAmber;
+    Widget btn(IconData icon, String label, VoidCallback? onTap) => Expanded(
+          child: GestureDetector(
+            onTap: onTap,
+            child: Container(
+              padding: AppSize.paddingH(0, 10),
+              decoration: BoxDecoration(color: color.withValues(alpha: 0.18), borderRadius: AppSize.radius(10)),
+              child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                Icon(icon, size: AppSize.s(15), color: color),
+                AppSize.gapW(5),
+                Flexible(child: Text(label, overflow: TextOverflow.ellipsis, style: TextStyle(color: color, fontSize: AppSize.s(12), fontWeight: FontWeight.w600))),
+              ]),
+            ),
+          ),
+        );
+    return Padding(
+      padding: AppSize.paddingH(20, 0),
+      child: Container(
+        padding: AppSize.padding(14),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.1),
+          borderRadius: AppSize.radius(18),
+          border: Border.all(color: color.withValues(alpha: 0.3)),
+        ),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            Text('🤍', style: TextStyle(fontSize: AppSize.s(18))),
+            AppSize.gapW(8),
+            Expanded(child: Text('Заботливое напоминание', style: TextStyle(color: AppColors.foreground, fontSize: AppSize.s(15), fontWeight: FontWeight.w700))),
+            GestureDetector(onTap: _dismissWarning, child: Icon(Icons.close, size: AppSize.s(18), color: AppColors.dimForeground)),
+          ]),
+          AppSize.gapH(6),
+          Text('Похоже, последние дни были непростыми. Удели пару минут себе 🤍', style: TextStyle(color: AppColors.mutedForeground, fontSize: AppSize.s(12), height: 1.4)),
+          AppSize.gapH(10),
+          Row(children: [
+            btn(Icons.self_improvement, 'Подышать', widget.onNavigateToExercises),
+            AppSize.gapW(8),
+            btn(Icons.chat_bubble_outline, 'Поговорить', widget.onNavigateToChat),
+            AppSize.gapW(8),
+            btn(Icons.support_agent, 'Помощь', () => Navigator.push(context, MaterialPageRoute(builder: (_) => HelpScreen()))),
+          ]),
+        ]),
+      ),
+    );
+  }
+
   // ───────────────────── Recommendation card ────────────────────
 
   Widget _buildRecommendation(DashboardLoaded state) {
@@ -442,6 +522,10 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                 children: [
                   _reveal(0, _buildHeader(name, avatarUrl)),
                   _reveal(1, _buildWheelSection(state, moodColor)),
+                  if (_showWarning) ...[
+                    AppSize.gapH(16),
+                    _buildEarlyWarning(),
+                  ],
                   AppSize.gapH(20),
                   _reveal(2, _buildRecommendation(state)),
                   AppSize.gapH(16),
