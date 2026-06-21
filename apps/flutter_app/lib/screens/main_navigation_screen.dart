@@ -81,10 +81,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Widget
       AnalyticsScreen(key: _analyticsKey),           // 10
       SettingsScreen(),            // 11
       ArticlesPage(showBackButton: false),  // 12
-      const CoursesListScreen(),   // 13
-      const WeeklyInsightsScreen(), // 14
-      const CitrusTreeScreen(),    // 15
-      const StudentScreen(),       // 16
+      CoursesListScreen(),         // 13
+      WeeklyInsightsScreen(),      // 14
+      CitrusTreeScreen(),          // 15
+      StudentScreen(),             // 16
     ];
   }
 

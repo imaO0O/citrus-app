@@ -15,7 +15,7 @@ import '../../services/chat_api_client.dart';
 
 /// Еженедельная персональная ИИ-сводка по настроению/сну/дневнику.
 class WeeklyInsightsScreen extends StatefulWidget {
-  const WeeklyInsightsScreen({super.key});
+  WeeklyInsightsScreen({super.key});
 
   @override
   State<WeeklyInsightsScreen> createState() => _WeeklyInsightsScreenState();

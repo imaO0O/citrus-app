@@ -16,7 +16,7 @@ class _Stage {
 
 /// Геймификация: цитрусовое дерево растёт от заботы о себе.
 class CitrusTreeScreen extends StatefulWidget {
-  const CitrusTreeScreen({super.key});
+  CitrusTreeScreen({super.key});
 
   @override
   State<CitrusTreeScreen> createState() => _CitrusTreeScreenState();

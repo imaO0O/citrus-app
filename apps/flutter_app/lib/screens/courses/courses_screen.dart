@@ -8,7 +8,7 @@ import '../../data/courses/courses.dart';
 // ─────────────────────────── Список курсов ───────────────────────────
 
 class CoursesListScreen extends StatefulWidget {
-  const CoursesListScreen({super.key});
+  CoursesListScreen({super.key});
 
   @override
   State<CoursesListScreen> createState() => _CoursesListScreenState();

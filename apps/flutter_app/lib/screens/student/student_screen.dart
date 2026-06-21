@@ -9,7 +9,7 @@ import '../../services/notification_service.dart';
 
 /// Студенческий уголок: Pomodoro, отсчёт до экзаменов, экспресс-чек выгорания.
 class StudentScreen extends StatefulWidget {
-  const StudentScreen({super.key});
+  StudentScreen({super.key});
 
   @override
   State<StudentScreen> createState() => _StudentScreenState();
