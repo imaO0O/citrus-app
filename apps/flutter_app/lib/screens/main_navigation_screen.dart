@@ -20,6 +20,7 @@ import '../screens/settings_screen.dart';
 import '../screens/courses/courses_screen.dart';
 import '../screens/insights/weekly_insights_screen.dart';
 import '../screens/tree/citrus_tree_screen.dart';
+import '../screens/student/student_screen.dart';
 import '../screens/emergency_modal.dart';
 import '../features/auth/bloc/auth_bloc.dart';
 import '../bloc/dashboard_bloc.dart';
@@ -75,6 +76,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       const CoursesListScreen(),   // 13
       const WeeklyInsightsScreen(), // 14
       const CitrusTreeScreen(),    // 15
+      const StudentScreen(),       // 16
     ];
   }
 
@@ -113,6 +115,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     {'path': '13', 'label': 'Программы',     'icon': '🎓', 'desc': 'Мини-курсы'},
     {'path': '14', 'label': 'ИИ-инсайты',    'icon': '✨', 'desc': 'Сводка недели'},
     {'path': '15', 'label': 'Дерево',        'icon': '🌳', 'desc': 'Забота о себе'},
+    {'path': '16', 'label': 'Студенту',      'icon': '📚', 'desc': 'Pomodoro, экзамены'},
   ];
 
   void _setIndex(int index) {
