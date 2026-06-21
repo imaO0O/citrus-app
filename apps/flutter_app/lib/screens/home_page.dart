@@ -6,6 +6,8 @@ import '../bloc/dashboard_bloc.dart';
 import '../core/theme/app_colors.dart';
 import '../core/repository/mood_repository.dart';
 import '../core/services/storage_service.dart';
+import '../core/widgets/citrus_card.dart';
+import '../core/theme/app_text.dart';
 import '../core/services/course_prefs_service.dart';
 import '../data/courses/courses.dart';
 import '../services/affirmations_service.dart';
@@ -80,11 +82,12 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
           }
         }
         if (idx == null) continue;
+        final dayIndex = idx;
         if (mounted) {
           setState(() {
             _continueCourse = c;
-            _continueDay = idx!;
-            _continueLocked = !p.isUnlocked(idx!);
+            _continueDay = dayIndex;
+            _continueLocked = !p.isUnlocked(dayIndex);
           });
         }
         return;
@@ -329,7 +332,13 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     final c = _continueCourse!;
     return Padding(
       padding: AppSize.paddingH(20, 0),
-      child: GestureDetector(
+      child: CitrusCard(
+        accent: c.color,
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [c.color.withValues(alpha: 0.18), c.color.withValues(alpha: 0.06)],
+        ),
         onTap: _continueLocked
             ? null
             : () async {
@@ -338,40 +347,28 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                 );
                 _loadContinue();
               },
-        child: Container(
-          padding: AppSize.padding(16),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [c.color.withValues(alpha: 0.18), c.color.withValues(alpha: 0.06)],
-            ),
-            borderRadius: AppSize.radius(18),
-            border: Border.all(color: c.color.withValues(alpha: 0.3)),
+        child: Row(children: [
+          Container(
+            width: AppSize.s(48),
+            height: AppSize.s(48),
+            decoration: BoxDecoration(color: c.color.withValues(alpha: 0.18), borderRadius: AppSize.radius(14)),
+            child: Center(child: Text(c.emoji, style: TextStyle(fontSize: AppSize.s(24)))),
           ),
-          child: Row(children: [
-            Container(
-              width: AppSize.s(48),
-              height: AppSize.s(48),
-              decoration: BoxDecoration(color: c.color.withValues(alpha: 0.18), borderRadius: AppSize.radius(14)),
-              child: Center(child: Text(c.emoji, style: TextStyle(fontSize: AppSize.s(24)))),
-            ),
-            AppSize.gapW(14),
-            Expanded(
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text('Продолжить курс', style: TextStyle(color: c.color, fontSize: AppSize.s(12), fontWeight: FontWeight.w700)),
-                AppSize.gapH(2),
-                Text(c.title, style: TextStyle(color: AppColors.foreground, fontSize: AppSize.s(15), fontWeight: FontWeight.w700), maxLines: 1, overflow: TextOverflow.ellipsis),
-                AppSize.gapH(2),
-                Text(
-                  _continueLocked ? 'День ${_continueDay + 1} · откроется завтра' : 'День ${_continueDay + 1} из ${c.days.length}',
-                  style: TextStyle(color: AppColors.mutedForeground, fontSize: AppSize.s(12)),
-                ),
-              ]),
-            ),
-            Icon(_continueLocked ? Icons.lock_clock : Icons.chevron_right, color: AppColors.dimForeground, size: AppSize.s(22)),
-          ]),
-        ),
+          AppSize.gapW(14),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text('Продолжить курс', style: TextStyle(color: c.color, fontSize: AppSize.s(12), fontWeight: FontWeight.w700)),
+              AppSize.gapH(2),
+              Text(c.title, style: AppText.cardTitle, maxLines: 1, overflow: TextOverflow.ellipsis),
+              AppSize.gapH(2),
+              Text(
+                _continueLocked ? 'День ${_continueDay + 1} · откроется завтра' : 'День ${_continueDay + 1} из ${c.days.length}',
+                style: AppText.caption,
+              ),
+            ]),
+          ),
+          Icon(_continueLocked ? Icons.lock_clock : Icons.chevron_right, color: AppColors.dimForeground, size: AppSize.s(22)),
+        ]),
       ),
     );
   }
@@ -396,13 +393,10 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
         );
     return Padding(
       padding: AppSize.paddingH(20, 0),
-      child: Container(
+      child: CitrusCard(
+        color: color.withValues(alpha: 0.1),
+        accent: color,
         padding: AppSize.padding(14),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.1),
-          borderRadius: AppSize.radius(18),
-          border: Border.all(color: color.withValues(alpha: 0.3)),
-        ),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(children: [
             Text('🤍', style: TextStyle(fontSize: AppSize.s(18))),
@@ -468,37 +462,30 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
 
     return Padding(
       padding: AppSize.paddingH(20, 0),
-      child: GestureDetector(
+      child: CitrusCard(
+        accent: color,
         onTap: onTap,
-        child: Container(
-          padding: AppSize.padding(16),
-          decoration: BoxDecoration(
-            color: AppColors.card,
-            borderRadius: AppSize.radius(18),
-            border: Border.all(color: color.withValues(alpha: 0.3)),
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: AppSize.s(42),
-                height: AppSize.s(42),
-                decoration: BoxDecoration(color: color.withValues(alpha: 0.15), borderRadius: AppSize.radius(12)),
-                child: Icon(icon, color: color, size: AppSize.s(22)),
+        child: Row(
+          children: [
+            Container(
+              width: AppSize.s(42),
+              height: AppSize.s(42),
+              decoration: BoxDecoration(color: color.withValues(alpha: 0.15), borderRadius: AppSize.radius(12)),
+              child: Icon(icon, color: color, size: AppSize.s(22)),
+            ),
+            AppSize.gapW(14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: AppText.cardTitle),
+                  AppSize.gapH(2),
+                  Text(subtitle, style: AppText.caption.copyWith(height: 1.35)),
+                ],
               ),
-              AppSize.gapW(14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(title, style: TextStyle(fontSize: AppSize.s(15), fontWeight: FontWeight.w700, color: AppColors.foreground)),
-                    AppSize.gapH(2),
-                    Text(subtitle, style: TextStyle(fontSize: AppSize.s(12), color: AppColors.mutedForeground, height: 1.35)),
-                  ],
-                ),
-              ),
-              if (onTap != null) Icon(Icons.chevron_right, color: AppColors.dimForeground, size: AppSize.s(22)),
-            ],
-          ),
+            ),
+            if (onTap != null) Icon(Icons.chevron_right, color: AppColors.dimForeground, size: AppSize.s(22)),
+          ],
         ),
       ),
     );
