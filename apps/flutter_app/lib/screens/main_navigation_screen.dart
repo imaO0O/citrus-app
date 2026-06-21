@@ -103,19 +103,19 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   }
 
   final List<Map<String, String>> _allFeatures = [
-    {'path': '4',  'label': 'Аффирмации',    'icon': '💫', 'desc': 'Позитивные установки'},
-    {'path': '5',  'label': 'Галерея',       'icon': '📸', 'desc': 'Счастливые моменты'},
-    {'path': '6',  'label': 'Антистресс',    'icon': '🎮', 'desc': 'Снять напряжение'},
-    {'path': '7',  'label': 'Сон',           'icon': '🌙', 'desc': 'Трекер сна'},
-    {'path': '8',  'label': 'Тесты',         'icon': '📋', 'desc': 'Психотесты'},
-    {'path': '9',  'label': 'Упражнения',    'icon': '🧘', 'desc': 'Практики'},
-    {'path': '10', 'label': 'Аналитика',     'icon': '📊', 'desc': 'Статистика'},
-    {'path': '11', 'label': 'Настройки',     'icon': '⚙️', 'desc': 'Параметры'},
-    {'path': '12', 'label': 'Статьи',        'icon': '📖', 'desc': 'Самопомощь'},
-    {'path': '13', 'label': 'Программы',     'icon': '🎓', 'desc': 'Мини-курсы'},
-    {'path': '14', 'label': 'ИИ-инсайты',    'icon': '✨', 'desc': 'Сводка недели'},
-    {'path': '15', 'label': 'Дерево',        'icon': '🌳', 'desc': 'Забота о себе'},
-    {'path': '16', 'label': 'Студенту',      'icon': '📚', 'desc': 'Pomodoro, экзамены'},
+    {'path': '4',  'label': 'Аффирмации',    'icon': '💫', 'desc': 'Позитивные установки', 'color': '0xFF9C6ADE'},
+    {'path': '5',  'label': 'Галерея',       'icon': '📸', 'desc': 'Счастливые моменты',   'color': '0xFFEC6A8C'},
+    {'path': '6',  'label': 'Антистресс',    'icon': '🎮', 'desc': 'Снять напряжение',     'color': '0xFF4A90D9'},
+    {'path': '7',  'label': 'Сон',           'icon': '🌙', 'desc': 'Трекер сна',           'color': '0xFF5C6BC0'},
+    {'path': '8',  'label': 'Тесты',         'icon': '📋', 'desc': 'Психотесты',           'color': '0xFF26A69A'},
+    {'path': '9',  'label': 'Упражнения',    'icon': '🧘', 'desc': 'Практики',             'color': '0xFF66BB6A'},
+    {'path': '10', 'label': 'Аналитика',     'icon': '📊', 'desc': 'Статистика',           'color': '0xFFFFB74D'},
+    {'path': '11', 'label': 'Настройки',     'icon': '⚙️', 'desc': 'Параметры',            'color': '0xFF8A8A99'},
+    {'path': '12', 'label': 'Статьи',        'icon': '📖', 'desc': 'Самопомощь',           'color': '0xFFFF8C42'},
+    {'path': '13', 'label': 'Программы',     'icon': '🎓', 'desc': 'Мини-курсы',           'color': '0xFF7E57C2'},
+    {'path': '14', 'label': 'ИИ-инсайты',    'icon': '✨', 'desc': 'Сводка недели',        'color': '0xFF9C6ADE'},
+    {'path': '15', 'label': 'Дерево',        'icon': '🌳', 'desc': 'Забота о себе',        'color': '0xFF66BB6A'},
+    {'path': '16', 'label': 'Студенту',      'icon': '📚', 'desc': 'Pomodoro, экзамены',   'color': '0xFF4A90D9'},
   ];
 
   void _setIndex(int index) {
@@ -554,6 +554,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                       children: _allFeatures.map((feature) {
                         final featureIndex = int.parse(feature['path']!);
                         final isActive = _currentIndex == featureIndex;
+                        final featColor = Color(int.parse(feature['color'] ?? '0xFFFF8C42'));
                         return GestureDetector(
                         onTap: () {
                           _setIndex(featureIndex);
@@ -574,9 +575,16 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Text(feature['icon'] as String,
-                                    style: TextStyle(fontSize: AppSize.s(22))),
-                                AppSize.gapH(4),
+                                Container(
+                                  width: AppSize.s(44),
+                                  height: AppSize.s(44),
+                                  decoration: BoxDecoration(
+                                    color: featColor.withValues(alpha: 0.16),
+                                    borderRadius: AppSize.radius(14),
+                                  ),
+                                  child: Center(child: Text(feature['icon'] as String, style: TextStyle(fontSize: AppSize.s(22)))),
+                                ),
+                                AppSize.gapH(8),
                                 Text(
                                   feature['label'] as String,
                                   style: TextStyle(
