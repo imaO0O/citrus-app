@@ -6,26 +6,23 @@ Future<Response> _getSleepRecords(RequestContext context, _AuthContext auth) asy
   final startDate = context.request.uri.queryParameters['start_date'] ?? '2020-01-01';
   final endDate = context.request.uri.queryParameters['end_date'] ?? '2030-12-31';
 
-  print('_getSleepRecords: запрос для userId=$userId');
-
   if (userId == null) {
     return Response(statusCode: 401, body: 'Unauthorized');
   }
 
   try {
     final results = await _dbQuery(
-      "SELECT id, user_id, sleep_date, "
-      "bed_time::text as bed_time, "
-      "wake_time::text as wake_time, "
-      "quality "
-      "FROM sleep_records "
-      "WHERE user_id = '$userId' "
-      "AND sleep_date >= '$startDate' "
-      "AND sleep_date <= '$endDate' "
-      "ORDER BY sleep_date DESC",
+      'SELECT id, user_id, sleep_date, '
+      'bed_time::text as bed_time, '
+      'wake_time::text as wake_time, '
+      'quality '
+      'FROM sleep_records '
+      'WHERE user_id = @userId '
+      'AND sleep_date >= CAST(@startDate AS date) '
+      'AND sleep_date <= CAST(@endDate AS date) '
+      'ORDER BY sleep_date DESC',
+      substitutionValues: {'userId': userId, 'startDate': startDate, 'endDate': endDate},
     );
-
-    print('_getSleepRecords: найдено ${results.length} записей');
 
     final records = results.map((row) {
       final id = row[0];
@@ -35,20 +32,14 @@ Future<Response> _getSleepRecords(RequestContext context, _AuthContext auth) asy
       final wakeTime = row[4];
       final quality = row[5];
 
-      print('_getSleepRecords: bedTime тип=${bedTime.runtimeType}, значение=$bedTime');
-      print('_getSleepRecords: wakeTime тип=${wakeTime.runtimeType}, значение=$wakeTime');
-
-      // Преобразуем bed_time и wake_time из байт в строку
       String? bedTimeStr;
       if (bedTime != null) {
         bedTimeStr = bedTime is String ? bedTime : String.fromCharCodes(bedTime as List<int>);
-        print('_getSleepRecords: bedTimeStr=$bedTimeStr');
       }
 
       String? wakeTimeStr;
       if (wakeTime != null) {
         wakeTimeStr = wakeTime is String ? wakeTime : String.fromCharCodes(wakeTime as List<int>);
-        print('_getSleepRecords: wakeTimeStr=$wakeTimeStr');
       }
 
       return {
@@ -60,11 +51,6 @@ Future<Response> _getSleepRecords(RequestContext context, _AuthContext auth) asy
         'quality': quality is int ? quality : null,
       };
     }).toList();
-
-    print('_getSleepRecords: возвращаем ${records.length} записей');
-    for (final rec in records) {
-      print('_getSleepRecords: запись bed_time=${rec['bed_time']}, wake_time=${rec['wake_time']}');
-    }
 
     return Response.json(body: records);
   } catch (e) {
@@ -87,19 +73,28 @@ Future<Response> _createSleepRecord(RequestContext context, _AuthContext auth) a
     return Response(statusCode: 400, body: 'sleep_date is required');
   }
 
+  final sleepDt = DateTime.tryParse(sleepDate);
+  if (sleepDt == null) {
+    return Response(statusCode: 400, body: 'invalid sleep_date');
+  }
+
   try {
     final recordId = const Uuid().v4();
     final bedTime = body['bed_time'] as String?;
     final wakeTime = body['wake_time'] as String?;
     final quality = body['quality'] as int?;
 
-    final bedTimeSql = (bedTime != null && bedTime.isNotEmpty) ? "'$bedTime'" : 'NULL';
-    final wakeTimeSql = (wakeTime != null && wakeTime.isNotEmpty) ? "'$wakeTime'" : 'NULL';
-    final qualitySql = quality != null ? quality.toString() : 'NULL';
-
     await _dbQuery(
-      "INSERT INTO sleep_records (id, user_id, sleep_date, bed_time, wake_time, quality) "
-      "VALUES ('$recordId', '$userId', '$sleepDate', $bedTimeSql, $wakeTimeSql, $qualitySql)",
+      'INSERT INTO sleep_records (id, user_id, sleep_date, bed_time, wake_time, quality) '
+      'VALUES (@id, @userId, @sleepDate, CAST(@bedTime AS time), CAST(@wakeTime AS time), @quality)',
+      substitutionValues: {
+        'id': recordId,
+        'userId': userId,
+        'sleepDate': sleepDt,
+        'bedTime': (bedTime != null && bedTime.isNotEmpty) ? bedTime : null,
+        'wakeTime': (wakeTime != null && wakeTime.isNotEmpty) ? wakeTime : null,
+        'quality': quality,
+      },
     );
 
     return Response.json(
@@ -133,18 +128,20 @@ Future<Response> _updateSleepRecord(RequestContext context, _AuthContext auth, S
     return Response(statusCode: 400, body: 'sleep_date is required');
   }
 
+  final sleepDt = DateTime.tryParse(sleepDate);
+  if (sleepDt == null) {
+    return Response(statusCode: 400, body: 'invalid sleep_date');
+  }
+
   try {
     final bedTime = body['bed_time'] as String?;
     final wakeTime = body['wake_time'] as String?;
     final quality = body['quality'] as int?;
 
-    final bedTimeSql = (bedTime != null && bedTime.isNotEmpty) ? "'$bedTime'" : 'NULL';
-    final wakeTimeSql = (wakeTime != null && wakeTime.isNotEmpty) ? "'$wakeTime'" : 'NULL';
-    final qualitySql = quality != null ? quality.toString() : 'NULL';
-
     // Проверяем, что запись принадлежит пользователю
     final checkResults = await _dbQuery(
-      "SELECT id FROM sleep_records WHERE id = '$id' AND user_id = '$userId'",
+      'SELECT id FROM sleep_records WHERE id = @id AND user_id = @userId',
+      substitutionValues: {'id': id, 'userId': userId},
     );
 
     if (checkResults.isEmpty) {
@@ -152,10 +149,19 @@ Future<Response> _updateSleepRecord(RequestContext context, _AuthContext auth, S
     }
 
     final results = await _dbQuery(
-      "UPDATE sleep_records "
-      "SET sleep_date = '$sleepDate', bed_time = $bedTimeSql, wake_time = $wakeTimeSql, quality = $qualitySql "
-      "WHERE id = '$id' AND user_id = '$userId' "
-      "RETURNING id, user_id, sleep_date, bed_time, wake_time, quality",
+      'UPDATE sleep_records '
+      'SET sleep_date = @sleepDate, bed_time = CAST(@bedTime AS time), '
+      'wake_time = CAST(@wakeTime AS time), quality = @quality '
+      'WHERE id = @id AND user_id = @userId '
+      'RETURNING id, user_id, sleep_date, bed_time, wake_time, quality',
+      substitutionValues: {
+        'sleepDate': sleepDt,
+        'bedTime': (bedTime != null && bedTime.isNotEmpty) ? bedTime : null,
+        'wakeTime': (wakeTime != null && wakeTime.isNotEmpty) ? wakeTime : null,
+        'quality': quality,
+        'id': id,
+        'userId': userId,
+      },
     );
 
     if (results.isEmpty) {
@@ -163,18 +169,17 @@ Future<Response> _updateSleepRecord(RequestContext context, _AuthContext auth, S
     }
 
     final row = results.first;
-    
-    // Преобразуем bed_time и wake_time из байт в строку
+
     String? bedTimeResult;
     if (row[3] != null) {
       bedTimeResult = row[3] is String ? row[3] : String.fromCharCodes(row[3] as List<int>);
     }
-    
+
     String? wakeTimeResult;
     if (row[4] != null) {
       wakeTimeResult = row[4] is String ? row[4] : String.fromCharCodes(row[4] as List<int>);
     }
-    
+
     return Response.json(body: {
       'id': row[0] as String,
       'user_id': row[1] as String,
@@ -199,7 +204,8 @@ Future<Response> _deleteSleepRecord(RequestContext context, _AuthContext auth, S
 
   try {
     final results = await _dbQuery(
-      "DELETE FROM sleep_records WHERE id = '$id' AND user_id = '$userId' RETURNING id",
+      'DELETE FROM sleep_records WHERE id = @id AND user_id = @userId RETURNING id',
+      substitutionValues: {'id': id, 'userId': userId},
     );
 
     if (results.isEmpty) {
@@ -213,4 +219,3 @@ Future<Response> _deleteSleepRecord(RequestContext context, _AuthContext auth, S
 }
 
 // ==================== MOOD ENDPOINTS ====================
-

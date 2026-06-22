@@ -4,7 +4,7 @@ part of '../server.dart';
 Future<Response> _getThemes(RequestContext context) async {
   try {
     final results = await _dbQuery(
-      "SELECT id, name, is_dark, primary_color, accent_color FROM themes ORDER BY id",
+      'SELECT id, name, is_dark, primary_color, accent_color FROM themes ORDER BY id',
     );
 
     final themes = results.map((row) {
@@ -35,7 +35,8 @@ Future<Response> _getUserTheme(RequestContext context) async {
     final userId = jwt.payload['user_id'] as String;
 
     final result = await _dbQuery(
-      "SELECT theme_id FROM users WHERE id = '$userId'",
+      'SELECT theme_id FROM users WHERE id = @userId',
+      substitutionValues: {'userId': userId},
     );
 
     if (result.isEmpty) {
@@ -67,7 +68,8 @@ Future<Response> _updateUserTheme(RequestContext context) async {
     }
 
     await _dbQuery(
-      "UPDATE users SET theme_id = '$themeId' WHERE id = '$userId'",
+      'UPDATE users SET theme_id = @themeId WHERE id = @userId',
+      substitutionValues: {'themeId': themeId, 'userId': userId},
     );
 
     return Response.json(body: {'theme_id': themeId});
@@ -87,11 +89,13 @@ Future<Response> _exportUserData(RequestContext context) async {
     final jwt = JWT.verify(token, SecretKey(_jwtSecret));
     final userId = jwt.payload['user_id'] as String;
 
-    // row_to_json отдаёт строку таблицы готовым JSON — не зависит от набора колонок
+    // row_to_json отдаёт строку таблицы готовым JSON — не зависит от набора колонок.
+    // Имя таблицы — это литерал из кода (не пользовательский ввод).
     Future<List<dynamic>> rowsAsJson(String table) async {
       try {
         final result = await _dbQuery(
-          "SELECT row_to_json(t)::text FROM $table t WHERE user_id = '$userId'",
+          'SELECT row_to_json(t)::text FROM $table t WHERE user_id = @userId',
+          substitutionValues: {'userId': userId},
         );
         return result.map((r) => jsonDecode(r[0] as String)).toList();
       } catch (_) {
@@ -100,7 +104,9 @@ Future<Response> _exportUserData(RequestContext context) async {
     }
 
     final profile = await _dbQuery(
-      "SELECT row_to_json(u)::text FROM (SELECT id, email, name, theme_id, avatar_url, phone FROM users WHERE id = '$userId') u",
+      'SELECT row_to_json(u)::text FROM '
+      '(SELECT id, email, name, theme_id, avatar_url, phone FROM users WHERE id = @userId) u',
+      substitutionValues: {'userId': userId},
     );
 
     final data = {
@@ -136,6 +142,7 @@ Future<Response> _deleteUserAccount(RequestContext context) async {
     final jwt = JWT.verify(token, SecretKey(_jwtSecret));
     final userId = jwt.payload['user_id'] as String;
 
+    // Имена таблиц — литералы из кода, не пользовательский ввод.
     const userTables = [
       'mood_entries', 'sleep_records', 'diary_entries', 'calendar_events',
       'memory_photos', 'psychological_test_results', 'trusted_contacts',
@@ -145,13 +152,19 @@ Future<Response> _deleteUserAccount(RequestContext context) async {
 
     for (final table in userTables) {
       try {
-        await _dbQuery("DELETE FROM $table WHERE user_id = '$userId'");
+        await _dbQuery(
+          'DELETE FROM $table WHERE user_id = @userId',
+          substitutionValues: {'userId': userId},
+        );
       } catch (_) {
         // таблицы может не быть — пропускаем
       }
     }
 
-    await _dbQuery("DELETE FROM users WHERE id = '$userId'");
+    await _dbQuery(
+      'DELETE FROM users WHERE id = @userId',
+      substitutionValues: {'userId': userId},
+    );
 
     return Response.json(body: {'success': true});
   } catch (e) {
@@ -171,7 +184,8 @@ Future<Response> _getUserProfile(RequestContext context) async {
     final userId = jwt.payload['user_id'] as String;
 
     final result = await _dbQuery(
-      "SELECT id, email, name, theme_id, avatar_url, phone FROM users WHERE id = '$userId'",
+      'SELECT id, email, name, theme_id, avatar_url, phone FROM users WHERE id = @userId',
+      substitutionValues: {'userId': userId},
     );
 
     if (result.isEmpty) {
@@ -207,16 +221,18 @@ Future<Response> _updateUserProfile(RequestContext context) async {
     final name = body['name'] as String?;
     final phone = body['phone'] as String?;
 
-    final nameSql = name != null && name.isNotEmpty ? "'${name.replaceAll("'", "''")}'" : 'NULL';
-    final phoneSql = phone != null && phone.isNotEmpty ? "'${phone.replaceAll("'", "''")}'" : 'NULL';
+    final cleanName = (name != null && name.isNotEmpty) ? name : null;
+    final cleanPhone = (phone != null && phone.isNotEmpty) ? phone : null;
 
     await _dbQuery(
-      "UPDATE users SET name = $nameSql, phone = $phoneSql WHERE id = '$userId'",
+      'UPDATE users SET name = @name, phone = @phone WHERE id = @userId',
+      substitutionValues: {'name': cleanName, 'phone': cleanPhone, 'userId': userId},
     );
 
     // Возвращаем обновлённый профиль
     final result = await _dbQuery(
-      "SELECT id, email, name, theme_id, avatar_url, phone FROM users WHERE id = '$userId'",
+      'SELECT id, email, name, theme_id, avatar_url, phone FROM users WHERE id = @userId',
+      substitutionValues: {'userId': userId},
     );
 
     if (result.isEmpty) {
@@ -265,7 +281,8 @@ Future<Response> _uploadUserAvatar(RequestContext context) async {
 
     // Обновляем аватар в БД
     await _dbQuery(
-      "UPDATE users SET avatar_url = '$cloudinaryUrl' WHERE id = '$userId'",
+      'UPDATE users SET avatar_url = @avatarUrl WHERE id = @userId',
+      substitutionValues: {'avatarUrl': cloudinaryUrl, 'userId': userId},
     );
 
     return Response.json(body: {
@@ -275,4 +292,3 @@ Future<Response> _uploadUserAvatar(RequestContext context) async {
     return Response(statusCode: 500, body: 'Error: $e');
   }
 }
-
