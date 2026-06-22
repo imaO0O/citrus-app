@@ -5,6 +5,7 @@ import '../core/theme/app_colors.dart';
 import '../core/theme/app_text.dart';
 import '../core/widgets/citrus_card.dart';
 import '../core/widgets/citrus_empty_state.dart';
+import '../core/widgets/citrus_line_chart.dart';
 import '../core/repository/sleep_repository.dart';
 import '../core/services/casino_coins_service.dart';
 import '../core/services/health_sync_service.dart';
@@ -324,7 +325,10 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
   }
 
   Widget _buildSleepChart(List<SleepRecord> last7Days) {
-    final maxHours = 10.0;
+    final hours = last7Days
+        .map<double?>((r) => _calculateSleepDuration(r.bedTime, r.wakeTime))
+        .toList();
+    final labels = last7Days.map((r) => _days[(r.sleepDate.weekday - 1) % 7]).toList();
 
     return CitrusCard(
       child: Column(
@@ -332,63 +336,22 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
         children: [
           Text('Сон за неделю', style: AppText.sectionTitle),
           AppSize.gapH(20),
-          SizedBox(
-            height: 160,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: List.generate(7, (index) {
-                if (index < last7Days.length) {
-                  final record = last7Days[index];
-                  final hours = _calculateSleepDuration(record.bedTime, record.wakeTime);
-                  final barHeight = hours > 0 ? ((hours / maxHours) * 120).clamp(0.0, 120.0) : 0.0;
-                  final dayOfWeek = (record.sleepDate.weekday - 1) % 7;
-
-                  return Expanded(
-                    child: Padding(
-                      padding: AppSize.paddingH(3, 0),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          if (hours > 0)
-                            Container(
-                              height: barHeight,
-                              decoration: BoxDecoration(
-                                color: AppColors.citrusPurple,
-                                borderRadius: BorderRadius.vertical(top: Radius.circular(6)),
-                              ),
-                            ),
-                          AppSize.gapH(8),
-                          Text(
-                            _days[dayOfWeek],
-                            style: TextStyle(fontSize: AppSize.s(10), color: AppColors.dimForeground),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                } else {
-                  return Expanded(
-                    child: Padding(
-                      padding: AppSize.paddingH(3, 0),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          Container(height: 0),
-                          AppSize.gapH(8),
-                          Text('', style: TextStyle(fontSize: AppSize.s(10))),
-                        ],
-                      ),
-                    ),
-                  );
-                }
-              }),
+          if (last7Days.isEmpty)
+            SizedBox(
+              height: 120,
+              child: Center(child: Text('Пока нет данных за неделю', style: AppText.caption)),
+            )
+          else
+            CitrusLineChart(
+              values: hours,
+              minY: 0,
+              maxY: 10,
+              color: AppColors.citrusPurple,
+              labels: labels,
+              height: 150,
             ),
-          ),
-          AppSize.gapH(16),
-          Text(
-            'Фиолетовые столбцы — длительность сна',
-            style: TextStyle(fontSize: AppSize.s(10), color: AppColors.mutedForeground),
-          ),
+          AppSize.gapH(12),
+          Text('Линия — длительность сна по дням', style: AppText.caption),
         ],
       ),
     );

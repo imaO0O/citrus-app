@@ -7,6 +7,7 @@ import 'package:printing/printing.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 import '../core/theme/app_colors.dart';
 import '../core/theme/app_text.dart';
+import '../core/widgets/citrus_line_chart.dart';
 import '../services/pdf_report_service.dart';
 import '../models/analytics_report.dart';
 import '../models/sleep_record.dart';
@@ -390,12 +391,6 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     }
 
     return insights;
-  }
-
-  Color _getMoodBarColor(double value) {
-    // Цвет столбца — как у соответствующей дольки на главной (палитра Mood):
-    // 0 = отлично (зелёный) … 5 = очень плохо (красный).
-    return Mood.all[value.round().clamp(0, 5).toInt()].color;
   }
 
   /// Период в родительном падеже для заголовка графика.
@@ -1175,41 +1170,12 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           Text('\u0432\u044B\u0448\u0435 \u0441\u0442\u043E\u043B\u0431\u0438\u043A \u2014 \u043B\u0443\u0447\u0448\u0435 \u0434\u0435\u043D\u044C',
               style: TextStyle(fontSize: AppSize.s(11), color: AppColors.dimForeground)),
           AppSize.gapH(16),
-          SizedBox(
-            height: 150,
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: List.generate(days.length, (index) {
-                  final value = values[index];
-                  return Padding(
-                    padding: AppSize.paddingH(4, 0),
-                    child: SizedBox(
-                      width: 36,
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          Container(
-                            height: 110.0 * ((5 - value) / 5).clamp(0.12, 1.0),
-                            decoration: BoxDecoration(
-                              color: _getMoodBarColor(value),
-                              borderRadius: BorderRadius.vertical(top: Radius.circular(6)),
-                            ),
-                          ),
-                          AppSize.gapH(8),
-                          Text(
-                            days[index],
-                            textAlign: TextAlign.center,
-                            style: TextStyle(fontSize: AppSize.s(10), color: AppColors.dimForeground),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                }),
-              ),
-            ),
+          CitrusLineChart(
+            values: values.map<double?>((v) => 5 - v).toList(),
+            minY: 0,
+            maxY: 5,
+            color: AppColors.citrusOrange,
+            labels: days.length <= 14 ? days : null,
           ),
         ],
       ),
