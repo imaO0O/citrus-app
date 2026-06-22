@@ -373,7 +373,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Widget
                 width: 32,
                 height: 32,
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.05),
+                  color: AppColors.subtleBg,
                   borderRadius: AppSize.radius(12),
                 ),
                 child: Icon(Icons.notifications_none,
@@ -586,7 +586,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Widget
                             width: 32,
                             height: 32,
                             decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.08),
+                              color: AppColors.subtleBg,
                               borderRadius: AppSize.radius(12),
                             ),
                             child: Icon(Icons.close,
@@ -616,12 +616,12 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Widget
                             decoration: BoxDecoration(
                               color: isActive
                                   ? AppColors.citrusOrange.withValues(alpha: 0.15)
-                                  : Colors.white.withValues(alpha: 0.04),
+                                  : AppColors.card,
                               borderRadius: AppSize.radius(16),
                               border: Border.all(
                                 color: isActive
                                     ? AppColors.citrusOrange.withValues(alpha: 0.35)
-                                    : Colors.white.withValues(alpha: 0.06),
+                                    : AppColors.subtleBorder,
                               ),
                             ),
                             child: Column(

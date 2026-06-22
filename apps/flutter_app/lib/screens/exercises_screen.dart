@@ -632,7 +632,7 @@ class _ExercisesScreenState extends State<ExercisesScreen> {
             child: Container(
               padding: AppSize.paddingH(16, 6),
               decoration: BoxDecoration(
-                color: isSelected ? AppColors.citrusOrange.withValues(alpha: 0.15) : Colors.white.withValues(alpha: 0.06),
+                color: isSelected ? AppColors.citrusOrange.withValues(alpha: 0.15) : AppColors.surface2,
                 borderRadius: AppSize.radius(20),
               ),
               child: Text(

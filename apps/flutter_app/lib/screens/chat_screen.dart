@@ -498,7 +498,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   : null,
               color: isUser ? null : AppColors.surface1,
               borderRadius: AppSize.radius(16),
-              border: isUser ? null : Border.all(color: Colors.white.withValues(alpha: 0.06)),
+              border: isUser ? null : Border.all(color: AppColors.subtleBorder),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withValues(alpha: 0.15),
@@ -748,7 +748,7 @@ class _ChatScreenState extends State<ChatScreen> {
         width: 44,
         height: 44,
         decoration: BoxDecoration(
-          color: _isListening ? AppColors.destructive.withValues(alpha: 0.2) : Colors.white.withValues(alpha: 0.06),
+          color: _isListening ? AppColors.destructive.withValues(alpha: 0.2) : AppColors.subtleBg,
           borderRadius: AppSize.radius(12),
           border: _isListening ? Border.all(color: AppColors.destructive) : null,
         ),
@@ -827,7 +827,7 @@ class _ChatScreenState extends State<ChatScreen> {
                     hintText: '\u0412\u0432\u0435\u0434\u0438\u0442\u0435 \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u0435...',
                     hintStyle: TextStyle(color: AppColors.mutedForeground.withValues(alpha: 0.5)),
                     filled: true,
-                    fillColor: Colors.white.withValues(alpha: 0.04),
+                    fillColor: AppColors.inputFieldBackground,
                     border: OutlineInputBorder(
                       borderRadius: AppSize.radius(16),
                       borderSide: BorderSide(color: AppColors.surface3),
@@ -863,7 +863,7 @@ class _ChatScreenState extends State<ChatScreen> {
                             colors: [AppColors.citrusOrange, AppColors.citrusAmber],
                           )
                         : null,
-                    color: hasText ? null : Colors.white.withValues(alpha: 0.06),
+                    color: hasText ? null : AppColors.subtleBg,
                     borderRadius: AppSize.radius(12),
                     boxShadow: hasText
                         ? [
