@@ -8,7 +8,7 @@ import '../../core/widgets/citrus_card.dart';
 import '../../core/widgets/citrus_button.dart';
 import '../../features/articles/pages/articles_page.dart';
 import '../exercises_screen.dart';
-import '../help_screen.dart';
+import '../emergency_modal.dart';
 import 'test_taking_screen.dart';
 
 class TestResultScreen extends StatefulWidget {
@@ -130,8 +130,15 @@ class _TestResultScreenState extends State<TestResultScreen> {
   void _openExercises() =>
       Navigator.push(context, MaterialPageRoute(builder: (_) => ExercisesScreen()));
 
-  void _openHelp() =>
-      Navigator.push(context, MaterialPageRoute(builder: (_) => HelpScreen()));
+  /// Экстренная помощь — открываем тот же SOS-оверлей, что и кнопка SOS,
+  /// а не информационный раздел «Помощь».
+  void _openSos() => Navigator.of(context).push(
+        PageRouteBuilder(
+          opaque: false,
+          barrierColor: Colors.transparent,
+          pageBuilder: (ctx, _, __) => EmergencyModal(onClose: () => Navigator.of(ctx).pop()),
+        ),
+      );
 
   void _openArticles(String category) => Navigator.push(
         context,
@@ -323,7 +330,7 @@ class _TestResultScreenState extends State<TestResultScreen> {
           ),
         ],
         AppSize.gapH(4),
-        if (high) item(Icons.support_agent, 'Получить помощь', _openHelp),
+        if (high) item(Icons.support_agent, 'Получить помощь', _openSos),
         item(Icons.self_improvement, 'Дыхательное упражнение', _openExercises),
         item(Icons.menu_book, 'Статьи по теме', () => _openArticles(category)),
         AppSize.gapH(8),
