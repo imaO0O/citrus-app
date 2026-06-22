@@ -10,6 +10,8 @@ import 'package:webview_flutter/webview_flutter.dart';
 import 'package:just_audio/just_audio.dart';
 import '../core/web/web_iframe_view.dart';
 import '../core/theme/app_colors.dart';
+import '../core/theme/app_text.dart';
+import '../core/widgets/citrus_card.dart';
 import '../core/services/casino_coins_service.dart';
 import '../core/services/exercise_tracker_service.dart';
 import '../core/config/api_config.dart';
@@ -539,10 +541,7 @@ class _ExercisesScreenState extends State<ExercisesScreen> {
               children: [
                 Padding(
                   padding: EdgeInsets.fromLTRB(20, 16, 20, 0),
-                  child: Text(
-                    'Упражнения',
-                    style: TextStyle(fontSize: AppSize.s(24), fontWeight: FontWeight.w700, color: AppColors.foreground),
-                  ),
+                  child: Text('Упражнения', style: AppText.displayTitle),
                 ),
                 _buildQuickStartCard(),
                 AppSize.gapH(16),
@@ -651,19 +650,14 @@ class _ExercisesScreenState extends State<ExercisesScreen> {
   }
 
   Widget _buildExerciseCard(ExerciseItem exercise) {
-    return GestureDetector(
+    return CitrusCard(
+      accent: exercise.color,
+      radius: 16,
       onTap: () => _showExerciseDetail(exercise),
-      child: Container(
-        padding: AppSize.padding(16),
-        decoration: BoxDecoration(
-          color: AppColors.surface1,
-          borderRadius: AppSize.radius(16),
-          border: Border.all(color: AppColors.subtleBorder),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
               children: [
                 Stack(
                   alignment: Alignment.center,
@@ -753,8 +747,7 @@ class _ExercisesScreenState extends State<ExercisesScreen> {
             ),
           ],
         ),
-      ),
-    );
+      );
   }
 }
 

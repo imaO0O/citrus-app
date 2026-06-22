@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../core/theme/app_colors.dart';
+import '../core/theme/app_text.dart';
+import '../core/widgets/citrus_empty_state.dart';
 import '../services/affirmations_service.dart';
 import '../core/utils/app_size.dart';
 
@@ -136,14 +138,7 @@ class _AffirmationsScreenState extends State<AffirmationsScreen> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          'Аффирмации',
-          style: TextStyle(
-            fontSize: AppSize.s(24),
-            fontWeight: FontWeight.w700,
-            color: AppColors.foreground,
-          ),
-        ),
+        Text('Аффирмации', style: AppText.displayTitle),
         if (_isGenerating)
           SizedBox(
             width: 20,
@@ -183,32 +178,12 @@ class _AffirmationsScreenState extends State<AffirmationsScreen> {
               ),
             )
           : _filteredAffirmations.isEmpty
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.format_quote,
-                        size: 64,
-                        color: AppColors.mutedForeground.withValues(alpha: 0.3),
-                      ),
-                      AppSize.gapH(16),
-                      Text(
-                        'Нет аффирмаций в этой категории',
-                        style: TextStyle(color: AppColors.mutedForeground),
-                      ),
-                      AppSize.gapH(16),
-                      ElevatedButton.icon(
-                        onPressed: _generateAffirmations,
-                        icon: Icon(Icons.auto_awesome),
-                        label: Text('Сгенерировать (AI)'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.citrusOrange,
-                          foregroundColor: Colors.white,
-                        ),
-                      ),
-                    ],
-                  ),
+              ? CitrusEmptyState(
+                  title: 'Здесь пока пусто',
+                  subtitle: 'Сгенерируй вдохновляющие аффирмации с помощью ИИ.',
+                  actionLabel: 'Сгенерировать',
+                  actionIcon: Icons.auto_awesome,
+                  onAction: _generateAffirmations,
                 )
               : PageView.builder(
                   controller: _pageController,
