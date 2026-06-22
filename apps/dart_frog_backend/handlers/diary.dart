@@ -1,11 +1,8 @@
 part of '../server.dart';
 
-/// Строит SQL-литерал массива тегов (с экранированием).
-String _diaryTagsSql(dynamic tags) {
-  if (tags is! List || tags.isEmpty) return "'{}'";
-  final items = tags.map((t) => "'${t.toString().replaceAll("'", "''")}'").join(',');
-  return "ARRAY[$items]::text[]";
-}
+/// Приводит вход тегов к List<String> для параметра text[].
+List<String> _diaryTags(dynamic tags) =>
+    tags is List ? tags.map((t) => t.toString()).toList() : <String>[];
 
 Future<Response> _getDiaryEntries(RequestContext context, _AuthContext auth) async {
   final userId = auth.userId;
@@ -17,19 +14,28 @@ Future<Response> _getDiaryEntries(RequestContext context, _AuthContext auth) asy
     final endDate = query['end_date'];
     final search = query['search'];
 
-    String whereClause = "WHERE user_id = '$userId'";
-    if (startDate != null) whereClause += " AND entry_date >= '$startDate'";
-    if (endDate != null) whereClause += " AND entry_date <= '$endDate'";
+    final sv = <String, dynamic>{'userId': userId};
+    var whereClause = 'WHERE user_id = @userId';
+    final startDt = startDate != null ? DateTime.tryParse(startDate) : null;
+    final endDt = endDate != null ? DateTime.tryParse(endDate) : null;
+    if (startDt != null) {
+      whereClause += ' AND entry_date >= @startDate';
+      sv['startDate'] = startDt;
+    }
+    if (endDt != null) {
+      whereClause += ' AND entry_date <= @endDate';
+      sv['endDate'] = endDt;
+    }
     if (search != null && search.isNotEmpty) {
-      final escapedSearch = search.replaceAll("'", "''");
-      whereClause += " AND content ILIKE '%$escapedSearch%'";
+      whereClause += ' AND content ILIKE @search';
+      sv['search'] = '%$search%';
     }
 
     final results = await _dbQuery(
-      "SELECT id, user_id, content, mood_value, entry_date::text, created_at::text, tags "
-      "FROM diary_entries $whereClause ORDER BY entry_date DESC, created_at DESC",
+      'SELECT id, user_id, content, mood_value, entry_date::text, created_at::text, tags '
+      'FROM diary_entries $whereClause ORDER BY entry_date DESC, created_at DESC',
+      substitutionValues: sv,
     );
-    print('DB entry_date values: ${results.map((r) => r[4]).toList()}');
 
     final entries = results.map((row) => {
       'id': row[0] is String ? row[0] : Uuid.unparse(row[0] as Uint8List),
@@ -64,26 +70,28 @@ Future<Response> _createDiaryEntry(RequestContext context, _AuthContext auth) as
     }
 
     final recordId = const Uuid().v4();
-    print('Backend received entryDate: $entryDate');
-    final dateStr = entryDate != null ? entryDate : DateTime.now().toIso8601String();
-    print('Backend using dateStr: $dateStr');
-    final dateSql = "'$dateStr'";
-    final contentSql = "'${content.replaceAll("'", "''")}'";
-    final moodSql = moodValue != null ? moodValue.toString() : 'NULL';
-    final tagsSql = _diaryTagsSql(tags);
+    final dateStr = entryDate ?? DateTime.now().toIso8601String();
+    final dateVal = DateTime.tryParse(dateStr) ?? DateTime.now();
 
     await _dbQuery(
-      "INSERT INTO diary_entries (id, user_id, content, mood_value, entry_date, tags) "
-      "VALUES ('$recordId', '$userId', $contentSql, $moodSql, $dateSql, $tagsSql)",
+      'INSERT INTO diary_entries (id, user_id, content, mood_value, entry_date, tags) '
+      'VALUES (@id, @userId, @content, @mood, @entryDate, @tags)',
+      substitutionValues: {
+        'id': recordId,
+        'userId': userId,
+        'content': content,
+        'mood': moodValue,
+        'entryDate': dateVal,
+        'tags': _diaryTags(tags),
+      },
     );
 
-    final returnedDate = dateStr;
     return Response.json(statusCode: 201, body: {
       'id': recordId,
       'user_id': userId,
       'content': content,
       'mood_value': moodValue,
-      'entry_date': returnedDate,
+      'entry_date': dateStr,
       'tags': tags is List ? tags : <String>[],
     });
   } catch (e, stackTrace) {
@@ -107,18 +115,22 @@ Future<Response> _updateDiaryEntry(RequestContext context, _AuthContext auth, St
       return Response(statusCode: 400, body: 'content is required');
     }
 
-    final contentSql = "'${content.replaceAll("'", "''")}'";
-    final moodSql = moodValue != null ? moodValue.toString() : 'NULL';
-    final tagsSql = _diaryTagsSql(tags);
-
     await _dbQuery(
-      "UPDATE diary_entries SET content = $contentSql, mood_value = $moodSql, tags = $tagsSql "
-      "WHERE id = '$id' AND user_id = '$userId'",
+      'UPDATE diary_entries SET content = @content, mood_value = @mood, tags = @tags '
+      'WHERE id = @id AND user_id = @userId',
+      substitutionValues: {
+        'content': content,
+        'mood': moodValue,
+        'tags': _diaryTags(tags),
+        'id': id,
+        'userId': userId,
+      },
     );
 
     final results = await _dbQuery(
-      "SELECT id, user_id, content, mood_value, entry_date::text as entry_date, created_at::text as created_at, tags "
-      "FROM diary_entries WHERE id = '$id' AND user_id = '$userId'",
+      'SELECT id, user_id, content, mood_value, entry_date::text as entry_date, created_at::text as created_at, tags '
+      'FROM diary_entries WHERE id = @id AND user_id = @userId',
+      substitutionValues: {'id': id, 'userId': userId},
     );
 
     if (results.isEmpty) {
@@ -145,10 +157,12 @@ Future<Response> _deleteDiaryEntry(RequestContext context, _AuthContext auth, St
   if (userId == null) return Response(statusCode: 401, body: 'Unauthorized');
 
   try {
-    await _dbQuery("DELETE FROM diary_entries WHERE id = '$id' AND user_id = '$userId'");
+    await _dbQuery(
+      'DELETE FROM diary_entries WHERE id = @id AND user_id = @userId',
+      substitutionValues: {'id': id, 'userId': userId},
+    );
     return Response(statusCode: 204);
   } catch (e) {
     return Response(statusCode: 500, body: 'Error: $e');
   }
 }
-

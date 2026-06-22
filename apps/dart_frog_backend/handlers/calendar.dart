@@ -3,28 +3,23 @@ part of '../server.dart';
 Future<Response> _getEvents(RequestContext context, _AuthContext auth) async {
   final userId = auth.userId;
 
-  print('_getEvents: запрос для userId=$userId');
-
   if (userId == null) {
-    print('_getEvents: userId is null, возвращаем 401');
     return Response(statusCode: 401, body: 'Unauthorized');
   }
 
   try {
     final results = await _dbQuery(
-      "SELECT id, user_id, title, description, event_date, "
-      "start_time::text as start_time, "
-      "end_time::text as end_time, "
-      "notification_enabled, recurrence "
-      "FROM calendar_events "
-      "WHERE user_id = '$userId' "
-      "ORDER BY event_date DESC, start_time",
+      'SELECT id, user_id, title, description, event_date, '
+      'start_time::text as start_time, '
+      'end_time::text as end_time, '
+      'notification_enabled, recurrence '
+      'FROM calendar_events '
+      'WHERE user_id = @userId '
+      'ORDER BY event_date DESC, start_time',
+      substitutionValues: {'userId': userId},
     );
 
-    print('_getEvents: найдено ${results.length} событий');
-
     final events = results.map((row) {
-      // UUID из PostgreSQL возвращается как байты - нужно конвертировать
       final id = row[0];
       final userId = row[1];
       final title = row[2];
@@ -35,12 +30,11 @@ Future<Response> _getEvents(RequestContext context, _AuthContext auth) async {
       final notificationEnabled = row[7];
       final recurrence = row[8];
 
-      // Преобразуем startTime и endTime в строку
       String? startTimeStr;
       if (startTime != null) {
         startTimeStr = startTime is String ? startTime : startTime.toString();
       }
-      
+
       String? endTimeStr;
       if (endTime != null) {
         endTimeStr = endTime is String ? endTime : endTime.toString();
@@ -68,7 +62,7 @@ Future<Response> _getEvents(RequestContext context, _AuthContext auth) async {
 Future<Response> _createEvent(RequestContext context, _AuthContext auth) async {
   final userId = auth.userId;
   final body = await context.request.json();
-  
+
   final title = body['title'] as String?;
   final eventDate = body['event_date'] as String?;
 
@@ -80,6 +74,11 @@ Future<Response> _createEvent(RequestContext context, _AuthContext auth) async {
     return Response(statusCode: 400, body: 'title and event_date are required');
   }
 
+  final eventDt = DateTime.tryParse(eventDate);
+  if (eventDt == null) {
+    return Response(statusCode: 400, body: 'invalid event_date');
+  }
+
   try {
     final eventId = const Uuid().v4();
     final description = body['description'] as String? ?? '';
@@ -89,13 +88,20 @@ Future<Response> _createEvent(RequestContext context, _AuthContext auth) async {
     final rawRecurrence = body['recurrence'] as String? ?? 'none';
     final recurrence = const ['none', 'daily', 'weekly', 'monthly'].contains(rawRecurrence) ? rawRecurrence : 'none';
 
-    final startTimeSql = startTime != null ? "'$startTime'" : 'NULL';
-    final endTimeSql = endTime != null ? "'$endTime'" : 'NULL';
-    final descriptionSql = description.isNotEmpty ? "'${description.replaceAll("'", "''")}'" : 'NULL';
-
     await _dbQuery(
-      "INSERT INTO calendar_events (id, user_id, title, description, event_date, start_time, end_time, notification_enabled, recurrence) "
-      "VALUES ('$eventId', '$userId', '${title.replaceAll("'", "''")}', $descriptionSql, '$eventDate', $startTimeSql, $endTimeSql, $notificationEnabled, '$recurrence')",
+      'INSERT INTO calendar_events (id, user_id, title, description, event_date, start_time, end_time, notification_enabled, recurrence) '
+      'VALUES (@id, @userId, @title, @description, @eventDate, CAST(@startTime AS time), CAST(@endTime AS time), @notif, @recurrence)',
+      substitutionValues: {
+        'id': eventId,
+        'userId': userId,
+        'title': title,
+        'description': description.isNotEmpty ? description : null,
+        'eventDate': eventDt,
+        'startTime': startTime,
+        'endTime': endTime,
+        'notif': notificationEnabled,
+        'recurrence': recurrence,
+      },
     );
 
     return Response.json(
@@ -132,6 +138,11 @@ Future<Response> _updateEvent(RequestContext context, _AuthContext auth, String 
     return Response(statusCode: 400, body: 'title and event_date are required');
   }
 
+  final eventDt = DateTime.tryParse(eventDate);
+  if (eventDt == null) {
+    return Response(statusCode: 400, body: 'invalid event_date');
+  }
+
   try {
     final description = body['description'] as String? ?? '';
     final startTime = body['start_time'] as String?;
@@ -140,13 +151,10 @@ Future<Response> _updateEvent(RequestContext context, _AuthContext auth, String 
     final rawRecurrence = body['recurrence'] as String? ?? 'none';
     final recurrence = const ['none', 'daily', 'weekly', 'monthly'].contains(rawRecurrence) ? rawRecurrence : 'none';
 
-    final startTimeSql = startTime != null ? "'$startTime'" : 'NULL';
-    final endTimeSql = endTime != null ? "'$endTime'" : 'NULL';
-    final descriptionSql = description.isNotEmpty ? "'${description.replaceAll("'", "''")}'" : 'NULL';
-
     // Проверяем, что событие принадлежит пользователю
     final checkResults = await _dbQuery(
-      "SELECT id FROM calendar_events WHERE id = '$id' AND user_id = '$userId'",
+      'SELECT id FROM calendar_events WHERE id = @id AND user_id = @userId',
+      substitutionValues: {'id': id, 'userId': userId},
     );
 
     if (checkResults.isEmpty) {
@@ -154,11 +162,23 @@ Future<Response> _updateEvent(RequestContext context, _AuthContext auth, String 
     }
 
     final results = await _dbQuery(
-      "UPDATE calendar_events "
-      "SET title = '${title.replaceAll("'", "''")}', description = $descriptionSql, event_date = '$eventDate', "
-      "start_time = $startTimeSql, end_time = $endTimeSql, notification_enabled = $notificationEnabled, recurrence = '$recurrence' "
-      "WHERE id = '$id' AND user_id = '$userId' "
-      "RETURNING id, user_id, title, description, event_date, start_time, end_time, notification_enabled, recurrence",
+      'UPDATE calendar_events '
+      'SET title = @title, description = @description, event_date = @eventDate, '
+      'start_time = CAST(@startTime AS time), end_time = CAST(@endTime AS time), '
+      'notification_enabled = @notif, recurrence = @recurrence '
+      'WHERE id = @id AND user_id = @userId '
+      'RETURNING id, user_id, title, description, event_date, start_time, end_time, notification_enabled, recurrence',
+      substitutionValues: {
+        'title': title,
+        'description': description.isNotEmpty ? description : null,
+        'eventDate': eventDt,
+        'startTime': startTime,
+        'endTime': endTime,
+        'notif': notificationEnabled,
+        'recurrence': recurrence,
+        'id': id,
+        'userId': userId,
+      },
     );
 
     if (results.isEmpty) {
@@ -190,9 +210,9 @@ Future<Response> _deleteEvent(RequestContext context, _AuthContext auth, String 
   }
 
   try {
-    // Проверяем и удаляем только свои события
     final results = await _dbQuery(
-      "DELETE FROM calendar_events WHERE id = '$id' AND user_id = '$userId' RETURNING id",
+      'DELETE FROM calendar_events WHERE id = @id AND user_id = @userId RETURNING id',
+      substitutionValues: {'id': id, 'userId': userId},
     );
 
     if (results.isEmpty) {
@@ -204,4 +224,3 @@ Future<Response> _deleteEvent(RequestContext context, _AuthContext auth, String 
     return Response(statusCode: 500, body: 'Error: $e');
   }
 }
-

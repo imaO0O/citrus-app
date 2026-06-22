@@ -9,13 +9,21 @@ Future<Response> _getMoodRecords(RequestContext context, _AuthContext auth) asyn
     final startDate = query['start_date'];
     final endDate = query['end_date'];
 
-    String whereClause = "WHERE user_id = '$userId'";
-    if (startDate != null) whereClause += " AND DATE(recorded_at) >= '$startDate'";
-    if (endDate != null) whereClause += " AND DATE(recorded_at) <= '$endDate'";
+    final sv = <String, dynamic>{'userId': userId};
+    var whereClause = 'WHERE user_id = @userId';
+    if (startDate != null) {
+      whereClause += ' AND DATE(recorded_at) >= CAST(@startDate AS date)';
+      sv['startDate'] = startDate;
+    }
+    if (endDate != null) {
+      whereClause += ' AND DATE(recorded_at) <= CAST(@endDate AS date)';
+      sv['endDate'] = endDate;
+    }
 
     final results = await _dbQuery(
-      "SELECT id, user_id, mood_value, recorded_at::text "
-      "FROM mood_entries $whereClause ORDER BY recorded_at DESC",
+      'SELECT id, user_id, mood_value, recorded_at::text '
+      'FROM mood_entries $whereClause ORDER BY recorded_at DESC',
+      substitutionValues: sv,
     );
 
     final records = results.map((row) => {
@@ -47,17 +55,32 @@ Future<Response> _createMoodRecord(RequestContext context, _AuthContext auth) as
 
     final recordId = const Uuid().v4();
     final timeOfDay = moodDate != null ? _getTimeOfDay(moodDate) : null;
-    final timeOfDaySql = timeOfDay != null ? "'$timeOfDay'" : 'NULL';
 
-    final sql = moodDate != null
-        ? "INSERT INTO mood_entries (id, user_id, mood_value, time_of_day, recorded_at) "
-          "VALUES ('$recordId', '$userId', $moodId, $timeOfDaySql, '$moodDate')"
-        : "INSERT INTO mood_entries (id, user_id, mood_value, time_of_day) "
-          "VALUES ('$recordId', '$userId', $moodId, $timeOfDaySql)";
-
-    print('mood create SQL: $sql');
-
-    await _dbQuery(sql);
+    if (moodDate != null) {
+      final recordedAt = DateTime.tryParse(moodDate) ?? DateTime.now();
+      await _dbQuery(
+        'INSERT INTO mood_entries (id, user_id, mood_value, time_of_day, recorded_at) '
+        'VALUES (@id, @userId, @mood, @tod, @recordedAt)',
+        substitutionValues: {
+          'id': recordId,
+          'userId': userId,
+          'mood': moodId,
+          'tod': timeOfDay,
+          'recordedAt': recordedAt,
+        },
+      );
+    } else {
+      await _dbQuery(
+        'INSERT INTO mood_entries (id, user_id, mood_value, time_of_day) '
+        'VALUES (@id, @userId, @mood, @tod)',
+        substitutionValues: {
+          'id': recordId,
+          'userId': userId,
+          'mood': moodId,
+          'tod': timeOfDay,
+        },
+      );
+    }
 
     return Response.json(statusCode: 201, body: {
       'id': recordId,
@@ -86,8 +109,8 @@ Future<Response> _updateMoodRecord(RequestContext context, _AuthContext auth, St
     }
 
     await _dbQuery(
-      "UPDATE mood_entries SET mood_value = $moodId "
-      "WHERE id = '$id' AND user_id = '$userId'",
+      'UPDATE mood_entries SET mood_value = @mood WHERE id = @id AND user_id = @userId',
+      substitutionValues: {'mood': moodId, 'id': id, 'userId': userId},
     );
 
     return Response.json(body: {'id': id, 'mood_id': moodId});
@@ -101,10 +124,12 @@ Future<Response> _deleteMoodRecord(RequestContext context, _AuthContext auth, St
   if (userId == null) return Response(statusCode: 401, body: 'Unauthorized');
 
   try {
-    await _dbQuery("DELETE FROM mood_entries WHERE id = '$id' AND user_id = '$userId'");
+    await _dbQuery(
+      'DELETE FROM mood_entries WHERE id = @id AND user_id = @userId',
+      substitutionValues: {'id': id, 'userId': userId},
+    );
     return Response(statusCode: 204);
   } catch (e) {
     return Response(statusCode: 500, body: 'Error: $e');
   }
 }
-
