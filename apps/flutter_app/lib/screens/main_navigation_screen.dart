@@ -421,23 +421,21 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Widget
       {'icon': Icons.book_outlined, 'activeIcon': Icons.book, 'label': 'Дневник'},
     ];
 
-    return Container(
+    return Padding(
       padding: EdgeInsets.fromLTRB(16, 8, 16, 16),
-      decoration: BoxDecoration(
-        color: AppColors.background.withValues(alpha: 0.95),
-        border: Border(
-          top: BorderSide(color: AppColors.citrusOrange.withValues(alpha: 0.1)),
-        ),
-      ),
       child: ClipRRect(
-        borderRadius: AppSize.radius(16),
+        borderRadius: AppSize.radius(24),
         child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+          filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
           child: Container(
-            padding: AppSize.paddingH(4, 4),
+            padding: AppSize.paddingH(6, 6),
             decoration: BoxDecoration(
-              color: AppColors.foreground.withValues(alpha: 0.03),
-              borderRadius: AppSize.radius(16),
+              color: AppColors.card.withValues(alpha: 0.88),
+              borderRadius: AppSize.radius(24),
+              border: Border.all(color: AppColors.subtleBorder),
+              boxShadow: [
+                BoxShadow(color: Colors.black.withValues(alpha: 0.18), blurRadius: 24, offset: const Offset(0, 8)),
+              ],
             ),
             child: Row(
               children: [
@@ -448,13 +446,15 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Widget
                   return Expanded(
                     child: GestureDetector(
                       onTap: () => _setIndex(index),
-                      child: Container(
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 220),
+                        curve: Curves.easeOut,
                         padding: AppSize.paddingH(0, 8),
                         decoration: BoxDecoration(
                           color: active
                               ? AppColors.citrusOrange.withValues(alpha: 0.15)
                               : Colors.transparent,
-                          borderRadius: AppSize.radius(12),
+                          borderRadius: AppSize.radius(14),
                         ),
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
@@ -489,13 +489,15 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Widget
                 Expanded(
                   child: GestureDetector(
                     onTap: () => setState(() => _showMenu = true),
-                    child: Container(
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 220),
+                      curve: Curves.easeOut,
                       padding: AppSize.paddingH(0, 8),
                       decoration: BoxDecoration(
                         color: _isMenuActive
                             ? AppColors.citrusOrange.withValues(alpha: 0.15)
                             : Colors.transparent,
-                        borderRadius: AppSize.radius(12),
+                        borderRadius: AppSize.radius(14),
                       ),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,

@@ -7,6 +7,7 @@ import 'package:printing/printing.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 import '../core/theme/app_colors.dart';
 import '../core/theme/app_text.dart';
+import '../core/widgets/citrus_card.dart';
 import '../core/widgets/citrus_line_chart.dart';
 import '../services/pdf_report_service.dart';
 import '../models/analytics_report.dart';
@@ -159,7 +160,6 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
 
       // Вычисляем метрики
       final streak = await moodRepo.getStreak();
-      final goodDaysPercent = await moodRepo.getGoodDaysPercentage();
       final averageMood = await moodRepo.getAverageMood();
 
       // Загружаем записи сна
@@ -315,6 +315,17 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         debugPrint('Error loading test trends: $e');
       }
 
+      // Хороших дней за период + тренд к прошлому периоду (для геройской метрики)
+      double goodPctOf(Map<DateTime, double> m) =>
+          m.isEmpty ? 0 : m.values.where((v) => v <= 2.0).length / m.length * 100;
+      final periodGoodPct = goodPctOf(moodByDayMap);
+      double trendPp = 0;
+      try {
+        final prevStart = startDate.subtract(Duration(days: daysBack));
+        final prevMap = await moodRepo.getAverageMoodByDay(startDate: prevStart, endDate: startDate);
+        if (prevMap.isNotEmpty) trendPp = periodGoodPct - goodPctOf(prevMap);
+      } catch (_) {}
+
       if (mounted) {
         setState(() {
           _sleepMoodDays = sleepMoodDays;
@@ -327,8 +338,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
             ),
             metrics: ReportMetrics(
               totalDays: daysBack,
-              goodDaysPercent: goodDaysPercent,
-              improvementPercent: 0, // Требуется сравнение с предыдущим периодом
+              goodDaysPercent: periodGoodPct,
+              improvementPercent: trendPp,
               streakDays: streak,
               averageMood: averageMood,
               averageSleepHours: avgSleepHours,
@@ -607,7 +618,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                                 _buildHeader(),
                                 AppSize.gapH(16),
                                 _buildPeriodSelector(),
-                                AppSize.gapH(20),
+                                AppSize.gapH(16),
+                                _buildHero(),
+                                AppSize.gapH(16),
                                 _buildOverviewCards(),
                                 AppSize.gapH(20),
                                 _buildMoodChart(),
@@ -1077,15 +1090,70 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     );
   }
 
+  /// \u0413\u0435\u0440\u043E\u0439\u0441\u043A\u0430\u044F \u043C\u0435\u0442\u0440\u0438\u043A\u0430: \u043A\u0440\u0443\u043F\u043D\u044B\u0439 % \u0445\u043E\u0440\u043E\u0448\u0438\u0445 \u0434\u043D\u0435\u0439 + \u0442\u0440\u0435\u043D\u0434 \u043A \u043F\u0440\u043E\u0448\u043B\u043E\u043C\u0443 \u043F\u0435\u0440\u0438\u043E\u0434\u0443
+  /// (\u043F\u0430\u0442\u0442\u0435\u0440\u043D \u0444\u0438\u043D\u0442\u0435\u0445-\u0434\u044D\u0448\u0431\u043E\u0440\u0434\u043E\u0432 Copilot/Mercury).
+  Widget _buildHero() {
+    if (_report == null) return const SizedBox.shrink();
+    final m = _report!.metrics;
+    final trend = m.improvementPercent;
+    final flat = trend.abs() < 0.5;
+    final up = trend >= 0;
+    final tColor = flat ? AppColors.mutedForeground : (up ? AppColors.citrusGreen : AppColors.destructive);
+    final tIcon = flat ? Icons.remove : (up ? Icons.arrow_upward : Icons.arrow_downward);
+    final tText = flat ? '\u0431\u0435\u0437 \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u0439' : '${up ? '+' : '\u2212'}${trend.abs().toStringAsFixed(0)} \u043F\u043F';
+
+    return CitrusCard(
+      accent: AppColors.citrusOrange,
+      gradient: LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [AppColors.citrusOrange.withValues(alpha: 0.14), AppColors.citrusAmber.withValues(alpha: 0.05)],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('\u0425\u043E\u0440\u043E\u0448\u0438\u0445 \u0434\u043D\u0435\u0439 \u0437\u0430 ${_periodGenitive()}', style: AppText.caption),
+          AppSize.gapH(8),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                '${m.goodDaysPercent.toStringAsFixed(0)}%',
+                style: TextStyle(fontSize: AppSize.s(40), fontWeight: FontWeight.w800, color: AppColors.foreground, height: 1),
+              ),
+              AppSize.gapW(10),
+              Padding(
+                padding: AppSize.paddingOnly(bottom: 7),
+                child: Container(
+                  padding: AppSize.paddingH(10, 5),
+                  decoration: BoxDecoration(color: tColor.withValues(alpha: 0.15), borderRadius: AppSize.radius(20)),
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    Icon(tIcon, size: AppSize.s(13), color: tColor),
+                    AppSize.gapW(3),
+                    Text(tText, style: TextStyle(color: tColor, fontSize: AppSize.s(12), fontWeight: FontWeight.w700)),
+                  ]),
+                ),
+              ),
+            ],
+          ),
+          AppSize.gapH(2),
+          Text('\u043A \u043F\u0440\u043E\u0448\u043B\u043E\u043C\u0443 \u043F\u0435\u0440\u0438\u043E\u0434\u0443', style: AppText.label),
+        ],
+      ),
+    );
+  }
+
   Widget _buildOverviewCards() {
     if (_report == null) return SizedBox.shrink();
 
     final m = _report!.metrics;
-    final cards = [
-      {'value': m.totalDays.toString(), 'label': '\u0414\u043D\u0435\u0439'},
-      {'value': '${m.goodDaysPercent.toStringAsFixed(0)}%', 'label': '\u0425\u043E\u0440\u043E\u0448\u0438\u0445 \u0434\u043D\u0435\u0439'},
-      {'value': '+${m.improvementPercent.toStringAsFixed(0)}%', 'label': '\u0423\u043B\u0443\u0447\u0448\u0435\u043D\u0438\u0435'},
-      {'value': m.streakDays.toString(), 'label': '\u0421\u0435\u0440\u0438\u044F \u0434\u043D\u0435\u0439'},
+    final a = _report!.activity;
+    final avgMood = Mood.all[m.averageMood.round().clamp(0, 5)];
+    final items = <(IconData, Color, String, String)>[
+      (Icons.event_available, AppColors.citrusOrange, '${m.totalDays}', '\u0414\u043D\u0435\u0439 \u0432 \u043F\u0435\u0440\u0438\u043E\u0434\u0435'),
+      (Icons.local_fire_department, AppColors.citrusAmber, '${m.streakDays}', '\u0421\u0435\u0440\u0438\u044F \u0434\u043D\u0435\u0439'),
+      (Icons.favorite, avgMood.color, avgMood.emoji, '\u0421\u0440\u0435\u0434\u043D\u0435\u0435 \u043D\u0430\u0441\u0442\u0440\u043E\u0435\u043D\u0438\u0435'),
+      (Icons.edit_note, AppColors.citrusPurple, '${a.moodRecords}', '\u041E\u0442\u043C\u0435\u0442\u043E\u043A \u043D\u0430\u0441\u0442\u0440\u043E\u0435\u043D\u0438\u044F'),
     ];
 
     return GridView.builder(
@@ -1095,35 +1163,39 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         crossAxisCount: 2,
         mainAxisSpacing: 12,
         crossAxisSpacing: 12,
-        childAspectRatio: 1.5,
+        childAspectRatio: 1.4,
       ),
-      itemCount: cards.length,
+      itemCount: items.length,
       itemBuilder: (context, index) {
-        final card = cards[index];
-        return Container(
-          padding: AppSize.padding(14),
-          decoration: BoxDecoration(
-            color: AppColors.surface1,
-            borderRadius: AppSize.radius(14),
-            border: Border.all(color: AppColors.subtleBorder),
+        final it = items[index];
+        return _statCard(it.$1, it.$2, it.$3, it.$4);
+      },
+    );
+  }
+
+  Widget _statCard(IconData icon, Color color, String value, String label) {
+    return CitrusCard(
+      radius: 14,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Container(
+            width: AppSize.s(34),
+            height: AppSize.s(34),
+            decoration: BoxDecoration(color: color.withValues(alpha: 0.14), borderRadius: AppSize.radius(10)),
+            child: Icon(icon, color: color, size: AppSize.s(18)),
           ),
-          child: Column(
+          Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              Text(
-                card['value'] as String,
-                style: TextStyle(fontSize: AppSize.s(22), fontWeight: FontWeight.w700, color: AppColors.foreground),
-              ),
-              AppSize.gapH(4),
-              Text(
-                card['label'] as String,
-                style: TextStyle(fontSize: AppSize.s(10), color: AppColors.dimForeground),
-              ),
+              Text(value, style: TextStyle(fontSize: AppSize.s(22), fontWeight: FontWeight.w800, color: AppColors.foreground)),
+              AppSize.gapH(2),
+              Text(label, style: AppText.label, maxLines: 1, overflow: TextOverflow.ellipsis),
             ],
           ),
-        );
-      },
+        ],
+      ),
     );
   }
 
