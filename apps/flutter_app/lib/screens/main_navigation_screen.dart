@@ -68,6 +68,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Widget
         onNavigateToDiary: () => _setIndex(3),
         onNavigateToSleep: () => _setIndex(7),
         onNavigateToTests: () => _setIndex(8),
+        onNavigateToTree: () => _setIndex(15),
       ),
       CalendarScreen(),            // 1
       ChatScreen(),                // 2

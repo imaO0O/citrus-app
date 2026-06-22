@@ -7,6 +7,7 @@ import '../core/theme/app_colors.dart';
 import '../core/repository/mood_repository.dart';
 import '../core/services/storage_service.dart';
 import '../core/widgets/citrus_card.dart';
+import '../core/widgets/citrus_action_card.dart';
 import '../core/theme/app_text.dart';
 import '../core/services/course_prefs_service.dart';
 import '../data/courses/courses.dart';
@@ -27,6 +28,7 @@ class HomePage extends StatefulWidget {
   final VoidCallback? onNavigateToDiary;
   final VoidCallback? onNavigateToSleep;
   final VoidCallback? onNavigateToTests;
+  final VoidCallback? onNavigateToTree;
 
   HomePage({
     super.key,
@@ -35,6 +37,7 @@ class HomePage extends StatefulWidget {
     this.onNavigateToDiary,
     this.onNavigateToSleep,
     this.onNavigateToTests,
+    this.onNavigateToTree,
   });
 
   @override
@@ -660,9 +663,15 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     );
   }
 
-  Widget _sectionTitle(String t) => Padding(
+  Widget _sectionTitle(String t, {Widget? trailing}) => Padding(
         padding: AppSize.paddingH(20, 0),
-        child: Text(t, style: TextStyle(fontSize: AppSize.s(15), fontWeight: FontWeight.w700, color: AppColors.foreground)),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(t, style: TextStyle(fontSize: AppSize.s(15), fontWeight: FontWeight.w700, color: AppColors.foreground)),
+            if (trailing != null) trailing,
+          ],
+        ),
       );
 
   @override
@@ -711,7 +720,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                   AppSize.gapH(20),
                   _reveal(2, _buildWheelSection(state, moodColor)),
                   AppSize.gapH(24),
-                  _reveal(3, _sectionTitle('Сегодня')),
+                  _reveal(3, _sectionTitle('Сегодня', trailing: Text(DateFormat('d MMMM', 'ru_RU').format(DateTime.now()), style: AppText.caption))),
                   AppSize.gapH(10),
                   if (_showWarning) ...[
                     _buildEarlyWarning(),
@@ -730,10 +739,24 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                   )),
                   AppSize.gapH(16),
                   _reveal(6, _buildDailyAffirmation()),
+                  if (widget.onNavigateToTree != null) ...[
+                    AppSize.gapH(16),
+                    _reveal(7, Padding(
+                      padding: AppSize.paddingH(20, 0),
+                      child: CitrusActionCard(
+                        emoji: '🌳',
+                        title: 'Цитрусовое дерево',
+                        subtitle: 'Растёт, когда ты заботишься о себе',
+                        ctaLabel: 'Посмотреть дерево',
+                        color: AppColors.citrusGreen,
+                        onTap: widget.onNavigateToTree!,
+                      ),
+                    )),
+                  ],
                   AppSize.gapH(16),
-                  _reveal(7, _sectionTitle('Быстрый доступ')),
+                  _reveal(8, _sectionTitle('Быстрый доступ')),
                   AppSize.gapH(10),
-                  _reveal(8, QuickLinks(
+                  _reveal(9, QuickLinks(
                     onExerciseTap: widget.onNavigateToExercises,
                     onChatTap: widget.onNavigateToChat,
                     onDiaryTap: widget.onNavigateToDiary,
@@ -741,7 +764,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                     onTestsTap: widget.onNavigateToTests,
                   )),
                   AppSize.gapH(16),
-                  _reveal(9, MoodLog(entries: state.todayLog)),
+                  _reveal(10, MoodLog(entries: state.todayLog)),
                 ],
               ),
             ),
