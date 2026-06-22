@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_text.dart';
 import '../../core/utils/app_size.dart';
+import '../../core/widgets/citrus_card.dart';
+import '../../core/widgets/citrus_button.dart';
 import '../../core/services/course_prefs_service.dart';
 import '../../data/courses/courses.dart';
 
@@ -47,7 +50,7 @@ class _CoursesListScreenState extends State<CoursesListScreen> {
         children: [
           Text(
             'Короткие курсы по 5 дней: теория, упражнение и рефлексия. Открывается по одному дню в день — так привычка закрепляется.',
-            style: TextStyle(color: AppColors.mutedForeground, fontSize: AppSize.s(13), height: 1.5),
+            style: AppText.bodyMuted,
           ),
           AppSize.gapH(16),
           ...kCourses.map((c) {
@@ -58,59 +61,71 @@ class _CoursesListScreenState extends State<CoursesListScreen> {
             final finished = done >= total;
             return Padding(
               padding: AppSize.paddingOnly(bottom: 12),
-              child: GestureDetector(
+              child: CitrusCard(
+                accent: c.color,
                 onTap: () async {
                   await Navigator.of(context).push(
                     MaterialPageRoute(builder: (_) => CourseDetailScreen(course: c)),
                   );
                   _loadProgress();
                 },
-                child: Container(
-                  padding: AppSize.padding(16),
-                  decoration: BoxDecoration(
-                    color: AppColors.card,
-                    borderRadius: AppSize.radius(18),
-                    border: Border.all(color: c.color.withValues(alpha: 0.3)),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(children: [
-                        Container(
-                          width: AppSize.s(48),
-                          height: AppSize.s(48),
-                          decoration: BoxDecoration(color: c.color.withValues(alpha: 0.15), borderRadius: AppSize.radius(14)),
-                          child: Center(child: Text(c.emoji, style: TextStyle(fontSize: AppSize.s(24)))),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(children: [
+                      Container(
+                        width: AppSize.s(50),
+                        height: AppSize.s(50),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [c.color.withValues(alpha: 0.22), c.color.withValues(alpha: 0.08)],
+                          ),
+                          borderRadius: AppSize.radius(14),
                         ),
-                        AppSize.gapW(14),
-                        Expanded(
-                          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                            Text(c.title, style: TextStyle(color: AppColors.foreground, fontSize: AppSize.s(16), fontWeight: FontWeight.w700)),
-                            AppSize.gapH(3),
-                            Text(c.subtitle, style: TextStyle(color: AppColors.mutedForeground, fontSize: AppSize.s(12), height: 1.3)),
-                          ]),
-                        ),
-                      ]),
-                      AppSize.gapH(14),
-                      ClipRRect(
-                        borderRadius: AppSize.radius(4),
-                        child: LinearProgressIndicator(
-                          value: progress,
-                          minHeight: 6,
-                          backgroundColor: AppColors.surface2,
-                          valueColor: AlwaysStoppedAnimation<Color>(c.color),
-                        ),
+                        child: Center(child: Text(c.emoji, style: TextStyle(fontSize: AppSize.s(25)))),
                       ),
-                      AppSize.gapH(8),
-                      Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                        Text('$done из $total дней', style: TextStyle(color: AppColors.dimForeground, fontSize: AppSize.s(12))),
-                        Text(
-                          finished ? 'Завершён ✓' : (started ? 'Продолжить →' : 'Начать →'),
-                          style: TextStyle(color: c.color, fontSize: AppSize.s(13), fontWeight: FontWeight.w700),
-                        ),
-                      ]),
-                    ],
-                  ),
+                      AppSize.gapW(14),
+                      Expanded(
+                        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                          Text(c.title, style: AppText.cardTitle),
+                          AppSize.gapH(3),
+                          Text(c.subtitle, style: AppText.caption.copyWith(height: 1.3)),
+                        ]),
+                      ),
+                      if (finished) ...[
+                        AppSize.gapW(8),
+                        Icon(Icons.verified_rounded, color: c.color, size: AppSize.s(22)),
+                      ],
+                    ]),
+                    AppSize.gapH(14),
+                    ClipRRect(
+                      borderRadius: AppSize.radius(4),
+                      child: LinearProgressIndicator(
+                        value: progress,
+                        minHeight: 6,
+                        backgroundColor: AppColors.surface2,
+                        valueColor: AlwaysStoppedAnimation<Color>(c.color),
+                      ),
+                    ),
+                    AppSize.gapH(10),
+                    Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                      Text('$done из $total дней', style: AppText.caption),
+                      Container(
+                        padding: AppSize.paddingH(11, 6),
+                        decoration: BoxDecoration(color: c.color.withValues(alpha: 0.15), borderRadius: AppSize.radius(20)),
+                        child: Row(mainAxisSize: MainAxisSize.min, children: [
+                          Text(
+                            finished ? 'Пройти заново' : (started ? 'Продолжить' : 'Начать'),
+                            style: TextStyle(color: c.color, fontSize: AppSize.s(12.5), fontWeight: FontWeight.w700),
+                          ),
+                          AppSize.gapW(3),
+                          Icon(finished ? Icons.replay_rounded : Icons.arrow_forward_rounded, size: AppSize.s(13), color: c.color),
+                        ]),
+                      ),
+                    ]),
+                  ],
                 ),
               ),
             );
@@ -166,21 +181,19 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
           : ListView(
               padding: AppSize.padding(16),
               children: [
-                Container(
+                CitrusCard(
+                  accent: course.color,
                   padding: AppSize.padding(18),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [course.color.withValues(alpha: 0.3), course.color.withValues(alpha: 0.1)],
-                    ),
-                    borderRadius: AppSize.radius(18),
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [course.color.withValues(alpha: 0.3), course.color.withValues(alpha: 0.1)],
                   ),
                   child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     Row(children: [
                       Text(course.emoji, style: TextStyle(fontSize: AppSize.s(32))),
                       AppSize.gapW(12),
-                      Expanded(child: Text(course.subtitle, style: TextStyle(color: AppColors.foreground, fontSize: AppSize.s(14), fontWeight: FontWeight.w600, height: 1.3))),
+                      Expanded(child: Text(course.subtitle, style: AppText.body.copyWith(fontWeight: FontWeight.w600, height: 1.3))),
                     ]),
                     AppSize.gapH(14),
                     ClipRRect(
@@ -193,7 +206,7 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                       ),
                     ),
                     AppSize.gapH(8),
-                    Text('Пройдено $done из $total дней', style: TextStyle(color: AppColors.foreground, fontSize: AppSize.s(12))),
+                    Text('Пройдено $done из $total дней', style: AppText.caption.copyWith(color: AppColors.foreground)),
                   ]),
                 ),
                 AppSize.gapH(20),
@@ -208,50 +221,38 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
   }
 
   Widget _buildCompletedBanner() {
-    return Container(
+    return CitrusCard(
+      accent: AppColors.citrusGreen,
+      color: AppColors.citrusGreen.withValues(alpha: 0.12),
       padding: AppSize.padding(18),
-      decoration: BoxDecoration(
-        color: AppColors.citrusGreen.withValues(alpha: 0.12),
-        borderRadius: AppSize.radius(18),
-        border: Border.all(color: AppColors.citrusGreen.withValues(alpha: 0.4)),
-      ),
       child: Column(children: [
         Text('🎉', style: TextStyle(fontSize: AppSize.s(40))),
         AppSize.gapH(8),
-        Text('Курс пройден!', style: TextStyle(color: AppColors.foreground, fontSize: AppSize.s(18), fontWeight: FontWeight.w800)),
+        Text('Курс пройден!', style: AppText.displayTitle),
         AppSize.gapH(6),
         Text(
           'Ты прошёл(а) все дни 🌟 Возвращайся к материалам когда угодно или начни курс заново.',
           textAlign: TextAlign.center,
-          style: TextStyle(color: AppColors.mutedForeground, fontSize: AppSize.s(13), height: 1.4),
+          style: AppText.bodyMuted,
         ),
-        AppSize.gapH(14),
+        AppSize.gapH(16),
         Row(children: [
           Expanded(
-            child: OutlinedButton.icon(
+            child: CitrusButton(
+              label: 'Заново',
+              icon: Icons.replay,
+              variant: CitrusButtonVariant.secondary,
+              color: course.color,
               onPressed: _confirmRestart,
-              icon: Icon(Icons.replay, size: AppSize.s(18)),
-              label: Text('Заново'),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: course.color,
-                side: BorderSide(color: course.color.withValues(alpha: 0.5)),
-                padding: AppSize.paddingH(0, 12),
-                shape: RoundedRectangleBorder(borderRadius: AppSize.radius(12)),
-              ),
             ),
           ),
           AppSize.gapW(10),
           Expanded(
-            child: ElevatedButton.icon(
+            child: CitrusButton(
+              label: 'К курсам',
+              icon: Icons.grid_view,
+              color: course.color,
               onPressed: () => Navigator.pop(context),
-              icon: Icon(Icons.grid_view, size: AppSize.s(18)),
-              label: Text('К курсам'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: course.color,
-                foregroundColor: Colors.white,
-                padding: AppSize.paddingH(0, 12),
-                shape: RoundedRectangleBorder(borderRadius: AppSize.radius(12)),
-              ),
             ),
           ),
         ]),
@@ -300,7 +301,9 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
       padding: AppSize.paddingOnly(bottom: 10),
       child: Opacity(
         opacity: unlocked ? 1 : 0.55,
-        child: GestureDetector(
+        child: CitrusCard(
+          padding: AppSize.padding(14),
+          accent: isDone ? AppColors.citrusGreen : (unlocked ? course.color : null),
           onTap: unlocked
               ? () async {
                   final changed = await Navigator.of(context).push<bool>(
@@ -309,30 +312,22 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                   if (changed == true) _load();
                 }
               : null,
-          child: Container(
-            padding: AppSize.padding(14),
-            decoration: BoxDecoration(
-              color: AppColors.card,
-              borderRadius: AppSize.radius(14),
-              border: Border.all(color: AppColors.border, width: 0.5),
-            ),
-            child: Row(children: [
-              Icon(leadIcon, color: leadColor, size: AppSize.s(26)),
-              AppSize.gapW(12),
-              Expanded(
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text('День ${i + 1}', style: TextStyle(color: AppColors.dimForeground, fontSize: AppSize.s(11), fontWeight: FontWeight.w600)),
+          child: Row(children: [
+            Icon(leadIcon, color: leadColor, size: AppSize.s(26)),
+            AppSize.gapW(12),
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('День ${i + 1}', style: AppText.label),
+                AppSize.gapH(2),
+                Text(day.title, style: AppText.body.copyWith(fontWeight: FontWeight.w600)),
+                if (lockNote != null) ...[
                   AppSize.gapH(2),
-                  Text(day.title, style: TextStyle(color: AppColors.foreground, fontSize: AppSize.s(15), fontWeight: FontWeight.w600)),
-                  if (lockNote != null) ...[
-                    AppSize.gapH(2),
-                    Text(lockNote, style: TextStyle(color: unlockDate != null ? AppColors.citrusAmber : AppColors.dimForeground, fontSize: AppSize.s(11))),
-                  ],
-                ]),
-              ),
-              if (unlocked) Icon(Icons.chevron_right, color: AppColors.dimForeground, size: AppSize.s(20)),
-            ]),
-          ),
+                  Text(lockNote, style: TextStyle(color: unlockDate != null ? AppColors.citrusAmber : AppColors.dimForeground, fontSize: AppSize.s(11))),
+                ],
+              ]),
+            ),
+            if (unlocked) Icon(Icons.chevron_right, color: AppColors.dimForeground, size: AppSize.s(20)),
+          ]),
         ),
       ),
     );
@@ -410,18 +405,14 @@ class _CourseDayScreenState extends State<CourseDayScreen> {
       body: ListView(
         padding: AppSize.padding(20),
         children: [
-          Text(day.title, style: TextStyle(color: AppColors.foreground, fontSize: AppSize.s(22), fontWeight: FontWeight.bold, height: 1.3)),
+          Text(day.title, style: AppText.displayTitle),
           AppSize.gapH(16),
           MarkdownBody(data: day.theory, styleSheet: _md()),
           AppSize.gapH(20),
           // Упражнение
-          Container(
-            padding: AppSize.padding(16),
-            decoration: BoxDecoration(
-              color: course.color.withValues(alpha: 0.1),
-              borderRadius: AppSize.radius(16),
-              border: Border.all(color: course.color.withValues(alpha: 0.3)),
-            ),
+          CitrusCard(
+            accent: course.color,
+            color: course.color.withValues(alpha: 0.1),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Row(children: [
                 Icon(Icons.fitness_center, size: AppSize.s(16), color: course.color),
@@ -434,9 +425,9 @@ class _CourseDayScreenState extends State<CourseDayScreen> {
           ),
           AppSize.gapH(20),
           // Рефлексия
-          Text('Рефлексия', style: TextStyle(color: AppColors.foreground, fontSize: AppSize.s(16), fontWeight: FontWeight.w700)),
+          Text('Рефлексия', style: AppText.sectionTitle),
           AppSize.gapH(6),
-          Text(day.reflectionPrompt, style: TextStyle(color: AppColors.mutedForeground, fontSize: AppSize.s(13), height: 1.4)),
+          Text(day.reflectionPrompt, style: AppText.bodyMuted),
           AppSize.gapH(10),
           TextField(
             controller: _reflection,
@@ -452,21 +443,12 @@ class _CourseDayScreenState extends State<CourseDayScreen> {
             ),
           ),
           AppSize.gapH(20),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: _saving ? null : _complete,
-              icon: _saving
-                  ? SizedBox(width: AppSize.s(18), height: AppSize.s(18), child: const CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                  : Icon(_alreadyDone ? Icons.save : Icons.check),
-              label: Text(_alreadyDone ? 'Сохранить' : 'Завершить день'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: course.color,
-                foregroundColor: Colors.white,
-                padding: AppSize.paddingH(0, 15),
-                shape: RoundedRectangleBorder(borderRadius: AppSize.radius(14)),
-              ),
-            ),
+          CitrusButton(
+            label: _alreadyDone ? 'Сохранить' : 'Завершить день',
+            icon: _alreadyDone ? Icons.save : Icons.check,
+            color: course.color,
+            loading: _saving,
+            onPressed: _saving ? null : _complete,
           ),
         ],
       ),

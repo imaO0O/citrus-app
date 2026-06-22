@@ -50,9 +50,22 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: SafeArea(
-        child: Column(
+      body: AnimatedContainer(
+        duration: const Duration(milliseconds: 450),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [_slides[_page].color.withValues(alpha: 0.13), AppColors.background, AppColors.background],
+          ),
+        ),
+        child: Stack(
           children: [
+            Positioned(top: -70, right: -50, child: _blob(_slides[_page].color, 220)),
+            Positioned(bottom: -60, left: -60, child: _blob(_slides[_page].color, 180)),
+            SafeArea(
+              child: Column(
+                children: [
             // Skip
             Align(
               alignment: Alignment.centerRight,
@@ -133,6 +146,20 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           ],
         ),
       ),
+            ],
+          ),
+        ),
     );
   }
+
+  Widget _blob(Color c, double size) => IgnorePointer(
+        child: Container(
+          width: size,
+          height: size,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: RadialGradient(colors: [c.withValues(alpha: 0.18), c.withValues(alpha: 0.0)]),
+          ),
+        ),
+      );
 }

@@ -3,7 +3,10 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_text.dart';
 import '../../core/utils/app_size.dart';
+import '../../core/widgets/citrus_card.dart';
+import '../../core/widgets/citrus_button.dart';
 import '../../core/services/storage_service.dart';
 import '../../services/notification_service.dart';
 
@@ -215,13 +218,9 @@ class _StudentScreenState extends State<StudentScreen> {
   Widget _buildPomodoro() {
     final color = _isWork ? AppColors.citrusOrange : AppColors.citrusGreen;
     final progress = 1 - (_remaining / _phaseTotal);
-    return Container(
+    return CitrusCard(
+      accent: color,
       padding: AppSize.padding(20),
-      decoration: BoxDecoration(
-        color: AppColors.card,
-        borderRadius: AppSize.radius(20),
-        border: Border.all(color: color.withValues(alpha: 0.25)),
-      ),
       child: Column(children: [
         Row(mainAxisAlignment: MainAxisAlignment.center, children: [
           Text(_isWork ? '🍅' : '☕', style: TextStyle(fontSize: AppSize.s(16))),
@@ -239,6 +238,7 @@ class _StudentScreenState extends State<StudentScreen> {
               child: CircularProgressIndicator(
                 value: progress.clamp(0.0, 1.0),
                 strokeWidth: 10,
+                strokeCap: StrokeCap.round,
                 backgroundColor: AppColors.surface2,
                 valueColor: AlwaysStoppedAnimation<Color>(color),
               ),
@@ -278,7 +278,7 @@ class _StudentScreenState extends State<StudentScreen> {
   Widget _buildExams() {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Row(children: [
-        Text('Обратный отсчёт', style: TextStyle(color: AppColors.foreground, fontSize: AppSize.s(16), fontWeight: FontWeight.w700)),
+        Text('Обратный отсчёт', style: AppText.sectionTitle),
         const Spacer(),
         GestureDetector(
           onTap: _addExam,
@@ -295,14 +295,12 @@ class _StudentScreenState extends State<StudentScreen> {
       ]),
       AppSize.gapH(12),
       if (_exams.isEmpty)
-        Container(
-          width: double.infinity,
+        CitrusCard(
           padding: AppSize.padding(20),
-          decoration: BoxDecoration(color: AppColors.card, borderRadius: AppSize.radius(16), border: Border.all(color: AppColors.border, width: 0.5)),
           child: Column(children: [
             Icon(Icons.event_note, size: AppSize.s(36), color: AppColors.dimForeground),
             AppSize.gapH(8),
-            Text('Добавь экзамен или дедлайн', style: TextStyle(color: AppColors.mutedForeground, fontSize: AppSize.s(13))),
+            Text('Добавь экзамен или дедлайн', style: AppText.bodyMuted),
           ]),
         )
       else
@@ -312,9 +310,9 @@ class _StudentScreenState extends State<StudentScreen> {
           final color = left < 0 ? AppColors.dimForeground : (urgent ? AppColors.destructive : AppColors.citrusOrange);
           return Padding(
             padding: AppSize.paddingOnly(bottom: 8),
-            child: Container(
+            child: CitrusCard(
+              accent: urgent && left >= 0 ? color : null,
               padding: AppSize.padding(14),
-              decoration: BoxDecoration(color: AppColors.card, borderRadius: AppSize.radius(14), border: Border.all(color: AppColors.border, width: 0.5)),
               child: Row(children: [
                 Container(
                   width: AppSize.s(48),
@@ -327,7 +325,7 @@ class _StudentScreenState extends State<StudentScreen> {
                 AppSize.gapW(12),
                 Expanded(
                   child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text(e.value['name'] ?? '', style: TextStyle(color: AppColors.foreground, fontSize: AppSize.s(14), fontWeight: FontWeight.w600), maxLines: 1, overflow: TextOverflow.ellipsis),
+                    Text(e.value['name'] ?? '', style: AppText.body.copyWith(fontWeight: FontWeight.w600), maxLines: 1, overflow: TextOverflow.ellipsis),
                     AppSize.gapH(2),
                     Text(
                       left < 0 ? 'позади' : (left == 0 ? 'сегодня!' : '$left ${_dayWord(left)}'),
@@ -354,37 +352,32 @@ class _StudentScreenState extends State<StudentScreen> {
   }
 
   Widget _buildBurnoutCard() {
-    return GestureDetector(
+    final purple = AppColors.citrusPurple;
+    return CitrusCard(
       onTap: _openBurnoutCheck,
-      child: Container(
-        padding: AppSize.padding(16),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [AppColors.citrusPurple.withValues(alpha: 0.15), AppColors.citrusPurple.withValues(alpha: 0.05)],
-          ),
-          borderRadius: AppSize.radius(18),
-          border: Border.all(color: AppColors.citrusPurple.withValues(alpha: 0.3)),
-        ),
-        child: Row(children: [
-          Container(
-            width: AppSize.s(46),
-            height: AppSize.s(46),
-            decoration: BoxDecoration(color: AppColors.citrusPurple.withValues(alpha: 0.18), borderRadius: AppSize.radius(13)),
-            child: Icon(Icons.battery_alert, color: AppColors.citrusPurple, size: AppSize.s(24)),
-          ),
-          AppSize.gapW(14),
-          Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('Экспресс-чек выгорания', style: TextStyle(color: AppColors.foreground, fontSize: AppSize.s(15), fontWeight: FontWeight.w700)),
-              AppSize.gapH(2),
-              Text('6 вопросов · 1 минута', style: TextStyle(color: AppColors.mutedForeground, fontSize: AppSize.s(12))),
-            ]),
-          ),
-          Icon(Icons.chevron_right, color: AppColors.dimForeground, size: AppSize.s(22)),
-        ]),
+      accent: purple,
+      gradient: LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [purple.withValues(alpha: 0.15), purple.withValues(alpha: 0.05)],
       ),
+      child: Row(children: [
+        Container(
+          width: AppSize.s(46),
+          height: AppSize.s(46),
+          decoration: BoxDecoration(color: purple.withValues(alpha: 0.18), borderRadius: AppSize.radius(13)),
+          child: Icon(Icons.battery_alert, color: purple, size: AppSize.s(24)),
+        ),
+        AppSize.gapW(14),
+        Expanded(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('Экспресс-чек выгорания', style: AppText.cardTitle),
+            AppSize.gapH(2),
+            Text('6 вопросов · 1 минута', style: AppText.caption),
+          ]),
+        ),
+        Icon(Icons.chevron_right, color: AppColors.dimForeground, size: AppSize.s(22)),
+      ]),
     );
   }
 
@@ -493,18 +486,10 @@ class _BurnoutSheetState extends State<_BurnoutSheet> {
         );
       }),
       AppSize.gapH(8),
-      SizedBox(
-        width: double.infinity,
-        child: ElevatedButton(
-          onPressed: _answers.length == _questions.length ? () => setState(() => _showResult = true) : null,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.citrusPurple,
-            foregroundColor: Colors.white,
-            padding: AppSize.paddingH(0, 14),
-            shape: RoundedRectangleBorder(borderRadius: AppSize.radius(14)),
-          ),
-          child: Text(_answers.length == _questions.length ? 'Узнать результат' : 'Ответь на все вопросы (${_answers.length}/${_questions.length})'),
-        ),
+      CitrusButton(
+        label: _answers.length == _questions.length ? 'Узнать результат' : 'Ответь на все вопросы (${_answers.length}/${_questions.length})',
+        color: AppColors.citrusPurple,
+        onPressed: _answers.length == _questions.length ? () => setState(() => _showResult = true) : null,
       ),
       AppSize.gapH(8),
     ]);
@@ -531,18 +516,10 @@ class _BurnoutSheetState extends State<_BurnoutSheet> {
       AppSize.gapH(16),
       Text('Это не диагноз, а ориентир. Если тяжело — обратись за поддержкой.', style: TextStyle(color: AppColors.dimForeground, fontSize: AppSize.s(11))),
       AppSize.gapH(16),
-      SizedBox(
-        width: double.infinity,
-        child: ElevatedButton(
-          onPressed: () => Navigator.pop(context),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.citrusPurple,
-            foregroundColor: Colors.white,
-            padding: AppSize.paddingH(0, 14),
-            shape: RoundedRectangleBorder(borderRadius: AppSize.radius(14)),
-          ),
-          child: Text('Понятно'),
-        ),
+      CitrusButton(
+        label: 'Понятно',
+        color: AppColors.citrusPurple,
+        onPressed: () => Navigator.pop(context),
       ),
       AppSize.gapH(8),
     ]);

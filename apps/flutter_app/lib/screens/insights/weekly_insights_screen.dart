@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/app_size.dart';
 import '../../core/widgets/citrus_button.dart';
+import '../../core/widgets/citrus_empty_state.dart';
 import '../../core/config/api_config.dart';
 import '../../core/services/storage_service.dart';
 import '../../core/repository/mood_repository.dart';
@@ -154,40 +155,23 @@ class _WeeklyInsightsScreenState extends State<WeeklyInsightsScreen> {
   }
 
   Widget _buildEmpty() {
-    return Center(
-      child: Padding(
-        padding: AppSize.padding(32),
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          Container(
-            width: AppSize.s(72),
-            height: AppSize.s(72),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(colors: [AppColors.citrusPurple, AppColors.citrusOrange]),
-              shape: BoxShape.circle,
-            ),
-            child: Center(child: Icon(Icons.insights, color: Colors.white, size: AppSize.s(36))),
-          ),
-          AppSize.gapH(16),
-          Text('Персональная сводка недели', style: TextStyle(color: AppColors.foreground, fontSize: AppSize.s(18), fontWeight: FontWeight.w700), textAlign: TextAlign.center),
-          AppSize.gapH(8),
-          Text(
-            'Цитрус посмотрит на твоё настроение, сон и записи за неделю и подскажет, что заметно и что можно улучшить.',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: AppColors.mutedForeground, fontSize: AppSize.s(14), height: 1.5),
-          ),
-          if (_error != null) ...[
-            AppSize.gapH(12),
-            Text(_error!, textAlign: TextAlign.center, style: TextStyle(color: AppColors.destructive, fontSize: AppSize.s(13))),
-          ],
-          AppSize.gapH(24),
-          CitrusButton(
-            label: 'Сгенерировать сводку',
-            icon: Icons.auto_awesome,
-            color: AppColors.citrusPurple,
-            onPressed: _generate,
-          ),
-        ]),
-      ),
+    if (_error != null) {
+      return CitrusEmptyState(
+        accent: AppColors.citrusPurple,
+        title: 'Не получилось',
+        subtitle: _error!,
+        actionLabel: 'Попробовать снова',
+        actionIcon: Icons.refresh,
+        onAction: _generate,
+      );
+    }
+    return CitrusEmptyState(
+      accent: AppColors.citrusPurple,
+      title: 'Персональная сводка недели',
+      subtitle: 'Цитрус посмотрит на твоё настроение, сон и записи за неделю и подскажет, что заметно и что можно улучшить.',
+      actionLabel: 'Сгенерировать сводку',
+      actionIcon: Icons.auto_awesome,
+      onAction: _generate,
     );
   }
 
@@ -228,16 +212,12 @@ class _WeeklyInsightsScreenState extends State<WeeklyInsightsScreen> {
           ),
         ),
         AppSize.gapH(16),
-        OutlinedButton.icon(
+        CitrusButton(
+          label: 'Обновить сводку',
+          icon: Icons.refresh,
+          variant: CitrusButtonVariant.secondary,
+          color: AppColors.citrusPurple,
           onPressed: _generate,
-          icon: Icon(Icons.refresh, size: AppSize.s(18)),
-          label: Text('Обновить сводку'),
-          style: OutlinedButton.styleFrom(
-            foregroundColor: AppColors.citrusPurple,
-            side: BorderSide(color: AppColors.citrusPurple.withValues(alpha: 0.5)),
-            padding: AppSize.paddingH(0, 13),
-            shape: RoundedRectangleBorder(borderRadius: AppSize.radius(12)),
-          ),
         ),
         AppSize.gapH(12),
         Text(
