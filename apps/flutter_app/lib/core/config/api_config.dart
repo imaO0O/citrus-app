@@ -6,7 +6,15 @@
 ///   .\scripts\set-ip.ps1 -Ip 192.168.0.100 - конкретный IP
 class ApiConfig {
   /// Базовый URL backend.
-  static const String baseUrl = 'https://citrus-app--sahsashishkov.replit.app';
+  ///
+  /// По умолчанию — прод на Replit. Для локальной разработки переопределяется
+  /// без правки кода:
+  ///   flutter run --dart-define=API_URL=http://10.0.2.2:8081   (Android-эмулятор)
+  ///   flutter run --dart-define=API_URL=http://localhost:8081   (web/десктоп)
+  static const String baseUrl = String.fromEnvironment(
+    'API_URL',
+    defaultValue: 'https://citrus-app--sahsashishkov.replit.app',
+  );
 
   /// Freesound API
   /// Получить API ключ: https://freesound.org/help/developer/

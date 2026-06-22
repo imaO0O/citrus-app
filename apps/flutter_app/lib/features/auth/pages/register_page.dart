@@ -298,7 +298,7 @@ class _RegisterPageState extends State<RegisterPage> {
                           return Container(
                             height: 56,
                             decoration: BoxDecoration(
-                              color: AppColors.citrusOrange.withOpacity(0.3),
+                              color: AppColors.citrusOrange.withValues(alpha: 0.3),
                               borderRadius: BorderRadius.circular(AppSize.s(AppColors.radius)),
                             ),
                             child: Center(
@@ -331,7 +331,7 @@ class _RegisterPageState extends State<RegisterPage> {
                               shadowColor: Colors.transparent,
                               foregroundColor: Colors.white,
                               disabledBackgroundColor: Colors.transparent,
-                              disabledForegroundColor: Colors.white.withOpacity(0.5),
+                              disabledForegroundColor: Colors.white.withValues(alpha: 0.5),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(AppSize.s(AppColors.radius)),
                               ),
@@ -459,9 +459,9 @@ class _RegisterPageState extends State<RegisterPage> {
   }
 
   Future<void> _handleRegister() async {
-    print('=== Регистрация ===');
-    print('Email: ${_emailController.text.trim()}');
-    print('Имя: ${_nameController.text.trim()}');
+    debugPrint('=== Регистрация ===');
+    debugPrint('Email: ${_emailController.text.trim()}');
+    debugPrint('Имя: ${_nameController.text.trim()}');
 
     if (!_agreedToTerms) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -478,12 +478,13 @@ class _RegisterPageState extends State<RegisterPage> {
     }
 
     if (_formKey.currentState!.validate()) {
-      print('Форма валидна, отправляем...');
+      debugPrint('Форма валидна, отправляем...');
       
       // При регистрации по умолчанию запоминаем сессию
       final storage = StorageService();
       await storage.setString('remember_me', 'true');
       
+      if (!mounted) return;
       context.read<AuthBloc>().add(AuthRegister(
             email: _emailController.text.trim(),
             password: _passwordController.text,
@@ -492,7 +493,7 @@ class _RegisterPageState extends State<RegisterPage> {
                 : _nameController.text.trim(),
           ));
     } else {
-      print('Форма не валидна');
+      debugPrint('Форма не валидна');
     }
   }
 }

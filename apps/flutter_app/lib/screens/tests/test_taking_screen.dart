@@ -309,7 +309,7 @@ class _AnswerOption extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       color: isSelected
-          ? AppColors.citrusOrange.withOpacity(0.2)
+          ? AppColors.citrusOrange.withValues(alpha: 0.2)
           : AppColors.card,
       borderRadius: AppSize.radius(12),
       child: InkWell(
@@ -321,7 +321,7 @@ class _AnswerOption extends StatelessWidget {
             border: Border.all(
               color: isSelected
                   ? AppColors.citrusOrange
-                  : AppColors.foreground.withOpacity(0.05),
+                  : AppColors.foreground.withValues(alpha: 0.05),
               width: isSelected ? 2 : 1,
             ),
             borderRadius: AppSize.radius(12),

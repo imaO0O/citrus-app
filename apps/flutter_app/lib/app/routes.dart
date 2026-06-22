@@ -193,7 +193,7 @@ class AuthSelectionPage extends StatelessWidget {
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(AppSize.s(AppColors.radius)),
                       border: Border.all(
-                        color: AppColors.citrusOrange.withOpacity(0.5),
+                        color: AppColors.citrusOrange.withValues(alpha: 0.5),
                       ),
                     ),
                     child: OutlinedButton(

@@ -8,6 +8,9 @@ class Article {
   final DateTime createdAt;
   final String source; // 'app', 'wikipedia'
   final List<String>? tags;
+  final bool isPublic; // отправлена в сообщество
+  final String moderationStatus; // private | pending | approved | rejected
+  final String? author; // имя автора (для статей сообщества)
 
   Article({
     required this.id,
@@ -19,6 +22,9 @@ class Article {
     required this.createdAt,
     this.source = 'app',
     this.tags,
+    this.isPublic = false,
+    this.moderationStatus = 'private',
+    this.author,
   });
 
   factory Article.fromJson(Map<String, dynamic> json) => Article(
@@ -31,6 +37,9 @@ class Article {
         createdAt: DateTime.parse(json['created_at']),
         source: json['source'] ?? 'app',
         tags: json['tags'] != null ? List<String>.from(json['tags']) : null,
+        isPublic: json['is_public'] == true,
+        moderationStatus: json['moderation_status'] as String? ?? 'private',
+        author: json['author'] as String?,
       );
 
   Map<String, dynamic> toJson() => {
@@ -43,5 +52,6 @@ class Article {
         'created_at': createdAt.toIso8601String(),
         'source': source,
         'tags': tags,
+        'is_public': isPublic,
       };
 }

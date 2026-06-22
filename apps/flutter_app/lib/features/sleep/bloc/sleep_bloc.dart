@@ -2,6 +2,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../models/sleep_record.dart';
 import '../../../core/repository/sleep_repository.dart';
 import '../../../core/repository/notification_preferences_repository.dart';
+import '../../../core/utils/network_error.dart';
 
 // События
 abstract class SleepEvent {
@@ -145,7 +146,7 @@ class SleepBloc extends Bloc<SleepEvent, SleepState> {
       );
       emit(SleepLoaded(records));
     } catch (e) {
-      emit(SleepError('Ошибка загрузки: $e'));
+      emit(SleepError(friendlyError(e, fallback: 'Не удалось загрузить данные о сне.')));
     }
   }
 
@@ -169,7 +170,7 @@ class SleepBloc extends Bloc<SleepEvent, SleepState> {
         emit(SleepLoaded(records));
       }
     } catch (e) {
-      emit(SleepError('Ошибка добавления: $e'));
+      emit(SleepError(friendlyError(e, fallback: 'Не удалось сохранить запись о сне.')));
     }
   }
 
@@ -187,7 +188,7 @@ class SleepBloc extends Bloc<SleepEvent, SleepState> {
         ));
       }
     } catch (e) {
-      emit(SleepError('Ошибка обновления: $e'));
+      emit(SleepError(friendlyError(e, fallback: 'Не удалось обновить запись о сне.')));
     }
   }
 
@@ -204,7 +205,7 @@ class SleepBloc extends Bloc<SleepEvent, SleepState> {
         emit(SleepLoaded(records));
       }
     } catch (e) {
-      emit(SleepError('Ошибка удаления: $e'));
+      emit(SleepError(friendlyError(e, fallback: 'Не удалось удалить запись о сне.')));
     }
   }
 }

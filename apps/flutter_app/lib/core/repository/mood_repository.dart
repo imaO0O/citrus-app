@@ -54,20 +54,17 @@ class MoodRecord {
 class MoodRepository {
   MoodApiService _apiService;
   String _userId;
-  String? _token;
 
   MoodRepository({
     required String userId,
     String? token,
     MoodApiService? apiService,
   })  : _userId = userId,
-        _token = token,
         _apiService = apiService ?? MoodApiService(token: token);
 
   void setUserId(String userId, {String? token}) {
     _userId = userId;
     if (token != null && token.isNotEmpty) {
-      _token = token;
       _apiService = MoodApiService(token: token);
     }
   }

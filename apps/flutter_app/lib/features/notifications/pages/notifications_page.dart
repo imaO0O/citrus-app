@@ -56,7 +56,7 @@ class _NotificationSettingsList extends StatelessWidget {
     ]);
   }
 
-  Widget _buildPermissionWarning(BuildContext context) => Container(padding: AppSize.padding(16), decoration: BoxDecoration(color: AppColors.citrusOrange.withOpacity(0.1), borderRadius: AppSize.radius(16), border: Border.all(color: AppColors.citrusOrange.withOpacity(0.3))),
+  Widget _buildPermissionWarning(BuildContext context) => Container(padding: AppSize.padding(16), decoration: BoxDecoration(color: AppColors.citrusOrange.withValues(alpha: 0.1), borderRadius: AppSize.radius(16), border: Border.all(color: AppColors.citrusOrange.withValues(alpha: 0.3))),
     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Row(children: [Icon(Icons.notifications_off, color: AppColors.citrusOrange), AppSize.gapW(8), Text('Уведомления отключены', style: TextStyle(fontWeight: FontWeight.w600, color: AppColors.citrusOrange))]),
       AppSize.gapH(8), Text('Для работы напоминаний необходимо разрешение на отправку уведомлений.', style: TextStyle(color: AppColors.mutedForeground, fontSize: AppSize.s(13))),
@@ -67,13 +67,13 @@ class _NotificationSettingsList extends StatelessWidget {
   Widget _buildSection(BuildContext context, {required IconData icon, required Color iconColor, required String title, required Widget child}) =>
     Container(decoration: BoxDecoration(color: AppColors.surface1, borderRadius: AppSize.radius(20), border: Border.all(color: AppColors.subtleBorder)),
       child: Padding(padding: AppSize.padding(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Row(children: [Container(width: 36, height: 36, decoration: BoxDecoration(color: iconColor.withOpacity(0.15), borderRadius: AppSize.radius(10)), child: Icon(icon, color: iconColor, size: 20)), AppSize.gapW(12), Expanded(child: Text(title, style: TextStyle(color: AppColors.foreground, fontSize: AppSize.s(16), fontWeight: FontWeight.w600)))]),
+        Row(children: [Container(width: 36, height: 36, decoration: BoxDecoration(color: iconColor.withValues(alpha: 0.15), borderRadius: AppSize.radius(10)), child: Icon(icon, color: iconColor, size: 20)), AppSize.gapW(12), Expanded(child: Text(title, style: TextStyle(color: AppColors.foreground, fontSize: AppSize.s(16), fontWeight: FontWeight.w600)))]),
         AppSize.gapH(12), child,
       ])));
 
   Widget _buildTestSection(BuildContext context) => Container(decoration: BoxDecoration(color: AppColors.surface1, borderRadius: AppSize.radius(20), border: Border.all(color: AppColors.subtleBorder)),
     child: Padding(padding: AppSize.padding(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Row(children: [Container(width: 36, height: 36, decoration: BoxDecoration(color: AppColors.dimForeground.withOpacity(0.1), borderRadius: AppSize.radius(10)), child: Icon(Icons.science, color: AppColors.mutedForeground, size: 20)), AppSize.gapW(12), Text('Тестирование', style: TextStyle(color: AppColors.foreground, fontSize: AppSize.s(16), fontWeight: FontWeight.w600))]),
+      Row(children: [Container(width: 36, height: 36, decoration: BoxDecoration(color: AppColors.dimForeground.withValues(alpha: 0.1), borderRadius: AppSize.radius(10)), child: Icon(Icons.science, color: AppColors.mutedForeground, size: 20)), AppSize.gapW(12), Text('Тестирование', style: TextStyle(color: AppColors.foreground, fontSize: AppSize.s(16), fontWeight: FontWeight.w600))]),
       AppSize.gapH(12), Text('Отправить тестовое уведомление:', style: TextStyle(color: AppColors.mutedForeground, fontSize: AppSize.s(13))), AppSize.gapH(12),
       Wrap(spacing: 8, runSpacing: 8, children: [
         _TestButton(label: 'Календарь', icon: Icons.calendar_today, color: Color(0xFF2196F3), onPressed: () => context.read<NotificationSettingsBloc>().add(TestNotification('calendar'))),
@@ -114,7 +114,7 @@ class _MoodSettings extends StatelessWidget {
         Spacer(), if (reminderTimes.length > 1) IconButton(icon: Icon(Icons.close, size: 18, color: AppColors.mutedForeground), onPressed: () { final u = List<TimeOfDay>.from(reminderTimes); u.removeAt(e.key); context.read<NotificationSettingsBloc>().add(UpdateMoodSettings(reminderTimes: u)); }),
       ]))),
       AppSize.gapH(4), OutlinedButton.icon(onPressed: reminderTimes.length < 5 ? () { final u = List<TimeOfDay>.from(reminderTimes); u.add(TimeOfDay(hour: 18, minute: 0)); context.read<NotificationSettingsBloc>().add(UpdateMoodSettings(reminderTimes: u)); } : null, icon: Icon(Icons.add, size: 16), label: Text('Добавить время'),
-        style: OutlinedButton.styleFrom(foregroundColor: AppColors.citrusOrange, side: BorderSide(color: AppColors.citrusOrange.withOpacity(0.5)), shape: RoundedRectangleBorder(borderRadius: AppSize.radius(12)), padding: AppSize.paddingH(12, 8))),
+        style: OutlinedButton.styleFrom(foregroundColor: AppColors.citrusOrange, side: BorderSide(color: AppColors.citrusOrange.withValues(alpha: 0.5)), shape: RoundedRectangleBorder(borderRadius: AppSize.radius(12)), padding: AppSize.paddingH(12, 8))),
     ],
   ]);
 }
@@ -164,5 +164,5 @@ class _TestButton extends StatelessWidget {
   final String label; final IconData icon; final Color color; final VoidCallback onPressed;
   _TestButton({required this.label, required this.icon, required this.color, required this.onPressed});
   @override Widget build(BuildContext context) => OutlinedButton.icon(onPressed: onPressed, icon: Icon(icon, size: 16, color: color), label: Text(label),
-    style: OutlinedButton.styleFrom(foregroundColor: color, side: BorderSide(color: color.withOpacity(0.4)), shape: RoundedRectangleBorder(borderRadius: AppSize.radius(12)), padding: AppSize.paddingH(12, 8)));
+    style: OutlinedButton.styleFrom(foregroundColor: color, side: BorderSide(color: color.withValues(alpha: 0.4)), shape: RoundedRectangleBorder(borderRadius: AppSize.radius(12)), padding: AppSize.paddingH(12, 8)));
 }

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../config/api_config.dart';
 
@@ -49,13 +50,15 @@ class DiaryApiService {
     required String content,
     int? moodValue,
     String? entryDate,
+    List<String>? tags,
   }) async {
     final body = {
       'content': content,
       if (moodValue != null) 'mood_value': moodValue,
       if (entryDate != null) 'entry_date': entryDate,
+      if (tags != null) 'tags': tags,
     };
-    print('DiaryAPI createEntry body: $body');
+    debugPrint('DiaryAPI createEntry body: $body');
 
     final response = await _client.post(
       Uri.parse('$baseUrl/diary/entries'),
@@ -73,10 +76,12 @@ class DiaryApiService {
     required String id,
     required String content,
     int? moodValue,
+    List<String>? tags,
   }) async {
     final body = {
       'content': content,
       if (moodValue != null) 'mood_value': moodValue,
+      if (tags != null) 'tags': tags,
     };
 
     final response = await _client.put(

@@ -17,10 +17,17 @@ import '../screens/tests_screen.dart';
 import '../screens/exercises_screen.dart';
 import '../screens/analytics_screen.dart';
 import '../screens/settings_screen.dart';
+import '../screens/courses/courses_screen.dart';
+import '../screens/insights/weekly_insights_screen.dart';
+import '../screens/tree/citrus_tree_screen.dart';
+import '../screens/student/student_screen.dart';
+import '../screens/onboarding/onboarding_screen.dart';
+import '../screens/lock/pin_screen.dart';
 import '../screens/emergency_modal.dart';
+import '../core/services/storage_service.dart';
+import '../core/services/pin_service.dart';
 import '../features/auth/bloc/auth_bloc.dart';
 import '../bloc/dashboard_bloc.dart';
-import '../core/repository/sleep_repository.dart';
 import '../features/diary/bloc/diary_bloc.dart';
 import '../features/sleep/bloc/sleep_bloc.dart';
 import '../features/articles/pages/articles_page.dart';
@@ -34,9 +41,13 @@ class MainNavigationScreen extends StatefulWidget {
   State<MainNavigationScreen> createState() => _MainNavigationScreenState();
 }
 
-class _MainNavigationScreenState extends State<MainNavigationScreen> {
+class _MainNavigationScreenState extends State<MainNavigationScreen> with WidgetsBindingObserver {
   int _currentIndex = 0;
   bool _showMenu = false;
+  // Блокировка PIN-кодом
+  bool _pinEnabled = false;
+  bool _pinChecked = false;
+  bool _unlocked = false;
   bool _showEmergency = false;
 
   // 0-3: main nav screens, 4+: feature screens
@@ -45,23 +56,19 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   // Ключ для AnalyticsScreen, чтобы вызывать refresh при навигации
   final GlobalKey _analyticsKey = GlobalKey();
 
-  final List<Widget> _screens = [];
-
-  /// Публичный метод для навигации на аналитику (используется из MoreScreen)
-  void navigateToAnalytics() {
-    _setIndex(11);
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    _screens.addAll([
+  /// Экраны строятся заново на каждый build(), а не кэшируются в поле — иначе при
+  /// смене темы IndexedStack получает те же экземпляры виджетов, и Flutter пропускает
+  /// их перестроение (статические AppColors остаются в старой теме). State экранов
+  /// при этом сохраняется, т.к. их тип и позиция в списке не меняются.
+  List<Widget> _buildScreens() {
+    return [
       HomePage(                 // 0 — homepage
         onNavigateToExercises: () => _setIndex(9),
         onNavigateToChat: () => _setIndex(2),
         onNavigateToDiary: () => _setIndex(3),
         onNavigateToSleep: () => _setIndex(7),
         onNavigateToTests: () => _setIndex(8),
+        onNavigateToTree: () => _setIndex(15),
       ),
       CalendarScreen(),            // 1
       ChatScreen(),                // 2
@@ -75,7 +82,18 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       AnalyticsScreen(key: _analyticsKey),           // 10
       SettingsScreen(),            // 11
       ArticlesPage(showBackButton: false),  // 12
-    ]);
+      CoursesListScreen(),         // 13
+      WeeklyInsightsScreen(),      // 14
+      CitrusTreeScreen(),          // 15
+      StudentScreen(),             // 16
+    ];
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _loadLock();
 
     // Инициализация BLoC при старте
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -92,19 +110,55 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       } catch (e) {
         debugPrint('MainNav: ошибка init BLoC: $e');
       }
+      _maybeShowOnboarding();
     });
   }
 
-  final List<Map<String, String>> _allFeatures = [
-    {'path': '4',  'label': 'Аффирмации',    'icon': '💫', 'desc': 'Позитивные установки'},
-    {'path': '5',  'label': 'Галерея',       'icon': '📸', 'desc': 'Счастливые моменты'},
-    {'path': '6',  'label': 'Антистресс',    'icon': '🎮', 'desc': 'Снять напряжение'},
-    {'path': '7',  'label': 'Сон',           'icon': '🌙', 'desc': 'Трекер сна'},
-    {'path': '8',  'label': 'Тесты',         'icon': '📋', 'desc': 'Психотесты'},
-    {'path': '9',  'label': 'Упражнения',    'icon': '🧘', 'desc': 'Практики'},
-    {'path': '10', 'label': 'Аналитика',     'icon': '📊', 'desc': 'Статистика'},
-    {'path': '11', 'label': 'Настройки',     'icon': '⚙️', 'desc': 'Параметры'},
-    {'path': '12', 'label': 'Статьи',        'icon': '📖', 'desc': 'Самопомощь'},
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Перезапираем при возврате из фона
+    if (state == AppLifecycleState.resumed && _pinEnabled && mounted) {
+      setState(() => _unlocked = false);
+    }
+  }
+
+  Future<void> _loadLock() async {
+    final en = await PinService().isEnabled();
+    if (mounted) setState(() { _pinEnabled = en; _pinChecked = true; });
+  }
+
+  /// Показываем короткий тур при первом запуске.
+  Future<void> _maybeShowOnboarding() async {
+    try {
+      final seen = await StorageService().getString('onboarding_seen');
+      if (seen == 'true' || !mounted) return;
+      await Navigator.of(context).push(
+        MaterialPageRoute(fullscreenDialog: true, builder: (_) => const OnboardingScreen()),
+      );
+      await StorageService().setString('onboarding_seen', 'true');
+    } catch (_) {}
+  }
+
+  final List<Map<String, dynamic>> _allFeatures = [
+    {'path': '4',  'label': 'Аффирмации', 'icon': Icons.auto_awesome,           'desc': 'Позитивные установки', 'color': const Color(0xFF9C6ADE)},
+    {'path': '5',  'label': 'Галерея',    'icon': Icons.photo_library_outlined, 'desc': 'Счастливые моменты',   'color': const Color(0xFFEC6A8C)},
+    {'path': '6',  'label': 'Антистресс', 'icon': Icons.sports_esports_outlined,'desc': 'Снять напряжение',     'color': const Color(0xFF4A90D9)},
+    {'path': '7',  'label': 'Сон',        'icon': Icons.bedtime_outlined,       'desc': 'Трекер сна',           'color': const Color(0xFF5C6BC0)},
+    {'path': '8',  'label': 'Тесты',      'icon': Icons.fact_check_outlined,    'desc': 'Психотесты',           'color': const Color(0xFF26A69A)},
+    {'path': '9',  'label': 'Упражнения', 'icon': Icons.self_improvement,       'desc': 'Практики',             'color': const Color(0xFF66BB6A)},
+    {'path': '10', 'label': 'Аналитика',  'icon': Icons.insights,               'desc': 'Статистика',           'color': const Color(0xFFFFB74D)},
+    {'path': '11', 'label': 'Настройки',  'icon': Icons.settings_outlined,      'desc': 'Параметры',            'color': const Color(0xFF8A8A99)},
+    {'path': '12', 'label': 'Статьи',     'icon': Icons.menu_book_outlined,     'desc': 'Самопомощь',           'color': const Color(0xFFFF8C42)},
+    {'path': '13', 'label': 'Программы',  'icon': Icons.school_outlined,        'desc': 'Мини-курсы',           'color': const Color(0xFF7E57C2)},
+    {'path': '14', 'label': 'ИИ-инсайты', 'icon': Icons.tips_and_updates_outlined, 'desc': 'Сводка недели',     'color': const Color(0xFF9C6ADE)},
+    {'path': '15', 'label': 'Дерево',     'icon': Icons.park_outlined,          'desc': 'Забота о себе',        'color': const Color(0xFF66BB6A)},
+    {'path': '16', 'label': 'Студенту',   'icon': Icons.timer_outlined,         'desc': 'Pomodoro, экзамены',   'color': const Color(0xFF4A90D9)},
   ];
 
   void _setIndex(int index) {
@@ -127,6 +181,16 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Экран блокировки PIN-кодом (до загрузки данных и до контента приложения)
+    if (!_pinChecked) {
+      return Scaffold(
+        backgroundColor: AppColors.background,
+        body: Center(child: Text('🍊', style: TextStyle(fontSize: AppSize.s(48)))),
+      );
+    }
+    if (_pinEnabled && !_unlocked) {
+      return PinScreen(canCancel: false, onSuccess: () => setState(() => _unlocked = true));
+    }
     return ListenableBuilder(
       listenable: ThemeService(),
       builder: (context, _) {
@@ -135,7 +199,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             if (state is AuthAuthenticated) {
               debugPrint('MainNav: AuthAuthenticated, userId=${state.user.id}');
               Future.microtask(() {
-                if (mounted) {
+                if (context.mounted) {
                   try {
                     context.read<DashboardBloc>().updateUserId(state.user.id, token: state.user.token);
                   } catch (e) {}
@@ -152,7 +216,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
               });
             } else if (state is AuthUnauthenticated) {
               Future.microtask(() {
-                if (mounted) {
+                if (context.mounted) {
                   context.go('/auth');
                 }
               });
@@ -213,7 +277,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                           Expanded(
                             child: IndexedStack(
                               index: _currentIndex,
-                              children: _screens,
+                              children: _buildScreens(),
                             ),
                           ),
                           _buildBottomNav(),
@@ -242,12 +306,12 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            AppColors.citrusOrange.withOpacity(0.08),
+            AppColors.citrusOrange.withValues(alpha: 0.08),
             Colors.transparent,
           ],
         ),
         border: Border(
-          bottom: BorderSide(color: AppColors.citrusOrange.withOpacity(0.1)),
+          bottom: BorderSide(color: AppColors.citrusOrange.withValues(alpha: 0.1)),
         ),
       ),
       child: Row(
@@ -267,7 +331,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.citrusOrange.withOpacity(0.4),
+                      color: AppColors.citrusOrange.withValues(alpha: 0.4),
                       blurRadius: 16,
                     ),
                   ],
@@ -290,7 +354,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
               Container(
                 padding: AppSize.paddingH(8, 2),
                 decoration: BoxDecoration(
-                  color: AppColors.citrusOrange.withOpacity(0.15),
+                  color: AppColors.citrusOrange.withValues(alpha: 0.15),
                   borderRadius: AppSize.radius(999),
                 ),
                 child: Text(
@@ -310,7 +374,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                 width: 32,
                 height: 32,
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.05),
+                  color: AppColors.subtleBg,
                   borderRadius: AppSize.radius(12),
                 ),
                 child: Icon(Icons.notifications_none,
@@ -322,9 +386,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                 child: Container(
                   padding: AppSize.paddingH(12, 6),
                   decoration: BoxDecoration(
-                    color: AppColors.destructive.withOpacity(0.15),
+                    color: AppColors.destructive.withValues(alpha: 0.15),
                     borderRadius: AppSize.radius(12),
-                    border: Border.all(color: AppColors.destructive.withOpacity(0.3)),
+                    border: Border.all(color: AppColors.destructive.withValues(alpha: 0.3)),
                   ),
                   child: Row(
                     children: [
@@ -358,23 +422,21 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       {'icon': Icons.book_outlined, 'activeIcon': Icons.book, 'label': 'Дневник'},
     ];
 
-    return Container(
+    return Padding(
       padding: EdgeInsets.fromLTRB(16, 8, 16, 16),
-      decoration: BoxDecoration(
-        color: AppColors.background.withOpacity(0.95),
-        border: Border(
-          top: BorderSide(color: AppColors.citrusOrange.withOpacity(0.1)),
-        ),
-      ),
       child: ClipRRect(
-        borderRadius: AppSize.radius(16),
+        borderRadius: AppSize.radius(24),
         child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+          filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
           child: Container(
-            padding: AppSize.paddingH(4, 4),
+            padding: AppSize.paddingH(6, 6),
             decoration: BoxDecoration(
-              color: AppColors.foreground.withOpacity(0.03),
-              borderRadius: AppSize.radius(16),
+              color: AppColors.card.withValues(alpha: 0.88),
+              borderRadius: AppSize.radius(24),
+              border: Border.all(color: AppColors.subtleBorder),
+              boxShadow: [
+                BoxShadow(color: Colors.black.withValues(alpha: 0.18), blurRadius: 24, offset: const Offset(0, 8)),
+              ],
             ),
             child: Row(
               children: [
@@ -385,13 +447,15 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                   return Expanded(
                     child: GestureDetector(
                       onTap: () => _setIndex(index),
-                      child: Container(
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 220),
+                        curve: Curves.easeOut,
                         padding: AppSize.paddingH(0, 8),
                         decoration: BoxDecoration(
                           color: active
-                              ? AppColors.citrusOrange.withOpacity(0.15)
+                              ? AppColors.citrusOrange.withValues(alpha: 0.15)
                               : Colors.transparent,
-                          borderRadius: AppSize.radius(12),
+                          borderRadius: AppSize.radius(14),
                         ),
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
@@ -426,13 +490,15 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                 Expanded(
                   child: GestureDetector(
                     onTap: () => setState(() => _showMenu = true),
-                    child: Container(
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 220),
+                      curve: Curves.easeOut,
                       padding: AppSize.paddingH(0, 8),
                       decoration: BoxDecoration(
                         color: _isMenuActive
-                            ? AppColors.citrusOrange.withOpacity(0.15)
+                            ? AppColors.citrusOrange.withValues(alpha: 0.15)
                             : Colors.transparent,
-                        borderRadius: AppSize.radius(12),
+                        borderRadius: AppSize.radius(14),
                       ),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
@@ -472,7 +538,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     return GestureDetector(
       onTap: () => setState(() => _showMenu = false),
       child: Container(
-        color: Colors.black.withOpacity(0.75),
+        color: Colors.black.withValues(alpha: 0.75),
         child: SafeArea(
           child: Align(
             alignment: Alignment.bottomCenter,
@@ -487,7 +553,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                   color: AppColors.surface2,
                   borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
                   border: Border(
-                    top: BorderSide(color: AppColors.citrusOrange.withOpacity(0.15)),
+                    top: BorderSide(color: AppColors.citrusOrange.withValues(alpha: 0.15)),
                   ),
                 ),
                 padding: EdgeInsets.fromLTRB(24, 24, 24, 32),
@@ -523,7 +589,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                             width: 32,
                             height: 32,
                             decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.08),
+                              color: AppColors.subtleBg,
                               borderRadius: AppSize.radius(12),
                             ),
                             child: Icon(Icons.close,
@@ -541,8 +607,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                       crossAxisSpacing: 12,
                       childAspectRatio: 0.85,
                       children: _allFeatures.map((feature) {
-                        final featureIndex = int.parse(feature['path']!);
+                        final featureIndex = int.parse(feature['path'] as String);
                         final isActive = _currentIndex == featureIndex;
+                        final featColor = feature['color'] as Color;
                         return GestureDetector(
                         onTap: () {
                           _setIndex(featureIndex);
@@ -551,21 +618,28 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                             padding: AppSize.paddingH(8, 10),
                             decoration: BoxDecoration(
                               color: isActive
-                                  ? AppColors.citrusOrange.withOpacity(0.15)
-                                  : Colors.white.withOpacity(0.04),
+                                  ? AppColors.citrusOrange.withValues(alpha: 0.15)
+                                  : AppColors.card,
                               borderRadius: AppSize.radius(16),
                               border: Border.all(
                                 color: isActive
-                                    ? AppColors.citrusOrange.withOpacity(0.35)
-                                    : Colors.white.withOpacity(0.06),
+                                    ? AppColors.citrusOrange.withValues(alpha: 0.35)
+                                    : AppColors.subtleBorder,
                               ),
                             ),
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Text(feature['icon'] as String,
-                                    style: TextStyle(fontSize: AppSize.s(22))),
-                                AppSize.gapH(4),
+                                Container(
+                                  width: AppSize.s(44),
+                                  height: AppSize.s(44),
+                                  decoration: BoxDecoration(
+                                    color: featColor.withValues(alpha: 0.16),
+                                    borderRadius: AppSize.radius(14),
+                                  ),
+                                  child: Center(child: Icon(feature['icon'] as IconData, size: AppSize.s(23), color: featColor)),
+                                ),
+                                AppSize.gapH(8),
                                 Text(
                                   feature['label'] as String,
                                   style: TextStyle(

@@ -50,7 +50,10 @@ dependencies:
   printing: ^5.11.0
   
   # Markdown
-  flutter_markdown: ^0.7.7+1
+  flutter_markdown_plus: ^1.0.0
+
+  # Данные здоровья: импорт сна с часов (Health Connect / HealthKit)
+  health: ^13.1.1
 
   # Отслеживание видимости виджетов
   visibility_detector: ^0.4.0+2
@@ -63,9 +66,13 @@ dependencies:
   rxdart: ^0.28.0
   audioplayers: ^6.6.0
 
+  # Распознавание речи в текст (голосовые заметки в дневнике)
+  speech_to_text: ^7.0.0
+
   # Локальные уведомления
   flutter_local_notifications: ^18.0.0
   timezone: ^0.10.0
+  share_plus: ^12.0.2
 
 dev_dependencies:
   flutter_test:
@@ -78,6 +85,15 @@ dev_dependencies:
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
   flutter_launcher_icons: ^0.14.3
+  flutter_native_splash: ^2.4.4
+
+# Нативный сплэш-экран (премиальное первое впечатление)
+flutter_native_splash:
+  color: "#0C0C14"
+  image: assets/icons/icon_dark.jpg
+  android_12:
+    color: "#0C0C14"
+  web: false
 
 flutter_launcher_icons:
   android: true

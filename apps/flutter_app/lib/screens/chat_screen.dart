@@ -1,11 +1,18 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:speech_to_text/speech_to_text.dart' as stt;
+import 'package:share_plus/share_plus.dart';
 import '../core/theme/app_colors.dart';
+import '../features/diary/bloc/diary_bloc.dart';
+import 'emergency_modal.dart';
+import 'exercises_screen.dart';
 import '../services/chat_api_client.dart';
 import '../services/analytics_loader.dart';
 import '../services/diary_loader.dart';
@@ -22,6 +29,11 @@ class _Message {
   final String time;
 
   _Message({required this.text, required this.isUser, required this.time});
+
+  Map<String, dynamic> toJson() => {'text': text, 'isUser': isUser, 'time': time};
+
+  factory _Message.fromJson(Map<String, dynamic> j) =>
+      _Message(text: j['text'] as String? ?? '', isUser: j['isUser'] == true, time: j['time'] as String? ?? '');
 }
 
 const _suggestions = [
@@ -47,15 +59,118 @@ class _ChatScreenState extends State<ChatScreen> {
   bool _isLoadingAnalytics = false;
   bool _isLoadingDiary = false;
 
+  // Распознавание речи
+  final stt.SpeechToText _speech = stt.SpeechToText();
+  bool _speechReady = false;
+  bool _isListening = false;
+
+  // Карточка заботы при тревожных сообщениях
+  bool _crisisActive = false;
+
+  static const _historyKey = 'chat_history_v1';
+  static const _crisisWords = [
+    'суицид', 'не хочу жить', 'покончить', 'убить себя', 'свести счёты',
+    'нет смысла жить', 'жить незачем', 'не вижу смысла', 'причинить себе вред',
+    'самоповреждение', 'хочу умереть', 'устал жить',
+  ];
+
   // API клиент для общения с backend
-  // TODO: Заменить URL на актуальный адрес вашего dart_frog_backend
   late final ChatApiClient _chatApiClient;
 
   @override
   void initState() {
     super.initState();
-    // Инициализация API клиента с токеном
     _initChatApiClient();
+    _loadHistory();
+  }
+
+  Future<void> _loadHistory() async {
+    final raw = await StorageService().getString(_historyKey);
+    if (raw == null || raw.isEmpty) return;
+    try {
+      final list = (jsonDecode(raw) as List)
+          .map((e) => _Message.fromJson(e as Map<String, dynamic>))
+          .toList();
+      if (mounted && list.isNotEmpty) {
+        setState(() => _messages.addAll(list));
+        _scrollToBottom();
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _saveHistory() async {
+    final recent = _messages.length > 100 ? _messages.sublist(_messages.length - 100) : _messages;
+    await StorageService().setString(_historyKey, jsonEncode(recent.map((m) => m.toJson()).toList()));
+  }
+
+  void _checkCrisis(String text) {
+    final t = text.toLowerCase();
+    if (_crisisWords.any((w) => t.contains(w))) {
+      setState(() => _crisisActive = true);
+    }
+  }
+
+  void _confirmClearChat() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surface1,
+        title: Text('Очистить чат?', style: TextStyle(color: AppColors.foreground)),
+        content: Text('История сообщений будет удалена.', style: TextStyle(color: AppColors.mutedForeground)),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text('Отмена', style: TextStyle(color: AppColors.mutedForeground))),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              setState(() {
+                _messages.clear();
+                _crisisActive = false;
+              });
+              await StorageService().remove(_historyKey);
+            },
+            style: TextButton.styleFrom(foregroundColor: AppColors.destructive),
+            child: Text('Очистить'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _toggleMic() async {
+    if (_isListening) {
+      await _speech.stop();
+      setState(() => _isListening = false);
+      return;
+    }
+    if (!_speechReady) {
+      _speechReady = await _speech.initialize(
+        onStatus: (s) {
+          if ((s == 'done' || s == 'notListening') && _isListening) setState(() => _isListening = false);
+        },
+        onError: (_) {
+          if (_isListening) setState(() => _isListening = false);
+        },
+      );
+    }
+    if (!_speechReady) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Распознавание речи недоступно на этом устройстве')),
+        );
+      }
+      return;
+    }
+    final base = _controller.text;
+    setState(() => _isListening = true);
+    await _speech.listen(
+      listenOptions: stt.SpeechListenOptions(partialResults: true, localeId: 'ru_RU'),
+      onResult: (r) {
+        final sep = (base.isEmpty || base.endsWith(' ') || base.endsWith('\n')) ? '' : ' ';
+        final text = base + sep + r.recognizedWords;
+        _controller.value = TextEditingValue(text: text, selection: TextSelection.collapsed(offset: text.length));
+        setState(() {});
+      },
+    );
   }
 
   /// Инициализировать ChatApiClient с токеном авторизации
@@ -188,13 +303,13 @@ class _ChatScreenState extends State<ChatScreen> {
       _isTyping = true;
     });
 
+    _checkCrisis(msgText);
     _scrollToBottom();
 
     try {
-      // Получаем ответ от GigaChat через backend
+      // Ответ от GigaChat (системный промпт и сценарии — на бэкенде)
       final aiResponse = await _chatApiClient.sendMessage(
         message: msgText,
-        systemPrompt: 'Ты полезный ассистент по имени Цитрус. Ты помогаешь пользователям следить за своим ментальным здоровьем, даёшь советы по улучшению настроения, борьбе с тревогой и поддержанию хорошего эмоционального состояния. Отвечай дружелюбно и поддерживающе.',
       );
 
       if (!mounted) return;
@@ -223,6 +338,7 @@ class _ChatScreenState extends State<ChatScreen> {
     }
 
     _scrollToBottom();
+    _saveHistory();
   }
 
   void _scrollToBottom() {
@@ -239,6 +355,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
   @override
   void dispose() {
+    _speech.stop();
     _controller.dispose();
     _focusNode.dispose();
     _scrollController.dispose();
@@ -259,26 +376,29 @@ class _ChatScreenState extends State<ChatScreen> {
               children: [
                 _buildHeader(),
                 Expanded(
-                  child: ListView.builder(
-                    controller: _scrollController,
-                    padding: EdgeInsets.fromLTRB(16, 16, 16, 80),
-                    itemCount: _messages.length + (_isTyping ? 1 : 0),
-                    itemBuilder: (context, index) {
-                      if (index == _messages.length && _isTyping) {
-                        return Align(
-                          alignment: Alignment.centerLeft,
-                          child: Padding(
-                            padding: AppSize.paddingOnly(top: 8),
-                            child: _TypingIndicator(),
-                          ),
-                        );
-                      }
-                      final msg = _messages[index];
-                      return _buildMessageBubble(msg);
-                    },
-                  ),
+                  child: hasMessages
+                      ? ListView.builder(
+                          controller: _scrollController,
+                          padding: EdgeInsets.fromLTRB(16, 16, 16, 80),
+                          itemCount: _messages.length + (_isTyping ? 1 : 0),
+                          itemBuilder: (context, index) {
+                            if (index == _messages.length && _isTyping) {
+                              return Align(
+                                alignment: Alignment.centerLeft,
+                                child: Padding(
+                                  padding: AppSize.paddingOnly(top: 8),
+                                  child: _TypingIndicator(),
+                                ),
+                              );
+                            }
+                            final msg = _messages[index];
+                            return _buildMessageBubble(msg);
+                          },
+                        )
+                      : _buildWelcome(),
                 ),
                 if (!hasMessages) _buildSuggestions(),
+                if (_crisisActive) _buildCrisisBanner(),
                 _buildInputField(),
               ],
             ),
@@ -308,7 +428,7 @@ class _ChatScreenState extends State<ChatScreen> {
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.citrusOrange.withOpacity(0.3),
+                  color: AppColors.citrusOrange.withValues(alpha: 0.3),
                   blurRadius: 8,
                   offset: Offset(0, 2),
                 ),
@@ -344,7 +464,14 @@ class _ChatScreenState extends State<ChatScreen> {
               ],
             ),
           ),
-          Icon(Icons.auto_awesome, color: AppColors.citrusAmber, size: 20),
+          if (_messages.isNotEmpty)
+            IconButton(
+              icon: Icon(Icons.delete_sweep_outlined, color: AppColors.mutedForeground, size: 22),
+              tooltip: 'Очистить чат',
+              onPressed: _confirmClearChat,
+            )
+          else
+            Icon(Icons.auto_awesome, color: AppColors.citrusAmber, size: 20),
         ],
       ),
     );
@@ -357,17 +484,7 @@ class _ChatScreenState extends State<ChatScreen> {
       child: Align(
         alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
         child: GestureDetector(
-          onLongPress: () {
-            Clipboard.setData(ClipboardData(text: msg.text));
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Сообщение скопировано'),
-                duration: Duration(seconds: 1),
-                behavior: SnackBarBehavior.floating,
-                backgroundColor: AppColors.citrusOrange,
-              ),
-            );
-          },
+          onLongPress: () => _showMessageActions(msg),
           child: Container(
             constraints: BoxConstraints(maxWidth: 280),
             padding: AppSize.padding(12),
@@ -381,10 +498,10 @@ class _ChatScreenState extends State<ChatScreen> {
                   : null,
               color: isUser ? null : AppColors.surface1,
               borderRadius: AppSize.radius(16),
-              border: isUser ? null : Border.all(color: Colors.white.withOpacity(0.06)),
+              border: isUser ? null : Border.all(color: AppColors.subtleBorder),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.15),
+                  color: Colors.black.withValues(alpha: 0.15),
                   blurRadius: 8,
                   offset: Offset(0, 2),
                 ),
@@ -417,14 +534,14 @@ class _ChatScreenState extends State<ChatScreen> {
                         child: Icon(
                           Icons.copy_rounded,
                           size: 14,
-                          color: (isUser ? Colors.white : AppColors.mutedForeground).withOpacity(0.5),
+                          color: (isUser ? Colors.white : AppColors.mutedForeground).withValues(alpha: 0.5),
                         ),
                       ),
                     Spacer(),
                     Text(
                       msg.time,
                       style: TextStyle(
-                        color: (isUser ? Colors.white : AppColors.mutedForeground).withOpacity(0.5),
+                        color: (isUser ? Colors.white : AppColors.mutedForeground).withValues(alpha: 0.5),
                         fontSize: AppSize.s(10),
                       ),
                     ),
@@ -498,6 +615,167 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
+  Widget _buildWelcome() {
+    return Center(
+      child: Padding(
+        padding: AppSize.padding(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: AppSize.s(72),
+              height: AppSize.s(72),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(colors: [AppColors.citrusOrange, AppColors.citrusAmber]),
+                shape: BoxShape.circle,
+                boxShadow: [BoxShadow(color: AppColors.citrusOrange.withValues(alpha: 0.3), blurRadius: 20, spreadRadius: 2)],
+              ),
+              child: Center(child: Text('🍊', style: TextStyle(fontSize: AppSize.s(36)))),
+            ),
+            AppSize.gapH(16),
+            Text('Привет! Я Цитрус', style: TextStyle(color: AppColors.foreground, fontSize: AppSize.s(20), fontWeight: FontWeight.w700)),
+            AppSize.gapH(8),
+            Text(
+              'Спроси о чём угодно: настроение, тревога, сон, учёба. Я рядом и поддержу 🤍',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: AppColors.mutedForeground, fontSize: AppSize.s(14), height: 1.5),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _crisisBtn(IconData icon, String label, VoidCallback onTap) => GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: AppSize.paddingH(0, 10),
+          decoration: BoxDecoration(color: AppColors.destructive.withValues(alpha: 0.15), borderRadius: AppSize.radius(10)),
+          child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+            Icon(icon, size: AppSize.s(16), color: AppColors.destructive),
+            AppSize.gapW(6),
+            Flexible(child: Text(label, overflow: TextOverflow.ellipsis, style: TextStyle(color: AppColors.destructive, fontSize: AppSize.s(12), fontWeight: FontWeight.w600))),
+          ]),
+        ),
+      );
+
+  /// Экстренная помощь — открываем SOS-оверлей (горячие линии, контакт,
+  /// техники заземления), а не информационный раздел «Помощь».
+  void _openSos() => Navigator.of(context).push(
+        PageRouteBuilder(
+          opaque: false,
+          barrierColor: Colors.transparent,
+          pageBuilder: (ctx, _, __) => EmergencyModal(onClose: () => Navigator.of(ctx).pop()),
+        ),
+      );
+
+  Widget _buildCrisisBanner() {
+    return Container(
+      margin: AppSize.paddingH(16, 8),
+      padding: AppSize.padding(14),
+      decoration: BoxDecoration(
+        color: AppColors.destructive.withValues(alpha: 0.1),
+        borderRadius: AppSize.radius(16),
+        border: Border.all(color: AppColors.destructive.withValues(alpha: 0.4)),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          Icon(Icons.favorite, color: AppColors.destructive, size: AppSize.s(18)),
+          AppSize.gapW(8),
+          Expanded(child: Text('Ты не один', style: TextStyle(color: AppColors.foreground, fontSize: AppSize.s(15), fontWeight: FontWeight.w700))),
+          GestureDetector(onTap: () => setState(() => _crisisActive = false), child: Icon(Icons.close, size: AppSize.s(18), color: AppColors.dimForeground)),
+        ]),
+        AppSize.gapH(6),
+        Text('Если сейчас тяжело — это важно. Поговори с близким или специалистом, можно прямо сейчас.', style: TextStyle(color: AppColors.mutedForeground, fontSize: AppSize.s(12), height: 1.5)),
+        AppSize.gapH(10),
+        Row(children: [
+          Expanded(child: _crisisBtn(Icons.support_agent, 'Получить помощь', _openSos)),
+          AppSize.gapW(8),
+          Expanded(child: _crisisBtn(Icons.self_improvement, 'Дыхание', () => Navigator.push(context, MaterialPageRoute(builder: (_) => ExercisesScreen())))),
+        ]),
+      ]),
+    );
+  }
+
+  void _showMessageActions(_Message msg) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.surface1,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(AppSize.s(20)))),
+      builder: (ctx) => SafeArea(
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          AppSize.gapH(8),
+          Container(width: AppSize.s(40), height: AppSize.s(4), decoration: BoxDecoration(color: AppColors.subtleBorder, borderRadius: AppSize.radius(2))),
+          AppSize.gapH(8),
+          ListTile(
+            leading: Icon(Icons.copy_rounded, color: AppColors.foreground),
+            title: Text('Копировать', style: TextStyle(color: AppColors.foreground)),
+            onTap: () {
+              Clipboard.setData(ClipboardData(text: msg.text));
+              Navigator.pop(ctx);
+              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Скопировано'), duration: Duration(seconds: 1)));
+            },
+          ),
+          if (!msg.isUser)
+            ListTile(
+              leading: Icon(Icons.bookmark_add_outlined, color: AppColors.citrusOrange),
+              title: Text('Сохранить в дневник', style: TextStyle(color: AppColors.foreground)),
+              onTap: () {
+                context.read<DiaryBloc>().add(CreateDiaryEntry(content: msg.text));
+                Navigator.pop(ctx);
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Сохранено в дневник'), backgroundColor: AppColors.citrusOrange));
+              },
+            ),
+          ListTile(
+            leading: Icon(Icons.share_outlined, color: AppColors.foreground),
+            title: Text('Поделиться', style: TextStyle(color: AppColors.foreground)),
+            onTap: () {
+              Navigator.pop(ctx);
+              SharePlus.instance.share(ShareParams(text: msg.text));
+            },
+          ),
+          AppSize.gapH(8),
+        ]),
+      ),
+    );
+  }
+
+  Widget _buildMicButton() {
+    return GestureDetector(
+      onTap: _toggleMic,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        width: 44,
+        height: 44,
+        decoration: BoxDecoration(
+          color: _isListening ? AppColors.destructive.withValues(alpha: 0.2) : AppColors.subtleBg,
+          borderRadius: AppSize.radius(12),
+          border: _isListening ? Border.all(color: AppColors.destructive) : null,
+        ),
+        child: Icon(_isListening ? Icons.mic : Icons.mic_none_rounded, color: _isListening ? AppColors.destructive : AppColors.mutedForeground, size: 20),
+      ),
+    );
+  }
+
+  Widget _buildContextChip(String label, IconData icon, Color color, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: AppSize.paddingH(12, 8),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.1),
+          borderRadius: AppSize.radius(999),
+          border: Border.all(color: color.withValues(alpha: 0.2)),
+        ),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          Icon(icon, color: color, size: 14),
+          AppSize.gapW(6),
+          Text(label, style: TextStyle(color: color, fontSize: AppSize.s(12))),
+        ]),
+      ),
+    );
+  }
+
   Widget _buildSuggestions() {
     return Padding(
       padding: EdgeInsets.fromLTRB(16, 0, 16, 8),
@@ -510,9 +788,9 @@ class _ChatScreenState extends State<ChatScreen> {
             child: Container(
               padding: AppSize.paddingH(14, 8),
               decoration: BoxDecoration(
-                color: AppColors.citrusOrange.withOpacity(0.1),
+                color: AppColors.citrusOrange.withValues(alpha: 0.1),
                 borderRadius: AppSize.radius(999),
-                border: Border.all(color: AppColors.citrusOrange.withOpacity(0.2)),
+                border: Border.all(color: AppColors.citrusOrange.withValues(alpha: 0.2)),
               ),
               child: Text(
                 hint,
@@ -547,9 +825,9 @@ class _ChatScreenState extends State<ChatScreen> {
                   minLines: 1,
                   decoration: InputDecoration(
                     hintText: '\u0412\u0432\u0435\u0434\u0438\u0442\u0435 \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u0435...',
-                    hintStyle: TextStyle(color: AppColors.mutedForeground.withOpacity(0.5)),
+                    hintStyle: TextStyle(color: AppColors.mutedForeground.withValues(alpha: 0.5)),
                     filled: true,
-                    fillColor: Colors.white.withOpacity(0.04),
+                    fillColor: AppColors.inputFieldBackground,
                     border: OutlineInputBorder(
                       borderRadius: AppSize.radius(16),
                       borderSide: BorderSide(color: AppColors.surface3),
@@ -569,6 +847,8 @@ class _ChatScreenState extends State<ChatScreen> {
                 ),
               ),
               AppSize.gapW(8),
+              _buildMicButton(),
+              AppSize.gapW(8),
               GestureDetector(
                 onTap: hasText ? _sendMessage : null,
                 child: AnimatedContainer(
@@ -583,12 +863,12 @@ class _ChatScreenState extends State<ChatScreen> {
                             colors: [AppColors.citrusOrange, AppColors.citrusAmber],
                           )
                         : null,
-                    color: hasText ? null : Colors.white.withOpacity(0.06),
+                    color: hasText ? null : AppColors.subtleBg,
                     borderRadius: AppSize.radius(12),
                     boxShadow: hasText
                         ? [
                             BoxShadow(
-                              color: AppColors.citrusOrange.withOpacity(0.35),
+                              color: AppColors.citrusOrange.withValues(alpha: 0.35),
                               blurRadius: 16,
                               offset: Offset(0, 4),
                             ),
@@ -613,6 +893,12 @@ class _ChatScreenState extends State<ChatScreen> {
                 _buildAnalyticsButton(),
                 AppSize.gapW(8),
                 _buildDiaryButton(),
+                AppSize.gapW(8),
+                _buildContextChip('Настроение', Icons.mood, AppColors.citrusGreen,
+                    () => _sendMessage(text: 'Помоги разобраться с моим настроением в последнее время — что можно сделать?')),
+                AppSize.gapW(8),
+                _buildContextChip('Сон', Icons.bedtime_outlined, AppColors.citrusPurple,
+                    () => _sendMessage(text: 'Дай советы, как улучшить мой сон.')),
               ],
             ),
           ),
@@ -627,9 +913,9 @@ class _ChatScreenState extends State<ChatScreen> {
       child: Container(
         padding: AppSize.paddingH(12, 8),
         decoration: BoxDecoration(
-          color: AppColors.citrusPurple.withOpacity(_isLoadingAnalytics ? 0.05 : 0.1),
+          color: AppColors.citrusPurple.withValues(alpha: _isLoadingAnalytics ? 0.05 : 0.1),
           borderRadius: AppSize.radius(999),
-          border: Border.all(color: AppColors.citrusPurple.withOpacity(0.2)),
+          border: Border.all(color: AppColors.citrusPurple.withValues(alpha: 0.2)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -662,9 +948,9 @@ class _ChatScreenState extends State<ChatScreen> {
       child: Container(
         padding: AppSize.paddingH(12, 8),
         decoration: BoxDecoration(
-          color: AppColors.citrusAmber.withOpacity(_isLoadingDiary ? 0.05 : 0.1),
+          color: AppColors.citrusAmber.withValues(alpha: _isLoadingDiary ? 0.05 : 0.1),
           borderRadius: AppSize.radius(999),
-          border: Border.all(color: AppColors.citrusAmber.withOpacity(0.2)),
+          border: Border.all(color: AppColors.citrusAmber.withValues(alpha: 0.2)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -728,7 +1014,7 @@ class _TypingIndicatorState extends State<_TypingIndicator>
           decoration: BoxDecoration(
             color: AppColors.surface1,
             borderRadius: AppSize.radius(16),
-            border: Border.all(color: Colors.white.withOpacity(0.06)),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -911,13 +1197,13 @@ class _DiarySelectionDialogState extends State<_DiarySelectionDialog> {
                       padding: AppSize.padding(12),
                       decoration: BoxDecoration(
                         color: isSelected
-                            ? AppColors.citrusOrange.withOpacity(0.15)
-                            : Colors.white.withOpacity(0.04),
+                            ? AppColors.citrusOrange.withValues(alpha: 0.15)
+                            : Colors.white.withValues(alpha: 0.04),
                         borderRadius: AppSize.radius(12),
                         border: Border.all(
                           color: isSelected
                               ? AppColors.citrusOrange
-                              : Colors.white.withOpacity(0.06),
+                              : Colors.white.withValues(alpha: 0.06),
                           width: isSelected ? 2 : 1,
                         ),
                       ),

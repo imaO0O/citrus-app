@@ -1,5 +1,6 @@
 ﻿import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import '../models/analytics_report.dart';
 
@@ -18,9 +19,9 @@ class PdfReportService {
       _fontRegular = pw.Font.ttf(regularBytes);
       _fontBold = pw.Font.ttf(boldBytes);
       _fontEmoji = pw.Font.ttf(emojiBytes);
-      print('PDF: Arial + NotoEmoji загружены');
+      debugPrint('PDF: Arial + NotoEmoji загружены');
     } catch (e) {
-      print('PDF: Ошибка шрифтов: $e, используем Helvetica');
+      debugPrint('PDF: Ошибка шрифтов: $e, используем Helvetica');
       _fontRegular = pw.Font.helvetica();
       _fontBold = pw.Font.helveticaBold();
       _fontEmoji = pw.Font.helvetica();

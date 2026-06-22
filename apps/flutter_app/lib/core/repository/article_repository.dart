@@ -34,4 +34,14 @@ class ArticleRepository {
   Future<void> deleteArticle(String articleId) async {
     await _apiService.deleteArticle(articleId);
   }
+
+  /// Очередь модерации (только админ)
+  Future<List<Article>> getModerationQueue() async {
+    return await _apiService.getModerationQueue();
+  }
+
+  /// Модерация статьи (только админ)
+  Future<void> moderateArticle(String articleId, String action) async {
+    await _apiService.moderateArticle(articleId, action);
+  }
 }

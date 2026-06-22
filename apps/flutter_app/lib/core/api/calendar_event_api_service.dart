@@ -1,4 +1,5 @@
 ﻿import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../../../models/calendar_event.dart';
 import '../config/api_config.dart';
@@ -16,18 +17,18 @@ class CalendarEventApiService {
   })  : baseUrl = baseUrl ?? ApiConfig.baseUrl,
         _client = client ?? http.Client(),
         _token = token {
-    print('CalendarEventApiService: создан с token=${token != null ? "length=${token.length}" : "null"}');
+    debugPrint('CalendarEventApiService: создан с token=${token != null ? "length=${token.length}" : "null"}');
   }
 
   Map<String, String> get _headers {
     final headers = <String, String>{'Content-Type': 'application/json'};
     if (_token != null && _token!.isNotEmpty) {
       headers['Authorization'] = 'Bearer $_token';
-      print('CalendarEventApiService: добавлен токен в заголовок (length=${_token!.length})');
+      debugPrint('CalendarEventApiService: добавлен токен в заголовок (length=${_token!.length})');
     } else {
-      print('CalendarEventApiService: токен НЕ добавлен (_token=$_token)');
+      debugPrint('CalendarEventApiService: токен НЕ добавлен (_token=$_token)');
     }
-    print('CalendarEventApiService: заголовки: $headers');
+    debugPrint('CalendarEventApiService: заголовки: $headers');
     return headers;
   }
 
@@ -36,7 +37,7 @@ class CalendarEventApiService {
     required String userId,
     required DateTime month,
   }) async {
-    print('CalendarEventApiService: запрос событий для userId=$userId');
+    debugPrint('CalendarEventApiService: запрос событий для userId=$userId');
 
     final response = await _client.get(
       Uri.parse('$baseUrl/calendar/events').replace(queryParameters: {
@@ -45,11 +46,11 @@ class CalendarEventApiService {
       headers: _headers,
     );
 
-    print('CalendarEventApiService: статус ${response.statusCode}, тело: ${response.body}');
+    debugPrint('CalendarEventApiService: статус ${response.statusCode}, тело: ${response.body}');
 
     if (response.statusCode == 200) {
       final List<dynamic> jsonList = jsonDecode(response.body);
-      print('CalendarEventApiService: получено ${jsonList.length} событий');
+      debugPrint('CalendarEventApiService: получено ${jsonList.length} событий');
       return jsonList.map((json) => CalendarEventModel.fromJson(json)).toList();
     } else if (response.statusCode == 404) {
       return [];
@@ -60,14 +61,14 @@ class CalendarEventApiService {
 
   /// Создать событие
   Future<CalendarEventModel> createEvent(CalendarEventModel event) async {
-    print('CalendarEventApiService: создание события: title=${event.title}, startTime=${event.startTime}');
+    debugPrint('CalendarEventApiService: создание события: title=${event.title}, startTime=${event.startTime}');
     final response = await _client.post(
       Uri.parse('$baseUrl/calendar/events'),
       headers: _headers,
       body: jsonEncode(event.toJson()),
     );
 
-    print('CalendarEventApiService: статус создания ${response.statusCode}, тело: ${response.body}');
+    debugPrint('CalendarEventApiService: статус создания ${response.statusCode}, тело: ${response.body}');
 
     if (response.statusCode == 201) {
       return CalendarEventModel.fromJson(jsonDecode(response.body));

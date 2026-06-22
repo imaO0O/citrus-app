@@ -178,7 +178,7 @@ class _CitrusWheelState extends State<CitrusWheel>
                 shape: BoxShape.circle,
                 color: AppColors.background,
                 border: Border.all(
-                  color: AppColors.citrusOrange.withOpacity(0.2),
+                  color: AppColors.citrusOrange.withValues(alpha: 0.2),
                   width: 1.5,
                 ),
               ),
@@ -188,7 +188,7 @@ class _CitrusWheelState extends State<CitrusWheel>
                   height: 68,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: AppColors.citrusOrange.withOpacity(0.08),
+                    color: AppColors.citrusOrange.withValues(alpha: 0.08),
                   ),
                   child: Center(
                     child: Text(
@@ -263,12 +263,12 @@ class _CitrusPainter extends CustomPainter {
 
       canvas.drawPath(
         peelPath,
-        Paint()..color = mood.color.withOpacity(0.25),
+        Paint()..color = mood.color.withValues(alpha: 0.25),
       );
 
       final rect = Rect.fromCircle(center: Offset(cx, cy), radius: 118);
       final shader = RadialGradient(
-        colors: [mood.color.withOpacity(0.95), mood.color.withOpacity(0.7)],
+        colors: [mood.color.withValues(alpha: 0.95), mood.color.withValues(alpha: 0.7)],
       ).createShader(rect);
       canvas.drawPath(path, Paint()..shader = shader);
 
@@ -276,7 +276,7 @@ class _CitrusPainter extends CustomPainter {
         canvas.drawPath(
           path,
           Paint()
-            ..color = mood.color.withOpacity(0.35)
+            ..color = mood.color.withValues(alpha: 0.35)
             ..maskFilter = MaskFilter.blur(BlurStyle.normal, 8),
         );
       }
@@ -284,7 +284,7 @@ class _CitrusPainter extends CustomPainter {
       canvas.drawPath(
         path,
         Paint()
-          ..color = isSelected ? mood.color : Colors.black.withOpacity(0.3)
+          ..color = isSelected ? mood.color : Colors.black.withValues(alpha: 0.3)
           ..style = PaintingStyle.stroke
           ..strokeWidth = isSelected ? 1.5 : 0.5,
       );

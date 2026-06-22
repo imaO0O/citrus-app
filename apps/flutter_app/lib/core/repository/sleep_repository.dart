@@ -5,21 +5,18 @@ import '../../../core/api/sleep_api_service.dart';
 class SleepRepository {
   SleepApiService _apiService;
   String _userId;
-  String? _token;
 
   SleepRepository({
     required String userId,
     String? token,
     SleepApiService? apiService,
   })  : _userId = userId,
-        _token = token,
         _apiService = apiService ?? SleepApiService(token: token);
 
   /// Обновить userId и токен
   void setUserId(String userId, {String? token}) {
     _userId = userId;
     if (token != null) {
-      _token = token;
       _apiService = SleepApiService(token: token);
     }
   }
