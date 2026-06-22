@@ -2,6 +2,9 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../core/theme/app_colors.dart';
+import '../core/theme/app_text.dart';
+import '../core/widgets/citrus_card.dart';
+import '../core/widgets/citrus_empty_state.dart';
 import '../core/repository/sleep_repository.dart';
 import '../core/services/casino_coins_service.dart';
 import '../core/services/health_sync_service.dart';
@@ -159,20 +162,13 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
             }
 
             if (state is SleepError) {
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.error_outline, size: 48, color: AppColors.destructive),
-                    AppSize.gapH(16),
-                    Text(state.message, style: TextStyle(color: AppColors.mutedForeground)),
-                    AppSize.gapH(16),
-                    ElevatedButton(
-                      onPressed: _loadSleepData,
-                      child: Text('Повторить'),
-                    ),
-                  ],
-                ),
+              return CitrusEmptyState(
+                accent: AppColors.citrusPurple,
+                title: 'Не удалось загрузить',
+                subtitle: state.message,
+                actionLabel: 'Повторить',
+                actionIcon: Icons.refresh,
+                onAction: _loadSleepData,
               );
             }
 
@@ -182,21 +178,14 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
               return _buildContent(records, state);
             }
 
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.bedtime, size: 64, color: AppColors.dimForeground),
-                  AppSize.gapH(16),
-                  Text('Нет данных о сне', style: TextStyle(color: AppColors.mutedForeground, fontSize: AppSize.s(16))),
-                  AppSize.gapH(16),
-                  ElevatedButton.icon(
-                    onPressed: () => _showAddSleepDialog(context, null),
-                    icon: Icon(Icons.add),
-                    label: Text('Добавить запись'),
-                  ),
-                ],
-              ),
+            return CitrusEmptyState(
+              emoji: '🌙',
+              accent: AppColors.citrusPurple,
+              title: 'Нет данных о сне',
+              subtitle: 'Запиши, во сколько лёг и проснулся — и Цитрус покажет динамику сна.',
+              actionLabel: 'Добавить запись',
+              actionIcon: Icons.add,
+              onAction: () => _showAddSleepDialog(context, null),
             );
           },
         ),
@@ -278,15 +267,9 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Трекер сна',
-          style: TextStyle(fontSize: AppSize.s(24), fontWeight: FontWeight.w700, color: AppColors.foreground),
-        ),
+        Text('Трекер сна', style: AppText.displayTitle),
         AppSize.gapH(4),
-        Text(
-          'Отслеживайте качество сна',
-          style: TextStyle(fontSize: AppSize.s(13), color: AppColors.mutedForeground),
-        ),
+        Text('Отслеживайте качество сна', style: AppText.caption),
       ],
     );
   }
@@ -323,13 +306,9 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
   }
 
   Widget _buildSummaryCard({required String value, required String label}) {
-    return Container(
+    return CitrusCard(
+      radius: 14,
       padding: AppSize.padding(14),
-      decoration: BoxDecoration(
-        color: AppColors.surface1,
-        borderRadius: AppSize.radius(14),
-        border: Border.all(color: AppColors.subtleBorder),
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -347,20 +326,11 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
   Widget _buildSleepChart(List<SleepRecord> last7Days) {
     final maxHours = 10.0;
 
-    return Container(
-      padding: AppSize.padding(16),
-      decoration: BoxDecoration(
-        color: AppColors.surface1,
-        borderRadius: AppSize.radius(16),
-        border: Border.all(color: AppColors.subtleBorder),
-      ),
+    return CitrusCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Сон за неделю',
-            style: TextStyle(fontSize: AppSize.s(16), fontWeight: FontWeight.w600, color: AppColors.foreground),
-          ),
+          Text('Сон за неделю', style: AppText.sectionTitle),
           AppSize.gapH(20),
           SizedBox(
             height: 160,
@@ -577,10 +547,7 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
   }
 
   Widget _buildSleepHistoryHeader() {
-    return Text(
-      'История сна',
-      style: TextStyle(fontSize: AppSize.s(18), fontWeight: FontWeight.w600, color: AppColors.foreground),
-    );
+    return Text('История сна', style: AppText.sectionTitle);
   }
 
   Widget _buildSleepHistoryList(List<SleepRecord> records) {
@@ -670,20 +637,14 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
   }
 
   Widget _buildSleepTipsHeader() {
-    return Text(
-      'Советы для здорового сна',
-      style: TextStyle(fontSize: AppSize.s(16), fontWeight: FontWeight.w600, color: AppColors.foreground),
-    );
+    return Text('Советы для здорового сна', style: AppText.sectionTitle);
   }
 
   Widget _buildSleepTipsList() {
-    return Container(
-      padding: AppSize.padding(16),
-      decoration: BoxDecoration(
-        color: AppColors.citrusOrange.withValues(alpha: 0.05),
-        border: Border.all(color: AppColors.citrusOrange.withValues(alpha: 0.1)),
-        borderRadius: AppSize.radius(14),
-      ),
+    return CitrusCard(
+      accent: AppColors.citrusOrange,
+      color: AppColors.citrusOrange.withValues(alpha: 0.06),
+      radius: 14,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: _sleepTips.map((tip) {
