@@ -69,6 +69,64 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
     };
   }
 
+  /// Качество сна 1–5, определяется автоматически по длительности (оптимум 7–9 ч).
+  int _qualityFromDuration(double hours) {
+    if (hours <= 0) return 3;
+    if (hours >= 7 && hours <= 9) return 5;
+    if ((hours >= 6 && hours < 7) || (hours > 9 && hours <= 10)) return 4;
+    if ((hours >= 5 && hours < 6) || (hours > 10 && hours <= 11)) return 3;
+    if ((hours >= 4 && hours < 5) || hours > 11) return 2;
+    return 1;
+  }
+
+  Color _qualityColor(int q) {
+    switch (q) {
+      case 5:
+        return AppColors.citrusGreen;
+      case 4:
+        return AppColors.citrusYellow;
+      case 3:
+        return AppColors.citrusOrange;
+      case 2:
+        return AppColors.moodBad;
+      default:
+        return AppColors.destructive;
+    }
+  }
+
+  /// Живой авто-расчёт качества по введённым времени отбоя/подъёма.
+  Widget _buildAutoQuality(String bed, String wake) {
+    final valid = _isValidTime(bed) && _isValidTime(wake);
+    final hours = valid ? _calculateSleepDuration(bed, wake) : 0.0;
+    final q = _qualityFromDuration(hours);
+    final color = valid ? _qualityColor(q) : AppColors.mutedForeground;
+    return Container(
+      width: double.infinity,
+      padding: AppSize.padding(12),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: AppSize.radius(12),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
+      ),
+      child: Row(children: [
+        Icon(Icons.auto_awesome, size: AppSize.s(16), color: color),
+        AppSize.gapW(8),
+        Expanded(
+          child: Text(
+            valid
+                ? 'Качество: ${_getQualityLabel(q)} · ${_formatSleepDuration(hours)}'
+                : 'Укажите время отбоя и подъёма',
+            style: TextStyle(
+              color: valid ? AppColors.foreground : AppColors.mutedForeground,
+              fontSize: AppSize.s(13),
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      ]),
+    );
+  }
+
   double _calculateSleepDuration(String? bedTime, String? wakeTime) {
     if (bedTime == null || wakeTime == null) return 0;
     final bed = _parseTime(bedTime);
@@ -640,8 +698,9 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
 
     String bedtime = '23:00';
     String wakeup = '07:00';
-    int quality = 3;
     DateTime selectedDate = DateTime.now();
+    final bedCtrl = TextEditingController(text: bedtime);
+    final wakeCtrl = TextEditingController(text: wakeup);
 
     showDialog(
       context: context,
@@ -688,7 +747,7 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
                     Expanded(
                       child: TextField(
                         style: TextStyle(color: AppColors.foreground, fontSize: AppSize.s(13)),
-                        controller: TextEditingController(text: bedtime),
+                        controller: bedCtrl,
                         decoration: InputDecoration(
                           filled: true,
                           fillColor: AppColors.surface2,
@@ -699,7 +758,7 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
                           contentPadding: AppSize.paddingH(10, 6),
                           isDense: true,
                         ),
-                        onChanged: (v) => bedtime = _formatTimeInput(v),
+                        onChanged: (v) => setModalState(() => bedtime = _formatTimeInput(v)),
                       ),
                     ),
                   ],
@@ -712,7 +771,7 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
                     Expanded(
                       child: TextField(
                         style: TextStyle(color: AppColors.foreground, fontSize: AppSize.s(13)),
-                        controller: TextEditingController(text: wakeup),
+                        controller: wakeCtrl,
                         decoration: InputDecoration(
                           filled: true,
                           fillColor: AppColors.surface2,
@@ -723,41 +782,13 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
                           contentPadding: AppSize.paddingH(10, 6),
                           isDense: true,
                         ),
-                        onChanged: (v) => wakeup = _formatTimeInput(v),
+                        onChanged: (v) => setModalState(() => wakeup = _formatTimeInput(v)),
                       ),
                     ),
                   ],
                 ),
-                AppSize.gapH(10),
-                Text('Качество:', style: TextStyle(color: AppColors.mutedForeground, fontSize: AppSize.s(13))),
-                AppSize.gapH(6),
-                Wrap(
-                  alignment: WrapAlignment.center,
-                  spacing: 6,
-                  runSpacing: 6,
-                  children: [1, 2, 3, 4, 5].map((q) {
-                    final isSelected = quality == q;
-                    return GestureDetector(
-                      onTap: () => setModalState(() => quality = q),
-                      child: Container(
-                        padding: AppSize.paddingH(14, 8),
-                        decoration: BoxDecoration(
-                          color: isSelected ? AppColors.citrusPurple.withValues(alpha: 0.2) : AppColors.surface2,
-                          borderRadius: AppSize.radius(10),
-                          border: Border.all(color: isSelected ? AppColors.citrusPurple : Colors.transparent),
-                        ),
-                        child: Text(
-                          _getQualityLabel(q),
-                          style: TextStyle(
-                            color: isSelected ? AppColors.citrusPurple : AppColors.mutedForeground,
-                            fontSize: AppSize.s(12),
-                            fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                          ),
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                ),
+                AppSize.gapH(12),
+                _buildAutoQuality(bedtime, wakeup),
               ],
             ),
           ),
@@ -800,7 +831,7 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
                   sleepDate: selectedDate,
                   bedTime: '${btH.toString().padLeft(2, '0')}:${btM.toString().padLeft(2, '0')}:00',
                   wakeTime: '${wuH.toString().padLeft(2, '0')}:${wuM.toString().padLeft(2, '0')}:00',
-                  quality: quality,
+                  quality: _qualityFromDuration(_calculateSleepDuration(bedtime, wakeup)),
                 );
 
                 context.read<SleepBloc>().add(AddSleepRecord(record));
@@ -827,8 +858,9 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
   void _showEditSleepDialog(BuildContext context, SleepRecord record) {
     String bedtime = record.bedTime?.substring(0, 5) ?? '23:00';
     String wakeup = record.wakeTime?.substring(0, 5) ?? '07:00';
-    int quality = record.quality ?? 3;
     DateTime selectedDate = record.sleepDate;
+    final bedCtrl = TextEditingController(text: bedtime);
+    final wakeCtrl = TextEditingController(text: wakeup);
 
     showDialog(
       context: context,
@@ -873,13 +905,13 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
                     Expanded(
                       child: TextField(
                         style: TextStyle(color: AppColors.foreground, fontSize: AppSize.s(13)),
-                        controller: TextEditingController(text: bedtime),
+                        controller: bedCtrl,
                         decoration: InputDecoration(
                           filled: true, fillColor: AppColors.surface2,
                           border: OutlineInputBorder(borderRadius: AppSize.radius(8), borderSide: BorderSide.none),
                           contentPadding: AppSize.paddingH(10, 6), isDense: true,
                         ),
-                        onChanged: (v) => bedtime = _formatTimeInput(v),
+                        onChanged: (v) => setModalState(() => bedtime = _formatTimeInput(v)),
                       ),
                     ),
                   ],
@@ -892,47 +924,19 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
                     Expanded(
                       child: TextField(
                         style: TextStyle(color: AppColors.foreground, fontSize: AppSize.s(13)),
-                        controller: TextEditingController(text: wakeup),
+                        controller: wakeCtrl,
                         decoration: InputDecoration(
                           filled: true, fillColor: AppColors.surface2,
                           border: OutlineInputBorder(borderRadius: AppSize.radius(8), borderSide: BorderSide.none),
                           contentPadding: AppSize.paddingH(10, 6), isDense: true,
                         ),
-                        onChanged: (v) => wakeup = _formatTimeInput(v),
+                        onChanged: (v) => setModalState(() => wakeup = _formatTimeInput(v)),
                       ),
                     ),
                   ],
                 ),
-                AppSize.gapH(10),
-                Text('Качество:', style: TextStyle(color: AppColors.mutedForeground, fontSize: AppSize.s(13))),
-                AppSize.gapH(6),
-                Wrap(
-                  alignment: WrapAlignment.center,
-                  spacing: 6,
-                  runSpacing: 6,
-                  children: [1, 2, 3, 4, 5].map((q) {
-                    final isSelected = quality == q;
-                    return GestureDetector(
-                      onTap: () => setModalState(() => quality = q),
-                      child: Container(
-                        padding: AppSize.paddingH(14, 8),
-                        decoration: BoxDecoration(
-                          color: isSelected ? AppColors.citrusPurple.withValues(alpha: 0.2) : AppColors.surface2,
-                          borderRadius: AppSize.radius(10),
-                          border: Border.all(color: isSelected ? AppColors.citrusPurple : Colors.transparent),
-                        ),
-                        child: Text(
-                          _getQualityLabel(q),
-                          style: TextStyle(
-                            color: isSelected ? AppColors.citrusPurple : AppColors.mutedForeground,
-                            fontSize: AppSize.s(12),
-                            fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                          ),
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                ),
+                AppSize.gapH(12),
+                _buildAutoQuality(bedtime, wakeup),
               ],
             ),
           ),
@@ -972,7 +976,7 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
                   sleepDate: selectedDate,
                   bedTime: '${btH.toString().padLeft(2, '0')}:${btM.toString().padLeft(2, '0')}:00',
                   wakeTime: '${wuH.toString().padLeft(2, '0')}:${wuM.toString().padLeft(2, '0')}:00',
-                  quality: quality,
+                  quality: _qualityFromDuration(_calculateSleepDuration(bedtime, wakeup)),
                 );
 
                 context.read<SleepBloc>().add(UpdateSleepRecord(updatedRecord));

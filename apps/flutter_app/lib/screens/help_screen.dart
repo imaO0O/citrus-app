@@ -698,6 +698,12 @@ class HelpScreen extends StatelessWidget {
           ),
           FilledButton(
             onPressed: () {
+              if (controller.text.trim().isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Опишите проблему перед отправкой')),
+                );
+                return;
+              }
               // TODO: Отправка отчёта
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(
@@ -762,6 +768,12 @@ class HelpScreen extends StatelessWidget {
           ),
           FilledButton(
             onPressed: () {
+              if (controller.text.trim().isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Опишите идею перед отправкой')),
+                );
+                return;
+              }
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
