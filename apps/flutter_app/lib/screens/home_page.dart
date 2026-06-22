@@ -12,7 +12,7 @@ import '../core/services/course_prefs_service.dart';
 import '../data/courses/courses.dart';
 import '../services/affirmations_service.dart';
 import '../features/auth/bloc/auth_bloc.dart';
-import 'help_screen.dart';
+import 'emergency_modal.dart';
 import 'courses/courses_screen.dart';
 import 'models/mood.dart';
 import 'widgets/citrus_wheel.dart';
@@ -510,7 +510,13 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
             AppSize.gapW(8),
             btn(Icons.chat_bubble_outline, 'Поговорить', widget.onNavigateToChat),
             AppSize.gapW(8),
-            btn(Icons.support_agent, 'Помощь', () => Navigator.push(context, MaterialPageRoute(builder: (_) => HelpScreen()))),
+            btn(Icons.support_agent, 'Помощь', () => Navigator.of(context).push(
+                  PageRouteBuilder(
+                    opaque: false,
+                    barrierColor: Colors.transparent,
+                    pageBuilder: (ctx, _, __) => EmergencyModal(onClose: () => Navigator.of(ctx).pop()),
+                  ),
+                )),
           ]),
         ]),
       ),

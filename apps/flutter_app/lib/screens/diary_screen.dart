@@ -5,6 +5,9 @@ import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:intl/intl.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import '../core/theme/app_colors.dart';
+import '../core/theme/app_text.dart';
+import '../core/widgets/citrus_button.dart';
+import '../core/widgets/citrus_empty_state.dart';
 import '../core/services/casino_coins_service.dart';
 import '../features/diary/bloc/diary_bloc.dart';
 import '../core/repository/diary_repository.dart';
@@ -178,7 +181,7 @@ class _DiaryScreenState extends State<DiaryScreen> with SingleTickerProviderStat
           child: Center(child: Text('📔', style: TextStyle(fontSize: AppSize.s(24)))),
         ),
         AppSize.gapW(14),
-        Expanded(child: Text('Дневник', style: TextStyle(fontSize: AppSize.s(24), fontWeight: FontWeight.w800, color: AppColors.foreground))),
+        Expanded(child: Text('Дневник', style: AppText.displayTitle)),
       ]),
     );
   }
@@ -408,19 +411,9 @@ class _DiaryScreenState extends State<DiaryScreen> with SingleTickerProviderStat
                   }).toList()),
                 ],
                 AppSize.gapH(24),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () => Navigator.pop(sheetCtx),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.citrusOrange,
-                      foregroundColor: Colors.white,
-                      padding: AppSize.paddingH(0, 14),
-                      shape: RoundedRectangleBorder(borderRadius: AppSize.radius(14)),
-                      elevation: 0,
-                    ),
-                    child: Text('Показать записи', style: TextStyle(fontSize: AppSize.s(15), fontWeight: FontWeight.w700)),
-                  ),
+                CitrusButton(
+                  label: 'Показать записи',
+                  onPressed: () => Navigator.pop(sheetCtx),
                 ),
               ]),
             ),
@@ -601,16 +594,11 @@ class _DiaryScreenState extends State<DiaryScreen> with SingleTickerProviderStat
             ]),
           ),
           AppSize.gapH(20),
-          ElevatedButton.icon(
+          CitrusButton(
+            label: 'Написать',
+            icon: Icons.add_rounded,
+            expand: false,
             onPressed: () => _showWritingSheet(),
-            icon: Icon(Icons.add_rounded),
-            label: Text('Написать'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.citrusOrange,
-              foregroundColor: Colors.white,
-              padding: AppSize.paddingH(28, 14),
-              shape: RoundedRectangleBorder(borderRadius: AppSize.radius(14)),
-            ),
           ),
         ]),
       ),
@@ -618,32 +606,12 @@ class _DiaryScreenState extends State<DiaryScreen> with SingleTickerProviderStat
   }
 
   Widget _buildError(String msg) {
-    return Center(
-      child: SingleChildScrollView(
-        padding: AppSize.padding(40),
-        child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-          Container(
-            width: 80, height: 80,
-            decoration: BoxDecoration(color: AppColors.destructive.withAlpha(25), shape: BoxShape.circle),
-            child: Center(child: Icon(Icons.error_outline_rounded, size: 40, color: AppColors.destructive))),
-          AppSize.gapH(24),
-          Text('Что-то пошло не так', style: TextStyle(fontSize: AppSize.s(18), fontWeight: FontWeight.w600, color: AppColors.foreground)),
-          AppSize.gapH(8),
-          Text(msg, textAlign: TextAlign.center, style: TextStyle(fontSize: AppSize.s(13), color: AppColors.mutedForeground)),
-          AppSize.gapH(24),
-          ElevatedButton.icon(
-            onPressed: _loadEntries,
-            icon: Icon(Icons.refresh_rounded),
-            label: Text('Повторить'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.citrusOrange,
-              foregroundColor: Colors.white,
-              padding: AppSize.paddingH(24, 14),
-              shape: RoundedRectangleBorder(borderRadius: AppSize.radius(12)),
-            ),
-          ),
-        ]),
-      ),
+    return CitrusEmptyState(
+      title: 'Что-то пошло не так',
+      subtitle: msg,
+      actionLabel: 'Повторить',
+      actionIcon: Icons.refresh_rounded,
+      onAction: _loadEntries,
     );
   }
 
@@ -989,30 +957,21 @@ class _DiaryScreenState extends State<DiaryScreen> with SingleTickerProviderStat
             ),
             Padding(
               padding: EdgeInsets.only(left: AppSize.w(20), right: AppSize.w(20), bottom: MediaQuery.of(ctx).viewInsets.bottom + AppSize.h(20), top: AppSize.h(12)),
-              child: SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () {
-                    if (isListening) speech.stop();
-                    if (ctrl.text.trim().isEmpty) return;
-                    if (isEdit) {
-                      context.read<DiaryBloc>().add(UpdateDiaryEntry(id: entry.id, content: ctrl.text.trim(), moodValue: mood, tags: tags));
-                    } else {
-                      final now = DateTime.now();
-                      final entryWithTime = DateTime(date.year, date.month, date.day, now.hour, now.minute, now.second);
-                      context.read<DiaryBloc>().add(CreateDiaryEntry(content: ctrl.text.trim(), moodValue: mood, entryDate: entryWithTime, tags: tags));
-                      CasinoCoinsService().completeQuest('diary').then((_) => CasinoCoinsService().refreshStatus());
-                    }
-                    Navigator.pop(ctx);
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.citrusOrange,
-                    foregroundColor: Colors.white,
-                    padding: AppSize.paddingH(0, 16),
-                    shape: RoundedRectangleBorder(borderRadius: AppSize.radius(14)),
-                  ),
-                  child: Text('Сохранить', style: TextStyle(fontSize: AppSize.s(16), fontWeight: FontWeight.w600)),
-                ),
+              child: CitrusButton(
+                label: 'Сохранить',
+                onPressed: () {
+                  if (isListening) speech.stop();
+                  if (ctrl.text.trim().isEmpty) return;
+                  if (isEdit) {
+                    context.read<DiaryBloc>().add(UpdateDiaryEntry(id: entry.id, content: ctrl.text.trim(), moodValue: mood, tags: tags));
+                  } else {
+                    final now = DateTime.now();
+                    final entryWithTime = DateTime(date.year, date.month, date.day, now.hour, now.minute, now.second);
+                    context.read<DiaryBloc>().add(CreateDiaryEntry(content: ctrl.text.trim(), moodValue: mood, entryDate: entryWithTime, tags: tags));
+                    CasinoCoinsService().completeQuest('diary').then((_) => CasinoCoinsService().refreshStatus());
+                  }
+                  Navigator.pop(ctx);
+                },
               ),
             ),
           ]),

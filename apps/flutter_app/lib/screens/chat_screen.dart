@@ -11,7 +11,7 @@ import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:share_plus/share_plus.dart';
 import '../core/theme/app_colors.dart';
 import '../features/diary/bloc/diary_bloc.dart';
-import 'help_screen.dart';
+import 'emergency_modal.dart';
 import 'exercises_screen.dart';
 import '../services/chat_api_client.dart';
 import '../services/analytics_loader.dart';
@@ -659,6 +659,16 @@ class _ChatScreenState extends State<ChatScreen> {
         ),
       );
 
+  /// Экстренная помощь — открываем SOS-оверлей (горячие линии, контакт,
+  /// техники заземления), а не информационный раздел «Помощь».
+  void _openSos() => Navigator.of(context).push(
+        PageRouteBuilder(
+          opaque: false,
+          barrierColor: Colors.transparent,
+          pageBuilder: (ctx, _, __) => EmergencyModal(onClose: () => Navigator.of(ctx).pop()),
+        ),
+      );
+
   Widget _buildCrisisBanner() {
     return Container(
       margin: AppSize.paddingH(16, 8),
@@ -679,7 +689,7 @@ class _ChatScreenState extends State<ChatScreen> {
         Text('Если сейчас тяжело — это важно. Поговори с близким или специалистом, можно прямо сейчас.', style: TextStyle(color: AppColors.mutedForeground, fontSize: AppSize.s(12), height: 1.5)),
         AppSize.gapH(10),
         Row(children: [
-          Expanded(child: _crisisBtn(Icons.support_agent, 'Получить помощь', () => Navigator.push(context, MaterialPageRoute(builder: (_) => HelpScreen())))),
+          Expanded(child: _crisisBtn(Icons.support_agent, 'Получить помощь', _openSos)),
           AppSize.gapW(8),
           Expanded(child: _crisisBtn(Icons.self_improvement, 'Дыхание', () => Navigator.push(context, MaterialPageRoute(builder: (_) => ExercisesScreen())))),
         ]),
