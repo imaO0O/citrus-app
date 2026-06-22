@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/mood.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_text.dart';
 import '../../core/utils/app_size.dart';
+import '../../core/widgets/citrus_card.dart';
 
 class MoodLog extends StatelessWidget {
   final List<MoodLogEntry> entries;
@@ -18,14 +20,7 @@ class MoodLog extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Сегодня',
-            style: TextStyle(
-              fontSize: AppSize.s(16),
-              fontWeight: FontWeight.w600,
-              color: AppColors.foreground,
-            ),
-          ),
+          Text('Отметки за сегодня', style: AppText.sectionTitle),
           AppSize.gapH(8),
           ...entries.map(_buildEntry),
         ],
@@ -39,15 +34,9 @@ class MoodLog extends StatelessWidget {
     return Padding(
       key: ValueKey(entry.entryKey),
       padding: AppSize.paddingOnly(bottom: 8),
-      child: Container(
+      child: CitrusCard(
+        radius: 16,
         padding: AppSize.paddingH(16, 12),
-        decoration: BoxDecoration(
-          color: AppColors.card,
-          borderRadius: AppSize.radius(16),
-          border: Border.all(
-            color: AppColors.foreground.withValues(alpha: 0.05),
-          ),
-        ),
         child: Row(
           children: [
             Text(mood.emoji, style: TextStyle(fontSize: AppSize.s(20))),

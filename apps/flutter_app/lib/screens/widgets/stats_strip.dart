@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/app_size.dart';
+import '../../core/widgets/citrus_card.dart';
 
 class StatsStrip extends StatelessWidget {
   final int streakDays;
@@ -68,13 +69,10 @@ class _StatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return CitrusCard(
+      accent: iconColor,
+      radius: 16,
       padding: AppSize.padding(12),
-      decoration: BoxDecoration(
-        color: AppColors.card,
-        borderRadius: AppSize.radius(16),
-        border: Border.all(color: iconColor.withValues(alpha: 0.22)),
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,

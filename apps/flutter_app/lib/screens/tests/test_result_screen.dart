@@ -4,6 +4,8 @@ import '../../models/psychological_test.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/api/test_api_service.dart';
 import '../../core/utils/app_size.dart';
+import '../../core/widgets/citrus_card.dart';
+import '../../core/widgets/citrus_button.dart';
 import '../../features/articles/pages/articles_page.dart';
 import '../exercises_screen.dart';
 import '../help_screen.dart';
@@ -218,16 +220,12 @@ class _TestResultScreenState extends State<TestResultScreen> {
             AppSize.gapH(24),
 
             // Дисклеймер
-            Container(
-              padding: AppSize.padding(16),
-              decoration: BoxDecoration(
-                color: AppColors.card,
-                borderRadius: AppSize.radius(12),
-                border: Border.all(color: AppColors.citrusOrange.withValues(alpha: 0.3)),
-              ),
+            CitrusCard(
+              accent: AppColors.citrusOrange,
+              radius: 12,
               child: Row(
                 children: [
-                  Icon(Icons.info_outline, color: AppColors.citrusOrange, size: 24),
+                  Icon(Icons.info_outline, color: AppColors.citrusOrange, size: AppSize.s(24)),
                   AppSize.gapW(12),
                   Expanded(
                     child: Text(
@@ -244,7 +242,11 @@ class _TestResultScreenState extends State<TestResultScreen> {
             Row(
               children: [
                 Expanded(
-                  child: OutlinedButton.icon(
+                  child: CitrusButton(
+                    label: 'Пройти снова',
+                    icon: Icons.replay,
+                    variant: CitrusButtonVariant.secondary,
+                    color: AppColors.citrusOrange,
                     onPressed: () {
                       Navigator.of(context).pushReplacement(
                         MaterialPageRoute(
@@ -252,31 +254,17 @@ class _TestResultScreenState extends State<TestResultScreen> {
                         ),
                       );
                     },
-                    icon: Icon(Icons.replay),
-                    label: Text('Пройти снова'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.foreground,
-                      side: BorderSide(color: AppColors.dimForeground),
-                      padding: AppSize.paddingH(0, 16),
-                      shape: RoundedRectangleBorder(borderRadius: AppSize.radius(12)),
-                    ),
                   ),
                 ),
                 AppSize.gapW(12),
                 Expanded(
-                  child: ElevatedButton.icon(
+                  child: CitrusButton(
+                    label: 'Все тесты',
+                    icon: Icons.list,
                     onPressed: () {
                       Navigator.of(context).pop();
                       Navigator.of(context).pop();
                     },
-                    icon: Icon(Icons.list),
-                    label: Text('Все тесты'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.citrusOrange,
-                      foregroundColor: AppColors.primaryForeground,
-                      padding: AppSize.paddingH(0, 16),
-                      shape: RoundedRectangleBorder(borderRadius: AppSize.radius(12)),
-                    ),
                   ),
                 ),
               ],
@@ -311,13 +299,10 @@ class _TestResultScreenState extends State<TestResultScreen> {
           ),
         );
 
-    return Container(
+    return CitrusCard(
+      accent: color,
+      color: high ? AppColors.destructive.withValues(alpha: 0.08) : null,
       padding: AppSize.paddingH(16, 6),
-      decoration: BoxDecoration(
-        color: high ? AppColors.destructive.withValues(alpha: 0.08) : AppColors.card,
-        borderRadius: AppSize.radius(16),
-        border: Border.all(color: color.withValues(alpha: 0.35)),
-      ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         AppSize.gapH(12),
         Row(children: [
@@ -348,13 +333,7 @@ class _TestResultScreenState extends State<TestResultScreen> {
 
   Widget _buildHistory() {
     final past = _history.skip(1).take(5).toList(); // без текущего
-    return Container(
-      padding: AppSize.padding(16),
-      decoration: BoxDecoration(
-        color: AppColors.card,
-        borderRadius: AppSize.radius(16),
-        border: Border.all(color: AppColors.foreground.withValues(alpha: 0.05)),
-      ),
+    return CitrusCard(
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
           Icon(Icons.history, size: AppSize.s(16), color: AppColors.mutedForeground),
@@ -435,13 +414,8 @@ class _ScaleResultCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: AppSize.padding(16),
-      decoration: BoxDecoration(
-        color: AppColors.card,
-        borderRadius: AppSize.radius(16),
-        border: Border.all(color: AppColors.foreground.withValues(alpha: 0.05)),
-      ),
+    return CitrusCard(
+      accent: _levelColor,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
