@@ -17,7 +17,8 @@ Future<Response> _register(RequestContext context) async {
 
     // Проверяем существование пользователя
     final existing = await _dbQuery(
-      "SELECT id FROM users WHERE email = '$email'",
+      'SELECT id FROM users WHERE email = @email',
+      substitutionValues: {'email': email},
     );
 
     if (existing.isNotEmpty) {
@@ -26,10 +27,17 @@ Future<Response> _register(RequestContext context) async {
 
     final userId = const Uuid().v4();
     final passwordHash = _hashPassword(password);
-    final nameSql = name != null && name.isNotEmpty ? "'${name.replaceAll("'", "''")}'" : 'NULL';
+    final cleanName = (name != null && name.isNotEmpty) ? name : null;
 
     await _dbQuery(
-      "INSERT INTO users (id, email, password_hash, name, theme_id) VALUES ('$userId', '$email', '$passwordHash', $nameSql, '00000000-0000-0000-0000-000000000001')",
+      'INSERT INTO users (id, email, password_hash, name, theme_id) '
+      "VALUES (@id, @email, @passwordHash, @name, '00000000-0000-0000-0000-000000000001')",
+      substitutionValues: {
+        'id': userId,
+        'email': email,
+        'passwordHash': passwordHash,
+        'name': cleanName,
+      },
     );
 
     // Создаем JWT токен
@@ -67,7 +75,8 @@ Future<Response> _login(RequestContext context) async {
     }
 
     final results = await _dbQuery(
-      "SELECT id, email, name, theme_id, password_hash, avatar_url, phone FROM users WHERE email = '$email'",
+      'SELECT id, email, name, theme_id, password_hash, avatar_url, phone FROM users WHERE email = @email',
+      substitutionValues: {'email': email},
     );
 
     if (results.isEmpty) {
@@ -115,7 +124,8 @@ Future<Response> _forgotPassword(RequestContext context) async {
 
     // Проверяем, существует ли пользователь
     final results = await _dbQuery(
-      "SELECT id FROM users WHERE email = '$email'",
+      'SELECT id FROM users WHERE email = @email',
+      substitutionValues: {'email': email},
     );
 
     if (results.isEmpty) {
@@ -126,7 +136,8 @@ Future<Response> _forgotPassword(RequestContext context) async {
 
     // Инвалидируем старые коды
     await _dbQuery(
-      "UPDATE password_reset_tokens SET used = true WHERE user_id = '$userId' AND used = false",
+      'UPDATE password_reset_tokens SET used = true WHERE user_id = @userId AND used = false',
+      substitutionValues: {'userId': userId},
     );
 
     // Генерируем 6-значный код
@@ -137,7 +148,14 @@ Future<Response> _forgotPassword(RequestContext context) async {
     final tokenId = const Uuid().v4();
 
     await _dbQuery(
-      "INSERT INTO password_reset_tokens (id, user_id, code, expires_at) VALUES ('$tokenId', '$userId', '$code', '${expiresAt.toIso8601String()}')",
+      'INSERT INTO password_reset_tokens (id, user_id, code, expires_at) '
+      'VALUES (@id, @userId, @code, @expiresAt)',
+      substitutionValues: {
+        'id': tokenId,
+        'userId': userId,
+        'code': code,
+        'expiresAt': expiresAt,
+      },
     );
 
     // Отправляем email
@@ -172,7 +190,8 @@ Future<Response> _resetPassword(RequestContext context) async {
 
     // Находим пользователя
     final userResults = await _dbQuery(
-      "SELECT id FROM users WHERE email = '$email'",
+      'SELECT id FROM users WHERE email = @email',
+      substitutionValues: {'email': email},
     );
 
     if (userResults.isEmpty) {
@@ -183,31 +202,38 @@ Future<Response> _resetPassword(RequestContext context) async {
 
     // Проверяем код
     final tokenResults = await _dbQuery(
-      "SELECT id, expires_at FROM password_reset_tokens WHERE user_id = '$userId' AND code = '$code' AND used = false ORDER BY created_at DESC LIMIT 1",
+      'SELECT id, expires_at FROM password_reset_tokens '
+      'WHERE user_id = @userId AND code = @code AND used = false '
+      'ORDER BY created_at DESC LIMIT 1',
+      substitutionValues: {'userId': userId, 'code': code},
     );
 
     if (tokenResults.isEmpty) {
       return Response(statusCode: 400, body: 'Invalid or expired code');
     }
 
+    final tokenId = tokenResults.first[0] as String;
     final expiresAt = tokenResults.first[1] as DateTime;
     if (DateTime.now().isAfter(expiresAt)) {
       // Код просрочен
       await _dbQuery(
-        "UPDATE password_reset_tokens SET used = true WHERE id = '${tokenResults.first[0]}'",
+        'UPDATE password_reset_tokens SET used = true WHERE id = @id',
+        substitutionValues: {'id': tokenId},
       );
       return Response(statusCode: 400, body: 'Code has expired');
     }
 
     // Помечаем код как использованный
     await _dbQuery(
-      "UPDATE password_reset_tokens SET used = true WHERE id = '${tokenResults.first[0]}'",
+      'UPDATE password_reset_tokens SET used = true WHERE id = @id',
+      substitutionValues: {'id': tokenId},
     );
 
     // Обновляем пароль
     final passwordHash = _hashPassword(newPassword);
     await _dbQuery(
-      "UPDATE users SET password_hash = '$passwordHash' WHERE id = '$userId'",
+      'UPDATE users SET password_hash = @passwordHash WHERE id = @userId',
+      substitutionValues: {'passwordHash': passwordHash, 'userId': userId},
     );
 
     return Response.json(body: {'message': 'Password has been reset successfully'});
@@ -215,4 +241,3 @@ Future<Response> _resetPassword(RequestContext context) async {
     return Response(statusCode: 500, body: 'Error: $e');
   }
 }
-

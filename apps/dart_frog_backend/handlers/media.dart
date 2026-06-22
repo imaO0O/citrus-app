@@ -84,7 +84,8 @@ Future<Response> _getTrustedContacts(RequestContext context, _AuthContext auth) 
 
   try {
     final results = await _dbQuery(
-      "SELECT id, name, phone, created_at FROM trusted_contacts WHERE user_id = '$userId' ORDER BY created_at DESC",
+      'SELECT id, name, phone, created_at FROM trusted_contacts WHERE user_id = @userId ORDER BY created_at DESC',
+      substitutionValues: {'userId': userId},
     );
 
     final records = results.map((row) => {
@@ -109,10 +110,11 @@ Future<Response> _getPhotos(RequestContext context, _AuthContext auth) async {
 
   try {
     final results = await _dbQuery(
-      "SELECT id, user_id, image_url, caption, photo_date::text, is_favorite, created_at::text "
-      "FROM memory_photos "
-      "WHERE user_id = '$userId' "
-      "ORDER BY created_at DESC",
+      'SELECT id, user_id, image_url, caption, photo_date::text, is_favorite, created_at::text '
+      'FROM memory_photos '
+      'WHERE user_id = @userId '
+      'ORDER BY created_at DESC',
+      substitutionValues: {'userId': userId},
     );
 
     final photos = results.map((row) => {
@@ -146,10 +148,11 @@ Future<Response> _createTrustedContact(RequestContext context, _AuthContext auth
 
   try {
     final contactId = const Uuid().v4();
-    final nameSql = name.isNotEmpty ? "'${name.replaceAll("'", "''")}'" : 'NULL';
+    final cleanName = name.isNotEmpty ? name : null;
 
     await _dbQuery(
-      "INSERT INTO trusted_contacts (id, user_id, name, phone) VALUES ('$contactId', '$userId', $nameSql, '${phone.replaceAll("'", "''")}')",
+      'INSERT INTO trusted_contacts (id, user_id, name, phone) VALUES (@id, @userId, @name, @phone)',
+      substitutionValues: {'id': contactId, 'userId': userId, 'name': cleanName, 'phone': phone},
     );
 
     return Response.json(
@@ -179,12 +182,18 @@ Future<Response> _createPhoto(RequestContext context, _AuthContext auth) async {
       }
 
       final photoId = const Uuid().v4();
-      final photoDateSql = photoDate != null ? "'$photoDate'" : 'NOW()';
-      final captionSql = caption != null ? "'${caption.replaceAll("'", "''")}'" : 'NULL';
+      final photoDateVal = (photoDate != null ? DateTime.tryParse(photoDate) : null) ?? DateTime.now();
 
       await _dbQuery(
-        "INSERT INTO memory_photos (id, user_id, image_url, caption, photo_date) "
-        "VALUES ('$photoId', '$userId', '$imageUrl', $captionSql, $photoDateSql)",
+        'INSERT INTO memory_photos (id, user_id, image_url, caption, photo_date) '
+        'VALUES (@id, @userId, @imageUrl, @caption, @photoDate)',
+        substitutionValues: {
+          'id': photoId,
+          'userId': userId,
+          'imageUrl': imageUrl,
+          'caption': caption,
+          'photoDate': photoDateVal,
+        },
       );
 
       return Response.json(statusCode: 201, body: {
@@ -221,11 +230,18 @@ Future<Response> _createPhoto(RequestContext context, _AuthContext auth) async {
     final photoId = const Uuid().v4();
     final photoDate = photoDateField ?? DateTime.now().toIso8601String().split('T').first;
     final caption = captionField;
-    final captionSql = caption != null ? "'${caption.replaceAll("'", "''")}'" : 'NULL';
+    final photoDateVal = DateTime.tryParse(photoDate) ?? DateTime.now();
 
     await _dbQuery(
-      "INSERT INTO memory_photos (id, user_id, image_url, caption, photo_date) "
-      "VALUES ('$photoId', '$userId', '$cloudinaryUrl', $captionSql, '$photoDate')",
+      'INSERT INTO memory_photos (id, user_id, image_url, caption, photo_date) '
+      'VALUES (@id, @userId, @imageUrl, @caption, @photoDate)',
+      substitutionValues: {
+        'id': photoId,
+        'userId': userId,
+        'imageUrl': cloudinaryUrl,
+        'caption': caption,
+        'photoDate': photoDateVal,
+      },
     );
 
     return Response.json(statusCode: 201, body: {
@@ -256,11 +272,12 @@ Future<Response> _updateTrustedContact(RequestContext context, _AuthContext auth
   }
 
   try {
-    final nameSql = name != null && name.isNotEmpty ? "'${name.replaceAll("'", "''")}'" : 'NULL';
-    final phoneSql = phone.replaceAll("'", "''");
+    final cleanName = (name != null && name.isNotEmpty) ? name : null;
 
     final result = await _dbQuery(
-      "UPDATE trusted_contacts SET name = $nameSql, phone = '$phoneSql' WHERE id = '$id' AND user_id = '$userId' RETURNING id, name, phone",
+      'UPDATE trusted_contacts SET name = @name, phone = @phone '
+      'WHERE id = @id AND user_id = @userId RETURNING id, name, phone',
+      substitutionValues: {'name': cleanName, 'phone': phone, 'id': id, 'userId': userId},
     );
 
     if (result.isEmpty) {
@@ -285,7 +302,8 @@ Future<Response> _togglePhotoFavorite(RequestContext context, _AuthContext auth,
 
   try {
     final results = await _dbQuery(
-      "SELECT is_favorite FROM memory_photos WHERE id = '$id' AND user_id = '$userId'",
+      'SELECT is_favorite FROM memory_photos WHERE id = @id AND user_id = @userId',
+      substitutionValues: {'id': id, 'userId': userId},
     );
 
     if (results.isEmpty) {
@@ -296,7 +314,8 @@ Future<Response> _togglePhotoFavorite(RequestContext context, _AuthContext auth,
     final newFavorite = !currentFavorite;
 
     await _dbQuery(
-      "UPDATE memory_photos SET is_favorite = $newFavorite WHERE id = '$id' AND user_id = '$userId'",
+      'UPDATE memory_photos SET is_favorite = @fav WHERE id = @id AND user_id = @userId',
+      substitutionValues: {'fav': newFavorite, 'id': id, 'userId': userId},
     );
 
     return Response.json(body: {'is_favorite': newFavorite});
@@ -312,7 +331,8 @@ Future<Response> _deleteTrustedContact(RequestContext context, _AuthContext auth
 
   try {
     final result = await _dbQuery(
-      "DELETE FROM trusted_contacts WHERE id = '$id' AND user_id = '$userId'",
+      'DELETE FROM trusted_contacts WHERE id = @id AND user_id = @userId',
+      substitutionValues: {'id': id, 'userId': userId},
     );
 
     if (result.affectedRowCount == 0) {
@@ -333,7 +353,8 @@ Future<Response> _deletePhoto(RequestContext context, _AuthContext auth, String 
   try {
     // Получаем URL фото для удаления из Cloudinary
     final photoResults = await _dbQuery(
-      "SELECT image_url FROM memory_photos WHERE id = '$id' AND user_id = '$userId'",
+      'SELECT image_url FROM memory_photos WHERE id = @id AND user_id = @userId',
+      substitutionValues: {'id': id, 'userId': userId},
     );
 
     if (photoResults.isEmpty) {
@@ -344,7 +365,8 @@ Future<Response> _deletePhoto(RequestContext context, _AuthContext auth, String 
 
     // Удаляем из БД
     final result = await _dbQuery(
-      "DELETE FROM memory_photos WHERE id = '$id' AND user_id = '$userId'",
+      'DELETE FROM memory_photos WHERE id = @id AND user_id = @userId',
+      substitutionValues: {'id': id, 'userId': userId},
     );
 
     if (result.affectedRowCount == 0) {
@@ -363,4 +385,3 @@ Future<Response> _deletePhoto(RequestContext context, _AuthContext auth, String 
     return Response(statusCode: 500, body: 'Error: $e');
   }
 }
-
