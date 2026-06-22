@@ -49,6 +49,9 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
   bool _revealed = false;
   bool _showWarning = false;
 
+  // Полоса настроения за последние 7 дней (паттерн Breeze/Storia)
+  Map<DateTime, double> _week = {};
+
   // Карточка «Продолжить» — незавершённый курс
   Course? _continueCourse;
   int _continueDay = 0;
@@ -63,6 +66,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
       _loadDailyAffirmation();
       _checkEarlyWarning();
       _loadContinue();
+      _loadWeek();
     });
   }
 
@@ -93,6 +97,17 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
         return;
       }
       if (mounted && _continueCourse != null) setState(() => _continueCourse = null);
+    } catch (_) {}
+  }
+
+  /// Среднее настроение по дням за последние 7 дней — для недельной полосы.
+  Future<void> _loadWeek() async {
+    try {
+      final moodRepo = context.read<MoodRepository>();
+      final today = DateTime.now();
+      final from = DateTime(today.year, today.month, today.day).subtract(const Duration(days: 6));
+      final map = await moodRepo.getAverageMoodByDay(startDate: from, endDate: today);
+      if (mounted) setState(() => _week = map);
     } catch (_) {}
   }
 
@@ -251,6 +266,87 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     );
   }
 
+  // ─────────────────────── Week strip ───────────────────────────
+
+  static const List<String> _weekdayLabels = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+
+  Color _moodColorFor(double avg) => Mood.all[avg.round().clamp(0, 5)].color;
+
+  /// Кольца настроения по дням недели: заполненные — есть запись (цвет по
+  /// среднему настроению), контурные — пусто; сегодня выделено.
+  Widget _buildWeekStrip() {
+    final today = DateTime.now();
+    final todayKey = DateTime(today.year, today.month, today.day);
+    final days = List.generate(7, (i) => todayKey.subtract(Duration(days: 6 - i)));
+    return Padding(
+      padding: AppSize.paddingH(20, 0),
+      child: Row(
+        children: days.map((day) {
+          final avg = _week[day];
+          final hasData = avg != null;
+          final color = hasData ? _moodColorFor(avg) : null;
+          final isToday = day == todayKey;
+          return Expanded(
+            child: Column(
+              children: [
+                Text(
+                  _weekdayLabels[day.weekday - 1],
+                  style: TextStyle(
+                    fontSize: AppSize.s(10),
+                    fontWeight: FontWeight.w600,
+                    color: isToday ? AppColors.foreground : AppColors.dimForeground,
+                  ),
+                ),
+                AppSize.gapH(6),
+                Container(
+                  width: AppSize.s(26),
+                  height: AppSize.s(26),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: hasData ? color!.withValues(alpha: 0.9) : Colors.transparent,
+                    border: Border.all(
+                      color: hasData ? color! : AppColors.subtleBorder,
+                      width: isToday ? 2 : 1.2,
+                    ),
+                    boxShadow: hasData
+                        ? [BoxShadow(color: color!.withValues(alpha: 0.35), blurRadius: 7)]
+                        : null,
+                  ),
+                  child: (isToday && !hasData)
+                      ? Center(
+                          child: Container(
+                            width: AppSize.s(5),
+                            height: AppSize.s(5),
+                            decoration: const BoxDecoration(shape: BoxShape.circle, color: AppColors.citrusOrange),
+                          ),
+                        )
+                      : null,
+                ),
+              ],
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  /// Action-пилюля справа на карточках «Сегодня» (паттерн Storia).
+  Widget _ctaPill(String text, Color color, {IconData icon = Icons.arrow_forward_rounded, bool muted = false}) {
+    final c = muted ? AppColors.dimForeground : color;
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: AppSize.s(11), vertical: AppSize.s(7)),
+      decoration: BoxDecoration(
+        color: c.withValues(alpha: muted ? 0.12 : 0.16),
+        borderRadius: AppSize.radius(20),
+      ),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        Text(text, style: TextStyle(color: c, fontSize: AppSize.s(12), fontWeight: FontWeight.w700)),
+        AppSize.gapW(3),
+        Icon(icon, size: AppSize.s(13), color: c),
+      ]),
+    );
+  }
+
   // ─────────────────────── Wheel section ────────────────────────
 
   Widget _buildWheelSection(DashboardLoaded state, Color moodColor) {
@@ -367,7 +463,9 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
               ),
             ]),
           ),
-          Icon(_continueLocked ? Icons.lock_clock : Icons.chevron_right, color: AppColors.dimForeground, size: AppSize.s(22)),
+          _continueLocked
+              ? _ctaPill('Завтра', c.color, icon: Icons.lock_clock, muted: true)
+              : _ctaPill('Продолжить', c.color),
         ]),
       ),
     );
@@ -427,6 +525,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     String subtitle;
     Color color;
     VoidCallback? onTap;
+    String cta = '';
 
     if (state.todayLog.isEmpty) {
       icon = Icons.touch_app_outlined;
@@ -440,6 +539,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
       title = 'Сложный момент?';
       subtitle = 'Подыши пару минут — поможет успокоиться';
       onTap = widget.onNavigateToExercises;
+      cta = 'Подышать';
     } else if (state.streakDays == 0) {
       icon = Icons.local_fire_department;
       color = AppColors.citrusAmber;
@@ -452,12 +552,14 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
       title = 'Запиши мысль';
       subtitle = 'Пара строк в дневнике помогают разгрузить голову';
       onTap = widget.onNavigateToDiary;
+      cta = 'Открыть';
     } else {
       icon = Icons.fact_check_outlined;
       color = AppColors.citrusPurple;
       title = 'Короткий тест';
       subtitle = 'Загляни, как ты себя чувствуешь — это быстро';
       onTap = widget.onNavigateToTests;
+      cta = 'Пройти';
     }
 
     return Padding(
@@ -484,7 +586,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                 ],
               ),
             ),
-            if (onTap != null) Icon(Icons.chevron_right, color: AppColors.dimForeground, size: AppSize.s(22)),
+            if (onTap != null) _ctaPill(cta, color),
           ],
         ),
       ),
@@ -599,29 +701,33 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _reveal(0, _buildHeader(name, avatarUrl)),
-                  _reveal(1, _buildWheelSection(state, moodColor)),
+                  _reveal(1, _buildWeekStrip()),
+                  AppSize.gapH(20),
+                  _reveal(2, _buildWheelSection(state, moodColor)),
+                  AppSize.gapH(24),
+                  _reveal(3, _sectionTitle('Сегодня')),
+                  AppSize.gapH(10),
                   if (_showWarning) ...[
-                    AppSize.gapH(16),
                     _buildEarlyWarning(),
+                    AppSize.gapH(12),
                   ],
+                  _reveal(4, _buildRecommendation(state)),
                   if (_continueCourse != null) ...[
-                    AppSize.gapH(16),
+                    AppSize.gapH(12),
                     _buildContinueCard(),
                   ],
                   AppSize.gapH(20),
-                  _reveal(2, _buildRecommendation(state)),
-                  AppSize.gapH(16),
-                  _reveal(3, StatsStrip(
+                  _reveal(5, StatsStrip(
                     streakDays: state.streakDays,
                     goodDaysPercent: state.goodDaysPercent,
                     sleepHours: state.sleepHours,
                   )),
                   AppSize.gapH(16),
-                  _reveal(4, _buildDailyAffirmation()),
+                  _reveal(6, _buildDailyAffirmation()),
                   AppSize.gapH(16),
-                  _reveal(5, _sectionTitle('Быстрый доступ')),
+                  _reveal(7, _sectionTitle('Быстрый доступ')),
                   AppSize.gapH(10),
-                  _reveal(6, QuickLinks(
+                  _reveal(8, QuickLinks(
                     onExerciseTap: widget.onNavigateToExercises,
                     onChatTap: widget.onNavigateToChat,
                     onDiaryTap: widget.onNavigateToDiary,
@@ -629,7 +735,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                     onTestsTap: widget.onNavigateToTests,
                   )),
                   AppSize.gapH(16),
-                  _reveal(7, MoodLog(entries: state.todayLog)),
+                  _reveal(9, MoodLog(entries: state.todayLog)),
                 ],
               ),
             ),
