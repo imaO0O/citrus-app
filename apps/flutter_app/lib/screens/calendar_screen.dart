@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../core/theme/app_colors.dart';
+import '../core/widgets/citrus_card.dart';
+import '../core/widgets/citrus_empty_state.dart';
 import '../features/calendar/bloc/calendar_bloc.dart';
 import '../features/auth/bloc/auth_bloc.dart';
 import '../models/calendar_event.dart';
@@ -156,17 +158,12 @@ class _CalendarScreenState extends State<CalendarScreen> with WidgetsBindingObse
             }
 
             if (state is CalendarError) {
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.error_outline, size: 48, color: AppColors.destructive),
-                    AppSize.gapH(16),
-                    Text(state.message, style: TextStyle(color: AppColors.mutedForeground)),
-                    AppSize.gapH(16),
-                    ElevatedButton(onPressed: _loadCalendar, child: Text('Повторить')),
-                  ],
-                ),
+              return CitrusEmptyState(
+                title: 'Не удалось загрузить',
+                subtitle: state.message,
+                actionLabel: 'Повторить',
+                actionIcon: Icons.refresh,
+                onAction: _loadCalendar,
               );
             }
 
@@ -245,7 +242,7 @@ class _CalendarScreenState extends State<CalendarScreen> with WidgetsBindingObse
           decoration: BoxDecoration(
             color: AppColors.surface1,
             borderRadius: AppSize.radius(12),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
+            border: Border.all(color: AppColors.subtleBorder),
           ),
           child: Icon(icon, color: AppColors.foreground, size: 18),
         ),
@@ -549,13 +546,7 @@ class _CalendarScreenState extends State<CalendarScreen> with WidgetsBindingObse
     final dayKey = DateTime(selected.year, selected.month, selected.day);
     final dayEvents = eventsByDay[dayKey] ?? [];
 
-    return Container(
-      padding: AppSize.padding(16),
-      decoration: BoxDecoration(
-        color: AppColors.surface1,
-        borderRadius: AppSize.radius(16),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
-      ),
+    return CitrusCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -594,8 +585,9 @@ class _CalendarScreenState extends State<CalendarScreen> with WidgetsBindingObse
       margin: AppSize.paddingOnly(bottom: 8),
       padding: AppSize.padding(12),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.04),
+        color: AppColors.subtleBg,
         borderRadius: AppSize.radius(12),
+        border: Border.all(color: AppColors.subtleBorder),
       ),
       child: Row(
         children: [
@@ -658,20 +650,10 @@ class _CalendarScreenState extends State<CalendarScreen> with WidgetsBindingObse
 
   Widget _buildEventsList(List<CalendarEventModel> events) {
     if (events.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: AppSize.padding(32),
-          child: Column(
-            children: [
-              Icon(Icons.event_note, size: 48, color: AppColors.dimForeground),
-              AppSize.gapH(8),
-              Text(
-                'Нет событий',
-                style: TextStyle(color: AppColors.mutedForeground),
-              ),
-            ],
-          ),
-        ),
+      return CitrusEmptyState(
+        emoji: '🗓️',
+        title: 'Пока нет событий',
+        subtitle: 'Добавь экзамен, дедлайн или встречу — кнопкой «+» внизу.',
       );
     }
 
