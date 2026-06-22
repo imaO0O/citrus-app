@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../core/theme/app_colors.dart';
 import '../core/utils/app_size.dart';
+import '../core/widgets/citrus_card.dart';
 
 /// Экран помощи и поддержки
 class HelpScreen extends StatelessWidget {
@@ -148,12 +149,9 @@ class HelpScreen extends StatelessWidget {
   }
 
   Widget _buildQuickActions(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surface1,
-        borderRadius: AppSize.radius(16),
-        border: Border.all(color: AppColors.subtleBorder),
-      ),
+    return CitrusCard(
+      padding: EdgeInsets.zero,
+      radius: 16,
       child: Column(
         children: [
           _buildActionTile(
@@ -209,12 +207,9 @@ class HelpScreen extends StatelessWidget {
       },
     ];
 
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surface1,
-        borderRadius: AppSize.radius(16),
-        border: Border.all(color: AppColors.subtleBorder),
-      ),
+    return CitrusCard(
+      padding: EdgeInsets.zero,
+      radius: 16,
       child: ExpansionPanelList.radio(
         elevation: 0,
         expandedHeaderPadding: EdgeInsets.zero,
@@ -222,7 +217,7 @@ class HelpScreen extends StatelessWidget {
         children: faqs.map((faq) {
           return ExpansionPanelRadio(
             value: faq['question']!,
-            backgroundColor: AppColors.surface1,
+            backgroundColor: AppColors.card,
             headerBuilder: (context, isExpanded) {
               return ListTile(
                 title: Text(
@@ -276,12 +271,9 @@ class HelpScreen extends StatelessWidget {
       },
     ];
 
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surface1,
-        borderRadius: AppSize.radius(16),
-        border: Border.all(color: AppColors.subtleBorder),
-      ),
+    return CitrusCard(
+      padding: EdgeInsets.zero,
+      radius: 16,
       child: Column(
         children: guides.asMap().entries.map((entry) {
           final guide = entry.value;
@@ -346,12 +338,9 @@ class HelpScreen extends StatelessWidget {
   }
 
   Widget _buildLegalSection(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surface1,
-        borderRadius: AppSize.radius(16),
-        border: Border.all(color: AppColors.subtleBorder),
-      ),
+    return CitrusCard(
+      padding: EdgeInsets.zero,
+      radius: 16,
       child: Column(
         children: [
           _buildActionTile(
@@ -378,13 +367,9 @@ class HelpScreen extends StatelessWidget {
   }
 
   Widget _buildSupportContacts(BuildContext context) {
-    return Container(
+    return CitrusCard(
       padding: AppSize.padding(20),
-      decoration: BoxDecoration(
-        color: AppColors.surface1,
-        borderRadius: AppSize.radius(16),
-        border: Border.all(color: AppColors.subtleBorder),
-      ),
+      radius: 16,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
