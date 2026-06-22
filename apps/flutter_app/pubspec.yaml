@@ -114,18 +114,8 @@ flutter:
   # the material Icons class.
   uses-material-design: true
 
-  fonts:
-    # Фирменная гарнитура — зашита в приложение, поэтому выглядит одинаково на
-    # любом Android (не зависит от системного шрифта OEM). Вариативный файл
-    # покрывает все веса — Flutter выбирает их по оси wght.
-    - family: Manrope
-      fonts:
-        - asset: assets/fonts/Manrope.ttf
-    # Цветные эмодзи движка Flutter как fallback — чтобы 🍊/😄 были идентичны
-    # на всех устройствах и версиях Android.
-    - family: NotoColorEmoji
-      fonts:
-        - asset: assets/fonts/NotoColorEmoji.ttf
+  assets:
+    - assets/fonts/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

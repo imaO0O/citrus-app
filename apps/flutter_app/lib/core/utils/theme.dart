@@ -3,8 +3,6 @@ import 'package:flutter/services.dart';
 
 final lightTheme = ThemeData(
   useMaterial3: true,
-  fontFamily: 'Manrope',
-  fontFamilyFallback: const ['NotoColorEmoji'],
   brightness: Brightness.light,
   primarySwatch: Colors.blue,
   primaryColor: Colors.blue,
@@ -55,8 +53,6 @@ final lightTheme = ThemeData(
 
 final darkTheme = ThemeData(
   useMaterial3: true,
-  fontFamily: 'Manrope',
-  fontFamilyFallback: const ['NotoColorEmoji'],
   brightness: Brightness.dark,
   primarySwatch: Colors.blue,
   primaryColor: Colors.blue[400],
