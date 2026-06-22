@@ -6,6 +6,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'dart:convert';
 import '../core/theme/app_colors.dart';
+import '../core/theme/app_text.dart';
+import '../core/widgets/citrus_card.dart';
 import '../core/utils/theme_service.dart';
 import '../core/utils/phone_formatter.dart';
 import '../core/config/api_config.dart';
@@ -462,14 +464,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _buildHeader() {
-    return Text(
-      'Настройки',
-      style: TextStyle(
-        fontSize: AppSize.s(24),
-        fontWeight: FontWeight.w700,
-        color: AppColors.foreground,
-      ),
-    );
+    return Text('Настройки', style: AppText.displayTitle);
   }
 
   // === Секция профиля (просмотр / редактирование) ===
@@ -478,12 +473,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final displayEmail = user?.email ?? 'Не авторизован';
     final avatarUrl = _isEditingProfile ? _profileAvatarUrl : user?.avatarUrl;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surface1,
-        borderRadius: AppSize.radius(16),
-        border: Border.all(color: AppColors.subtleBorder),
-      ),
+    return CitrusCard(
+      padding: EdgeInsets.zero,
+      radius: 16,
       child: Column(
         children: [
           // Шапка профиля: аватар + имя + email
@@ -952,12 +944,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
         ),
-        Container(
-          decoration: BoxDecoration(
-            color: AppColors.surface1,
-            borderRadius: AppSize.radius(16),
-            border: Border.all(color: AppColors.subtleBorder),
-          ),
+        CitrusCard(
+          padding: EdgeInsets.zero,
+          radius: 16,
           child: Column(
             children: children,
           ),

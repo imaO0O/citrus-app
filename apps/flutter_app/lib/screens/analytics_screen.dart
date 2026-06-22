@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:printing/printing.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 import '../core/theme/app_colors.dart';
+import '../core/theme/app_text.dart';
 import '../services/pdf_report_service.dart';
 import '../models/analytics_report.dart';
 import '../models/sleep_record.dart';
@@ -1037,15 +1038,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          '\u0410\u043D\u0430\u043B\u0438\u0442\u0438\u043A\u0430',
-          style: TextStyle(fontSize: AppSize.s(24), fontWeight: FontWeight.w700, color: AppColors.foreground),
-        ),
+        Text('\u0410\u043D\u0430\u043B\u0438\u0442\u0438\u043A\u0430', style: AppText.displayTitle),
         AppSize.gapH(4),
-        Text(
-          '\u041E\u0442\u0441\u043B\u0435\u0436\u0438\u0432\u0430\u0439\u0442\u0435 \u0441\u0432\u043E\u0439 \u043F\u0440\u043E\u0433\u0440\u0435\u0441\u0441',
-          style: TextStyle(fontSize: AppSize.s(13), color: AppColors.dimForeground),
-        ),
+        Text('\u041E\u0442\u0441\u043B\u0435\u0436\u0438\u0432\u0430\u0439\u0442\u0435 \u0441\u0432\u043E\u0439 \u043F\u0440\u043E\u0433\u0440\u0435\u0441\u0441', style: AppText.caption),
       ],
     );
   }
