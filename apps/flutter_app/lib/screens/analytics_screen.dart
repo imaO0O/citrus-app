@@ -8,6 +8,7 @@ import 'package:visibility_detector/visibility_detector.dart';
 import '../core/theme/app_colors.dart';
 import '../core/theme/app_text.dart';
 import '../core/widgets/citrus_card.dart';
+import '../core/widgets/citrus_empty_state.dart';
 import '../core/widgets/citrus_line_chart.dart';
 import '../services/pdf_report_service.dart';
 import '../models/analytics_report.dart';
@@ -76,6 +77,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   final List<String> _periods = ['\u041D\u0435\u0434\u0435\u043B\u044F', '\u041C\u0435\u0441\u044F\u0446', '3 \u043C\u0435\u0441', '\u0413\u043E\u0434'];
   bool _isGeneratingPdf = false;
   bool _isLoading = true;
+  bool _loadError = false;
   AnalyticsReport? _report;
   List<_SleepMoodDay> _sleepMoodDays = [];
   List<_TestTrend> _testTrends = [];
@@ -124,7 +126,10 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
 
   Future<void> _loadReportData() async {
     debugPrint('============= ANALYTICS _loadReportData CALLED =============');
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+      _loadError = false;
+    });
 
     try {
       // Используем репозитории из Provider
@@ -139,11 +144,11 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       debugPrint('Analytics: selectedPeriod=$_selectedPeriod');
 
       if (!isAuth) {
-        debugPrint('Analytics: NOT AUTHORIZED - using sample data');
-        // Если не авторизован, используем демо-данные
+        debugPrint('Analytics: NOT AUTHORIZED - showing empty state');
+        // Без авторизации не показываем чужие/выдуманные цифры — пустое состояние.
         if (mounted) {
           setState(() {
-            _report = _createSampleReport();
+            _report = null;
             _isLoading = false;
           });
         }
@@ -364,7 +369,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       debugPrint('Error loading analytics: $e');
       if (mounted) {
         setState(() {
-          _report = _createSampleReport();
+          _report = null;
+          _loadError = true;
           _isLoading = false;
         });
       }
@@ -522,56 +528,16 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     return 0;
   }
 
-  /// Создать тестовый отчёт (заглушка - заменить данными из репозиториев)
-  AnalyticsReport _createSampleReport() {
-    final now = DateTime.now();
-    final startDate = now.subtract(Duration(days: 7));
-
-    return AnalyticsReport(
-      period: ReportPeriod(
-        label: 'Неделя',
-        startDate: DateTime(2026, 4, 6),
-        endDate: DateTime(2026, 4, 13),
-      ),
-      metrics: ReportMetrics(
-        totalDays: 30,
-        goodDaysPercent: 71,
-        improvementPercent: 15,
-        streakDays: 7,
-        averageMood: 4.1,
-        averageSleepHours: 7.5,
-        sleepQuality: 4.2,
-        sleepRecords: 7,
-      ),
-      moodByDay: [
-        MoodDayData(dayName: 'Пн', value: 4.2, date: DateTime(2026, 4, 6)),
-        MoodDayData(dayName: 'Вт', value: 4.8, date: DateTime(2026, 4, 7)),
-        MoodDayData(dayName: 'Ср', value: 3.5, date: DateTime(2026, 4, 8)),
-        MoodDayData(dayName: 'Чт', value: 4.0, date: DateTime(2026, 4, 9)),
-        MoodDayData(dayName: 'Пт', value: 5.0, date: DateTime(2026, 4, 10)),
-        MoodDayData(dayName: 'Сб', value: 2.8, date: DateTime(2026, 4, 11)),
-        MoodDayData(dayName: 'Вс', value: 4.5, date: DateTime(2026, 4, 12)),
-      ],
-      moodDistribution: [
-        MoodDistribution(emoji: '😄', label: 'Отлично', count: 9, percent: 30, colorValue: 0xFF4ADE80),
-        MoodDistribution(emoji: '🙂', label: 'Хорошо', count: 12, percent: 40, colorValue: 0xFF86EFAC),
-        MoodDistribution(emoji: '😐', label: 'Нормально', count: 6, percent: 20, colorValue: 0xFFFF8C42),
-        MoodDistribution(emoji: '😟', label: 'Тревожно', count: 3, percent: 10, colorValue: 0xFFEF4444),
-      ],
-      insights: [
-        'Ваше настроение лучше всего в середине недели. Планируйте сложные задачи на вторник-среду.',
-        'Дни с хорошим сном на 40% чаще имеют положительное настроение.',
-        'После дней с физической активностью настроение улучшается на 25%.',
-        'Регулярные упражнения на дыхание снижают тревожность на 30%.',
-      ],
-      activity: ActivityStats(
-        moodRecords: 24,
-        chatMessages: 18,
-        exercises: 12,
-        tests: 5,
-        sleepRecords: 7,
-      ),
-    );
+  /// Нет ли в отчёте ни одной активности (новый пользователь / пустой период).
+  bool get _reportIsEmpty {
+    final r = _report;
+    if (r == null) return true;
+    final a = r.activity;
+    return a.moodRecords == 0 &&
+        a.sleepRecords == 0 &&
+        a.tests == 0 &&
+        a.exercises == 0 &&
+        a.chatMessages == 0;
   }
 
   @override
@@ -604,6 +570,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                     ],
                   ),
                 )
+              : _loadError
+              ? _buildErrorView()
               : CustomScrollView(
                   slivers: [
                     SliverToBoxAdapter(
@@ -619,24 +587,28 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                                 AppSize.gapH(16),
                                 _buildPeriodSelector(),
                                 AppSize.gapH(16),
-                                _buildHero(),
-                                AppSize.gapH(16),
-                                _buildOverviewCards(),
-                                AppSize.gapH(20),
-                                _buildMoodChart(),
-                                AppSize.gapH(20),
-                                _buildMoodDistribution(),
-                                AppSize.gapH(20),
-                                _buildInsights(),
-                                AppSize.gapH(20),
-                                _buildSleepSection(),
-                                AppSize.gapH(20),
-                                _buildSleepMoodCorrelation(),
-                                AppSize.gapH(20),
-                                _buildTestDynamics(),
-                                _buildActivitySection(),
-                                AppSize.gapH(20),
-                                _buildExportButtons(),
+                                if (_report == null || _reportIsEmpty)
+                                  _buildEmptyView()
+                                else ...[
+                                  _buildHero(),
+                                  AppSize.gapH(16),
+                                  _buildOverviewCards(),
+                                  AppSize.gapH(20),
+                                  _buildMoodChart(),
+                                  AppSize.gapH(20),
+                                  _buildMoodDistribution(),
+                                  AppSize.gapH(20),
+                                  _buildInsights(),
+                                  AppSize.gapH(20),
+                                  _buildSleepSection(),
+                                  AppSize.gapH(20),
+                                  _buildSleepMoodCorrelation(),
+                                  AppSize.gapH(20),
+                                  _buildTestDynamics(),
+                                  _buildActivitySection(),
+                                  AppSize.gapH(20),
+                                  _buildExportButtons(),
+                                ],
                               ],
                             ),
                           ),
@@ -1038,6 +1010,31 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           AppSize.gapH(8),
           footer,
         ],
+      ),
+    );
+  }
+
+  /// \u0421\u043E\u0441\u0442\u043E\u044F\u043D\u0438\u0435 \u043E\u0448\u0438\u0431\u043A\u0438 \u0437\u0430\u0433\u0440\u0443\u0437\u043A\u0438: \u0431\u0435\u0437 \u0432\u044B\u0434\u0443\u043C\u0430\u043D\u043D\u044B\u0445 \u0446\u0438\u0444\u0440, \u0441 \u043A\u043D\u043E\u043F\u043A\u043E\u0439 \u00AB\u041F\u043E\u0432\u0442\u043E\u0440\u0438\u0442\u044C\u00BB.
+  Widget _buildErrorView() {
+    return CitrusEmptyState(
+      emoji: '\uD83D\uDE15',
+      title: '\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044C',
+      subtitle: '\u041F\u0440\u043E\u0432\u0435\u0440\u044C\u0442\u0435 \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0435\u043D\u0438\u0435 \u043A \u0438\u043D\u0442\u0435\u0440\u043D\u0435\u0442\u0443 \u0438 \u043F\u043E\u043F\u0440\u043E\u0431\u0443\u0439\u0442\u0435 \u0441\u043D\u043E\u0432\u0430.',
+      actionLabel: '\u041F\u043E\u0432\u0442\u043E\u0440\u0438\u0442\u044C',
+      actionIcon: Icons.refresh,
+      onAction: _loadReportData,
+    );
+  }
+
+  /// \u041F\u0443\u0441\u0442\u043E\u0435 \u0441\u043E\u0441\u0442\u043E\u044F\u043D\u0438\u0435 \u0434\u043B\u044F \u043D\u043E\u0432\u043E\u0433\u043E \u043F\u043E\u043B\u044C\u0437\u043E\u0432\u0430\u0442\u0435\u043B\u044F \u0438\u043B\u0438 \u043F\u0435\u0440\u0438\u043E\u0434\u0430 \u0431\u0435\u0437 \u0434\u0430\u043D\u043D\u044B\u0445.
+  Widget _buildEmptyView() {
+    return Padding(
+      padding: AppSize.paddingOnly(top: 40),
+      child: const CitrusEmptyState(
+        emoji: '\uD83C\uDF31',
+        title: '\u041F\u043E\u043A\u0430 \u043D\u0435\u0442 \u0434\u0430\u043D\u043D\u044B\u0445',
+        subtitle:
+            '\u041E\u0442\u043C\u0435\u0447\u0430\u0439\u0442\u0435 \u043D\u0430\u0441\u0442\u0440\u043E\u0435\u043D\u0438\u0435, \u0441\u043E\u043D \u0438 \u0443\u043F\u0440\u0430\u0436\u043D\u0435\u043D\u0438\u044F \u2014 \u0437\u0434\u0435\u0441\u044C \u043F\u043E\u044F\u0432\u0438\u0442\u0441\u044F \u0432\u0430\u0448\u0430 \u043B\u0438\u0447\u043D\u0430\u044F \u0441\u0442\u0430\u0442\u0438\u0441\u0442\u0438\u043A\u0430 \u0438 \u0438\u043D\u0441\u0430\u0439\u0442\u044B.',
       ),
     );
   }

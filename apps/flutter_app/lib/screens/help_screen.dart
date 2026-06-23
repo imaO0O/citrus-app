@@ -163,13 +163,6 @@ class HelpScreen extends StatelessWidget {
           ),
           Divider(height: 1, color: AppColors.subtleBorder, indent: 56),
           _buildActionTile(
-            icon: Icons.bug_report_outlined,
-            title: 'Сообщить о проблеме',
-            subtitle: 'Нашли баг? Расскажите нам',
-            onTap: () => _showBugReportDialog(context),
-          ),
-          Divider(height: 1, color: AppColors.subtleBorder, indent: 56),
-          _buildActionTile(
             icon: Icons.lightbulb_outline,
             title: 'Предложить идею',
             subtitle: 'Поделитесь своими мыслями',
@@ -648,76 +641,6 @@ class HelpScreen extends StatelessWidget {
                 ),
               ],
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showBugReportDialog(BuildContext context) {
-    final controller = TextEditingController();
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppColors.surface1,
-        shape: RoundedRectangleBorder(borderRadius: AppSize.radius(16)),
-        title: Text(
-          'Сообщить о проблеме',
-          style: TextStyle(color: AppColors.foreground),
-        ),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'Опишите что произошло. Мы постараемся исправить это как можно скорее.',
-                style: TextStyle(color: AppColors.mutedForeground, fontSize: AppSize.s(13)),
-              ),
-              AppSize.gapH(16),
-              TextField(
-                controller: controller,
-                maxLines: 4,
-                decoration: InputDecoration(
-                  hintText: 'Описание проблемы...',
-                  hintStyle: TextStyle(color: AppColors.mutedForeground),
-                  filled: true,
-                  fillColor: AppColors.surface2,
-                  border: OutlineInputBorder(
-                    borderRadius: AppSize.radius(12),
-                    borderSide: BorderSide.none,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Отмена', style: TextStyle(color: AppColors.mutedForeground)),
-          ),
-          FilledButton(
-            onPressed: () {
-              if (controller.text.trim().isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Опишите проблему перед отправкой')),
-                );
-                return;
-              }
-              // TODO: Отправка отчёта
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Спасибо! Мы получили ваш отчёт.'),
-                  backgroundColor: AppColors.citrusGreen,
-                ),
-              );
-            },
-            style: FilledButton.styleFrom(
-              backgroundColor: AppColors.citrusOrange,
-            ),
-            child: Text('Отправить'),
           ),
         ],
       ),
