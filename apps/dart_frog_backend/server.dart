@@ -693,7 +693,8 @@ Future<Response> _getAnalyticsStats(RequestContext context, _AuthContext auth) a
     int chatMessages = 0;
     try {
       final chatResult = await _dbQuery(
-        "SELECT COUNT(*) FROM chat_messages WHERE user_id = '$userId'",
+        'SELECT COUNT(*) FROM chat_messages WHERE user_id = @userId',
+        substitutionValues: {'userId': userId},
       );
       chatMessages = int.parse(chatResult.first[0].toString());
     } catch (_) {}
@@ -702,7 +703,8 @@ Future<Response> _getAnalyticsStats(RequestContext context, _AuthContext auth) a
     int testsCompleted = 0;
     try {
       final testResult = await _dbQuery(
-        "SELECT COUNT(*) FROM psychological_test_results WHERE user_id = '$userId'",
+        'SELECT COUNT(*) FROM psychological_test_results WHERE user_id = @userId',
+        substitutionValues: {'userId': userId},
       );
       testsCompleted = int.parse(testResult.first[0].toString());
     } catch (_) {}
@@ -711,7 +713,8 @@ Future<Response> _getAnalyticsStats(RequestContext context, _AuthContext auth) a
     int exercisesCompleted = 0;
     try {
       final exerciseResult = await _dbQuery(
-        "SELECT COALESCE(SUM(completion_count), 0) FROM user_exercises WHERE user_id = '$userId'",
+        'SELECT COALESCE(SUM(completion_count), 0) FROM user_exercises WHERE user_id = @userId',
+        substitutionValues: {'userId': userId},
       );
       exercisesCompleted = int.parse(exerciseResult.first[0].toString());
     } catch (_) {}

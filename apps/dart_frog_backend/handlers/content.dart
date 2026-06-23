@@ -157,15 +157,17 @@ Future<Response> _chatWithAI(RequestContext context) async {
     if (userId != null && _db != null) {
       try {
         final msgId = const Uuid().v4();
-        final escapedUser = message.replaceAll("'", "''");
-        final escapedResponse = response.replaceAll("'", "''");
         await _dbQuery(
-          """
-          INSERT INTO chat_messages 
-          (id, user_id, user_message, ai_response, created_at, response_time_ms, model_used)
-          VALUES 
-          ('$msgId', '$userId', '$escapedUser', '$escapedResponse', NOW(), $responseTime, 'GigaChat')
-          """,
+          'INSERT INTO chat_messages '
+          '(id, user_id, user_message, ai_response, created_at, response_time_ms, model_used) '
+          "VALUES (@id, @userId, @userMessage, @aiResponse, NOW(), @responseTime, 'GigaChat')",
+          substitutionValues: {
+            'id': msgId,
+            'userId': userId,
+            'userMessage': message,
+            'aiResponse': response,
+            'responseTime': responseTime,
+          },
         );
       } catch (e) {
         print('Warning: failed to save chat message: $e');
@@ -200,11 +202,12 @@ Future<Response> _getChatMessages(RequestContext context) async {
     final userId = jwt.payload['user_id'] as String;
 
     final result = await _dbQuery(
-      '''SELECT id, user_message, ai_response, created_at 
-         FROM chat_messages 
-         WHERE user_id = '$userId' 
-         ORDER BY created_at DESC 
-         LIMIT 100''',
+      'SELECT id, user_message, ai_response, created_at '
+      'FROM chat_messages '
+      'WHERE user_id = @userId '
+      'ORDER BY created_at DESC '
+      'LIMIT 100',
+      substitutionValues: {'userId': userId},
     );
 
     final messages = result.map((row) => {
@@ -538,9 +541,10 @@ Future<Response> _getArticles(RequestContext context, _AuthContext auth) async {
       "SELECT a.id, a.user_id, a.title, a.content, a.category, a.is_custom, a.source, a.tags, a.created_at, "
       "a.is_public, a.moderation_status, COALESCE(NULLIF(u.name, ''), split_part(u.email, '@', 1)) AS author "
       "FROM articles a LEFT JOIN users u ON a.user_id = u.id "
-      "WHERE a.user_id = '$userId' OR a.user_id IS NULL "
+      "WHERE a.user_id = @userId OR a.user_id IS NULL "
       "OR (a.is_public = TRUE AND a.moderation_status = 'approved') "
       "ORDER BY a.created_at DESC",
+      substitutionValues: {'userId': userId},
     );
 
     final articles = results.map((row) {
@@ -587,16 +591,22 @@ Future<Response> _createArticle(RequestContext context, _AuthContext auth) async
 
   try {
     final articleId = const Uuid().v4();
-    final titleSql = title.replaceAll("'", "''");
-    final contentSql = content.replaceAll("'", "''");
-    final categorySql = category.replaceAll("'", "''");
     // Публичная статья уходит на премодерацию; приватная — обычная.
     final status = isPublic ? 'pending' : 'private';
 
     final result = await _dbQuery(
-      "INSERT INTO articles (id, user_id, title, content, category, is_custom, is_public, moderation_status) "
-      "VALUES ('$articleId', '$userId', '$titleSql', '$contentSql', '$categorySql', true, $isPublic, '$status') "
-      "RETURNING id, user_id, title, content, category, is_custom, source, tags, created_at, is_public, moderation_status",
+      'INSERT INTO articles (id, user_id, title, content, category, is_custom, is_public, moderation_status) '
+      'VALUES (@id, @userId, @title, @content, @category, true, @isPublic, @status) '
+      'RETURNING id, user_id, title, content, category, is_custom, source, tags, created_at, is_public, moderation_status',
+      substitutionValues: {
+        'id': articleId,
+        'userId': userId,
+        'title': title,
+        'content': content,
+        'category': category,
+        'isPublic': isPublic,
+        'status': status,
+      },
     );
 
     final row = result.first;
@@ -637,33 +647,36 @@ Future<Response> _updateArticle(RequestContext context, _AuthContext auth, Strin
   }
 
   try {
-    final titleSql = title != null ? "'${title.replaceAll("'", "''")}'" : null;
-    final contentSql = content != null ? "'${content.replaceAll("'", "''")}'" : null;
-    final categorySql = category != null ? "'${category.replaceAll("'", "''")}'" : null;
-
     // Проверяем, что статья принадлежит пользователю
     final checkResult = await _dbQuery(
-      "SELECT title, content, category FROM articles WHERE id = '$id' AND user_id = '$userId'",
+      'SELECT id FROM articles WHERE id = @id AND user_id = @userId',
+      substitutionValues: {'id': id, 'userId': userId},
     );
 
     if (checkResult.isEmpty) {
       return Response(statusCode: 404, body: 'Article not found or not owned by user');
     }
 
-    final currentRow = checkResult.first;
-    final finalTitle = titleSql ?? "'${(currentRow[0] as String).replaceAll("'", "''")}'";
-    final finalContent = contentSql ?? "'${(currentRow[1] as String).replaceAll("'", "''")}'";
-    final finalCategory = categorySql ?? "'${(currentRow[2] as String).replaceAll("'", "''")}'";
-
-    // При смене публичности: публичная → снова на премодерацию, приватная → private.
-    final publicSet = isPublic == null
-        ? ''
-        : ", is_public = $isPublic, moderation_status = '${isPublic ? 'pending' : 'private'}'";
-
+    // COALESCE оставляет прежнее значение, если поле не передано.
+    // При смене публичности: публичная → на премодерацию, приватная → private.
     final result = await _dbQuery(
-      "UPDATE articles SET title = $finalTitle, content = $finalContent, category = $finalCategory$publicSet "
-      "WHERE id = '$id' AND user_id = '$userId' "
-      "RETURNING id, user_id, title, content, category, is_custom, source, tags, created_at, is_public, moderation_status",
+      'UPDATE articles SET '
+      'title = COALESCE(@title::text, title), '
+      'content = COALESCE(@content::text, content), '
+      'category = COALESCE(@category::text, category), '
+      'is_public = COALESCE(@isPublic::boolean, is_public), '
+      'moderation_status = CASE WHEN @isPublic::boolean IS NULL THEN moderation_status '
+      "WHEN @isPublic::boolean THEN 'pending' ELSE 'private' END "
+      'WHERE id = @id AND user_id = @userId '
+      'RETURNING id, user_id, title, content, category, is_custom, source, tags, created_at, is_public, moderation_status',
+      substitutionValues: {
+        'title': title,
+        'content': content,
+        'category': category,
+        'isPublic': isPublic,
+        'id': id,
+        'userId': userId,
+      },
     );
 
     final row = result.first;
@@ -692,7 +705,8 @@ Future<Response> _deleteArticle(RequestContext context, _AuthContext auth, Strin
 
   try {
     final result = await _dbQuery(
-      "DELETE FROM articles WHERE id = '$id' AND user_id = '$userId'",
+      'DELETE FROM articles WHERE id = @id AND user_id = @userId',
+      substitutionValues: {'id': id, 'userId': userId},
     );
 
     if (result.affectedRowCount == 0) {
@@ -758,7 +772,8 @@ Future<Response> _moderateArticle(RequestContext context, _AuthContext auth, Str
     final status = action == 'approve' ? 'approved' : 'rejected';
 
     final result = await _dbQuery(
-      "UPDATE articles SET moderation_status = '$status' WHERE id = '$id' AND is_public = TRUE",
+      'UPDATE articles SET moderation_status = @status WHERE id = @id AND is_public = TRUE',
+      substitutionValues: {'status': status, 'id': id},
     );
     if (result.affectedRowCount == 0) {
       return Response(statusCode: 404, body: 'Article not found');

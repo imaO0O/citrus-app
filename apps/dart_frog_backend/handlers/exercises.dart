@@ -27,12 +27,21 @@ Future<Response> _completeExercise(RequestContext context, _AuthContext auth) as
 
     final id = const Uuid().v4();
     await _dbQuery(
-      """
-      INSERT INTO user_exercises 
-      (id, user_id, exercise_id, exercise_type, title, duration_minutes, difficulty_level, user_notes, mood_before, mood_after, completed_at)
-      VALUES 
-      ('$id', '$userId', '$exerciseId', '$exerciseType', ${title != null ? "'${title.replaceAll("'", "''")}'" : 'NULL'}, ${durationMinutes != null ? durationMinutes : 'NULL'}, ${difficultyLevel != null ? difficultyLevel : 'NULL'}, ${userNotes != null ? "'${userNotes.replaceAll("'", "''")}'" : 'NULL'}, ${moodBefore != null ? moodBefore : 'NULL'}, ${moodAfter != null ? moodAfter : 'NULL'}, NOW())
-      """,
+      'INSERT INTO user_exercises '
+      '(id, user_id, exercise_id, exercise_type, title, duration_minutes, difficulty_level, user_notes, mood_before, mood_after, completed_at) '
+      'VALUES (@id, @userId, @exerciseId, @exerciseType, @title, @duration, @difficulty, @userNotes, @moodBefore, @moodAfter, NOW())',
+      substitutionValues: {
+        'id': id,
+        'userId': userId,
+        'exerciseId': exerciseId,
+        'exerciseType': exerciseType,
+        'title': title,
+        'duration': durationMinutes,
+        'difficulty': difficultyLevel,
+        'userNotes': userNotes,
+        'moodBefore': moodBefore,
+        'moodAfter': moodAfter,
+      },
     );
 
     return Response.json(
@@ -64,21 +73,26 @@ Future<Response> _getExerciseStats(RequestContext context, _AuthContext auth) as
     int last7Days = 0;
     int last30Days = 0;
 
+    final sv = {'userId': userId};
+
     // Общее количество упражнений
     final totalResult = await _dbQuery(
-      "SELECT COUNT(*) FROM user_exercises WHERE user_id = '$userId'",
+      'SELECT COUNT(*) FROM user_exercises WHERE user_id = @userId',
+      substitutionValues: sv,
     );
     totalExercises = int.parse(totalResult.first[0].toString());
 
     // Общее время
     final minutesResult = await _dbQuery(
-      "SELECT COALESCE(SUM(duration_minutes), 0) FROM user_exercises WHERE user_id = '$userId'",
+      'SELECT COALESCE(SUM(duration_minutes), 0) FROM user_exercises WHERE user_id = @userId',
+      substitutionValues: sv,
     );
     totalMinutes = int.parse(minutesResult.first[0].toString());
 
     // Группировка по типам
     final typeResult = await _dbQuery(
-      "SELECT exercise_type, COUNT(*) FROM user_exercises WHERE user_id = '$userId' GROUP BY exercise_type",
+      'SELECT exercise_type, COUNT(*) FROM user_exercises WHERE user_id = @userId GROUP BY exercise_type',
+      substitutionValues: sv,
     );
     for (final row in typeResult) {
       byType[row[0].toString()] = int.parse(row[1].toString());
@@ -86,20 +100,23 @@ Future<Response> _getExerciseStats(RequestContext context, _AuthContext auth) as
 
     // За последние 7 дней
     final last7Result = await _dbQuery(
-      "SELECT COUNT(*) FROM user_exercises WHERE user_id = '$userId' AND completed_at > NOW() - INTERVAL '7 days'",
+      "SELECT COUNT(*) FROM user_exercises WHERE user_id = @userId AND completed_at > NOW() - INTERVAL '7 days'",
+      substitutionValues: sv,
     );
     last7Days = int.parse(last7Result.first[0].toString());
 
     // За последние 30 дней
     final last30Result = await _dbQuery(
-      "SELECT COUNT(*) FROM user_exercises WHERE user_id = '$userId' AND completed_at > NOW() - INTERVAL '30 days'",
+      "SELECT COUNT(*) FROM user_exercises WHERE user_id = @userId AND completed_at > NOW() - INTERVAL '30 days'",
+      substitutionValues: sv,
     );
     last30Days = int.parse(last30Result.first[0].toString());
 
     // Средняя продолжительность
     double avgDuration = 0;
     final avgResult = await _dbQuery(
-      "SELECT AVG(duration_minutes) FROM user_exercises WHERE user_id = '$userId' AND duration_minutes IS NOT NULL",
+      'SELECT AVG(duration_minutes) FROM user_exercises WHERE user_id = @userId AND duration_minutes IS NOT NULL',
+      substitutionValues: sv,
     );
     if (avgResult.first[0] != null) {
       avgDuration = double.parse(avgResult.first[0].toString());
@@ -140,19 +157,20 @@ Future<Response> _getExercises(RequestContext context, _AuthContext auth) async 
     final offset = int.tryParse(queryParameters['offset'] ?? '0') ?? 0;
     final exerciseType = queryParameters['type'];
 
-    String whereClause = "WHERE user_id = '$userId'";
+    final sv = <String, dynamic>{'userId': userId};
+    var whereClause = 'WHERE user_id = @userId';
     if (exerciseType != null) {
-      whereClause += " AND exercise_type = '$exerciseType'";
+      whereClause += ' AND exercise_type = @type';
+      sv['type'] = exerciseType;
     }
 
     final results = await _dbQuery(
-      """
-      SELECT id, exercise_id, exercise_type, title, completed_at, duration_minutes, difficulty_level, user_notes, mood_before, mood_after
-      FROM user_exercises 
-      $whereClause
-      ORDER BY completed_at DESC
-      LIMIT $limit OFFSET $offset
-      """,
+      'SELECT id, exercise_id, exercise_type, title, completed_at, duration_minutes, difficulty_level, user_notes, mood_before, mood_after '
+      'FROM user_exercises '
+      '$whereClause '
+      'ORDER BY completed_at DESC '
+      'LIMIT @limit OFFSET @offset',
+      substitutionValues: {...sv, 'limit': limit, 'offset': offset},
     );
 
     final exercises = results.map((row) {
@@ -172,7 +190,8 @@ Future<Response> _getExercises(RequestContext context, _AuthContext auth) async 
 
     // Получаем общее количество для пагинации
     final countResult = await _dbQuery(
-      "SELECT COUNT(*) FROM user_exercises $whereClause",
+      'SELECT COUNT(*) FROM user_exercises $whereClause',
+      substitutionValues: sv,
     );
     final total = int.parse(countResult.first[0].toString());
 
@@ -190,4 +209,3 @@ Future<Response> _getExercises(RequestContext context, _AuthContext auth) async 
     );
   }
 }
-

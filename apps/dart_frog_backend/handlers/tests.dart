@@ -182,10 +182,11 @@ Future<Response> _getTestResults(
 
   try {
     final results = await _dbQuery(
-      "SELECT id, test_id, scores::text, interpretations::text, completed_at::text "
-      "FROM psychological_test_results "
-      "WHERE user_id = '$userId' "
-      "ORDER BY completed_at DESC",
+      'SELECT id, test_id, scores::text, interpretations::text, completed_at::text '
+      'FROM psychological_test_results '
+      'WHERE user_id = @userId '
+      'ORDER BY completed_at DESC',
+      substitutionValues: {'userId': userId},
     );
 
     final records = results.map((row) => {
@@ -212,10 +213,11 @@ Future<Response> _getTestResult(
 
   try {
     final results = await _dbQuery(
-      "SELECT id, test_id, scores::text, interpretations::text, completed_at::text "
-      "FROM psychological_test_results "
-      "WHERE user_id = '$userId' AND test_id = '$testId' "
-      "ORDER BY completed_at DESC",
+      'SELECT id, test_id, scores::text, interpretations::text, completed_at::text '
+      'FROM psychological_test_results '
+      'WHERE user_id = @userId AND test_id = @testId '
+      'ORDER BY completed_at DESC',
+      substitutionValues: {'userId': userId, 'testId': testId},
     );
 
     final records = results.map((row) => {
