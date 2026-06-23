@@ -30,6 +30,7 @@ import '../screens/emergency_modal.dart';
 import '../core/services/storage_service.dart';
 import '../core/services/pin_service.dart';
 import '../core/services/offline_queue_service.dart';
+import '../services/notification_service.dart';
 import '../core/repository/mood_repository.dart';
 import '../core/repository/diary_repository.dart';
 import '../core/repository/sleep_repository.dart';
@@ -119,6 +120,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Widget
       }
       _maybeShowOnboarding();
       _flushOutbox();
+      // Переносим «соскучились» на +3 дня — придёт только при долгом отсутствии.
+      NotificationService().scheduleInactivityNudge();
     });
   }
 
@@ -152,6 +155,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Widget
       if (_pinEnabled) setState(() => _unlocked = false);
       // И пробуем дотолкнуть офлайн-очередь (вдруг сеть вернулась)
       _flushOutbox();
+      NotificationService().scheduleInactivityNudge();
     }
   }
 

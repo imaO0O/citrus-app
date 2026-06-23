@@ -7,6 +7,7 @@ import '../../core/widgets/citrus_card.dart';
 import '../../core/widgets/citrus_button.dart';
 import '../../core/services/course_prefs_service.dart';
 import '../../core/services/focus_prefs_service.dart';
+import '../../services/notification_service.dart';
 import '../../data/courses/courses.dart';
 
 // ─────────────────────────── Список курсов ───────────────────────────
@@ -399,6 +400,17 @@ class _CourseDayScreenState extends State<CourseDayScreen> {
   Future<void> _complete() async {
     setState(() => _saving = true);
     await _prefs.completeDay(course.id, widget.dayIndex, _reflection.text);
+    // Напоминание: следующий день курса откроется завтра.
+    try {
+      final nextDay = widget.dayIndex + 1;
+      if (nextDay < course.days.length) {
+        final p = await _prefs.getProgress(course.id);
+        final unlock = p.unlockDate(nextDay);
+        if (unlock != null) {
+          await NotificationService().scheduleCourseDayUnlock(courseTitle: course.title, when: unlock);
+        }
+      }
+    } catch (_) {}
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(_alreadyDone ? 'Сохранено' : 'День завершён!'), backgroundColor: AppColors.citrusGreen),

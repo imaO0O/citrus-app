@@ -25,6 +25,8 @@ class NotificationService {
   static const int _sleepEveningReminderId = 1002;
   static const int _moodReminderId = 2001;
   static const int _diaryReminderId = 3001;
+  static const int _inactivityReminderId = 4001;
+  static const int _courseReminderId = 5001;
 
   /// Инициализация сервиса
   Future<void> initialize() async {
@@ -413,6 +415,83 @@ class NotificationService {
           UILocalNotificationDateInterpretation.absoluteTime,
       matchDateTimeComponents: DateTimeComponents.time, // Ежедневное повторение
       payload: payload,
+    );
+  }
+
+  /// Разовое уведомление на конкретное время (без повторения).
+  Future<void> _scheduleOnce({
+    required int id,
+    required String title,
+    required String body,
+    required DateTime when,
+    required String channelId,
+    required String channelName,
+    required String payload,
+  }) async {
+    if (kIsWeb) return;
+    if (when.isBefore(DateTime.now())) return;
+    await _notifications.zonedSchedule(
+      id,
+      title,
+      body,
+      tz.TZDateTime.from(when, tz.local),
+      NotificationDetails(
+        android: AndroidNotificationDetails(
+          channelId,
+          channelName,
+          importance: Importance.defaultImportance,
+          priority: Priority.defaultPriority,
+          icon: '@mipmap/ic_launcher',
+          color: _getChannelColor(channelId),
+        ),
+        iOS: const DarwinNotificationDetails(
+          presentAlert: true,
+          presentBadge: true,
+          presentSound: true,
+        ),
+      ),
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime,
+      payload: payload,
+    );
+  }
+
+  /// Мягкий «соскучились»: сработает, только если приложение не открывали
+  /// [afterDays] дней. Вызывается при каждом открытии — переносит срок вперёд,
+  /// поэтому активным пользователям не приходит.
+  Future<void> scheduleInactivityNudge({int afterDays = 3}) async {
+    if (kIsWeb) return;
+    if (!_initialized) await initialize();
+    await _notifications.cancel(_inactivityReminderId);
+    final when = DateTime.now().add(Duration(days: afterDays));
+    await _scheduleOnce(
+      id: _inactivityReminderId,
+      title: 'Как ты? 🍊',
+      body: 'Давно не виделись. Удели себе минутку — отметь настроение.',
+      when: DateTime(when.year, when.month, when.day, 18, 0),
+      channelId: _moodChannelId,
+      channelName: 'Напоминания о настроении',
+      payload: 'inactivity',
+    );
+  }
+
+  /// Напоминание, что в курсе открылся новый день (на дату [when], утром).
+  Future<void> scheduleCourseDayUnlock({
+    required String courseTitle,
+    required DateTime when,
+  }) async {
+    if (kIsWeb) return;
+    if (!_initialized) await initialize();
+    await _notifications.cancel(_courseReminderId);
+    await _scheduleOnce(
+      id: _courseReminderId,
+      title: 'Новый день курса открыт 🎓',
+      body: 'Курс «$courseTitle» ждёт — продолжи, пока на волне.',
+      when: DateTime(when.year, when.month, when.day, 10, 0),
+      channelId: _moodChannelId,
+      channelName: 'Напоминания о настроении',
+      payload: 'course_unlock',
     );
   }
 
