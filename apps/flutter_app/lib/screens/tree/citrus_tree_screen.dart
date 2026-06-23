@@ -176,9 +176,74 @@ class _CitrusTreeScreenState extends State<CitrusTreeScreen> with SingleTickerPr
                     ),
                   ]),
                 ),
+                AppSize.gapH(26),
+                _buildAchievements(green),
               ],
             ),
     );
+  }
+
+  /// Достижения — бейджи по вехам заботы о себе (за последние 30 дней + очки).
+  Widget _buildAchievements(Color green) {
+    final items = <(String, String, int, int)>[
+      ('🌱', 'Первый шаг', _moodDays, 1),
+      ('📅', 'Неделя заботы', _moodDays, 7),
+      ('📔', 'Писатель', _diaryCount, 5),
+      ('🎓', 'Ученик', _courseDays, 5),
+      ('✨', 'Усердие', _points, 50),
+      ('🍊', 'Полный расцвет', _points, 140),
+    ];
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Text('Достижения', style: AppText.sectionTitle),
+      AppSize.gapH(3),
+      Text('Открываются по мере заботы о себе', style: AppText.caption),
+      AppSize.gapH(12),
+      ...items.map((it) {
+        final cur = it.$3;
+        final target = it.$4;
+        final unlocked = cur >= target;
+        final progress = (cur / target).clamp(0.0, 1.0).toDouble();
+        final c = unlocked ? green : AppColors.dimForeground;
+        return Padding(
+          padding: AppSize.paddingOnly(bottom: 10),
+          child: CitrusCard(
+            accent: unlocked ? green : null,
+            padding: AppSize.padding(14),
+            child: Row(children: [
+              Opacity(
+                opacity: unlocked ? 1 : 0.45,
+                child: Container(
+                  width: AppSize.s(44),
+                  height: AppSize.s(44),
+                  decoration: BoxDecoration(color: c.withValues(alpha: 0.14), shape: BoxShape.circle),
+                  child: Center(child: Text(it.$1, style: TextStyle(fontSize: AppSize.s(22)))),
+                ),
+              ),
+              AppSize.gapW(12),
+              Expanded(
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(it.$2, style: AppText.body.copyWith(fontWeight: FontWeight.w600)),
+                  AppSize.gapH(6),
+                  ClipRRect(
+                    borderRadius: AppSize.radius(4),
+                    child: LinearProgressIndicator(
+                      value: progress,
+                      minHeight: 5,
+                      backgroundColor: AppColors.surface2,
+                      valueColor: AlwaysStoppedAnimation<Color>(unlocked ? green : AppColors.citrusOrange),
+                    ),
+                  ),
+                ]),
+              ),
+              AppSize.gapW(10),
+              unlocked
+                  ? Icon(Icons.verified_rounded, color: green, size: AppSize.s(22))
+                  : Text('$cur/$target', style: AppText.caption),
+            ]),
+          ),
+        );
+      }),
+    ]);
   }
 
   /// Дерево в анимированном кольце прогресса к следующей стадии.
