@@ -1,6 +1,7 @@
 import 'package:intl/intl.dart';
 import 'package:flutter/material.dart';
 import '../../../core/api/diary_api_service.dart';
+import '../services/offline_queue_service.dart';
 
 class DiaryEntry {
   final String id;
@@ -141,13 +142,46 @@ class DiaryRepository {
     DateTime? entryDate,
     List<String>? tags,
   }) async {
-    final data = await _apiService.createEntry(
-      content: content,
-      moodValue: moodValue,
-      entryDate: entryDate?.toIso8601String(),
-      tags: tags,
+    try {
+      final data = await _apiService.createEntry(
+        content: content,
+        moodValue: moodValue,
+        entryDate: entryDate?.toIso8601String(),
+        tags: tags,
+      );
+      return DiaryEntry.fromJson(data);
+    } catch (e) {
+      // Нет сети — сохраняем запись в офлайн-очередь и возвращаем оптимистичную.
+      if (OfflineQueueService.isNetworkError(e)) {
+        await OfflineQueueService.instance.enqueue('diary', {
+          'content': content,
+          'moodValue': moodValue,
+          'entryDate': entryDate?.toIso8601String(),
+          'tags': tags,
+        });
+        final now = DateTime.now();
+        return DiaryEntry(
+          id: 'local_${now.microsecondsSinceEpoch}',
+          userId: _userId,
+          content: content,
+          moodValue: moodValue,
+          entryDate: entryDate ?? now,
+          createdAt: now,
+          tags: tags ?? const [],
+        );
+      }
+      rethrow;
+    }
+  }
+
+  /// Повторная отправка из офлайн-очереди.
+  Future<void> replayCreate(Map<String, dynamic> d) async {
+    await _apiService.createEntry(
+      content: d['content'] as String,
+      moodValue: d['moodValue'] as int?,
+      entryDate: d['entryDate'] as String?,
+      tags: (d['tags'] as List?)?.map((e) => e.toString()).toList(),
     );
-    return DiaryEntry.fromJson(data);
   }
 
   Future<DiaryEntry> updateEntry({

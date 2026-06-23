@@ -27,6 +27,10 @@ import '../screens/lock/pin_screen.dart';
 import '../screens/emergency_modal.dart';
 import '../core/services/storage_service.dart';
 import '../core/services/pin_service.dart';
+import '../core/services/offline_queue_service.dart';
+import '../core/repository/mood_repository.dart';
+import '../core/repository/diary_repository.dart';
+import '../core/repository/sleep_repository.dart';
 import '../features/auth/bloc/auth_bloc.dart';
 import '../bloc/dashboard_bloc.dart';
 import '../features/diary/bloc/diary_bloc.dart';
@@ -112,7 +116,25 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Widget
         debugPrint('MainNav: ошибка init BLoC: $e');
       }
       _maybeShowOnboarding();
+      _flushOutbox();
     });
+  }
+
+  /// До-отправка офлайн-очереди (настроение/дневник/сон), накопленной без сети.
+  /// Только для авторизованного пользователя (иначе запросы уйдут без токена).
+  void _flushOutbox() {
+    final authState = context.read<AuthBloc>().state;
+    if (authState is! AuthAuthenticated) return;
+    try {
+      final mood = context.read<MoodRepository>();
+      final diary = context.read<DiaryRepository>();
+      final sleep = context.read<SleepRepository>();
+      OfflineQueueService.instance.flush({
+        'mood': mood.replayCreate,
+        'diary': diary.replayCreate,
+        'sleep': sleep.replayCreate,
+      });
+    } catch (_) {}
   }
 
   @override
@@ -123,9 +145,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Widget
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    // Перезапираем при возврате из фона
-    if (state == AppLifecycleState.resumed && _pinEnabled && mounted) {
-      setState(() => _unlocked = false);
+    if (state == AppLifecycleState.resumed && mounted) {
+      // Перезапираем при возврате из фона
+      if (_pinEnabled) setState(() => _unlocked = false);
+      // И пробуем дотолкнуть офлайн-очередь (вдруг сеть вернулась)
+      _flushOutbox();
     }
   }
 

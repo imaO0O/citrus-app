@@ -1,5 +1,6 @@
 import 'package:intl/intl.dart';
 import '../../../core/api/mood_api_service.dart';
+import '../services/offline_queue_service.dart';
 
 class MoodRecord {
   final String id;
@@ -80,12 +81,41 @@ class MoodRepository {
   }
 
   Future<MoodRecord> createRecord(int moodId, {DateTime? timestamp, String? note}) async {
-    final data = await _apiService.createMoodRecord(
-      moodId: moodId,
-      moodDate: timestamp?.toIso8601String(),
-      note: note,
+    try {
+      final data = await _apiService.createMoodRecord(
+        moodId: moodId,
+        moodDate: timestamp?.toIso8601String(),
+        note: note,
+      );
+      return MoodRecord.fromJson(data);
+    } catch (e) {
+      // Нет сети — кладём в офлайн-очередь и возвращаем оптимистичную запись,
+      // чтобы пользователь не потерял отметку. До-отправится позже.
+      if (OfflineQueueService.isNetworkError(e)) {
+        await OfflineQueueService.instance.enqueue('mood', {
+          'moodId': moodId,
+          'moodDate': timestamp?.toIso8601String(),
+          'note': note,
+        });
+        return MoodRecord(
+          id: 'local_${DateTime.now().microsecondsSinceEpoch}',
+          userId: _userId,
+          moodId: moodId,
+          moodDate: timestamp ?? DateTime.now(),
+          note: note,
+        );
+      }
+      rethrow;
+    }
+  }
+
+  /// Повторная отправка из офлайн-очереди (без повторного помещения в очередь).
+  Future<void> replayCreate(Map<String, dynamic> d) async {
+    await _apiService.createMoodRecord(
+      moodId: d['moodId'] as int,
+      moodDate: d['moodDate'] as String?,
+      note: d['note'] as String?,
     );
-    return MoodRecord.fromJson(data);
   }
 
   Future<MoodRecord> updateRecord({required String id, required int moodId, String? note}) async {
