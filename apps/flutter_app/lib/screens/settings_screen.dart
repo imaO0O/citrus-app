@@ -15,6 +15,7 @@ import '../features/auth/bloc/auth_bloc.dart';
 import '../core/repository/auth_repository.dart';
 import '../features/notifications/pages/notifications_page.dart';
 import 'help_screen.dart';
+import 'onboarding/personalize_screen.dart';
 import 'lock/pin_screen.dart';
 import '../core/utils/app_size.dart';
 import '../core/utils/network_error.dart';
@@ -293,6 +294,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             ),
                           );
                         },
+                      ),
+                      _buildSettingsItem(
+                        icon: Icons.interests_outlined,
+                        label: 'Мои цели',
+                        subtitle: 'Что важно сейчас — влияет на рекомендации',
+                        onTap: () => Navigator.of(context).push(
+                          MaterialPageRoute(builder: (_) => const PersonalizeScreen()),
+                        ),
                       ),
                     ],
                   ),

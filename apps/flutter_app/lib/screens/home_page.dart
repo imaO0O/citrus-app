@@ -10,6 +10,7 @@ import '../core/widgets/citrus_card.dart';
 import '../core/widgets/citrus_action_card.dart';
 import '../core/theme/app_text.dart';
 import '../core/services/course_prefs_service.dart';
+import '../core/services/focus_prefs_service.dart';
 import '../data/courses/courses.dart';
 import '../services/affirmations_service.dart';
 import '../features/auth/bloc/auth_bloc.dart';
@@ -55,6 +56,9 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
   // Полоса настроения за последние 7 дней (паттерн Breeze/Storia)
   Map<DateTime, double> _week = {};
 
+  // Выбранные пользователем цели (персонализация) — влияют на рекомендацию.
+  List<String> _focus = [];
+
   // Карточка «Продолжить» — незавершённый курс
   Course? _continueCourse;
   int _continueDay = 0;
@@ -70,7 +74,13 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
       _checkEarlyWarning();
       _loadContinue();
       _loadWeek();
+      _loadFocus();
     });
+  }
+
+  Future<void> _loadFocus() async {
+    final f = await FocusPrefsService().getFocus();
+    if (mounted) setState(() => _focus = f);
   }
 
   /// Ищем начатый, но не завершённый курс — для карточки «Продолжить».
@@ -549,6 +559,43 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
       subtitle = 'Подыши пару минут — поможет успокоиться';
       onTap = widget.onNavigateToExercises;
       cta = 'Подышать';
+    } else if (_focus.isNotEmpty) {
+      // Рекомендация под выбранную цель (персонализация онбординга).
+      switch (_focus.first) {
+        case 'sleep':
+          icon = Icons.bedtime_rounded;
+          color = AppColors.citrusPurple;
+          title = 'Как тебе спалось?';
+          subtitle = 'Отметь сон — он сильно влияет на настроение';
+          onTap = widget.onNavigateToSleep;
+          cta = 'Записать';
+          break;
+        case 'anxiety':
+        case 'stress':
+          icon = Icons.self_improvement;
+          color = AppColors.citrusGreen;
+          title = 'Минутка спокойствия';
+          subtitle = 'Подыши пару минут — это снижает напряжение';
+          onTap = widget.onNavigateToExercises;
+          cta = 'Подышать';
+          break;
+        case 'self_esteem':
+        case 'mood':
+          icon = Icons.edit_note;
+          color = AppColors.citrusOrange;
+          title = 'Доброе слово себе';
+          subtitle = 'Запиши, что сегодня получилось — даже маленькое';
+          onTap = widget.onNavigateToDiary;
+          cta = 'Открыть';
+          break;
+        default:
+          icon = Icons.fact_check_outlined;
+          color = AppColors.citrusPurple;
+          title = 'Короткий тест';
+          subtitle = 'Загляни, как ты себя чувствуешь — это быстро';
+          onTap = widget.onNavigateToTests;
+          cta = 'Пройти';
+      }
     } else if (state.streakDays == 0) {
       icon = Icons.local_fire_department;
       color = AppColors.citrusAmber;

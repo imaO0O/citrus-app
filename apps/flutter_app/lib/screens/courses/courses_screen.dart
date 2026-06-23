@@ -6,6 +6,7 @@ import '../../core/utils/app_size.dart';
 import '../../core/widgets/citrus_card.dart';
 import '../../core/widgets/citrus_button.dart';
 import '../../core/services/course_prefs_service.dart';
+import '../../core/services/focus_prefs_service.dart';
 import '../../data/courses/courses.dart';
 
 // ─────────────────────────── Список курсов ───────────────────────────
@@ -20,6 +21,7 @@ class CoursesListScreen extends StatefulWidget {
 class _CoursesListScreenState extends State<CoursesListScreen> {
   final CoursePrefsService _prefs = CoursePrefsService();
   final Map<String, int> _doneCount = {};
+  Set<String> _recommended = {};
 
   @override
   void initState() {
@@ -32,11 +34,17 @@ class _CoursesListScreenState extends State<CoursesListScreen> {
       final p = await _prefs.getProgress(c.id);
       _doneCount[c.id] = p.doneDays.length;
     }
+    _recommended = await FocusPrefsService().recommendedCourseIds();
     if (mounted) setState(() {});
   }
 
   @override
   Widget build(BuildContext context) {
+    // Рекомендованные по целям — наверх (порядок внутри групп сохраняем).
+    final ordered = [
+      ...kCourses.where((c) => _recommended.contains(c.id)),
+      ...kCourses.where((c) => !_recommended.contains(c.id)),
+    ];
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -53,7 +61,7 @@ class _CoursesListScreenState extends State<CoursesListScreen> {
             style: AppText.bodyMuted,
           ),
           AppSize.gapH(16),
-          ...kCourses.map((c) {
+          ...ordered.map((c) {
             final done = _doneCount[c.id] ?? 0;
             final total = c.days.length;
             final progress = total == 0 ? 0.0 : done / total;
@@ -89,6 +97,18 @@ class _CoursesListScreenState extends State<CoursesListScreen> {
                       AppSize.gapW(14),
                       Expanded(
                         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                          if (_recommended.contains(c.id)) ...[
+                            Container(
+                              padding: AppSize.paddingH(8, 3),
+                              decoration: BoxDecoration(
+                                color: AppColors.citrusOrange.withValues(alpha: 0.15),
+                                borderRadius: AppSize.radius(20),
+                              ),
+                              child: Text('✨ Рекомендуем',
+                                  style: TextStyle(color: AppColors.citrusOrange, fontSize: AppSize.s(10.5), fontWeight: FontWeight.w700)),
+                            ),
+                            AppSize.gapH(5),
+                          ],
                           Text(c.title, style: AppText.cardTitle),
                           AppSize.gapH(3),
                           Text(c.subtitle, style: AppText.caption.copyWith(height: 1.3)),

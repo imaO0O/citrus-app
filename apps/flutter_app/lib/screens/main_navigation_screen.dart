@@ -22,7 +22,9 @@ import '../screens/insights/weekly_insights_screen.dart';
 import '../screens/tree/citrus_tree_screen.dart';
 import '../screens/student/student_screen.dart';
 import '../screens/onboarding/onboarding_screen.dart';
+import '../screens/onboarding/personalize_screen.dart';
 import '../screens/legal/consent_screen.dart';
+import '../core/services/focus_prefs_service.dart';
 import '../screens/lock/pin_screen.dart';
 import '../screens/emergency_modal.dart';
 import '../core/services/storage_service.dart';
@@ -161,8 +163,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Widget
   /// Первый запуск: сначала обязательное согласие (политика), затем короткий тур.
   Future<void> _maybeShowOnboarding() async {
     try {
-      // Явное согласие на обработку данных — блокирующее (ConsentScreen не
-      // закрывается, пока пользователь не примет политику).
+      // 1) Явное согласие на обработку данных — блокирующее (ConsentScreen не
+      //    закрывается, пока пользователь не примет политику).
       final consent = await StorageService().getString(ConsentScreen.flagKey);
       if (consent != 'true' && mounted) {
         await Navigator.of(context).push(
@@ -170,12 +172,22 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Widget
         );
       }
 
+      // 2) Короткий тур (один раз).
       final seen = await StorageService().getString('onboarding_seen');
-      if (seen == 'true' || !mounted) return;
-      await Navigator.of(context).push(
-        MaterialPageRoute(fullscreenDialog: true, builder: (_) => const OnboardingScreen()),
-      );
-      await StorageService().setString('onboarding_seen', 'true');
+      if (seen != 'true' && mounted) {
+        await Navigator.of(context).push(
+          MaterialPageRoute(fullscreenDialog: true, builder: (_) => const OnboardingScreen()),
+        );
+        await StorageService().setString('onboarding_seen', 'true');
+      }
+
+      // 3) Персонализация: выбор целей (один раз) — влияет на рекомендации.
+      final personalized = await FocusPrefsService().isDone();
+      if (!personalized && mounted) {
+        await Navigator.of(context).push(
+          MaterialPageRoute(fullscreenDialog: true, builder: (_) => const PersonalizeScreen()),
+        );
+      }
     } catch (_) {}
   }
 
