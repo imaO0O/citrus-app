@@ -74,6 +74,11 @@ Future<Response> _login(RequestContext context) async {
       return Response(statusCode: 400, body: 'email and password are required');
     }
 
+    // Защита от перебора пароля: не больше 10 попыток за 10 минут на email.
+    if (!_rateLimitAllowed('login:${email.toLowerCase()}', 10, const Duration(minutes: 10))) {
+      return Response(statusCode: 429, body: 'Слишком много попыток входа. Попробуйте позже.');
+    }
+
     final results = await _dbQuery(
       'SELECT id, email, name, theme_id, password_hash, avatar_url, phone FROM users WHERE email = @email',
       substitutionValues: {'email': email},
@@ -120,6 +125,11 @@ Future<Response> _forgotPassword(RequestContext context) async {
 
     if (email == null || email.isEmpty) {
       return Response(statusCode: 400, body: 'email is required');
+    }
+
+    // Защита от спама кодами: не больше 5 запросов за час на email.
+    if (!_rateLimitAllowed('forgot:${email.toLowerCase()}', 5, const Duration(minutes: 60))) {
+      return Response(statusCode: 429, body: 'Слишком много запросов кода. Попробуйте позже.');
     }
 
     // Проверяем, существует ли пользователь
@@ -186,6 +196,11 @@ Future<Response> _resetPassword(RequestContext context) async {
 
     if (newPassword.length < 6) {
       return Response(statusCode: 400, body: 'Password must be at least 6 characters');
+    }
+
+    // Защита от перебора 6-значного кода: не больше 8 попыток за 15 минут на email.
+    if (!_rateLimitAllowed('reset:${email.toLowerCase()}', 8, const Duration(minutes: 15))) {
+      return Response(statusCode: 429, body: 'Слишком много попыток. Попробуйте позже.');
     }
 
     // Находим пользователя

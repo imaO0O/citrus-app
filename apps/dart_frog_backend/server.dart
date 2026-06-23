@@ -114,6 +114,21 @@ String _hashPassword(String password) {
   return sha256.convert(utf8.encode(password)).toString();
 }
 
+// Простой in-memory rate limiter (на инстанс сервера). Защищает auth-эндпоинты
+// от перебора паролей/кодов сброса. Для нескольких инстансов нужен общий стор,
+// но как первый рубеж этого достаточно.
+final Map<String, List<DateTime>> _rlBuckets = {};
+
+/// Возвращает true, если действие по ключу разрешено (не превышен лимит за окно).
+bool _rateLimitAllowed(String key, int maxAttempts, Duration window) {
+  final now = DateTime.now();
+  final list = _rlBuckets.putIfAbsent(key, () => <DateTime>[]);
+  list.removeWhere((t) => now.difference(t) > window);
+  if (list.length >= maxAttempts) return false;
+  list.add(now);
+  return true;
+}
+
 Future<Response> _handleRequest(RequestContext context) async {
   final authContext = _AuthContext();
 
