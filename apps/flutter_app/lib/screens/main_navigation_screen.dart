@@ -22,6 +22,7 @@ import '../screens/insights/weekly_insights_screen.dart';
 import '../screens/tree/citrus_tree_screen.dart';
 import '../screens/student/student_screen.dart';
 import '../screens/onboarding/onboarding_screen.dart';
+import '../screens/legal/consent_screen.dart';
 import '../screens/lock/pin_screen.dart';
 import '../screens/emergency_modal.dart';
 import '../core/services/storage_service.dart';
@@ -133,9 +134,18 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Widget
     if (mounted) setState(() { _pinEnabled = en; _pinChecked = true; });
   }
 
-  /// Показываем короткий тур при первом запуске.
+  /// Первый запуск: сначала обязательное согласие (политика), затем короткий тур.
   Future<void> _maybeShowOnboarding() async {
     try {
+      // Явное согласие на обработку данных — блокирующее (ConsentScreen не
+      // закрывается, пока пользователь не примет политику).
+      final consent = await StorageService().getString(ConsentScreen.flagKey);
+      if (consent != 'true' && mounted) {
+        await Navigator.of(context).push(
+          MaterialPageRoute(fullscreenDialog: true, builder: (_) => const ConsentScreen()),
+        );
+      }
+
       final seen = await StorageService().getString('onboarding_seen');
       if (seen == 'true' || !mounted) return;
       await Navigator.of(context).push(

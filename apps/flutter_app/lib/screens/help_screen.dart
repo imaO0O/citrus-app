@@ -3,6 +3,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../core/theme/app_colors.dart';
 import '../core/utils/app_size.dart';
 import '../core/widgets/citrus_card.dart';
+import 'legal/privacy_policy_screen.dart';
 
 /// Экран помощи и поддержки
 class HelpScreen extends StatelessWidget {
@@ -346,13 +347,13 @@ class HelpScreen extends StatelessWidget {
           _buildActionTile(
             icon: Icons.privacy_tip_outlined,
             title: 'Политика конфиденциальности',
-            onTap: () => _launchUrl('https://citrus.app/privacy'),
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PrivacyPolicyScreen())),
           ),
           Divider(height: 1, color: AppColors.subtleBorder, indent: 56),
           _buildActionTile(
             icon: Icons.description_outlined,
             title: 'Условия использования',
-            onTap: () => _launchUrl('https://citrus.app/terms'),
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PrivacyPolicyScreen())),
           ),
           Divider(height: 1, color: AppColors.subtleBorder, indent: 56),
           _buildActionTile(
