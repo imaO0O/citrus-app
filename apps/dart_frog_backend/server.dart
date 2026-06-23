@@ -26,11 +26,15 @@ part 'handlers/tests.dart';
 part 'handlers/user.dart';
 
 PostgreSQLConnection? _db;
-const _jwtSecret = 'citrus-app-secret-key-change-in-production';
+bool _secretsWarned = false;
+
+/// Секрет подписи JWT. В продакшене ОБЯЗАТЕЛЬНО задать через переменную
+/// окружения JWT_SECRET (значение по умолчанию — только для локальной разработки).
+final _jwtSecret = Platform.environment['JWT_SECRET'] ?? 'citrus-dev-secret-change-me';
 
 /// Email администратора-модератора (видит очередь модерации статей сообщества
-/// и одобряет/отклоняет их). Чтобы сменить модератора — поменяйте этот email.
-const _adminEmail = 'tsykunova.svetlana05@gmail.com';
+/// и одобряет/отклоняет их). Настраивается через переменную окружения ADMIN_EMAIL.
+final _adminEmail = Platform.environment['ADMIN_EMAIL'] ?? 'tsykunova.svetlana05@gmail.com';
 
 // Параметры БД из переменных окружения (с fallback на локальную БД для разработки)
 String get _dbHost => Platform.environment['DB_HOST'] ?? 'localhost';
@@ -83,11 +87,13 @@ Future<PostgreSQLResult> _dbQuery(
 // GigaChat сервис
 GigaChatService? _gigachatService;
 
-// Cloudinary конфигурация
-const _cloudinaryCloudName = 'dgeoniumv';
-const _cloudinaryApiKey = '826774537124372';
-const _cloudinaryApiSecret = 'dyJlkMFKHKKFJcnDCbDOPfj7fc0';
-const _cloudinaryUploadUrl = 'https://api.cloudinary.com/v1_1/dgeoniumv/image/upload';
+// Cloudinary конфигурация. Секреты — только из окружения (в коде не храним).
+// cloud_name публичен (входит в URL), api_key/secret обязательно через env.
+final _cloudinaryCloudName = Platform.environment['CLOUDINARY_CLOUD_NAME'] ?? 'dgeoniumv';
+final _cloudinaryApiKey = Platform.environment['CLOUDINARY_API_KEY'] ?? '';
+final _cloudinaryApiSecret = Platform.environment['CLOUDINARY_API_SECRET'] ?? '';
+final _cloudinaryUploadUrl = Platform.environment['CLOUDINARY_UPLOAD_URL'] ??
+    'https://api.cloudinary.com/v1_1/$_cloudinaryCloudName/image/upload';
 
 const _cacheDurationMinutes = 60;
 
@@ -110,6 +116,17 @@ String _hashPassword(String password) {
 
 Future<Response> _handleRequest(RequestContext context) async {
   final authContext = _AuthContext();
+
+  // Однократное предупреждение, если секреты не заданы через окружение.
+  if (!_secretsWarned) {
+    _secretsWarned = true;
+    if (Platform.environment['JWT_SECRET'] == null) {
+      print('⚠️  JWT_SECRET не задан — используется дев-значение. В продакшене задайте JWT_SECRET!');
+    }
+    if ((Platform.environment['CLOUDINARY_API_SECRET'] ?? '').isEmpty) {
+      print('⚠️  CLOUDINARY_API_SECRET не задан — загрузка/удаление фото в Cloudinary работать не будет.');
+    }
+  }
 
   // Инициализация БД при первом запросе
   if (_db == null || _db!.isClosed) {
