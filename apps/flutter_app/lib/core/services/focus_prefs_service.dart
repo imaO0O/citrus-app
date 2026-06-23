@@ -23,13 +23,14 @@ class FocusPrefsService {
   static const _focusKey = 'user_focus';
   static const _doneKey = 'personalize_done';
 
-  /// Сопоставление фокуса с id курса для рекомендаций.
-  static const Map<String, String> focusToCourse = {
-    'self_esteem': 'self_esteem',
-    'stress': 'exam_stress',
-    'anxiety': 'mindfulness',
-    'mood': 'self_esteem',
-    'focus_habits': 'mindfulness',
+  /// Сопоставление фокуса с id курсов для рекомендаций (по порядку важности).
+  static const Map<String, List<String>> focusToCourse = {
+    'anxiety': ['anxiety', 'mindfulness'],
+    'mood': ['gratitude', 'self_esteem', 'loneliness'],
+    'sleep': ['sleep', 'digital'],
+    'stress': ['exam_stress', 'burnout', 'mindfulness'],
+    'self_esteem': ['self_esteem', 'gratitude'],
+    'focus_habits': ['procrastination', 'digital'],
   };
 
   Future<List<String>> getFocus() async {
@@ -49,6 +50,10 @@ class FocusPrefsService {
   /// id курсов, рекомендованных по выбранным целям.
   Future<Set<String>> recommendedCourseIds() async {
     final focus = await getFocus();
-    return focus.map((k) => focusToCourse[k]).whereType<String>().toSet();
+    final ids = <String>{};
+    for (final k in focus) {
+      ids.addAll(focusToCourse[k] ?? const []);
+    }
+    return ids;
   }
 }
