@@ -200,7 +200,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                             fontSize: AppSize.s(24),
                             fontWeight: FontWeight.w700,
                             letterSpacing: 8,
-                            color: AppColors.mutedForeground.withOpacity(0.3),
+                            color: AppColors.mutedForeground.withValues(alpha: 0.3),
                           ),
                           filled: true,
                           fillColor: AppColors.inputFieldBackground,
@@ -307,7 +307,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                           : LinearGradient(
                               colors: [AppColors.citrusOrange, AppColors.citrusAmber],
                             ),
-                      color: _isLoading ? AppColors.citrusOrange.withOpacity(0.3) : null,
+                      color: _isLoading ? AppColors.citrusOrange.withValues(alpha: 0.3) : null,
                       borderRadius: BorderRadius.circular(AppSize.s(AppColors.radius)),
                       boxShadow: _isLoading
                           ? null

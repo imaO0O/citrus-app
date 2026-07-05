@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../core/theme/app_colors.dart';
+import '../core/theme/app_text.dart';
+import '../core/widgets/citrus_empty_state.dart';
 import '../services/affirmations_service.dart';
 import '../core/utils/app_size.dart';
 
@@ -136,14 +138,7 @@ class _AffirmationsScreenState extends State<AffirmationsScreen> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          'Аффирмации',
-          style: TextStyle(
-            fontSize: AppSize.s(24),
-            fontWeight: FontWeight.w700,
-            color: AppColors.foreground,
-          ),
-        ),
+        Text('Аффирмации', style: AppText.displayTitle),
         if (_isGenerating)
           SizedBox(
             width: 20,
@@ -183,32 +178,12 @@ class _AffirmationsScreenState extends State<AffirmationsScreen> {
               ),
             )
           : _filteredAffirmations.isEmpty
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.format_quote,
-                        size: 64,
-                        color: AppColors.mutedForeground.withOpacity(0.3),
-                      ),
-                      AppSize.gapH(16),
-                      Text(
-                        'Нет аффирмаций в этой категории',
-                        style: TextStyle(color: AppColors.mutedForeground),
-                      ),
-                      AppSize.gapH(16),
-                      ElevatedButton.icon(
-                        onPressed: _generateAffirmations,
-                        icon: Icon(Icons.auto_awesome),
-                        label: Text('Сгенерировать (AI)'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.citrusOrange,
-                          foregroundColor: Colors.white,
-                        ),
-                      ),
-                    ],
-                  ),
+              ? CitrusEmptyState(
+                  title: 'Здесь пока пусто',
+                  subtitle: 'Сгенерируй вдохновляющие аффирмации с помощью ИИ.',
+                  actionLabel: 'Сгенерировать',
+                  actionIcon: Icons.auto_awesome,
+                  onAction: _generateAffirmations,
                 )
               : PageView.builder(
                   controller: _pageController,
@@ -241,7 +216,7 @@ class _AffirmationsScreenState extends State<AffirmationsScreen> {
             child: Container(
               padding: AppSize.paddingH(16, 6),
               decoration: BoxDecoration(
-                color: isSelected ? AppColors.citrusOrange.withOpacity(0.15) : Colors.white.withOpacity(0.06),
+                color: isSelected ? AppColors.citrusOrange.withValues(alpha: 0.15) : AppColors.surface2,
                 borderRadius: AppSize.radius(999),
               ),
               child: Text(
@@ -266,9 +241,9 @@ class _AffirmationsScreenState extends State<AffirmationsScreen> {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [affirmation.color.withOpacity(0.15), affirmation.color.withOpacity(0.05)],
+          colors: [affirmation.color.withValues(alpha: 0.15), affirmation.color.withValues(alpha: 0.05)],
         ),
-        border: Border.all(color: affirmation.color.withOpacity(0.2)),
+        border: Border.all(color: affirmation.color.withValues(alpha: 0.2)),
       ),
       child: Stack(
         children: [
@@ -283,7 +258,7 @@ class _AffirmationsScreenState extends State<AffirmationsScreen> {
                 gradient: RadialGradient(
                   center: Alignment.topCenter,
                   radius: 1.2,
-                  colors: [affirmation.color.withOpacity(0.25), affirmation.color.withOpacity(0)],
+                  colors: [affirmation.color.withValues(alpha: 0.25), affirmation.color.withValues(alpha: 0)],
                   stops: [0.0, 0.7],
                 ),
               ),
@@ -315,7 +290,7 @@ class _AffirmationsScreenState extends State<AffirmationsScreen> {
                     Container(
                       padding: AppSize.paddingH(12, 4),
                       decoration: BoxDecoration(
-                        color: affirmation.color.withOpacity(0.1),
+                        color: affirmation.color.withValues(alpha: 0.1),
                         borderRadius: AppSize.radius(12),
                       ),
                       child: Text(

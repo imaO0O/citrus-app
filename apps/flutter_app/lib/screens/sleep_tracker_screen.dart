@@ -1,7 +1,15 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../core/theme/app_colors.dart';
+import '../core/theme/app_text.dart';
+import '../core/widgets/citrus_card.dart';
+import '../core/widgets/citrus_empty_state.dart';
+import '../core/widgets/citrus_line_chart.dart';
+import '../core/repository/sleep_repository.dart';
 import '../core/services/casino_coins_service.dart';
+import '../core/services/health_sync_service.dart';
+import '../core/utils/network_error.dart';
 import '../features/sleep/bloc/sleep_bloc.dart';
 import '../features/auth/bloc/auth_bloc.dart';
 import '../models/sleep_record.dart';
@@ -16,6 +24,7 @@ class SleepTrackerScreen extends StatefulWidget {
 
 class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
   final List<String> _days = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+  bool _isImporting = false;
 
   final List<String> _sleepTips = [
     'Ложитесь и вставайте в одно и то же время каждый день.',
@@ -58,6 +67,64 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
       1 => 'Очень плохо',
       _ => '—',
     };
+  }
+
+  /// Качество сна 1–5, определяется автоматически по длительности (оптимум 7–9 ч).
+  int _qualityFromDuration(double hours) {
+    if (hours <= 0) return 3;
+    if (hours >= 7 && hours <= 9) return 5;
+    if ((hours >= 6 && hours < 7) || (hours > 9 && hours <= 10)) return 4;
+    if ((hours >= 5 && hours < 6) || (hours > 10 && hours <= 11)) return 3;
+    if ((hours >= 4 && hours < 5) || hours > 11) return 2;
+    return 1;
+  }
+
+  Color _qualityColor(int q) {
+    switch (q) {
+      case 5:
+        return AppColors.citrusGreen;
+      case 4:
+        return AppColors.citrusYellow;
+      case 3:
+        return AppColors.citrusOrange;
+      case 2:
+        return AppColors.moodBad;
+      default:
+        return AppColors.destructive;
+    }
+  }
+
+  /// Живой авто-расчёт качества по введённым времени отбоя/подъёма.
+  Widget _buildAutoQuality(String bed, String wake) {
+    final valid = _isValidTime(bed) && _isValidTime(wake);
+    final hours = valid ? _calculateSleepDuration(bed, wake) : 0.0;
+    final q = _qualityFromDuration(hours);
+    final color = valid ? _qualityColor(q) : AppColors.mutedForeground;
+    return Container(
+      width: double.infinity,
+      padding: AppSize.padding(12),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: AppSize.radius(12),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
+      ),
+      child: Row(children: [
+        Icon(Icons.auto_awesome, size: AppSize.s(16), color: color),
+        AppSize.gapW(8),
+        Expanded(
+          child: Text(
+            valid
+                ? 'Качество: ${_getQualityLabel(q)} · ${_formatSleepDuration(hours)}'
+                : 'Укажите время отбоя и подъёма',
+            style: TextStyle(
+              color: valid ? AppColors.foreground : AppColors.mutedForeground,
+              fontSize: AppSize.s(13),
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      ]),
+    );
   }
 
   double _calculateSleepDuration(String? bedTime, String? wakeTime) {
@@ -154,20 +221,13 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
             }
 
             if (state is SleepError) {
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.error_outline, size: 48, color: AppColors.destructive),
-                    AppSize.gapH(16),
-                    Text(state.message, style: TextStyle(color: AppColors.mutedForeground)),
-                    AppSize.gapH(16),
-                    ElevatedButton(
-                      onPressed: _loadSleepData,
-                      child: Text('Повторить'),
-                    ),
-                  ],
-                ),
+              return CitrusEmptyState(
+                accent: AppColors.citrusPurple,
+                title: 'Не удалось загрузить',
+                subtitle: state.message,
+                actionLabel: 'Повторить',
+                actionIcon: Icons.refresh,
+                onAction: _loadSleepData,
               );
             }
 
@@ -177,21 +237,14 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
               return _buildContent(records, state);
             }
 
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.bedtime, size: 64, color: AppColors.dimForeground),
-                  AppSize.gapH(16),
-                  Text('Нет данных о сне', style: TextStyle(color: AppColors.mutedForeground, fontSize: AppSize.s(16))),
-                  AppSize.gapH(16),
-                  ElevatedButton.icon(
-                    onPressed: () => _showAddSleepDialog(context, null),
-                    icon: Icon(Icons.add),
-                    label: Text('Добавить запись'),
-                  ),
-                ],
-              ),
+            return CitrusEmptyState(
+              emoji: '🌙',
+              accent: AppColors.citrusPurple,
+              title: 'Нет данных о сне',
+              subtitle: 'Запиши, во сколько лёг и проснулся — и Цитрус покажет динамику сна.',
+              actionLabel: 'Добавить запись',
+              actionIcon: Icons.add,
+              onAction: () => _showAddSleepDialog(context, null),
             );
           },
         ),
@@ -230,6 +283,10 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
               _buildSleepChart(last7Days),
               AppSize.gapH(24),
               _buildLogSleepButton(),
+              if (!kIsWeb) ...[
+                AppSize.gapH(12),
+                _buildImportFromWatchButton(),
+              ],
               AppSize.gapH(24),
               _buildSleepHistoryHeader(),
               AppSize.gapH(12),
@@ -269,15 +326,9 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Трекер сна',
-          style: TextStyle(fontSize: AppSize.s(24), fontWeight: FontWeight.w700, color: AppColors.foreground),
-        ),
+        Text('Трекер сна', style: AppText.displayTitle),
         AppSize.gapH(4),
-        Text(
-          'Отслеживайте качество сна',
-          style: TextStyle(fontSize: AppSize.s(13), color: AppColors.mutedForeground),
-        ),
+        Text('Отслеживайте качество сна', style: AppText.caption),
       ],
     );
   }
@@ -314,13 +365,9 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
   }
 
   Widget _buildSummaryCard({required String value, required String label}) {
-    return Container(
+    return CitrusCard(
+      radius: 14,
       padding: AppSize.padding(14),
-      decoration: BoxDecoration(
-        color: AppColors.surface1,
-        borderRadius: AppSize.radius(14),
-        border: Border.all(color: AppColors.subtleBorder),
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -336,80 +383,33 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
   }
 
   Widget _buildSleepChart(List<SleepRecord> last7Days) {
-    final maxHours = 10.0;
+    final hours = last7Days
+        .map<double?>((r) => _calculateSleepDuration(r.bedTime, r.wakeTime))
+        .toList();
+    final labels = last7Days.map((r) => _days[(r.sleepDate.weekday - 1) % 7]).toList();
 
-    return Container(
-      padding: AppSize.padding(16),
-      decoration: BoxDecoration(
-        color: AppColors.surface1,
-        borderRadius: AppSize.radius(16),
-        border: Border.all(color: AppColors.subtleBorder),
-      ),
+    return CitrusCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Сон за неделю',
-            style: TextStyle(fontSize: AppSize.s(16), fontWeight: FontWeight.w600, color: AppColors.foreground),
-          ),
+          Text('Сон за неделю', style: AppText.sectionTitle),
           AppSize.gapH(20),
-          SizedBox(
-            height: 160,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: List.generate(7, (index) {
-                if (index < last7Days.length) {
-                  final record = last7Days[index];
-                  final hours = _calculateSleepDuration(record.bedTime, record.wakeTime);
-                  final barHeight = hours > 0 ? ((hours / maxHours) * 120).clamp(0.0, 120.0) : 0.0;
-                  final dayOfWeek = (record.sleepDate.weekday - 1) % 7;
-
-                  return Expanded(
-                    child: Padding(
-                      padding: AppSize.paddingH(3, 0),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          if (hours > 0)
-                            Container(
-                              height: barHeight,
-                              decoration: BoxDecoration(
-                                color: AppColors.citrusPurple,
-                                borderRadius: BorderRadius.vertical(top: Radius.circular(6)),
-                              ),
-                            ),
-                          AppSize.gapH(8),
-                          Text(
-                            _days[dayOfWeek],
-                            style: TextStyle(fontSize: AppSize.s(10), color: AppColors.dimForeground),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                } else {
-                  return Expanded(
-                    child: Padding(
-                      padding: AppSize.paddingH(3, 0),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          Container(height: 0),
-                          AppSize.gapH(8),
-                          Text('', style: TextStyle(fontSize: AppSize.s(10))),
-                        ],
-                      ),
-                    ),
-                  );
-                }
-              }),
+          if (last7Days.isEmpty)
+            SizedBox(
+              height: 120,
+              child: Center(child: Text('Пока нет данных за неделю', style: AppText.caption)),
+            )
+          else
+            CitrusLineChart(
+              values: hours,
+              minY: 0,
+              maxY: 10,
+              color: AppColors.citrusPurple,
+              labels: labels,
+              height: 150,
             ),
-          ),
-          AppSize.gapH(16),
-          Text(
-            'Фиолетовые столбцы — длительность сна',
-            style: TextStyle(fontSize: AppSize.s(10), color: AppColors.mutedForeground),
-          ),
+          AppSize.gapH(12),
+          Text('Линия — длительность сна по дням', style: AppText.caption),
         ],
       ),
     );
@@ -421,9 +421,9 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [AppColors.citrusPurple.withOpacity(0.12), AppColors.citrusOrange.withOpacity(0.08)],
+          colors: [AppColors.citrusPurple.withValues(alpha: 0.12), AppColors.citrusOrange.withValues(alpha: 0.08)],
         ),
-        border: Border.all(color: AppColors.citrusPurple.withOpacity(0.25)),
+        border: Border.all(color: AppColors.citrusPurple.withValues(alpha: 0.25)),
         borderRadius: AppSize.radius(14),
       ),
       child: Material(
@@ -454,11 +454,121 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
     );
   }
 
-  Widget _buildSleepHistoryHeader() {
-    return Text(
-      'История сна',
-      style: TextStyle(fontSize: AppSize.s(18), fontWeight: FontWeight.w600, color: AppColors.foreground),
+  /// Импорт сна с часов через Health Connect (Android) / HealthKit (iOS).
+  /// Дедупликация по дате: ручные записи не перезаписываются.
+  Future<void> _importFromWatch() async {
+    final messenger = ScaffoldMessenger.of(context);
+    final bloc = context.read<SleepBloc>();
+    final repo = context.read<SleepRepository>();
+    final blocState = bloc.state;
+    final existing =
+        blocState is SleepLoaded ? blocState.records : <SleepRecord>[];
+
+    setState(() => _isImporting = true);
+    try {
+      final service = HealthSyncService();
+      final granted = await service.requestPermission();
+      if (!granted) {
+        messenger.showSnackBar(SnackBar(
+          content: Text(
+              'Нет доступа к данным о сне. Установите Health Connect, подключите к нему приложение часов и разрешите чтение сна.'),
+          backgroundColor: Colors.orange,
+        ));
+        return;
+      }
+
+      final now = DateTime.now();
+      final imported = await service.fetchSleepRecords(
+        from: now.subtract(Duration(days: 14)),
+        to: now,
+      );
+      if (imported.isEmpty) {
+        messenger.showSnackBar(SnackBar(
+          content: Text('Данных о сне за последние 14 дней не найдено'),
+        ));
+        return;
+      }
+
+      String dateKey(DateTime d) => '${d.year}-${d.month}-${d.day}';
+      final existingDates = existing.map((r) => dateKey(r.sleepDate)).toSet();
+      final newRecords = imported
+          .where((r) => !existingDates.contains(dateKey(r.sleepDate)))
+          .toList();
+
+      if (newRecords.isEmpty) {
+        messenger.showSnackBar(SnackBar(
+          content: Text('Все записи с часов уже есть в дневнике сна'),
+        ));
+        return;
+      }
+
+      for (final record in newRecords) {
+        await repo.createSleepRecord(record);
+      }
+
+      messenger.showSnackBar(SnackBar(
+        content: Text('Импортировано записей с часов: ${newRecords.length} ⌚'),
+        backgroundColor: Colors.green,
+      ));
+      _loadSleepData();
+    } catch (e) {
+      messenger.showSnackBar(SnackBar(
+        content: Text(friendlyError(e,
+            fallback:
+                'Не удалось получить данные с часов. Проверьте, что Health Connect установлен.')),
+        backgroundColor: Colors.red,
+      ));
+    } finally {
+      if (mounted) setState(() => _isImporting = false);
+    }
+  }
+
+  Widget _buildImportFromWatchButton() {
+    return Container(
+      decoration: BoxDecoration(
+        border: Border.all(color: AppColors.citrusPurple.withValues(alpha: 0.35)),
+        borderRadius: AppSize.radius(14),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: _isImporting ? null : _importFromWatch,
+          borderRadius: AppSize.radius(14),
+          child: Padding(
+            padding: AppSize.paddingH(0, 14),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (_isImporting)
+                  SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: AppColors.citrusPurple,
+                    ),
+                  )
+                else
+                  Icon(Icons.watch, color: AppColors.citrusPurple, size: 20),
+                AppSize.gapW(8),
+                Text(
+                  _isImporting ? 'Импортируем...' : 'Импорт с часов',
+                  style: TextStyle(
+                    fontSize: AppSize.s(14),
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.foreground,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
+  }
+
+  Widget _buildSleepHistoryHeader() {
+    return Text('История сна', style: AppText.sectionTitle);
   }
 
   Widget _buildSleepHistoryList(List<SleepRecord> records) {
@@ -508,11 +618,13 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
                   IconButton(
                     icon: Icon(Icons.edit, size: 18),
                     color: AppColors.citrusOrange,
+                    tooltip: 'Редактировать запись',
                     onPressed: () => _showEditSleepDialog(context, record),
                   ),
                   IconButton(
                     icon: Icon(Icons.delete, size: 18),
                     color: AppColors.destructive,
+                    tooltip: 'Удалить запись',
                     onPressed: () => _confirmDeleteSleep(context, record),
                   ),
                 ],
@@ -546,20 +658,14 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
   }
 
   Widget _buildSleepTipsHeader() {
-    return Text(
-      'Советы для здорового сна',
-      style: TextStyle(fontSize: AppSize.s(16), fontWeight: FontWeight.w600, color: AppColors.foreground),
-    );
+    return Text('Советы для здорового сна', style: AppText.sectionTitle);
   }
 
   Widget _buildSleepTipsList() {
-    return Container(
-      padding: AppSize.padding(16),
-      decoration: BoxDecoration(
-        color: AppColors.citrusOrange.withOpacity(0.05),
-        border: Border.all(color: AppColors.citrusOrange.withOpacity(0.1)),
-        borderRadius: AppSize.radius(14),
-      ),
+    return CitrusCard(
+      accent: AppColors.citrusOrange,
+      color: AppColors.citrusOrange.withValues(alpha: 0.06),
+      radius: 14,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: _sleepTips.map((tip) {
@@ -592,8 +698,9 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
 
     String bedtime = '23:00';
     String wakeup = '07:00';
-    int quality = 3;
     DateTime selectedDate = DateTime.now();
+    final bedCtrl = TextEditingController(text: bedtime);
+    final wakeCtrl = TextEditingController(text: wakeup);
 
     showDialog(
       context: context,
@@ -602,7 +709,7 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
           backgroundColor: AppColors.surface1,
           shape: RoundedRectangleBorder(
             borderRadius: AppSize.radius(16),
-            side: BorderSide(color: AppColors.citrusPurple.withOpacity(0.2)),
+            side: BorderSide(color: AppColors.citrusPurple.withValues(alpha: 0.2)),
           ),
           title: Text(
             'Добавить запись о сне',
@@ -640,7 +747,7 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
                     Expanded(
                       child: TextField(
                         style: TextStyle(color: AppColors.foreground, fontSize: AppSize.s(13)),
-                        controller: TextEditingController(text: bedtime),
+                        controller: bedCtrl,
                         decoration: InputDecoration(
                           filled: true,
                           fillColor: AppColors.surface2,
@@ -651,7 +758,7 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
                           contentPadding: AppSize.paddingH(10, 6),
                           isDense: true,
                         ),
-                        onChanged: (v) => bedtime = _formatTimeInput(v),
+                        onChanged: (v) => setModalState(() => bedtime = _formatTimeInput(v)),
                       ),
                     ),
                   ],
@@ -664,7 +771,7 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
                     Expanded(
                       child: TextField(
                         style: TextStyle(color: AppColors.foreground, fontSize: AppSize.s(13)),
-                        controller: TextEditingController(text: wakeup),
+                        controller: wakeCtrl,
                         decoration: InputDecoration(
                           filled: true,
                           fillColor: AppColors.surface2,
@@ -675,41 +782,13 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
                           contentPadding: AppSize.paddingH(10, 6),
                           isDense: true,
                         ),
-                        onChanged: (v) => wakeup = _formatTimeInput(v),
+                        onChanged: (v) => setModalState(() => wakeup = _formatTimeInput(v)),
                       ),
                     ),
                   ],
                 ),
-                AppSize.gapH(10),
-                Text('Качество:', style: TextStyle(color: AppColors.mutedForeground, fontSize: AppSize.s(13))),
-                AppSize.gapH(6),
-                Wrap(
-                  alignment: WrapAlignment.center,
-                  spacing: 6,
-                  runSpacing: 6,
-                  children: [1, 2, 3, 4, 5].map((q) {
-                    final isSelected = quality == q;
-                    return GestureDetector(
-                      onTap: () => setModalState(() => quality = q),
-                      child: Container(
-                        padding: AppSize.paddingH(14, 8),
-                        decoration: BoxDecoration(
-                          color: isSelected ? AppColors.citrusPurple.withValues(alpha: 0.2) : AppColors.surface2,
-                          borderRadius: AppSize.radius(10),
-                          border: Border.all(color: isSelected ? AppColors.citrusPurple : Colors.transparent),
-                        ),
-                        child: Text(
-                          _getQualityLabel(q),
-                          style: TextStyle(
-                            color: isSelected ? AppColors.citrusPurple : AppColors.mutedForeground,
-                            fontSize: AppSize.s(12),
-                            fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                          ),
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                ),
+                AppSize.gapH(12),
+                _buildAutoQuality(bedtime, wakeup),
               ],
             ),
           ),
@@ -752,7 +831,7 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
                   sleepDate: selectedDate,
                   bedTime: '${btH.toString().padLeft(2, '0')}:${btM.toString().padLeft(2, '0')}:00',
                   wakeTime: '${wuH.toString().padLeft(2, '0')}:${wuM.toString().padLeft(2, '0')}:00',
-                  quality: quality,
+                  quality: _qualityFromDuration(_calculateSleepDuration(bedtime, wakeup)),
                 );
 
                 context.read<SleepBloc>().add(AddSleepRecord(record));
@@ -779,8 +858,9 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
   void _showEditSleepDialog(BuildContext context, SleepRecord record) {
     String bedtime = record.bedTime?.substring(0, 5) ?? '23:00';
     String wakeup = record.wakeTime?.substring(0, 5) ?? '07:00';
-    int quality = record.quality ?? 3;
     DateTime selectedDate = record.sleepDate;
+    final bedCtrl = TextEditingController(text: bedtime);
+    final wakeCtrl = TextEditingController(text: wakeup);
 
     showDialog(
       context: context,
@@ -789,7 +869,7 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
           backgroundColor: AppColors.surface1,
           shape: RoundedRectangleBorder(
             borderRadius: AppSize.radius(16),
-            side: BorderSide(color: AppColors.citrusPurple.withOpacity(0.2)),
+            side: BorderSide(color: AppColors.citrusPurple.withValues(alpha: 0.2)),
           ),
           title: Text(
             'Редактировать запись',
@@ -825,13 +905,13 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
                     Expanded(
                       child: TextField(
                         style: TextStyle(color: AppColors.foreground, fontSize: AppSize.s(13)),
-                        controller: TextEditingController(text: bedtime),
+                        controller: bedCtrl,
                         decoration: InputDecoration(
                           filled: true, fillColor: AppColors.surface2,
                           border: OutlineInputBorder(borderRadius: AppSize.radius(8), borderSide: BorderSide.none),
                           contentPadding: AppSize.paddingH(10, 6), isDense: true,
                         ),
-                        onChanged: (v) => bedtime = _formatTimeInput(v),
+                        onChanged: (v) => setModalState(() => bedtime = _formatTimeInput(v)),
                       ),
                     ),
                   ],
@@ -844,47 +924,19 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
                     Expanded(
                       child: TextField(
                         style: TextStyle(color: AppColors.foreground, fontSize: AppSize.s(13)),
-                        controller: TextEditingController(text: wakeup),
+                        controller: wakeCtrl,
                         decoration: InputDecoration(
                           filled: true, fillColor: AppColors.surface2,
                           border: OutlineInputBorder(borderRadius: AppSize.radius(8), borderSide: BorderSide.none),
                           contentPadding: AppSize.paddingH(10, 6), isDense: true,
                         ),
-                        onChanged: (v) => wakeup = _formatTimeInput(v),
+                        onChanged: (v) => setModalState(() => wakeup = _formatTimeInput(v)),
                       ),
                     ),
                   ],
                 ),
-                AppSize.gapH(10),
-                Text('Качество:', style: TextStyle(color: AppColors.mutedForeground, fontSize: AppSize.s(13))),
-                AppSize.gapH(6),
-                Wrap(
-                  alignment: WrapAlignment.center,
-                  spacing: 6,
-                  runSpacing: 6,
-                  children: [1, 2, 3, 4, 5].map((q) {
-                    final isSelected = quality == q;
-                    return GestureDetector(
-                      onTap: () => setModalState(() => quality = q),
-                      child: Container(
-                        padding: AppSize.paddingH(14, 8),
-                        decoration: BoxDecoration(
-                          color: isSelected ? AppColors.citrusPurple.withValues(alpha: 0.2) : AppColors.surface2,
-                          borderRadius: AppSize.radius(10),
-                          border: Border.all(color: isSelected ? AppColors.citrusPurple : Colors.transparent),
-                        ),
-                        child: Text(
-                          _getQualityLabel(q),
-                          style: TextStyle(
-                            color: isSelected ? AppColors.citrusPurple : AppColors.mutedForeground,
-                            fontSize: AppSize.s(12),
-                            fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                          ),
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                ),
+                AppSize.gapH(12),
+                _buildAutoQuality(bedtime, wakeup),
               ],
             ),
           ),
@@ -924,7 +976,7 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
                   sleepDate: selectedDate,
                   bedTime: '${btH.toString().padLeft(2, '0')}:${btM.toString().padLeft(2, '0')}:00',
                   wakeTime: '${wuH.toString().padLeft(2, '0')}:${wuM.toString().padLeft(2, '0')}:00',
-                  quality: quality,
+                  quality: _qualityFromDuration(_calculateSleepDuration(bedtime, wakeup)),
                 );
 
                 context.read<SleepBloc>().add(UpdateSleepRecord(updatedRecord));
@@ -945,7 +997,7 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: AppColors.surface1,
-        shape: RoundedRectangleBorder(borderRadius: AppSize.radius(16), side: BorderSide(color: AppColors.destructive.withOpacity(0.3))),
+        shape: RoundedRectangleBorder(borderRadius: AppSize.radius(16), side: BorderSide(color: AppColors.destructive.withValues(alpha: 0.3))),
         title: Text('Удалить запись?', style: TextStyle(color: AppColors.foreground)),
         content: Text('Запись о сне будет удалена навсегда.', style: TextStyle(color: AppColors.mutedForeground)),
         actions: [

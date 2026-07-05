@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 
 /// Сервис для управления локальными уведомлениями
@@ -24,9 +25,16 @@ class NotificationService {
   static const int _sleepEveningReminderId = 1002;
   static const int _moodReminderId = 2001;
   static const int _diaryReminderId = 3001;
+  static const int _inactivityReminderId = 4001;
+  static const int _courseReminderId = 5001;
 
   /// Инициализация сервиса
   Future<void> initialize() async {
+    if (kIsWeb) {
+      // На вебе локальные уведомления (flutter_local_notifications) недоступны.
+      _initialized = true;
+      return;
+    }
     if (_initialized) {
       debugPrint('NotificationService: уже инициализирован');
       return;
@@ -124,6 +132,7 @@ class NotificationService {
 
   /// Запрос разрешений на уведомления
   Future<bool> requestPermissions() async {
+    if (kIsWeb) return false;
     debugPrint('NotificationService: запрос разрешений...');
     
     final androidPlugin = _notifications.resolvePlatformSpecificImplementation<
@@ -159,6 +168,7 @@ class NotificationService {
 
   /// Проверка, включены ли уведомления
   Future<bool> areNotificationsEnabled() async {
+    if (kIsWeb) return false;
     final androidPlugin = _notifications.resolvePlatformSpecificImplementation<
         AndroidFlutterLocalNotificationsPlugin>();
 
@@ -186,6 +196,7 @@ class NotificationService {
     required TimeOfDay? eventTime,
     required int minutesBefore,
   }) async {
+    if (kIsWeb) return;
     if (!_initialized) await initialize();
 
     // Вычисляем время уведомления
@@ -233,6 +244,7 @@ class NotificationService {
 
   /// Отменить уведомление о событии календаря
   Future<void> cancelCalendarEvent(int id) async {
+    if (kIsWeb) return;
     await _notifications.cancel(id);
   }
 
@@ -272,6 +284,7 @@ class NotificationService {
 
   /// Отключить напоминания о сне
   Future<void> disableSleepReminders() async {
+    if (kIsWeb) return;
     await _notifications.cancel(_sleepMorningReminderId);
     await _notifications.cancel(_sleepEveningReminderId);
   }
@@ -315,6 +328,7 @@ class NotificationService {
 
   /// Отключить напоминания о настроении
   Future<void> disableMoodReminders() async {
+    if (kIsWeb) return;
     for (int i = 0; i < 5; i++) {
       await _notifications.cancel(_moodReminderId + i);
     }
@@ -350,6 +364,7 @@ class NotificationService {
 
   /// Отключить напоминания о дневнике
   Future<void> disableDiaryReminders() async {
+    if (kIsWeb) return;
     await _notifications.cancel(_diaryReminderId);
   }
 
@@ -366,6 +381,7 @@ class NotificationService {
     required String channelName,
     required String payload,
   }) async {
+    if (kIsWeb) return;
     final now = DateTime.now();
     var scheduledDate = DateTime(now.year, now.month, now.day, hour, minute);
 
@@ -402,6 +418,83 @@ class NotificationService {
     );
   }
 
+  /// Разовое уведомление на конкретное время (без повторения).
+  Future<void> _scheduleOnce({
+    required int id,
+    required String title,
+    required String body,
+    required DateTime when,
+    required String channelId,
+    required String channelName,
+    required String payload,
+  }) async {
+    if (kIsWeb) return;
+    if (when.isBefore(DateTime.now())) return;
+    await _notifications.zonedSchedule(
+      id,
+      title,
+      body,
+      tz.TZDateTime.from(when, tz.local),
+      NotificationDetails(
+        android: AndroidNotificationDetails(
+          channelId,
+          channelName,
+          importance: Importance.defaultImportance,
+          priority: Priority.defaultPriority,
+          icon: '@mipmap/ic_launcher',
+          color: _getChannelColor(channelId),
+        ),
+        iOS: const DarwinNotificationDetails(
+          presentAlert: true,
+          presentBadge: true,
+          presentSound: true,
+        ),
+      ),
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime,
+      payload: payload,
+    );
+  }
+
+  /// Мягкий «соскучились»: сработает, только если приложение не открывали
+  /// [afterDays] дней. Вызывается при каждом открытии — переносит срок вперёд,
+  /// поэтому активным пользователям не приходит.
+  Future<void> scheduleInactivityNudge({int afterDays = 3}) async {
+    if (kIsWeb) return;
+    if (!_initialized) await initialize();
+    await _notifications.cancel(_inactivityReminderId);
+    final when = DateTime.now().add(Duration(days: afterDays));
+    await _scheduleOnce(
+      id: _inactivityReminderId,
+      title: 'Как ты? 🍊',
+      body: 'Давно не виделись. Удели себе минутку — отметь настроение.',
+      when: DateTime(when.year, when.month, when.day, 18, 0),
+      channelId: _moodChannelId,
+      channelName: 'Напоминания о настроении',
+      payload: 'inactivity',
+    );
+  }
+
+  /// Напоминание, что в курсе открылся новый день (на дату [when], утром).
+  Future<void> scheduleCourseDayUnlock({
+    required String courseTitle,
+    required DateTime when,
+  }) async {
+    if (kIsWeb) return;
+    if (!_initialized) await initialize();
+    await _notifications.cancel(_courseReminderId);
+    await _scheduleOnce(
+      id: _courseReminderId,
+      title: 'Новый день курса открыт 🎓',
+      body: 'Курс «$courseTitle» ждёт — продолжи, пока на волне.',
+      when: DateTime(when.year, when.month, when.day, 10, 0),
+      channelId: _moodChannelId,
+      channelName: 'Напоминания о настроении',
+      payload: 'course_unlock',
+    );
+  }
+
   /// Получить цвет для канала
   Color _getChannelColor(String channelId) {
     return switch (channelId) {
@@ -415,11 +508,13 @@ class NotificationService {
 
   /// Отменить все уведомления
   Future<void> cancelAllNotifications() async {
+    if (kIsWeb) return;
     await _notifications.cancelAll();
   }
 
   /// Получить список запланированных уведомлений
   Future<List<PendingNotificationRequest>> getPendingNotifications() async {
+    if (kIsWeb) return [];
     return await _notifications.pendingNotificationRequests();
   }
 
@@ -429,6 +524,7 @@ class NotificationService {
     required String body,
     String channelId = 'instant',
   }) async {
+    if (kIsWeb) return;
     debugPrint('NotificationService: показ уведомления - $title');
     
     if (!_initialized) {

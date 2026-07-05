@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/repository/auth_repository.dart';
 import '../../../core/repository/notification_preferences_repository.dart';
+import '../../../core/utils/network_error.dart';
 import '../../../core/utils/theme_service.dart';
 
 // События
@@ -139,7 +140,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
       emit(AuthAuthenticated(user));
     } catch (e) {
-      emit(AuthError(e.toString()));
+      // Сетевые ошибки переводим в понятный текст, осмысленные (неверный пароль) сохраняем
+      emit(AuthError(friendlyError(e, fallback: e.toString().replaceFirst('Exception: ', ''))));
     }
   }
 
@@ -170,7 +172,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
       emit(AuthAuthenticated(user));
     } catch (e) {
-      emit(AuthError(e.toString()));
+      // Сетевые ошибки переводим в понятный текст, осмысленные (email занят) сохраняем
+      emit(AuthError(friendlyError(e, fallback: e.toString().replaceFirst('Exception: ', ''))));
     }
   }
 

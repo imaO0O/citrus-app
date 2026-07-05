@@ -66,16 +66,16 @@ class _LoginPageState extends State<LoginPage> {
   Widget build(BuildContext context) {
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
-        print('LoginPage BlocListener: state = $state');
+        debugPrint('LoginPage BlocListener: state = $state');
         if (state is AuthAuthenticated) {
-          print('LoginPage: Успешный вход, переходим на главную');
+          debugPrint('LoginPage: Успешный вход, переходим на главную');
           _saveCredentials();
           // После успешного входа переходим на главную
           WidgetsBinding.instance.addPostFrameCallback((_) {
             context.go('/');
           });
         } else if (state is AuthError) {
-          print('LoginPage: Ошибка входа: ${state.message}');
+          debugPrint('LoginPage: Ошибка входа: ${state.message}');
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(state.message),
@@ -260,12 +260,12 @@ class _LoginPageState extends State<LoginPage> {
                       // Login button
                       BlocBuilder<AuthBloc, AuthState>(
                         builder: (context, state) {
-                          print('LoginPage BlocBuilder: state = $state');
+                          debugPrint('LoginPage BlocBuilder: state = $state');
                           if (state is AuthLoading) {
                             return Container(
                               height: 56,
                               decoration: BoxDecoration(
-                                color: AppColors.citrusOrange.withOpacity(0.3),
+                                color: AppColors.citrusOrange.withValues(alpha: 0.3),
                                 borderRadius: BorderRadius.circular(AppSize.s(AppColors.radius)),
                               ),
                               child: Center(
@@ -432,13 +432,13 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Future<void> _handleLogin() async {
-    print('=== Вход ===');
-    print('Email: ${_emailController.text.trim()}');
-    print('Пароль: ${_passwordController.text}');
-    print('Запомнить меня: $_rememberMe');
+    debugPrint('=== Вход ===');
+    debugPrint('Email: ${_emailController.text.trim()}');
+    debugPrint('Пароль: ${_passwordController.text}');
+    debugPrint('Запомнить меня: $_rememberMe');
     
     if (_formKey.currentState!.validate()) {
-      print('Форма валидна, отправляем...');
+      debugPrint('Форма валидна, отправляем...');
       
       // Сохраняем флаг remember_me перед входом
       await _storage.setString('remember_me', _rememberMe.toString());
@@ -449,12 +449,13 @@ class _LoginPageState extends State<LoginPage> {
         await _storage.remove('saved_password');
       }
       
+      if (!mounted) return;
       context.read<AuthBloc>().add(AuthLogin(
             email: _emailController.text.trim(),
             password: _passwordController.text,
           ));
     } else {
-      print('Форма не валидна');
+      debugPrint('Форма не валидна');
     }
   }
 }

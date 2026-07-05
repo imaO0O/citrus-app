@@ -1,12 +1,17 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:ui';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:just_audio/just_audio.dart';
+import '../core/web/web_iframe_view.dart';
 import '../core/theme/app_colors.dart';
+import '../core/theme/app_text.dart';
+import '../core/widgets/citrus_card.dart';
 import '../core/services/casino_coins_service.dart';
 import '../core/services/exercise_tracker_service.dart';
 import '../core/config/api_config.dart';
@@ -61,7 +66,7 @@ class ExerciseItem {
   });
 }
 
-const _categories = ['Все', 'Дыхание', 'Видео', 'Аудио'];
+const _categories = ['Все', 'Дыхание', 'Практики', 'Видео', 'Аудио'];
 
 final _exercises = [
   // === САМЫЕ ПОПУЛЯРНЫЕ ДЫХАТЕЛЬНЫЕ УПРАЖНЕНИЯ ===
@@ -279,6 +284,236 @@ final _exercises = [
       0.5,  // Выдох — пустой (медленный)
     ],
     cycles: true,
+  ),
+
+  // 8. Физиологический вздох — быстрое успокоение за минуту
+  ExerciseItem(
+    id: 'physiological_sigh',
+    icon: '😮‍💨',
+    title: 'Физиологический вздох',
+    description: 'Два вдоха и долгий выдох. Самый быстрый способ снять стресс',
+    duration: '2 мин',
+    difficulty: 'Легко',
+    type: 'Дыхание',
+    category: 'Дыхание',
+    color: Color(0xFF55EFC4),
+    steps: [
+      'Вдох через нос',
+      'Короткий довдох',
+      'Долгий выдох через рот',
+    ],
+    durationSeconds: 120,
+    phaseDurations: [3, 1, 6],
+    phaseLabels: ['Вдох', 'Ещё вдох', 'Выдох'],
+    phaseColors: [
+      Color(0xFF55EFC4),
+      Color(0xFF00CEC9),
+      Color(0xFF74B9FF),
+    ],
+    phaseScales: [0.85, 1.0, 0.6],
+    cycles: true,
+  ),
+
+  // 9. Треугольное дыхание — мягкая концентрация
+  ExerciseItem(
+    id: 'triangle_breathing',
+    icon: '🔺',
+    title: 'Треугольное дыхание',
+    description: 'Ритм 4-4-4. Простая техника для фокуса и спокойствия',
+    duration: '4 мин',
+    difficulty: 'Легко',
+    type: 'Дыхание',
+    category: 'Дыхание',
+    color: Color(0xFFFDCB6E),
+    steps: [
+      'Вдох через нос',
+      'Задержка дыхания',
+      'Выдох через рот',
+    ],
+    durationSeconds: 240,
+    phaseDurations: [4, 4, 4],
+    phaseLabels: ['Вдох', 'Задержка', 'Выдох'],
+    phaseColors: [
+      Color(0xFFFDCB6E),
+      Color(0xFFFFD93D),
+      Color(0xFF74B9FF),
+    ],
+    phaseScales: [1.0, 1.0, 0.6],
+    cycles: true,
+  ),
+
+  // 10. Удлинённый выдох — успокоение нервной системы
+  ExerciseItem(
+    id: 'extended_exhale',
+    icon: '🍃',
+    title: 'Удлинённый выдох',
+    description: 'Ритм 4-6. Долгий выдох включает режим расслабления',
+    duration: '5 мин',
+    difficulty: 'Легко',
+    type: 'Дыхание',
+    category: 'Дыхание',
+    color: Color(0xFF81ECEC),
+    steps: [
+      'Спокойный вдох через нос',
+      'Плавный долгий выдох',
+    ],
+    durationSeconds: 300,
+    phaseDurations: [4, 6],
+    phaseLabels: ['Вдох', 'Выдох'],
+    phaseColors: [
+      Color(0xFF81ECEC),
+      Color(0xFF74B9FF),
+    ],
+    phaseScales: [1.0, 0.55],
+    cycles: true,
+  ),
+
+  // === ПРАКТИКИ (без таймера фаз — пошаговые техники) ===
+
+  // Заземление 5-4-3-2-1 — снятие тревоги и паники
+  ExerciseItem(
+    id: 'grounding_54321',
+    icon: '🖐️',
+    title: 'Заземление 5-4-3-2-1',
+    description: 'Возвращает в настоящий момент при тревоге и панике',
+    duration: '3 мин',
+    difficulty: 'Легко',
+    type: 'Практика',
+    category: 'Практики',
+    color: Color(0xFF74B9FF),
+    steps: [
+      'Назови 5 вещей, которые видишь вокруг',
+      'Назови 4 звука, которые слышишь',
+      'Найди 3 вещи, которых можешь коснуться',
+      'Заметь 2 запаха рядом с тобой',
+      'Обрати внимание на 1 вкус во рту',
+    ],
+    durationSeconds: 180,
+  ),
+
+  // Прогрессивная мышечная релаксация
+  ExerciseItem(
+    id: 'progressive_relaxation',
+    icon: '💪',
+    title: 'Мышечная релаксация',
+    description: 'Напряги и расслабь мышцы — уходит телесное напряжение',
+    duration: '6 мин',
+    difficulty: 'Легко',
+    type: 'Практика',
+    category: 'Практики',
+    color: Color(0xFF00B894),
+    steps: [
+      'Сожми кулаки на 5 секунд, затем расслабь',
+      'Напряги руки и плечи, потом отпусти',
+      'Наморщи лицо, затем разгладь',
+      'Напряги живот и спину, расслабь',
+      'Напряги ноги и стопы, отпусти',
+      'Почувствуй, как тело стало тяжёлым и мягким',
+    ],
+    durationSeconds: 360,
+  ),
+
+  // Сканирование тела (текстовая версия)
+  ExerciseItem(
+    id: 'body_scan_text',
+    icon: '🧘',
+    title: 'Сканирование тела',
+    description: 'Спокойно пройди вниманием по телу от макушки до стоп',
+    duration: '6 мин',
+    difficulty: 'Легко',
+    type: 'Практика',
+    category: 'Практики',
+    color: Color(0xFF9C88FF),
+    steps: [
+      'Удобно ляг или сядь, закрой глаза',
+      'Перенеси внимание на макушку и лицо',
+      'Опусти внимание к шее и плечам',
+      'Пройди вниманием по рукам и груди',
+      'Заметь живот, спину и таз',
+      'Спустись к ногам и стопам',
+      'Почувствуй всё тело целиком',
+    ],
+    durationSeconds: 360,
+  ),
+
+  // Пауза самосострадания
+  ExerciseItem(
+    id: 'self_compassion',
+    icon: '🤍',
+    title: 'Пауза самосострадания',
+    description: 'Три шага поддержать себя в трудный момент',
+    duration: '3 мин',
+    difficulty: 'Легко',
+    type: 'Практика',
+    category: 'Практики',
+    color: Color(0xFFFD79A8),
+    steps: [
+      'Признай: «Сейчас мне тяжело»',
+      'Напомни себе: «Трудности бывают у всех»',
+      'Положи руку на сердце — тепло и спокойно',
+      'Скажи себе: «Пусть я буду добр(а) к себе»',
+    ],
+    durationSeconds: 180,
+  ),
+
+  // Техника СТОП
+  ExerciseItem(
+    id: 'stop_technique',
+    icon: '✋',
+    title: 'Техника СТОП',
+    description: 'Быстрый сброс на пике эмоций перед реакцией',
+    duration: '2 мин',
+    difficulty: 'Легко',
+    type: 'Практика',
+    category: 'Практики',
+    color: Color(0xFFE17055),
+    steps: [
+      'С — Стоп. Замри и ничего не делай',
+      'Т — Точка опоры: сделай глубокий вдох',
+      'О — Осмотрись: что происходит вокруг и внутри',
+      'П — Продолжай осознанно, без импульса',
+    ],
+    durationSeconds: 120,
+  ),
+
+  // Объятие бабочки
+  ExerciseItem(
+    id: 'butterfly_hug',
+    icon: '🦋',
+    title: 'Объятие бабочки',
+    description: 'Мягкое самоуспокоение через ритмичные касания',
+    duration: '3 мин',
+    difficulty: 'Легко',
+    type: 'Практика',
+    category: 'Практики',
+    color: Color(0xFFA29BFE),
+    steps: [
+      'Скрести руки на груди, ладони на плечах',
+      'Поочерёдно мягко похлопывай по плечам',
+      'Дыши медленно и ровно',
+      'Продолжай, пока не станет спокойнее',
+    ],
+    durationSeconds: 180,
+  ),
+
+  // Доброе письмо себе
+  ExerciseItem(
+    id: 'kind_letter',
+    icon: '✍️',
+    title: 'Доброе слово себе',
+    description: 'Поддержи себя так, как поддержал бы близкого друга',
+    duration: '4 мин',
+    difficulty: 'Легко',
+    type: 'Практика',
+    category: 'Практики',
+    color: Color(0xFFFAB1A0),
+    steps: [
+      'Вспомни, что тебя сейчас беспокоит',
+      'Представь, что это переживает близкий друг',
+      'Что бы ты сказал(а) ему с теплом и заботой?',
+      'Скажи эти же слова себе',
+    ],
+    durationSeconds: 240,
   ),
 
   // === ВИДЕО УПРАЖНЕНИЯ ===
@@ -536,10 +771,7 @@ class _ExercisesScreenState extends State<ExercisesScreen> {
               children: [
                 Padding(
                   padding: EdgeInsets.fromLTRB(20, 16, 20, 0),
-                  child: Text(
-                    'Упражнения',
-                    style: TextStyle(fontSize: AppSize.s(24), fontWeight: FontWeight.w700, color: AppColors.foreground),
-                  ),
+                  child: Text('Упражнения', style: AppText.displayTitle),
                 ),
                 _buildQuickStartCard(),
                 AppSize.gapH(16),
@@ -568,9 +800,9 @@ class _ExercisesScreenState extends State<ExercisesScreen> {
       margin: AppSize.paddingH(20, 0),
       padding: AppSize.padding(16),
       decoration: BoxDecoration(
-        color: AppColors.citrusPurple.withOpacity(0.1),
+        color: AppColors.citrusPurple.withValues(alpha: 0.1),
         borderRadius: AppSize.radius(16),
-        border: Border.all(color: AppColors.citrusPurple.withOpacity(0.15)),
+        border: Border.all(color: AppColors.citrusPurple.withValues(alpha: 0.15)),
       ),
       child: Row(
         children: [
@@ -598,9 +830,9 @@ class _ExercisesScreenState extends State<ExercisesScreen> {
             child: Container(
               padding: AppSize.paddingH(20, 10),
               decoration: BoxDecoration(
-                color: AppColors.citrusPurple.withOpacity(0.2),
+                color: AppColors.citrusPurple.withValues(alpha: 0.2),
                 borderRadius: AppSize.radius(10),
-                border: Border.all(color: AppColors.citrusPurple.withOpacity(0.3)),
+                border: Border.all(color: AppColors.citrusPurple.withValues(alpha: 0.3)),
               ),
               child: Text(
                 'Начать',
@@ -629,7 +861,7 @@ class _ExercisesScreenState extends State<ExercisesScreen> {
             child: Container(
               padding: AppSize.paddingH(16, 6),
               decoration: BoxDecoration(
-                color: isSelected ? AppColors.citrusOrange.withOpacity(0.15) : Colors.white.withOpacity(0.06),
+                color: isSelected ? AppColors.citrusOrange.withValues(alpha: 0.15) : AppColors.surface2,
                 borderRadius: AppSize.radius(20),
               ),
               child: Text(
@@ -648,19 +880,14 @@ class _ExercisesScreenState extends State<ExercisesScreen> {
   }
 
   Widget _buildExerciseCard(ExerciseItem exercise) {
-    return GestureDetector(
+    return CitrusCard(
+      accent: exercise.color,
+      radius: 16,
       onTap: () => _showExerciseDetail(exercise),
-      child: Container(
-        padding: AppSize.padding(16),
-        decoration: BoxDecoration(
-          color: AppColors.surface1,
-          borderRadius: AppSize.radius(16),
-          border: Border.all(color: AppColors.subtleBorder),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
               children: [
                 Stack(
                   alignment: Alignment.center,
@@ -710,7 +937,7 @@ class _ExercisesScreenState extends State<ExercisesScreen> {
                           Container(
                             padding: AppSize.paddingH(8, 2),
                             decoration: BoxDecoration(
-                              color: exercise.color.withOpacity(0.15),
+                              color: exercise.color.withValues(alpha: 0.15),
                               borderRadius: AppSize.radius(6),
                             ),
                             child: Text(
@@ -733,7 +960,7 @@ class _ExercisesScreenState extends State<ExercisesScreen> {
                         child: Container(
                           padding: AppSize.paddingH(14, 7),
                           decoration: BoxDecoration(
-                            color: exercise.color.withOpacity(0.15),
+                            color: exercise.color.withValues(alpha: 0.15),
                             borderRadius: AppSize.radius(8),
                           ),
                           child: Text(
@@ -750,8 +977,7 @@ class _ExercisesScreenState extends State<ExercisesScreen> {
             ),
           ],
         ),
-      ),
-    );
+      );
   }
 }
 
@@ -765,12 +991,18 @@ class VideoExerciseScreen extends StatefulWidget {
 }
 
 class _VideoExerciseScreenState extends State<VideoExerciseScreen> {
-  late final WebViewController _controller;
+  WebViewController? _controller;
   bool _isLoading = true;
+  bool _fullscreen = false;
 
   @override
   void initState() {
     super.initState();
+    if (kIsWeb) {
+      // На вебе webview_flutter недоступен — видео встраивается через <iframe>.
+      _isLoading = false;
+      return;
+    }
     _controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setNavigationDelegate(
@@ -794,7 +1026,89 @@ class _VideoExerciseScreenState extends State<VideoExerciseScreen> {
   }
 
   @override
+  void dispose() {
+    SystemChrome.setPreferredOrientations(DeviceOrientation.values);
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    super.dispose();
+  }
+
+  void _toggleFullscreen() {
+    setState(() => _fullscreen = !_fullscreen);
+    if (_fullscreen) {
+      SystemChrome.setPreferredOrientations([DeviceOrientation.landscapeLeft, DeviceOrientation.landscapeRight]);
+      SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+    } else {
+      SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+      SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    }
+  }
+
+  Widget _videoView() {
+    if (kIsWeb) return buildWebIframe(widget.exercise.videoEmbedUrl!);
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        WebViewWidget(controller: _controller!),
+        if (_isLoading) _poster(),
+      ],
+    );
+  }
+
+  Widget _poster() {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [widget.exercise.color.withValues(alpha: 0.35), AppColors.background],
+        ),
+      ),
+      child: Center(
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Text(widget.exercise.icon, style: TextStyle(fontSize: AppSize.s(54))),
+          AppSize.gapH(16),
+          SizedBox(
+            width: AppSize.s(26),
+            height: AppSize.s(26),
+            child: CircularProgressIndicator(strokeWidth: 2.5, valueColor: AlwaysStoppedAnimation<Color>(AppColors.citrusOrange)),
+          ),
+          AppSize.gapH(12),
+          Text('Загрузка видео…', style: TextStyle(color: AppColors.mutedForeground, fontSize: AppSize.s(13))),
+        ]),
+      ),
+    );
+  }
+
+  Widget _fullscreenButton({required IconData icon}) {
+    return GestureDetector(
+      onTap: _toggleFullscreen,
+      child: Container(
+        padding: AppSize.padding(7),
+        decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle),
+        child: Icon(icon, color: Colors.white, size: AppSize.s(22)),
+      ),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
+    // Полноэкранный режим (ландшафт)
+    if (_fullscreen) {
+      return Scaffold(
+        backgroundColor: Colors.black,
+        body: Stack(
+          children: [
+            Positioned.fill(child: _videoView()),
+            Positioned(
+              top: AppSize.s(6),
+              right: AppSize.s(6),
+              child: SafeArea(child: _fullscreenButton(icon: Icons.fullscreen_exit)),
+            ),
+          ],
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -811,85 +1125,88 @@ class _VideoExerciseScreenState extends State<VideoExerciseScreen> {
         actions: [
           IconButton(
             icon: Icon(Icons.open_in_browser, color: AppColors.citrusOrange),
+            tooltip: 'Открыть в браузере',
             onPressed: _openInBrowser,
           ),
         ],
       ),
       body: Column(
         children: [
-          // Видео плеер
-          Expanded(
-            flex: 3,
-            child: Stack(
-              children: [
-                WebViewWidget(controller: _controller),
-                if (_isLoading)
-                  Center(
-                    child: CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(AppColors.citrusOrange),
-                    ),
-                  ),
-              ],
+          // Видео в скруглённом контейнере + кнопка полного экрана
+          Padding(
+            padding: AppSize.padding(16),
+            child: ClipRRect(
+              borderRadius: AppSize.radius(18),
+              child: AspectRatio(
+                aspectRatio: 16 / 9,
+                child: Stack(
+                  children: [
+                    Positioned.fill(child: _videoView()),
+                    if (!kIsWeb)
+                      Positioned(
+                        right: AppSize.s(8),
+                        bottom: AppSize.s(8),
+                        child: _fullscreenButton(icon: Icons.fullscreen),
+                      ),
+                  ],
+                ),
+              ),
             ),
           ),
           // Информация
           Expanded(
-            flex: 2,
             child: Container(
-              padding: AppSize.padding(20),
+              padding: AppSize.paddingH(20, 0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Чипы: тип и длительность
+                  Row(children: [
+                    _infoChip(widget.exercise.icon, widget.exercise.type),
+                    if (widget.exercise.durationSeconds > 0) ...[
+                      AppSize.gapW(8),
+                      _infoChip('⏱', '${(widget.exercise.durationSeconds / 60).ceil()} мин'),
+                    ],
+                  ]),
+                  AppSize.gapH(14),
                   Text(
                     widget.exercise.description,
-                    style: TextStyle(color: AppColors.mutedForeground, fontSize: AppSize.s(14)),
+                    style: TextStyle(color: AppColors.mutedForeground, fontSize: AppSize.s(14), height: 1.5),
                   ),
-                  AppSize.gapH(16),
+                  AppSize.gapH(18),
                   Text(
                     'Шаги выполнения',
-                    style: TextStyle(
-                      color: AppColors.foreground,
-                      fontSize: AppSize.s(16),
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: TextStyle(color: AppColors.foreground, fontSize: AppSize.s(16), fontWeight: FontWeight.w700),
                   ),
                   AppSize.gapH(12),
                   Expanded(
                     child: ListView.builder(
+                      padding: AppSize.paddingOnly(bottom: 16),
                       itemCount: widget.exercise.steps.length,
                       itemBuilder: (context, index) {
                         return Padding(
-                          padding: AppSize.paddingOnly(bottom: 8),
+                          padding: AppSize.paddingOnly(bottom: 10),
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Container(
-                                width: 24,
-                                height: 24,
+                                width: AppSize.s(24),
+                                height: AppSize.s(24),
                                 decoration: BoxDecoration(
-                                  color: AppColors.citrusOrange.withOpacity(0.15),
+                                  color: AppColors.citrusOrange.withValues(alpha: 0.15),
                                   shape: BoxShape.circle,
                                 ),
                                 child: Center(
-                                  child: Text(
-                                    '${index + 1}',
-                                    style: TextStyle(
-                                      color: AppColors.citrusOrange,
-                                      fontSize: AppSize.s(12),
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
+                                  child: Text('${index + 1}',
+                                      style: TextStyle(color: AppColors.citrusOrange, fontSize: AppSize.s(12), fontWeight: FontWeight.w700)),
                                 ),
                               ),
                               AppSize.gapW(12),
                               Expanded(
-                                child: Text(
-                                  widget.exercise.steps[index],
-                                  style: TextStyle(
-                                    color: AppColors.mutedForeground,
-                                    fontSize: AppSize.s(13),
-                                    height: 1.5,
-                                  ),
+                                child: Padding(
+                                  padding: AppSize.paddingOnly(top: 2),
+                                  child: Text(widget.exercise.steps[index],
+                                      style: TextStyle(color: AppColors.mutedForeground, fontSize: AppSize.s(13), height: 1.5)),
                                 ),
                               ),
                             ],
@@ -906,6 +1223,21 @@ class _VideoExerciseScreenState extends State<VideoExerciseScreen> {
       ),
     );
   }
+
+  Widget _infoChip(String icon, String label) {
+    return Container(
+      padding: AppSize.paddingH(10, 6),
+      decoration: BoxDecoration(
+        color: AppColors.surface1,
+        borderRadius: AppSize.radius(999),
+      ),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        Text(icon, style: TextStyle(fontSize: AppSize.s(13))),
+        AppSize.gapW(6),
+        Text(label, style: TextStyle(fontSize: AppSize.s(12), color: AppColors.mutedForeground, fontWeight: FontWeight.w600)),
+      ]),
+    );
+  }
 }
 
 // Экран для аудио упражнений - Freesound API
@@ -917,7 +1249,7 @@ class AudioExerciseScreen extends StatefulWidget {
   State<AudioExerciseScreen> createState() => _AudioExerciseScreenState();
 }
 
-class _AudioExerciseScreenState extends State<AudioExerciseScreen> {
+class _AudioExerciseScreenState extends State<AudioExerciseScreen> with SingleTickerProviderStateMixin {
   final AudioPlayer _audioPlayer = AudioPlayer();
   Duration _duration = Duration.zero;
   Duration _position = Duration.zero;
@@ -930,9 +1262,15 @@ class _AudioExerciseScreenState extends State<AudioExerciseScreen> {
   StreamSubscription? _positionSub;
   StreamSubscription? _playerStateSub;
 
+  late final AnimationController _pulseController;
+  bool _looping = true;
+  Timer? _sleepTimer;
+  int? _sleepMinutes;
+
   @override
   void initState() {
     super.initState();
+    _pulseController = AnimationController(vsync: this, duration: const Duration(milliseconds: 2600));
     _searchAndPlay();
   }
 
@@ -955,6 +1293,13 @@ class _AudioExerciseScreenState extends State<AudioExerciseScreen> {
         _isLoaded = true;
         _isSearching = false;
       });
+
+      // Пульсация круга в такт воспроизведению
+      if (state.playing) {
+        if (!_pulseController.isAnimating) _pulseController.repeat(reverse: true);
+      } else {
+        _pulseController.stop();
+      }
 
       // Трек закончился — НЕ запускаем заново, ждём нажатия кнопки
       if (state.processingState == ProcessingState.completed) {
@@ -995,6 +1340,7 @@ class _AudioExerciseScreenState extends State<AudioExerciseScreen> {
       if (mp3Url == null) throw Exception('Аудио не найдено на Freesound');
 
       await _audioPlayer.setUrl(mp3Url);
+      await _audioPlayer.setLoopMode(_looping ? LoopMode.one : LoopMode.off);
       _setupListeners();
       await _audioPlayer.play();
     } catch (e) {
@@ -1067,6 +1413,7 @@ class _AudioExerciseScreenState extends State<AudioExerciseScreen> {
       if (mp3Url == null) throw Exception('Аудио не найдено на Freesound');
 
       await _audioPlayer.setUrl(mp3Url);
+      await _audioPlayer.setLoopMode(_looping ? LoopMode.one : LoopMode.off);
       _setupListeners();
 
       if (mounted) {
@@ -1142,12 +1489,28 @@ class _AudioExerciseScreenState extends State<AudioExerciseScreen> {
     await _audioPlayer.play();
   }
 
-  Future<void> _stop() async {
-    await _audioPlayer.stop();
-    setState(() {
-      _position = Duration.zero;
-      _isPlaying = false;
-    });
+  Future<void> _pause() async {
+    await _audioPlayer.pause();
+  }
+
+  void _toggleLoop() {
+    setState(() => _looping = !_looping);
+    _audioPlayer.setLoopMode(_looping ? LoopMode.one : LoopMode.off);
+  }
+
+  void _setSleepTimer(int? minutes) {
+    _sleepTimer?.cancel();
+    setState(() => _sleepMinutes = minutes);
+    if (minutes != null) {
+      _sleepTimer = Timer(Duration(minutes: minutes), () async {
+        await _audioPlayer.pause();
+        if (mounted) setState(() => _sleepMinutes = null);
+      });
+    }
+  }
+
+  Future<void> _seekTo(double ms) async {
+    await _audioPlayer.seek(Duration(milliseconds: ms.round()));
   }
 
   Future<void> _restart() async {
@@ -1177,6 +1540,8 @@ class _AudioExerciseScreenState extends State<AudioExerciseScreen> {
   @override
   void dispose() {
     _cancelListeners();
+    _sleepTimer?.cancel();
+    _pulseController.dispose();
     _audioPlayer.dispose();
     super.dispose();
   }
@@ -1241,91 +1606,207 @@ class _AudioExerciseScreenState extends State<AudioExerciseScreen> {
                     ],
                   ),
                 )
-              : Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Container(
-                        width: 160,
-                        height: 160,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: RadialGradient(colors: [
-                            widget.exercise.color.withOpacity(0.3),
-                            widget.exercise.color.withOpacity(0.1),
-                          ]),
-                          boxShadow: [
-                            BoxShadow(
-                              color: widget.exercise.color.withOpacity(0.3),
-                              blurRadius: 50,
-                              spreadRadius: 5,
+              : SafeArea(
+                  child: Padding(
+                    padding: AppSize.padding(24),
+                    child: Column(
+                      children: [
+                        const Spacer(flex: 2),
+                        // Пульсирующий круг в такт воспроизведению
+                        AnimatedBuilder(
+                          animation: _pulseController,
+                          builder: (context, child) {
+                            final scale = 1.0 + 0.06 * (_isPlaying ? _pulseController.value : 0.0);
+                            return Transform.scale(scale: scale, child: child);
+                          },
+                          child: Container(
+                            width: AppSize.s(190),
+                            height: AppSize.s(190),
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              gradient: RadialGradient(colors: [
+                                widget.exercise.color.withValues(alpha: 0.32),
+                                widget.exercise.color.withValues(alpha: 0.08),
+                              ]),
+                              boxShadow: [
+                                BoxShadow(color: widget.exercise.color.withValues(alpha: 0.35), blurRadius: 55, spreadRadius: 6),
+                              ],
+                            ),
+                            child: Center(child: Text(widget.exercise.icon, style: TextStyle(fontSize: AppSize.s(76)))),
+                          ),
+                        ),
+                        AppSize.gapH(28),
+                        Text(
+                          widget.exercise.audioTitle ?? widget.exercise.title,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(color: AppColors.foreground, fontSize: AppSize.s(18), fontWeight: FontWeight.w700),
+                        ),
+                        const Spacer(flex: 3),
+                        // Перемотка
+                        SliderTheme(
+                          data: SliderTheme.of(context).copyWith(
+                            trackHeight: 3,
+                            activeTrackColor: widget.exercise.color,
+                            inactiveTrackColor: AppColors.surface2,
+                            thumbColor: widget.exercise.color,
+                            thumbShape: RoundSliderThumbShape(enabledThumbRadius: AppSize.s(7)),
+                            overlayShape: RoundSliderOverlayShape(overlayRadius: AppSize.s(16)),
+                          ),
+                          child: Slider(
+                            min: 0,
+                            max: _duration.inMilliseconds > 0 ? _duration.inMilliseconds.toDouble() : 1.0,
+                            value: _duration.inMilliseconds > 0
+                                ? _position.inMilliseconds.clamp(0, _duration.inMilliseconds).toDouble()
+                                : 0.0,
+                            onChanged: _duration.inMilliseconds > 0 ? _seekTo : null,
+                          ),
+                        ),
+                        Padding(
+                          padding: AppSize.paddingH(8, 0),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(_fmt(_position), style: TextStyle(color: AppColors.mutedForeground, fontSize: AppSize.s(12))),
+                              Text(_fmt(_duration), style: TextStyle(color: AppColors.mutedForeground, fontSize: AppSize.s(12))),
+                            ],
+                          ),
+                        ),
+                        AppSize.gapH(18),
+                        // Контролы
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            IconButton(
+                              icon: Icon(Icons.replay_10, size: AppSize.s(34)),
+                              color: AppColors.mutedForeground,
+                              onPressed: _seekBack,
+                            ),
+                            AppSize.gapW(20),
+                            GestureDetector(
+                              onTap: _isCompleted ? _restart : (_isPlaying ? _pause : _play),
+                              child: Container(
+                                width: AppSize.s(84),
+                                height: AppSize.s(84),
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  gradient: LinearGradient(
+                                    colors: _isPlaying
+                                        ? [AppColors.destructive, Color(0xFFE74C3C)]
+                                        : [AppColors.citrusOrange, AppColors.citrusAmber],
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: (_isPlaying ? AppColors.destructive : AppColors.citrusOrange).withValues(alpha: 0.4),
+                                      blurRadius: 24,
+                                      spreadRadius: 3,
+                                    ),
+                                  ],
+                                ),
+                                child: Icon(
+                                  _isCompleted ? Icons.replay : (_isPlaying ? Icons.pause : Icons.play_arrow),
+                                  size: AppSize.s(44),
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                            AppSize.gapW(20),
+                            IconButton(
+                              icon: Icon(Icons.forward_10, size: AppSize.s(34)),
+                              color: AppColors.mutedForeground,
+                              onPressed: _seekForward,
                             ),
                           ],
                         ),
-                        child: Center(
-                          child: Text(widget.exercise.icon, style: TextStyle(fontSize: AppSize.s(72))),
+                        AppSize.gapH(20),
+                        // Повтор + таймер сна
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            _miniToggle(icon: Icons.repeat, label: 'Повтор', active: _looping, onTap: _toggleLoop),
+                            AppSize.gapW(12),
+                            _sleepTimerButton(),
+                          ],
                         ),
-                      ),
-                      AppSize.gapH(40),
-                      Text(
-                        '${_fmt(_position)} / ${_fmt(_duration)}',
-                        style: TextStyle(color: AppColors.foreground, fontSize: AppSize.s(20), fontWeight: FontWeight.w600),
-                      ),
-                      AppSize.gapH(40),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          IconButton(
-                            icon: Icon(Icons.replay_10, size: 40),
-                            color: AppColors.mutedForeground,
-                            onPressed: _seekBack,
-                          ),
-                          AppSize.gapW(24),
-                          GestureDetector(
-                            onTap: _isCompleted ? _restart : (_isPlaying ? _stop : _play),
-                            child: Container(
-                              width: 100,
-                              height: 100,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                gradient: LinearGradient(
-                                  colors: _isCompleted
-                                      ? [AppColors.citrusGreen, Color(0xFF6BCB77)]
-                                      : _isPlaying
-                                          ? [AppColors.destructive, Color(0xFFE74C3C)]
-                                          : [AppColors.citrusOrange, AppColors.citrusAmber],
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: (_isCompleted
-                                            ? AppColors.citrusGreen
-                                            : _isPlaying
-                                                ? AppColors.destructive
-                                                : AppColors.citrusOrange)
-                                        .withOpacity(0.4),
-                                    blurRadius: 30,
-                                    spreadRadius: 5,
-                                  ),
-                                ],
-                              ),
-                              child: Icon(
-                                _isCompleted ? Icons.replay : (_isPlaying ? Icons.stop : Icons.play_arrow),
-                                size: 60,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                          AppSize.gapW(24),
-                          IconButton(
-                            icon: Icon(Icons.forward_10, size: 40),
-                            color: AppColors.mutedForeground,
-                            onPressed: _seekForward,
-                          ),
-                        ],
-                      ),
-                    ],
+                        const Spacer(flex: 2),
+                      ],
+                    ),
                   ),
                 ),
+    );
+  }
+
+  Widget _miniToggle({required IconData icon, required String label, required bool active, required VoidCallback onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: AppSize.paddingH(14, 9),
+        decoration: BoxDecoration(
+          color: active ? widget.exercise.color.withValues(alpha: 0.18) : AppColors.surface1,
+          borderRadius: AppSize.radius(999),
+          border: Border.all(color: active ? widget.exercise.color : Colors.transparent, width: 1.5),
+        ),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          Icon(icon, size: AppSize.s(16), color: active ? widget.exercise.color : AppColors.mutedForeground),
+          AppSize.gapW(6),
+          Text(label, style: TextStyle(fontSize: AppSize.s(12), color: active ? widget.exercise.color : AppColors.mutedForeground, fontWeight: FontWeight.w600)),
+        ]),
+      ),
+    );
+  }
+
+  Widget _sleepTimerButton() {
+    final active = _sleepMinutes != null;
+    return GestureDetector(
+      onTap: () async {
+        final choice = await showModalBottomSheet<int>(
+          context: context,
+          backgroundColor: AppColors.surface1,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(AppSize.s(22)))),
+          builder: (ctx) {
+            Widget opt(String label, int minutes, IconData ic) => ListTile(
+                  leading: Icon(ic, color: AppColors.citrusOrange),
+                  title: Text(label, style: TextStyle(color: AppColors.foreground)),
+                  trailing: (_sleepMinutes ?? 0) == minutes ? Icon(Icons.check, color: AppColors.citrusOrange) : null,
+                  onTap: () => Navigator.pop(ctx, minutes),
+                );
+            return SafeArea(
+              child: Column(mainAxisSize: MainAxisSize.min, children: [
+                AppSize.gapH(10),
+                Container(width: AppSize.s(40), height: AppSize.s(4), decoration: BoxDecoration(color: AppColors.subtleBorder, borderRadius: AppSize.radius(2))),
+                Padding(
+                  padding: AppSize.padding(16),
+                  child: Row(children: [
+                    Icon(Icons.bedtime_outlined, color: AppColors.citrusOrange, size: AppSize.s(20)),
+                    AppSize.gapW(10),
+                    Text('Таймер сна', style: TextStyle(color: AppColors.foreground, fontSize: AppSize.s(16), fontWeight: FontWeight.w700)),
+                  ]),
+                ),
+                opt('Выключить', 0, Icons.timer_off_outlined),
+                opt('5 минут', 5, Icons.bedtime_outlined),
+                opt('10 минут', 10, Icons.bedtime_outlined),
+                opt('15 минут', 15, Icons.bedtime_outlined),
+                opt('30 минут', 30, Icons.bedtime_outlined),
+                AppSize.gapH(10),
+              ]),
+            );
+          },
+        );
+        if (choice == null) return; // закрыли свайпом — без изменений
+        _setSleepTimer(choice == 0 ? null : choice);
+      },
+      child: Container(
+        padding: AppSize.paddingH(14, 9),
+        decoration: BoxDecoration(
+          color: active ? AppColors.citrusOrange.withValues(alpha: 0.18) : AppColors.surface1,
+          borderRadius: AppSize.radius(999),
+          border: Border.all(color: active ? AppColors.citrusOrange : Colors.transparent, width: 1.5),
+        ),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          Icon(Icons.bedtime_outlined, size: AppSize.s(16), color: active ? AppColors.citrusOrange : AppColors.mutedForeground),
+          AppSize.gapW(6),
+          Text(active ? 'Сон · $_sleepMinutes мин' : 'Таймер сна', style: TextStyle(fontSize: AppSize.s(12), color: active ? AppColors.citrusOrange : AppColors.mutedForeground, fontWeight: FontWeight.w600)),
+        ]),
+      ),
     );
   }
 }
@@ -1449,7 +1930,9 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
   void _startTimer() {
     setState(() {
       _isRunning = true;
-      _currentStepIndex = 0;
+      // -1, чтобы первая фаза (вдох) в _updateCurrentStep распозналась как смена
+      // и применила свой масштаб/цвет/длительность уже на первом цикле.
+      _currentStepIndex = -1;
       _animationDuration = Duration(milliseconds: 1000);
       _updateCurrentStep();
     });
@@ -1617,8 +2100,8 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
                                     color: isActive
                                         ? phaseColor 
                                         : (isCompleted
-                                            ? phaseColor.withOpacity(0.4)
-                                            : AppColors.mutedForeground.withOpacity(0.2)),
+                                            ? phaseColor.withValues(alpha: 0.4)
+                                            : AppColors.mutedForeground.withValues(alpha: 0.2)),
                                     borderRadius: AppSize.radius(4),
                                   ),
                                 );
@@ -1687,8 +2170,8 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
                                       shape: BoxShape.circle,
                                       gradient: RadialGradient(
                                         colors: [
-                                          _currentPhaseColor.withOpacity(0.3),
-                                          _currentPhaseColor.withOpacity(0.0),
+                                          _currentPhaseColor.withValues(alpha: 0.3),
+                                          _currentPhaseColor.withValues(alpha: 0.0),
                                         ],
                                         stops: [0.0, 1.0],
                                       ),
@@ -1709,7 +2192,7 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
                                     decoration: BoxDecoration(
                                       shape: BoxShape.circle,
                                       border: Border.all(
-                                        color: _currentPhaseColor.withOpacity(0.3),
+                                        color: _currentPhaseColor.withValues(alpha: 0.3),
                                         width: 1,
                                       ),
                                     ),
@@ -1732,13 +2215,13 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
                                         begin: Alignment.topLeft,
                                         end: Alignment.bottomRight,
                                         colors: [
-                                          _currentPhaseColor.withOpacity(0.9),
-                                          _currentPhaseColor.withOpacity(0.5),
+                                          _currentPhaseColor.withValues(alpha: 0.9),
+                                          _currentPhaseColor.withValues(alpha: 0.5),
                                         ],
                                       ),
                                       boxShadow: [
                                         BoxShadow(
-                                          color: _currentPhaseColor.withOpacity(0.4),
+                                          color: _currentPhaseColor.withValues(alpha: 0.4),
                                           blurRadius: 40,
                                           spreadRadius: 5,
                                         ),
@@ -1764,7 +2247,7 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
                                     shape: BoxShape.circle,
                                     color: AppColors.surface1,
                                     border: Border.all(
-                                      color: color.withOpacity(0.3),
+                                      color: color.withValues(alpha: 0.3),
                                       width: 2,
                                     ),
                                   ),
@@ -1785,7 +2268,7 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
                         Text(
                           _formatTime(_remainingSeconds),
                           style: TextStyle(
-                            color: AppColors.foreground.withOpacity(0.6),
+                            color: AppColors.foreground.withValues(alpha: 0.6),
                             fontSize: AppSize.s(18),
                             fontWeight: FontWeight.w500,
                             fontFeatures: [FontFeature.tabularFigures()],
@@ -1877,7 +2360,7 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
                                           child: Icon(
                                             Icons.arrow_forward_ios,
                                             size: 12,
-                                            color: AppColors.mutedForeground.withOpacity(0.3),
+                                            color: AppColors.mutedForeground.withValues(alpha: 0.3),
                                           ),
                                         );
                                       }
@@ -1893,11 +2376,11 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
                                           padding: AppSize.paddingH(4, 8),
                                           decoration: BoxDecoration(
                                             color: isActive 
-                                                ? stepColor.withOpacity(0.15)
+                                                ? stepColor.withValues(alpha: 0.15)
                                                 : Colors.transparent,
                                             borderRadius: AppSize.radius(8),
                                             border: isActive
-                                                ? Border.all(color: stepColor.withOpacity(0.3))
+                                                ? Border.all(color: stepColor.withValues(alpha: 0.3))
                                                 : null,
                                           ),
                                           child: Column(
@@ -1917,8 +2400,8 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
                                                   '${widget.exercise.phaseDurations![stepIndex]}с',
                                                   style: TextStyle(
                                                     color: isActive 
-                                                        ? stepColor.withOpacity(0.7)
-                                                        : AppColors.mutedForeground.withOpacity(0.5),
+                                                        ? stepColor.withValues(alpha: 0.7)
+                                                        : AppColors.mutedForeground.withValues(alpha: 0.5),
                                                     fontSize: AppSize.s(10),
                                                   ),
                                                 ),
@@ -1938,10 +2421,10 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
                           Container(
                             padding: AppSize.paddingH(24, 16),
                             decoration: BoxDecoration(
-                              color: AppColors.citrusGreen.withOpacity(0.1),
+                              color: AppColors.citrusGreen.withValues(alpha: 0.1),
                               borderRadius: AppSize.radius(16),
                               border: Border.all(
-                                color: AppColors.citrusGreen.withOpacity(0.2),
+                                color: AppColors.citrusGreen.withValues(alpha: 0.2),
                               ),
                             ),
                             child: Row(
@@ -1999,9 +2482,9 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
                           width: 120,
                           height: 120,
                           decoration: BoxDecoration(
-                            color: color.withOpacity(0.1),
+                            color: color.withValues(alpha: 0.1),
                             shape: BoxShape.circle,
-                            border: Border.all(color: color.withOpacity(0.3)),
+                            border: Border.all(color: color.withValues(alpha: 0.3)),
                           ),
                           child: Center(
                             child: Text(widget.exercise.icon, style: TextStyle(fontSize: AppSize.s(56))),
@@ -2055,7 +2538,7 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
                                 width: 24,
                                 height: 24,
                                 decoration: BoxDecoration(
-                                  color: isCurrentStep ? color : AppColors.citrusOrange.withOpacity(0.15),
+                                  color: isCurrentStep ? color : AppColors.citrusOrange.withValues(alpha: 0.15),
                                   shape: BoxShape.circle,
                                 ),
                                 child: Center(
@@ -2090,7 +2573,7 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
                         Container(
                           padding: AppSize.paddingH(16, 10),
                           decoration: BoxDecoration(
-                            color: AppColors.citrusGreen.withOpacity(0.15),
+                            color: AppColors.citrusGreen.withValues(alpha: 0.15),
                             borderRadius: AppSize.radius(10),
                           ),
                           child: Row(
@@ -2128,13 +2611,13 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
                                   color: _isRunning ? AppColors.surface2 : null,
                                   borderRadius: AppSize.radius(12),
                                   border: _isRunning
-                                      ? Border.all(color: AppColors.citrusOrange.withOpacity(0.3))
+                                      ? Border.all(color: AppColors.citrusOrange.withValues(alpha: 0.3))
                                       : null,
                                   boxShadow: _isRunning
                                       ? null
                                       : [
                                           BoxShadow(
-                                            color: AppColors.citrusOrange.withOpacity(0.3),
+                                            color: AppColors.citrusOrange.withValues(alpha: 0.3),
                                             blurRadius: 16,
                                             offset: Offset(0, 4),
                                           ),

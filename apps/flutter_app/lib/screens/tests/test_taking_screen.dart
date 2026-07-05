@@ -5,6 +5,8 @@ import '../../core/api/test_api_service.dart';
 import '../../core/services/test_scoring_service.dart';
 import '../../core/theme/app_colors.dart';
 import 'test_result_screen.dart';
+import '../emergency_modal.dart';
+import '../../core/widgets/citrus_button.dart';
 import '../../core/utils/app_size.dart';
 
 class TestTakingScreen extends StatefulWidget {
@@ -26,6 +28,7 @@ class _TestTakingScreenState extends State<TestTakingScreen> {
   int _currentQuestion = 0;
   final Map<int, int> _answers = {};
   bool _isSubmitting = false;
+  bool _crisisShown = false;
 
   @override
   void initState() {
@@ -34,9 +37,76 @@ class _TestTakingScreenState extends State<TestTakingScreen> {
   }
 
   void _selectAnswer(int answerIndex) {
+    final q = _test.questions[_currentQuestion];
     setState(() {
-      _answers[_test.questions[_currentQuestion].id] = answerIndex;
+      _answers[q.id] = answerIndex;
     });
+    // Кризис-проверка: ненулевой ответ на вопрос о самоповреждении (PHQ-9 №9 и т.п.) —
+    // мягко и сразу предлагаем поддержку, не дожидаясь результата.
+    if (answerIndex > 0 && !_crisisShown && _isSelfHarmQuestion(q.text)) {
+      _crisisShown = true;
+      _showCrisisSupport();
+    }
+  }
+
+  bool _isSelfHarmQuestion(String text) {
+    final t = text.toLowerCase();
+    return t.contains('причинить себе') ||
+        t.contains('лучше было бы умереть') ||
+        t.contains('лучше умереть') ||
+        t.contains('умереть') ||
+        t.contains('самоповрежд') ||
+        t.contains('покончить');
+  }
+
+  void _openSos() => Navigator.of(context).push(
+        PageRouteBuilder(
+          opaque: false,
+          barrierColor: Colors.transparent,
+          pageBuilder: (ctx, _, __) => EmergencyModal(onClose: () => Navigator.of(ctx).pop()),
+        ),
+      );
+
+  void _showCrisisSupport() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.surface1,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(AppSize.s(22)))),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: AppSize.padding(20),
+          child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Row(children: [
+              Text('🤍', style: TextStyle(fontSize: AppSize.s(22))),
+              AppSize.gapW(8),
+              Expanded(child: Text('Ты не один', style: TextStyle(color: AppColors.foreground, fontSize: AppSize.s(18), fontWeight: FontWeight.w700))),
+            ]),
+            AppSize.gapH(10),
+            Text(
+              'Спасибо, что честно ответил(а). Если сейчас тяжело или появляются такие мысли — '
+              'это важно, и поддержка рядом. Можно прямо сейчас связаться со специалистом или близким.',
+              style: TextStyle(color: AppColors.mutedForeground, fontSize: AppSize.s(14), height: 1.5),
+            ),
+            AppSize.gapH(18),
+            CitrusButton(
+              label: 'Получить поддержку',
+              icon: Icons.favorite,
+              color: AppColors.destructive,
+              onPressed: () {
+                Navigator.pop(ctx);
+                _openSos();
+              },
+            ),
+            AppSize.gapH(10),
+            CitrusButton(
+              label: 'Продолжить тест',
+              variant: CitrusButtonVariant.secondary,
+              onPressed: () => Navigator.pop(ctx),
+            ),
+          ]),
+        ),
+      ),
+    );
   }
 
   void _nextQuestion() {
@@ -309,7 +379,7 @@ class _AnswerOption extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       color: isSelected
-          ? AppColors.citrusOrange.withOpacity(0.2)
+          ? AppColors.citrusOrange.withValues(alpha: 0.2)
           : AppColors.card,
       borderRadius: AppSize.radius(12),
       child: InkWell(
@@ -321,7 +391,7 @@ class _AnswerOption extends StatelessWidget {
             border: Border.all(
               color: isSelected
                   ? AppColors.citrusOrange
-                  : AppColors.foreground.withOpacity(0.05),
+                  : AppColors.foreground.withValues(alpha: 0.05),
               width: isSelected ? 2 : 1,
             ),
             borderRadius: AppSize.radius(12),

@@ -193,7 +193,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                           : LinearGradient(
                               colors: [AppColors.citrusOrange, AppColors.citrusAmber],
                             ),
-                      color: _isLoading ? AppColors.citrusOrange.withOpacity(0.3) : null,
+                      color: _isLoading ? AppColors.citrusOrange.withValues(alpha: 0.3) : null,
                       borderRadius: BorderRadius.circular(AppSize.s(AppColors.radius)),
                       boxShadow: _isLoading
                           ? null

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/app_size.dart';
+import '../../core/widgets/citrus_card.dart';
 
 class StatsStrip extends StatelessWidget {
   final int streakDays;
@@ -68,26 +69,29 @@ class _StatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return CitrusCard(
+      accent: iconColor,
+      radius: 16,
       padding: AppSize.padding(12),
-      decoration: BoxDecoration(
-        color: AppColors.card,
-        borderRadius: AppSize.radius(16),
-        border: Border.all(
-          color: AppColors.citrusOrange.withOpacity(0.1),
-        ),
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 18, color: iconColor),
-          AppSize.gapH(4),
+          Container(
+            width: AppSize.s(30),
+            height: AppSize.s(30),
+            decoration: BoxDecoration(
+              color: iconColor.withValues(alpha: 0.15),
+              borderRadius: AppSize.radius(9),
+            ),
+            child: Icon(icon, size: AppSize.s(17), color: iconColor),
+          ),
+          AppSize.gapH(8),
           Text(
             value,
             style: TextStyle(
-              fontSize: AppSize.s(18),
-              fontWeight: FontWeight.w700,
+              fontSize: AppSize.s(19),
+              fontWeight: FontWeight.w800,
               color: AppColors.foreground,
             ),
           ),
@@ -98,6 +102,8 @@ class _StatCard extends StatelessWidget {
               fontSize: AppSize.s(10),
               color: AppColors.mutedForeground,
             ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),

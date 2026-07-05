@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../core/theme/app_colors.dart';
 import '../core/utils/app_size.dart';
+import '../core/widgets/citrus_card.dart';
+import 'legal/privacy_policy_screen.dart';
 
 /// Экран помощи и поддержки
 class HelpScreen extends StatelessWidget {
@@ -81,7 +83,7 @@ class HelpScreen extends StatelessWidget {
         borderRadius: AppSize.radius(16),
         boxShadow: [
           BoxShadow(
-            color: AppColors.glowOrange.withOpacity(0.3),
+            color: AppColors.glowOrange.withValues(alpha: 0.3),
             blurRadius: 20,
             offset: Offset(0, 8),
           ),
@@ -95,7 +97,7 @@ class HelpScreen extends StatelessWidget {
               Container(
                 padding: AppSize.padding(10),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
+                  color: Colors.white.withValues(alpha: 0.2),
                   borderRadius: AppSize.radius(12),
                 ),
                 child: Icon(
@@ -122,7 +124,7 @@ class HelpScreen extends StatelessWidget {
                       'Найдите ответы на вопросы или свяжитесь с нами',
                       style: TextStyle(
                         fontSize: AppSize.s(13),
-                        color: Colors.white.withOpacity(0.9),
+                        color: Colors.white.withValues(alpha: 0.9),
                       ),
                     ),
                   ],
@@ -148,12 +150,9 @@ class HelpScreen extends StatelessWidget {
   }
 
   Widget _buildQuickActions(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surface1,
-        borderRadius: AppSize.radius(16),
-        border: Border.all(color: AppColors.subtleBorder),
-      ),
+    return CitrusCard(
+      padding: EdgeInsets.zero,
+      radius: 16,
       child: Column(
         children: [
           _buildActionTile(
@@ -161,13 +160,6 @@ class HelpScreen extends StatelessWidget {
             title: 'Как начать',
             subtitle: 'Быстрое знакомство с приложением',
             onTap: () => _showGettingStartedGuide(context),
-          ),
-          Divider(height: 1, color: AppColors.subtleBorder, indent: 56),
-          _buildActionTile(
-            icon: Icons.bug_report_outlined,
-            title: 'Сообщить о проблеме',
-            subtitle: 'Нашли баг? Расскажите нам',
-            onTap: () => _showBugReportDialog(context),
           ),
           Divider(height: 1, color: AppColors.subtleBorder, indent: 56),
           _buildActionTile(
@@ -209,12 +201,9 @@ class HelpScreen extends StatelessWidget {
       },
     ];
 
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surface1,
-        borderRadius: AppSize.radius(16),
-        border: Border.all(color: AppColors.subtleBorder),
-      ),
+    return CitrusCard(
+      padding: EdgeInsets.zero,
+      radius: 16,
       child: ExpansionPanelList.radio(
         elevation: 0,
         expandedHeaderPadding: EdgeInsets.zero,
@@ -222,7 +211,7 @@ class HelpScreen extends StatelessWidget {
         children: faqs.map((faq) {
           return ExpansionPanelRadio(
             value: faq['question']!,
-            backgroundColor: AppColors.surface1,
+            backgroundColor: AppColors.card,
             headerBuilder: (context, isExpanded) {
               return ListTile(
                 title: Text(
@@ -276,12 +265,9 @@ class HelpScreen extends StatelessWidget {
       },
     ];
 
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surface1,
-        borderRadius: AppSize.radius(16),
-        border: Border.all(color: AppColors.subtleBorder),
-      ),
+    return CitrusCard(
+      padding: EdgeInsets.zero,
+      radius: 16,
       child: Column(
         children: guides.asMap().entries.map((entry) {
           final guide = entry.value;
@@ -346,24 +332,21 @@ class HelpScreen extends StatelessWidget {
   }
 
   Widget _buildLegalSection(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surface1,
-        borderRadius: AppSize.radius(16),
-        border: Border.all(color: AppColors.subtleBorder),
-      ),
+    return CitrusCard(
+      padding: EdgeInsets.zero,
+      radius: 16,
       child: Column(
         children: [
           _buildActionTile(
             icon: Icons.privacy_tip_outlined,
             title: 'Политика конфиденциальности',
-            onTap: () => _launchUrl('https://citrus.app/privacy'),
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PrivacyPolicyScreen())),
           ),
           Divider(height: 1, color: AppColors.subtleBorder, indent: 56),
           _buildActionTile(
             icon: Icons.description_outlined,
             title: 'Условия использования',
-            onTap: () => _launchUrl('https://citrus.app/terms'),
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PrivacyPolicyScreen())),
           ),
           Divider(height: 1, color: AppColors.subtleBorder, indent: 56),
           _buildActionTile(
@@ -378,13 +361,9 @@ class HelpScreen extends StatelessWidget {
   }
 
   Widget _buildSupportContacts(BuildContext context) {
-    return Container(
+    return CitrusCard(
       padding: AppSize.padding(20),
-      decoration: BoxDecoration(
-        color: AppColors.surface1,
-        borderRadius: AppSize.radius(16),
-        border: Border.all(color: AppColors.subtleBorder),
-      ),
+      radius: 16,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -547,7 +526,7 @@ class HelpScreen extends StatelessWidget {
                     width: 40,
                     height: 4,
                     decoration: BoxDecoration(
-                      color: AppColors.mutedForeground.withOpacity(0.3),
+                      color: AppColors.mutedForeground.withValues(alpha: 0.3),
                       borderRadius: AppSize.radius(2),
                     ),
                   ),
@@ -624,7 +603,7 @@ class HelpScreen extends StatelessWidget {
             width: 28,
             height: 28,
             decoration: BoxDecoration(
-              color: AppColors.citrusOrange.withOpacity(0.2),
+              color: AppColors.citrusOrange.withValues(alpha: 0.2),
               shape: BoxShape.circle,
             ),
             child: Center(
@@ -662,70 +641,6 @@ class HelpScreen extends StatelessWidget {
                 ),
               ],
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showBugReportDialog(BuildContext context) {
-    final controller = TextEditingController();
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppColors.surface1,
-        shape: RoundedRectangleBorder(borderRadius: AppSize.radius(16)),
-        title: Text(
-          'Сообщить о проблеме',
-          style: TextStyle(color: AppColors.foreground),
-        ),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'Опишите что произошло. Мы постараемся исправить это как можно скорее.',
-                style: TextStyle(color: AppColors.mutedForeground, fontSize: AppSize.s(13)),
-              ),
-              AppSize.gapH(16),
-              TextField(
-                controller: controller,
-                maxLines: 4,
-                decoration: InputDecoration(
-                  hintText: 'Описание проблемы...',
-                  hintStyle: TextStyle(color: AppColors.mutedForeground),
-                  filled: true,
-                  fillColor: AppColors.surface2,
-                  border: OutlineInputBorder(
-                    borderRadius: AppSize.radius(12),
-                    borderSide: BorderSide.none,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Отмена', style: TextStyle(color: AppColors.mutedForeground)),
-          ),
-          FilledButton(
-            onPressed: () {
-              // TODO: Отправка отчёта
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Спасибо! Мы получили ваш отчёт.'),
-                  backgroundColor: AppColors.citrusGreen,
-                ),
-              );
-            },
-            style: FilledButton.styleFrom(
-              backgroundColor: AppColors.citrusOrange,
-            ),
-            child: Text('Отправить'),
           ),
         ],
       ),
@@ -777,6 +692,12 @@ class HelpScreen extends StatelessWidget {
           ),
           FilledButton(
             onPressed: () {
+              if (controller.text.trim().isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Опишите идею перед отправкой')),
+                );
+                return;
+              }
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(

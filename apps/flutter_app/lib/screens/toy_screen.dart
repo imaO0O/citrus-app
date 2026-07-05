@@ -20,22 +20,67 @@ class _ToyScreenState extends State<ToyScreen> {
     setState(() => _activeTab = index);
   }
 
+  static const _toyLabels = ['Цитрус', 'Пузыри', 'Песок', 'Дождь', 'Шарики', 'Казино'];
+
+  Widget _buildToy(int index) {
+    switch (index) {
+      case 0: return SqueezeCitrusToy();
+      case 1: return BubbleWrapToy();
+      case 2: return SandboxToy();
+      case 3: return RainToy();
+      case 4: return OrbsToy();
+      case 5: return CasinoToy();
+      default: return SqueezeCitrusToy();
+    }
+  }
+
+  /// Открыть текущую игрушку на весь экран — максимальное игровое поле
+  /// (без шапки приложения и нижней навигации).
+  void _openFullscreen() {
+    Navigator.of(context).push(MaterialPageRoute(
+      builder: (_) => _FullscreenToyPage(
+        title: _toyLabels[_activeTab],
+        child: _buildToy(_activeTab),
+      ),
+    ));
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
         child: Padding(
-          padding: AppSize.padding(20),
+          padding: AppSize.padding(12),
           child: ConstrainedBox(
             constraints: BoxConstraints(maxWidth: 480),
             child: Column(
               children: [
-                Text(
-                  'Антистресс',
-                  style: TextStyle(fontSize: AppSize.s(24), fontWeight: FontWeight.w700, color: AppColors.foreground),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Антистресс',
+                      style: TextStyle(fontSize: AppSize.s(18), fontWeight: FontWeight.w700, color: AppColors.foreground),
+                    ),
+                    Semantics(
+                      label: 'Развернуть игру на весь экран',
+                      button: true,
+                      child: GestureDetector(
+                        onTap: _openFullscreen,
+                        child: Container(
+                          padding: AppSize.padding(6),
+                          decoration: BoxDecoration(
+                            color: AppColors.citrusOrange.withValues(alpha: 0.12),
+                            borderRadius: AppSize.radius(10),
+                          ),
+                          child: Icon(Icons.fullscreen, size: AppSize.s(20), color: AppColors.citrusOrange),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-                AppSize.gapH(20),
+                AppSize.gapH(8),
                 Expanded(
                 child: IndexedStack(
                     index: _activeTab,
@@ -62,20 +107,19 @@ class _ToyScreenState extends State<ToyScreen> {
     const emojis = ['🍊', '🫧', '🏖️', '🌧️', '🔮', '🎰'];
     const labels = ['Цитрус', 'Пузыри', 'Песок', 'Дождь', 'Шарики', 'Казино'];
     return Padding(
-      padding: AppSize.paddingH(0, 16),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          children: List.generate(6, (i) {
-            final isActive = _activeTab == i;
-            return GestureDetector(
+      padding: AppSize.paddingH(0, 8),
+      child: Row(
+        children: List.generate(6, (i) {
+          final isActive = _activeTab == i;
+          return Expanded(
+            child: GestureDetector(
               onTap: () => _onTabChanged(i),
               child: AnimatedContainer(
                 duration: Duration(milliseconds: 200),
-                margin: AppSize.paddingH(4, 0),
-                padding: AppSize.paddingH(16, 10),
+                margin: AppSize.paddingH(2, 0),
+                padding: AppSize.paddingH(2, 8),
                 decoration: BoxDecoration(
-                  color: isActive ? AppColors.citrusOrange.withOpacity(0.15) : Colors.transparent,
+                  color: isActive ? AppColors.citrusOrange.withValues(alpha: 0.15) : Colors.transparent,
                   borderRadius: AppSize.radius(12),
                 ),
                 child: Column(
@@ -83,13 +127,15 @@ class _ToyScreenState extends State<ToyScreen> {
                   children: [
                     Text(
                       emojis[i],
-                      style: TextStyle(fontSize: AppSize.s(24), color: isActive ? AppColors.citrusOrange : AppColors.mutedForeground),
+                      style: TextStyle(fontSize: AppSize.s(22), color: isActive ? AppColors.citrusOrange : AppColors.mutedForeground),
                     ),
                     AppSize.gapH(4),
                     Text(
                       labels[i],
+                      maxLines: 1,
+                      textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontSize: AppSize.s(10),
+                        fontSize: AppSize.s(9),
                         color: isActive ? AppColors.citrusOrange : AppColors.dimForeground,
                         fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
                       ),
@@ -97,8 +143,68 @@ class _ToyScreenState extends State<ToyScreen> {
                   ],
                 ),
               ),
-            );
-          }),
+            ),
+          );
+        }),
+      ),
+    );
+  }
+}
+
+// ============================================================
+// Полноэкранный режим игрушки — максимальное поле
+// ============================================================
+class _FullscreenToyPage extends StatelessWidget {
+  final String title;
+  final Widget child;
+  const _FullscreenToyPage({required this.title, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      body: SafeArea(
+        child: Column(
+          children: [
+            Padding(
+              padding: AppSize.padding(12),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: AppSize.s(18),
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.foreground,
+                    ),
+                  ),
+                  Semantics(
+                    label: 'Закрыть полноэкранный режим',
+                    button: true,
+                    child: GestureDetector(
+                      onTap: () => Navigator.of(context).pop(),
+                      child: Container(
+                        padding: AppSize.padding(8),
+                        decoration: BoxDecoration(
+                          color: AppColors.surface2,
+                          borderRadius: AppSize.radius(12),
+                        ),
+                        child: Icon(Icons.close, size: AppSize.s(20), color: AppColors.foreground),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: Padding(
+                padding: AppSize.paddingH(12, 0),
+                child: child,
+              ),
+            ),
+            AppSize.gapH(12),
+          ],
         ),
       ),
     );
@@ -184,7 +290,8 @@ class _SqueezeCitrusToyState extends State<SqueezeCitrusToy>
 
   @override
   Widget build(BuildContext context) {
-    return Center(
+    return SingleChildScrollView(
+      child: Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -194,7 +301,7 @@ class _SqueezeCitrusToyState extends State<SqueezeCitrusToy>
               margin: AppSize.paddingOnly(bottom: 12),
               padding: AppSize.paddingH(14, 6),
               decoration: BoxDecoration(
-                color: AppColors.citrusAmber.withOpacity(0.12),
+                color: AppColors.citrusAmber.withValues(alpha: 0.12),
                 borderRadius: AppSize.radius(20),
               ),
               child: Row(
@@ -229,14 +336,14 @@ class _SqueezeCitrusToyState extends State<SqueezeCitrusToy>
                 return Transform.scale(
                   scale: _scaleAnimation.value,
                   child: SizedBox(
-                    width: 180,
-                    height: 180,
+                    width: AppSize.s(180),
+                    height: AppSize.s(180),
                     child: Stack(
                       alignment: Alignment.center,
                       children: [
                         Container(
-                          width: 160,
-                          height: 160,
+                          width: AppSize.s(160),
+                          height: AppSize.s(160),
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
                               begin: Alignment.topLeft,
@@ -246,7 +353,7 @@ class _SqueezeCitrusToyState extends State<SqueezeCitrusToy>
                             shape: BoxShape.circle,
                             boxShadow: [
                               BoxShadow(
-                                color: AppColors.citrusOrange.withOpacity(0.4),
+                                color: AppColors.citrusOrange.withValues(alpha: 0.4),
                                 blurRadius: 30,
                                 spreadRadius: 5,
                               ),
@@ -258,8 +365,8 @@ class _SqueezeCitrusToyState extends State<SqueezeCitrusToy>
                         ),
                         // Капли сока
                         ..._drops.map((drop) => Positioned(
-                          left: 90 + drop.dx * 80,
-                          top: 60 + drop.dy * 80,
+                          left: AppSize.s(90) + drop.dx * AppSize.s(80),
+                          top: AppSize.s(60) + drop.dy * AppSize.s(80),
                           child: AnimatedOpacity(
                             opacity: drop.opacity,
                             duration: Duration(milliseconds: 200),
@@ -276,12 +383,12 @@ class _SqueezeCitrusToyState extends State<SqueezeCitrusToy>
                         // Всплеск при нажатии
                         if (_showSplash)
                           Container(
-                            width: 180,
-                            height: 180,
+                            width: AppSize.s(180),
+                            height: AppSize.s(180),
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               border: Border.all(
-                                color: AppColors.citrusYellow.withOpacity(0.5),
+                                color: AppColors.citrusYellow.withValues(alpha: 0.5),
                                 width: 3,
                               ),
                             ),
@@ -298,17 +405,17 @@ class _SqueezeCitrusToyState extends State<SqueezeCitrusToy>
 
           // Стакан с прогрессом
           Container(
-            width: 56,
-            height: 72,
+            width: AppSize.s(56),
+            height: AppSize.s(72),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.05),
+              color: Colors.white.withValues(alpha: 0.05),
               borderRadius: BorderRadius.only(
                 bottomLeft: Radius.circular(8),
                 bottomRight: Radius.circular(8),
                 topLeft: Radius.circular(4),
                 topRight: Radius.circular(4),
               ),
-              border: Border.all(color: AppColors.mutedForeground.withOpacity(0.3), width: 1.5),
+              border: Border.all(color: AppColors.mutedForeground.withValues(alpha: 0.3), width: 1.5),
             ),
             child: Stack(
               alignment: Alignment.bottomCenter,
@@ -316,7 +423,7 @@ class _SqueezeCitrusToyState extends State<SqueezeCitrusToy>
                 AnimatedContainer(
                   duration: Duration(milliseconds: 300),
                   curve: Curves.easeOut,
-                  height: 68 * _glassProgress,
+                  height: AppSize.s(68) * _glassProgress,
                   width: double.infinity,
                   margin: AppSize.padding(2),
                   decoration: BoxDecoration(
@@ -324,8 +431,8 @@ class _SqueezeCitrusToyState extends State<SqueezeCitrusToy>
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
                       colors: [
-                        AppColors.citrusYellow.withOpacity(0.6),
-                        AppColors.citrusOrange.withOpacity(0.8),
+                        AppColors.citrusYellow.withValues(alpha: 0.6),
+                        AppColors.citrusOrange.withValues(alpha: 0.8),
                       ],
                     ),
                     borderRadius: BorderRadius.only(
@@ -352,6 +459,7 @@ class _SqueezeCitrusToyState extends State<SqueezeCitrusToy>
             style: TextStyle(color: AppColors.mutedForeground, fontSize: AppSize.s(12)),
           ),
         ],
+      ),
       ),
     );
   }
@@ -471,7 +579,7 @@ class _BubbleWrapToyState extends State<BubbleWrapToy> {
                     child: Container(
                       padding: AppSize.paddingH(12, 6),
                       decoration: BoxDecoration(
-                        color: AppColors.citrusOrange.withOpacity(0.15),
+                        color: AppColors.citrusOrange.withValues(alpha: 0.15),
                         borderRadius: AppSize.radius(10),
                       ),
                       child: Row(
@@ -498,7 +606,7 @@ class _BubbleWrapToyState extends State<BubbleWrapToy> {
             child: LinearProgressIndicator(
               value: _poppedCount / _totalBubbles,
               minHeight: 4,
-              backgroundColor: AppColors.citrusOrange.withOpacity(0.1),
+              backgroundColor: AppColors.citrusOrange.withValues(alpha: 0.1),
               valueColor: AlwaysStoppedAnimation<Color>(AppColors.citrusOrange),
             ),
           ),
@@ -510,7 +618,7 @@ class _BubbleWrapToyState extends State<BubbleWrapToy> {
           Container(
             padding: AppSize.paddingH(16, 10),
             decoration: BoxDecoration(
-              color: AppColors.citrusGreen.withOpacity(0.1),
+              color: AppColors.citrusGreen.withValues(alpha: 0.1),
               borderRadius: AppSize.radius(14),
             ),
             child: Row(
@@ -530,7 +638,7 @@ class _BubbleWrapToyState extends State<BubbleWrapToy> {
         // Сетка
         Expanded(
           child: GridView.builder(
-            physics: NeverScrollableScrollPhysics(),
+            physics: const ClampingScrollPhysics(),
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: gridSize,
               crossAxisSpacing: 8,
@@ -557,17 +665,17 @@ class _BubbleWrapToyState extends State<BubbleWrapToy> {
                           Color.fromRGBO(255, 90, 0, 0.8),
                         ],
                       ),
-                      color: isPopped ? Colors.white.withOpacity(0.03) : null,
+                      color: isPopped ? Colors.white.withValues(alpha: 0.03) : null,
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: isPopped ? Colors.white.withOpacity(0.04) : Colors.transparent,
+                        color: isPopped ? Colors.white.withValues(alpha: 0.04) : Colors.transparent,
                         width: 1,
                       ),
                       boxShadow: isPopped
                           ? null
                           : [
                               BoxShadow(
-                                color: AppColors.citrusOrange.withOpacity(0.25),
+                                color: AppColors.citrusOrange.withValues(alpha: 0.25),
                                 blurRadius: 4,
                                 offset: Offset(0, 2),
                               ),
@@ -575,7 +683,7 @@ class _BubbleWrapToyState extends State<BubbleWrapToy> {
                     ),
                     child: isPopped
                         ? Center(child: Text('✓',
-                            style: TextStyle(color: AppColors.mutedForeground.withOpacity(0.4), fontSize: AppSize.s(12))))
+                            style: TextStyle(color: AppColors.mutedForeground.withValues(alpha: 0.4), fontSize: AppSize.s(12))))
                         : null,
                   ),
                 ),
@@ -665,7 +773,7 @@ class _SandboxToyState extends State<SandboxToy> {
                     child: Container(
                       padding: AppSize.padding(6),
                       decoration: BoxDecoration(
-                        color: AppColors.citrusOrange.withOpacity(0.12),
+                        color: AppColors.citrusOrange.withValues(alpha: 0.12),
                         borderRadius: AppSize.radius(8),
                       ),
                       child: Icon(Icons.undo, size: 18, color: AppColors.citrusOrange),
@@ -677,7 +785,7 @@ class _SandboxToyState extends State<SandboxToy> {
                     child: Container(
                       padding: AppSize.padding(6),
                       decoration: BoxDecoration(
-                        color: AppColors.destructive.withOpacity(0.12),
+                        color: AppColors.destructive.withValues(alpha: 0.12),
                         borderRadius: AppSize.radius(8),
                       ),
                       child: Icon(Icons.delete_outline, size: 18, color: AppColors.destructive),
@@ -711,7 +819,7 @@ class _SandboxToyState extends State<SandboxToy> {
                       width: sel ? 2.5 : 0,
                     ),
                     boxShadow: sel
-                        ? [BoxShadow(color: c.withOpacity(0.5), blurRadius: 8, spreadRadius: 1)]
+                        ? [BoxShadow(color: c.withValues(alpha: 0.5), blurRadius: 8, spreadRadius: 1)]
                         : null,
                   ),
                 ),
@@ -729,7 +837,7 @@ class _SandboxToyState extends State<SandboxToy> {
               child: SliderTheme(
                 data: SliderThemeData(
                   activeTrackColor: AppColors.citrusOrange,
-                  inactiveTrackColor: AppColors.citrusOrange.withOpacity(0.2),
+                  inactiveTrackColor: AppColors.citrusOrange.withValues(alpha: 0.2),
                   thumbColor: AppColors.citrusOrange,
                   trackHeight: 3,
                   thumbShape: RoundSliderThumbShape(enabledThumbRadius: 8),
@@ -746,7 +854,7 @@ class _SandboxToyState extends State<SandboxToy> {
               width: _brushSize + 4,
               height: _brushSize + 4,
               decoration: BoxDecoration(
-                color: _sandColor.withOpacity(0.4),
+                color: _sandColor.withValues(alpha: 0.4),
                 shape: BoxShape.circle,
                 border: Border.all(color: _sandColor, width: 1.5),
               ),
@@ -838,7 +946,7 @@ class _SandCanvasPainter extends CustomPainter {
       canvas.drawPath(path, paint);
 
       // Частицы песка вокруг штриха
-      final particlePaint = Paint()..color = stroke.color.withOpacity(0.4);
+      final particlePaint = Paint()..color = stroke.color.withValues(alpha: 0.4);
       final pRng = Random(stroke.points.length);
       for (final pt in stroke.points) {
         if (pRng.nextDouble() < 0.3) {
@@ -976,7 +1084,7 @@ class _RainToyState extends State<RainToy> with SingleTickerProviderStateMixin {
                     duration: Duration(milliseconds: 300),
                     padding: AppSize.paddingH(14, 8),
                     decoration: BoxDecoration(
-                      color: (_isRaining ? AppColors.citrusPurple : AppColors.citrusAmber).withOpacity(0.12),
+                      color: (_isRaining ? AppColors.citrusPurple : AppColors.citrusAmber).withValues(alpha: 0.12),
                       borderRadius: AppSize.radius(12),
                     ),
                     child: Row(
@@ -1017,7 +1125,7 @@ class _RainToyState extends State<RainToy> with SingleTickerProviderStateMixin {
               child: SliderTheme(
                 data: SliderThemeData(
                   activeTrackColor: AppColors.citrusPurple,
-                  inactiveTrackColor: AppColors.citrusPurple.withOpacity(0.2),
+                  inactiveTrackColor: AppColors.citrusPurple.withValues(alpha: 0.2),
                   thumbColor: AppColors.citrusPurple,
                   trackHeight: 3,
                   thumbShape: RoundSliderThumbShape(enabledThumbRadius: 8),
@@ -1314,7 +1422,7 @@ class _OrbsToyState extends State<OrbsToy> with SingleTickerProviderStateMixin {
                 Container(
                   padding: AppSize.paddingH(10, 4),
                   decoration: BoxDecoration(
-                    color: AppColors.citrusGreen.withOpacity(0.1),
+                    color: AppColors.citrusGreen.withValues(alpha: 0.1),
                     borderRadius: AppSize.radius(8),
                   ),
                   child: Row(
@@ -1331,7 +1439,7 @@ class _OrbsToyState extends State<OrbsToy> with SingleTickerProviderStateMixin {
                 Container(
                   padding: AppSize.paddingH(10, 4),
                   decoration: BoxDecoration(
-                    color: AppColors.citrusAmber.withOpacity(0.1),
+                    color: AppColors.citrusAmber.withValues(alpha: 0.1),
                     borderRadius: AppSize.radius(8),
                   ),
                   child: Row(
@@ -1352,7 +1460,7 @@ class _OrbsToyState extends State<OrbsToy> with SingleTickerProviderStateMixin {
                 child: Container(
                   padding: AppSize.padding(6),
                   decoration: BoxDecoration(
-                    color: AppColors.citrusOrange.withOpacity(0.12),
+                    color: AppColors.citrusOrange.withValues(alpha: 0.12),
                     borderRadius: AppSize.radius(8),
                   ),
                   child: Icon(Icons.refresh, size: 18, color: AppColors.citrusOrange),
@@ -1447,7 +1555,7 @@ class _OrbsPainter extends CustomPainter {
       final sx = starRng.nextDouble() * size.width;
       final sy = starRng.nextDouble() * size.height;
       final sr = 0.5 + starRng.nextDouble() * 1.5;
-      starPaint.color = Colors.white.withOpacity(0.15 + starRng.nextDouble() * 0.25);
+      starPaint.color = Colors.white.withValues(alpha: 0.15 + starRng.nextDouble() * 0.25);
       canvas.drawCircle(Offset(sx, sy), sr, starPaint);
     }
 
@@ -1459,7 +1567,7 @@ class _OrbsPainter extends CustomPainter {
 
       // Свечение
       final glowPaint = Paint()
-        ..color = orb.color.withOpacity(0.25)
+        ..color = orb.color.withValues(alpha: 0.25)
         ..maskFilter = MaskFilter.blur(BlurStyle.normal, 20);
       canvas.drawCircle(Offset(cx, cy), r * 1.4, glowPaint);
 
@@ -1468,8 +1576,8 @@ class _OrbsPainter extends CustomPainter {
         ..shader = RadialGradient(
           center: Alignment(-0.3, -0.3),
           colors: [
-            Colors.white.withOpacity(0.5),
-            orb.color.withOpacity(0.8),
+            Colors.white.withValues(alpha: 0.5),
+            orb.color.withValues(alpha: 0.8),
             orb.color,
           ],
           stops: [0.0, 0.4, 1.0],
@@ -1477,7 +1585,7 @@ class _OrbsPainter extends CustomPainter {
       canvas.drawCircle(Offset(cx, cy), r, orbPaint);
 
       // Блик
-      final highlightPaint = Paint()..color = Colors.white.withOpacity(0.45);
+      final highlightPaint = Paint()..color = Colors.white.withValues(alpha: 0.45);
       final hlRect = Rect.fromCenter(
         center: Offset(cx - r * 0.3, cy - r * 0.35),
         width: r * 0.4,
@@ -1639,15 +1747,15 @@ class _CasinoToyState extends State<CasinoToy> with TickerProviderStateMixin, Wi
 
     if (r[0] == r[1] && r[1] == r[2]) {
       final pay = _symbolPay[r[0]]!;
-      final displayWin = _bet * pay;
-      final msg = '🎉 ДЖЕКПОТ! ${r[0]}${r[1]}${r[2]} — ×$pay! +$displayWin';
+      displayWin = _bet * pay;
+      msg = '🎉 ДЖЕКПОТ! ${r[0]}${r[1]}${r[2]} — ×$pay! +$displayWin';
       HapticFeedback.heavyImpact();
     } else if (r[0] == r[1] || r[1] == r[2] || r[0] == r[2]) {
-      final displayWin = (_bet * 1.5).round();
-      final msg = '✨ Два совпадения! +$displayWin монет';
+      displayWin = (_bet * 1.5).round();
+      msg = '✨ Два совпадения! +$displayWin монет';
       HapticFeedback.lightImpact();
     } else {
-      const msg = '😔 Не повезло... Крути ещё!';
+      msg = '😔 Не повезло... Крути ещё!';
     }
 
     final spinResult = await _coinsService.spin(_bet, _reelResults, displayWin);
@@ -1714,7 +1822,7 @@ class _CasinoToyState extends State<CasinoToy> with TickerProviderStateMixin, Wi
             Container(
               padding: AppSize.paddingH(12, 6),
               decoration: BoxDecoration(
-                color: AppColors.citrusAmber.withOpacity(0.12),
+                color: AppColors.citrusAmber.withValues(alpha: 0.12),
                 borderRadius: AppSize.radius(10),
               ),
               child: Row(
@@ -1732,7 +1840,7 @@ class _CasinoToyState extends State<CasinoToy> with TickerProviderStateMixin, Wi
                 Container(
                   padding: AppSize.paddingH(8, 4),
                   decoration: BoxDecoration(
-                    color: AppColors.citrusGreen.withOpacity(0.1),
+                    color: AppColors.citrusGreen.withValues(alpha: 0.1),
                     borderRadius: AppSize.radius(8),
                   ),
                   child: Text('🏆 $_totalWins/$_totalSpins',
@@ -1743,7 +1851,7 @@ class _CasinoToyState extends State<CasinoToy> with TickerProviderStateMixin, Wi
                   Container(
                     padding: AppSize.paddingH(8, 4),
                     decoration: BoxDecoration(
-                      color: AppColors.citrusPurple.withOpacity(0.1),
+                      color: AppColors.citrusPurple.withValues(alpha: 0.1),
                       borderRadius: AppSize.radius(8),
                     ),
                     child: Text('💰 Макс: $_biggestWin',
@@ -1765,10 +1873,10 @@ class _CasinoToyState extends State<CasinoToy> with TickerProviderStateMixin, Wi
               colors: [Color(0xFF1A1428), Color(0xFF0E0A18)],
             ),
             borderRadius: AppSize.radius(20),
-            border: Border.all(color: AppColors.citrusAmber.withOpacity(0.3), width: 2),
+            border: Border.all(color: AppColors.citrusAmber.withValues(alpha: 0.3), width: 2),
             boxShadow: [
               BoxShadow(
-                color: AppColors.citrusAmber.withOpacity(0.15),
+                color: AppColors.citrusAmber.withValues(alpha: 0.15),
                 blurRadius: 30,
                 spreadRadius: 2,
               ),
@@ -1781,7 +1889,7 @@ class _CasinoToyState extends State<CasinoToy> with TickerProviderStateMixin, Wi
                 padding: AppSize.paddingH(0, 10),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [AppColors.citrusAmber.withOpacity(0.2), Colors.transparent],
+                    colors: [AppColors.citrusAmber.withValues(alpha: 0.2), Colors.transparent],
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                   ),
@@ -1826,7 +1934,7 @@ class _CasinoToyState extends State<CasinoToy> with TickerProviderStateMixin, Wi
                     gradient: LinearGradient(
                       colors: [
                         Colors.transparent,
-                        AppColors.citrusAmber.withOpacity(0.6),
+                        AppColors.citrusAmber.withValues(alpha: 0.6),
                         Colors.transparent,
                       ],
                     ),
@@ -1861,7 +1969,7 @@ class _CasinoToyState extends State<CasinoToy> with TickerProviderStateMixin, Wi
               child: Container(
                 padding: AppSize.paddingH(12, 6),
                 decoration: BoxDecoration(
-                  color: AppColors.citrusOrange.withOpacity(0.12),
+                  color: AppColors.citrusOrange.withValues(alpha: 0.12),
                   borderRadius: AppSize.radius(8),
                 ),
                 child: Text('−', style: TextStyle(color: AppColors.citrusOrange, fontSize: AppSize.s(18), fontWeight: FontWeight.w700)),
@@ -1877,7 +1985,7 @@ class _CasinoToyState extends State<CasinoToy> with TickerProviderStateMixin, Wi
               child: Container(
                 padding: AppSize.paddingH(12, 6),
                 decoration: BoxDecoration(
-                  color: AppColors.citrusOrange.withOpacity(0.12),
+                  color: AppColors.citrusOrange.withValues(alpha: 0.12),
                   borderRadius: AppSize.radius(8),
                 ),
                 child: Text('+', style: TextStyle(color: AppColors.citrusOrange, fontSize: AppSize.s(18), fontWeight: FontWeight.w700)),
@@ -1900,13 +2008,13 @@ class _CasinoToyState extends State<CasinoToy> with TickerProviderStateMixin, Wi
                   : LinearGradient(
                       colors: [AppColors.citrusOrange, Color(0xFFFF6020)],
                     ),
-              color: _isSpinning ? AppColors.mutedForeground.withOpacity(0.3) : null,
+              color: _isSpinning ? AppColors.mutedForeground.withValues(alpha: 0.3) : null,
               borderRadius: AppSize.radius(16),
               boxShadow: _isSpinning
                   ? null
                   : [
                       BoxShadow(
-                        color: AppColors.citrusOrange.withOpacity(0.4),
+                        color: AppColors.citrusOrange.withValues(alpha: 0.4),
                         blurRadius: 16,
                         spreadRadius: 1,
                       ),
@@ -1940,9 +2048,9 @@ class _CasinoToyState extends State<CasinoToy> with TickerProviderStateMixin, Wi
         Container(
           padding: AppSize.padding(14),
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.03),
+            color: Colors.white.withValues(alpha: 0.03),
             borderRadius: AppSize.radius(14),
-            border: Border.all(color: Colors.white.withOpacity(0.06)),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1957,7 +2065,7 @@ class _CasinoToyState extends State<CasinoToy> with TickerProviderStateMixin, Wi
                   Container(
                     padding: AppSize.paddingH(8, 3),
                     decoration: BoxDecoration(
-                      color: AppColors.citrusAmber.withOpacity(0.12),
+                      color: AppColors.citrusAmber.withValues(alpha: 0.12),
                       borderRadius: AppSize.radius(8),
                     ),
                     child: Text('+${CasinoCoinsService.dailyFreeLimit}/день',
@@ -1978,13 +2086,13 @@ class _CasinoToyState extends State<CasinoToy> with TickerProviderStateMixin, Wi
                   padding: AppSize.paddingH(12, 10),
                   decoration: BoxDecoration(
                     color: done
-                        ? AppColors.citrusGreen.withOpacity(0.08)
-                        : Colors.white.withOpacity(0.03),
+                        ? AppColors.citrusGreen.withValues(alpha: 0.08)
+                        : Colors.white.withValues(alpha: 0.03),
                     borderRadius: AppSize.radius(10),
                     border: Border.all(
                       color: done
-                          ? AppColors.citrusGreen.withOpacity(0.2)
-                          : Colors.white.withOpacity(0.05),
+                          ? AppColors.citrusGreen.withValues(alpha: 0.2)
+                          : Colors.white.withValues(alpha: 0.05),
                     ),
                   ),
                   child: Row(
@@ -2013,7 +2121,7 @@ class _CasinoToyState extends State<CasinoToy> with TickerProviderStateMixin, Wi
                         Container(
                           padding: AppSize.paddingH(8, 4),
                           decoration: BoxDecoration(
-                            color: AppColors.citrusGreen.withOpacity(0.15),
+                            color: AppColors.citrusGreen.withValues(alpha: 0.15),
                             borderRadius: AppSize.radius(8),
                           ),
                           child: Text('✓ +${quest.reward}',
@@ -2023,7 +2131,7 @@ class _CasinoToyState extends State<CasinoToy> with TickerProviderStateMixin, Wi
                         Container(
                           padding: AppSize.paddingH(8, 4),
                           decoration: BoxDecoration(
-                            color: AppColors.citrusAmber.withOpacity(0.12),
+                            color: AppColors.citrusAmber.withValues(alpha: 0.12),
                             borderRadius: AppSize.radius(8),
                           ),
                           child: Text('+${quest.reward} 🪙',
@@ -2047,7 +2155,7 @@ class _CasinoToyState extends State<CasinoToy> with TickerProviderStateMixin, Wi
                       child: LinearProgressIndicator(
                         value: _questsDone.length / CasinoCoinsService.quests.length,
                         minHeight: 4,
-                        backgroundColor: AppColors.citrusGreen.withOpacity(0.1),
+                        backgroundColor: AppColors.citrusGreen.withValues(alpha: 0.1),
                         valueColor: AlwaysStoppedAnimation<Color>(AppColors.citrusGreen),
                       ),
                     ),
@@ -2067,9 +2175,9 @@ class _CasinoToyState extends State<CasinoToy> with TickerProviderStateMixin, Wi
         Container(
           padding: AppSize.paddingH(12, 8),
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.03),
+            color: Colors.white.withValues(alpha: 0.03),
             borderRadius: AppSize.radius(10),
-            border: Border.all(color: Colors.white.withOpacity(0.05)),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
           ),
           child: Column(
             children: [
@@ -2103,10 +2211,10 @@ class _CasinoToyState extends State<CasinoToy> with TickerProviderStateMixin, Wi
       decoration: BoxDecoration(
         color: Color(0xFF0A0618),
         borderRadius: AppSize.radius(12),
-        border: Border.all(color: AppColors.citrusAmber.withOpacity(0.2), width: 1),
+        border: Border.all(color: AppColors.citrusAmber.withValues(alpha: 0.2), width: 1),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.5),
+            color: Colors.black.withValues(alpha: 0.5),
             blurRadius: 8,
             offset: Offset(0, 4),
           ),

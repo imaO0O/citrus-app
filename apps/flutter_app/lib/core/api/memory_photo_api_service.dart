@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
@@ -47,7 +47,8 @@ class MemoryPhotoApiService {
 
   /// Загрузить фото (multipart)
   Future<Map<String, dynamic>> uploadPhoto({
-    required File imageFile,
+    required Uint8List bytes,
+    required String filename,
     String? caption,
     String? photoDate,
   }) async {
@@ -59,14 +60,11 @@ class MemoryPhotoApiService {
       request.headers['Authorization'] = 'Bearer $_token';
     }
 
-    // Прикрепляем файл
-    final fileStream = http.ByteStream(imageFile.openRead());
-    final fileLength = await imageFile.length();
-    final multipartFile = http.MultipartFile(
+    // Прикрепляем файл из байтов — работает и на мобильных, и на web.
+    final multipartFile = http.MultipartFile.fromBytes(
       'file',
-      fileStream,
-      fileLength,
-      filename: imageFile.path.split('/').last,
+      bytes,
+      filename: filename,
     );
     request.files.add(multipartFile);
 

@@ -7,6 +7,7 @@ class CalendarEventModel {
   final String? startTime;   // формат "HH:mm:ss"
   final String? endTime;     // формат "HH:mm:ss"
   final bool notificationEnabled;
+  final String recurrence; // 'none' | 'daily' | 'weekly' | 'monthly'
 
   CalendarEventModel({
     required this.id,
@@ -17,6 +18,7 @@ class CalendarEventModel {
     this.startTime,
     this.endTime,
     required this.notificationEnabled,
+    this.recurrence = 'none',
   });
 
   factory CalendarEventModel.fromJson(Map<String, dynamic> json) => CalendarEventModel(
@@ -28,6 +30,7 @@ class CalendarEventModel {
         startTime: json['start_time'],
         endTime: json['end_time'],
         notificationEnabled: json['notification_enabled'],
+        recurrence: json['recurrence'] as String? ?? 'none',
       );
 
   Map<String, dynamic> toJson() => {
@@ -39,5 +42,6 @@ class CalendarEventModel {
         'start_time': startTime,
         'end_time': endTime,
         'notification_enabled': notificationEnabled,
+        'recurrence': recurrence,
       };
 }

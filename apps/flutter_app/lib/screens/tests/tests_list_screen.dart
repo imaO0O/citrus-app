@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import '../../core/api/test_api_service.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_text.dart';
 import 'test_taking_screen.dart';
 import '../../core/utils/app_size.dart';
+import '../../core/widgets/citrus_card.dart';
+import '../../core/widgets/citrus_empty_state.dart';
 
 class TestsListScreen extends StatefulWidget {
   final String? token;
@@ -18,6 +21,7 @@ class _TestsListScreenState extends State<TestsListScreen> {
   bool _isLoading = true;
   String? _error;
   String? _selectedCategory = 'all';
+  Map<String, DateTime> _lastTaken = {};
 
   static const _categories = {
     'all': 'Все тесты',
@@ -36,16 +40,41 @@ class _TestsListScreenState extends State<TestsListScreen> {
     try {
       final api = TestApiService(token: widget.token);
       final tests = await api.getAvailableTests();
+      // Подтягиваем последние прохождения (для бейджа «Пройден»)
+      final lastTaken = <String, DateTime>{};
+      try {
+        final results = await api.getTestResults();
+        for (final r in results) {
+          final id = r['testId']?.toString();
+          final d = DateTime.tryParse(r['completedAt']?.toString() ?? '');
+          // results отсортированы по дате DESC → первое вхождение = последнее прохождение
+          if (id != null && d != null && !lastTaken.containsKey(id)) {
+            lastTaken[id] = d;
+          }
+        }
+      } catch (_) {}
+      if (!mounted) return;
       setState(() {
         _tests = tests;
+        _lastTaken = lastTaken;
         _isLoading = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _error = e.toString();
         _isLoading = false;
       });
     }
+  }
+
+  String _relativeDate(DateTime d) {
+    final days = DateTime.now().difference(d).inDays;
+    if (days <= 0) return 'сегодня';
+    if (days == 1) return 'вчера';
+    if (days < 7) return '$days дн. назад';
+    if (days < 30) return '${(days / 7).floor()} нед. назад';
+    return '${d.day.toString().padLeft(2, '0')}.${d.month.toString().padLeft(2, '0')}.${d.year}';
   }
 
   List<Map<String, dynamic>> get _filteredTests {
@@ -103,7 +132,7 @@ class _TestsListScreenState extends State<TestsListScreen> {
                 setState(() => _selectedCategory = entry.key);
               },
               backgroundColor: AppColors.card,
-              selectedColor: AppColors.citrusOrange.withOpacity(0.3),
+              selectedColor: AppColors.citrusOrange.withValues(alpha: 0.3),
               labelStyle: TextStyle(
                 color: isSelected ? AppColors.citrusOrange : AppColors.dimForeground,
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
@@ -116,32 +145,21 @@ class _TestsListScreenState extends State<TestsListScreen> {
   }
 
   Widget _buildError() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.error_outline, size: 48, color: AppColors.destructive),
-          AppSize.gapH(16),
-          Text('Ошибка: $_error',
-              style: TextStyle(color: AppColors.foreground)),
-          AppSize.gapH(16),
-          ElevatedButton(
-            onPressed: _loadTests,
-            child: Text('Повторить'),
-          ),
-        ],
-      ),
+    return CitrusEmptyState(
+      title: 'Не удалось загрузить',
+      subtitle: 'Проверь соединение с интернетом и попробуй снова.',
+      actionLabel: 'Повторить',
+      actionIcon: Icons.refresh,
+      onAction: _loadTests,
     );
   }
 
   Widget _buildTestsList() {
     final tests = _filteredTests;
     if (tests.isEmpty) {
-      return Center(
-        child: Text(
-          'Нет тестов в этой категории',
-          style: TextStyle(color: AppColors.dimForeground),
-        ),
+      return CitrusEmptyState(
+        title: 'Пока пусто',
+        subtitle: 'В этой категории ещё нет тестов. Загляни в другие разделы.',
       );
     }
 
@@ -173,109 +191,108 @@ class _TestsListScreenState extends State<TestsListScreen> {
 
     return Padding(
       padding: AppSize.paddingOnly(bottom: 12),
-      child: Material(
-        color: AppColors.card,
-        borderRadius: AppSize.radius(16),
-        child: InkWell(
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => TestTakingScreen(
-                  testId: test['id'] as String,
-                  token: widget.token,
+      child: CitrusCard(
+        accent: accentColor,
+        onTap: () async {
+          await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => TestTakingScreen(
+                testId: test['id'] as String,
+                token: widget.token,
+              ),
+            ),
+          );
+          _loadTests(); // обновляем «Пройден» после возврата
+        },
+        child: Row(
+          children: [
+            // Иконка
+            Container(
+              width: AppSize.s(56),
+              height: AppSize.s(56),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [accentColor.withValues(alpha: 0.22), accentColor.withValues(alpha: 0.08)],
+                ),
+                borderRadius: AppSize.radius(14),
+              ),
+              child: Center(
+                child: Text(
+                  test['icon'] as String,
+                  style: TextStyle(fontSize: AppSize.s(28)),
                 ),
               ),
-            );
-          },
-          borderRadius: AppSize.radius(16),
-          child: Container(
-            padding: AppSize.padding(16),
-            child: Row(
-              children: [
-                // Иконка
-                Container(
-                  width: 56,
-                  height: 56,
-                  decoration: BoxDecoration(
-                    color: accentColor.withOpacity(0.15),
-                    borderRadius: AppSize.radius(12),
+            ),
+            AppSize.gapW(12),
+            // Информация
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(test['title'] as String, style: AppText.cardTitle),
+                  AppSize.gapH(4),
+                  Text(
+                    test['description'] as String,
+                    style: AppText.caption,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  child: Center(
-                    child: Text(
-                      test['icon'] as String,
-                      style: TextStyle(fontSize: AppSize.s(28)),
-                    ),
-                  ),
-                ),
-                AppSize.gapW(12),
-                // Информация
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  AppSize.gapH(8),
+                  Row(
                     children: [
-                      Text(
-                        test['title'] as String,
-                        style: TextStyle(
-                          fontSize: AppSize.s(16),
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.foreground,
+                      // Бейдж категории
+                      Container(
+                        padding: AppSize.paddingH(8, 2),
+                        decoration: BoxDecoration(
+                          color: accentColor.withValues(alpha: 0.2),
+                          borderRadius: AppSize.radius(8),
+                        ),
+                        child: Text(
+                          categoryLabel,
+                          style: TextStyle(
+                            fontSize: AppSize.s(10),
+                            fontWeight: FontWeight.w600,
+                            color: accentColor,
+                          ),
                         ),
                       ),
-                      AppSize.gapH(4),
-                      Text(
-                        test['description'] as String,
-                        style: TextStyle(
-                          fontSize: AppSize.s(12),
-                          color: AppColors.mutedForeground,
+                      AppSize.gapW(8),
+                      // Количество вопросов и время — занимают оставшееся место
+                      Expanded(
+                        child: Text(
+                          '${test['questionsCount']} вопр. · ~${test['durationMinutes']} мин',
+                          style: TextStyle(
+                            fontSize: AppSize.s(10),
+                            color: AppColors.dimForeground,
+                          ),
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      AppSize.gapH(8),
-                      Row(
-                        children: [
-                          // Бейдж категории
-                          Container(
-                            padding: AppSize.paddingH(8, 2),
-                            decoration: BoxDecoration(
-                              color: accentColor.withOpacity(0.2),
-                              borderRadius: AppSize.radius(8),
-                            ),
-                            child: Text(
-                              categoryLabel,
-                              style: TextStyle(
-                                fontSize: AppSize.s(10),
-                                fontWeight: FontWeight.w600,
-                                color: accentColor,
-                              ),
-                            ),
-                          ),
-                          AppSize.gapW(8),
-                          // Количество вопросов и время — занимают оставшееся место
-                          Expanded(
-                            child: Text(
-                              '${test['questionsCount']} вопр. · ~${test['durationMinutes']} мин',
-                              style: TextStyle(
-                                fontSize: AppSize.s(10),
-                                color: AppColors.dimForeground,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
                       ),
                     ],
                   ),
-                ),
-                Icon(
-                  Icons.chevron_right,
-                  color: AppColors.dimForeground,
-                  size: 24,
-                ),
-              ],
+                  if (_lastTaken[test['id']] != null) ...[
+                    AppSize.gapH(8),
+                    Row(children: [
+                      Icon(Icons.check_circle, size: AppSize.s(13), color: AppColors.citrusGreen),
+                      AppSize.gapW(4),
+                      Text(
+                        'Пройден · ${_relativeDate(_lastTaken[test['id']]!)}',
+                        style: TextStyle(fontSize: AppSize.s(11), color: AppColors.citrusGreen, fontWeight: FontWeight.w600),
+                      ),
+                    ]),
+                  ],
+                ],
+              ),
             ),
-          ),
+            Icon(
+              Icons.chevron_right,
+              color: AppColors.dimForeground,
+              size: AppSize.s(24),
+            ),
+          ],
         ),
       ),
     );

@@ -18,16 +18,18 @@ class CreateDiaryEntry extends DiaryEvent {
   final String content;
   final int? moodValue;
   final DateTime? entryDate;
+  final List<String> tags;
 
-  const CreateDiaryEntry({required this.content, this.moodValue, this.entryDate});
+  const CreateDiaryEntry({required this.content, this.moodValue, this.entryDate, this.tags = const []});
 }
 
 class UpdateDiaryEntry extends DiaryEvent {
   final String id;
   final String content;
   final int? moodValue;
+  final List<String> tags;
 
-  const UpdateDiaryEntry({required this.id, required this.content, this.moodValue});
+  const UpdateDiaryEntry({required this.id, required this.content, this.moodValue, this.tags = const []});
 }
 
 class DeleteDiaryEntry extends DiaryEvent {
@@ -102,6 +104,7 @@ class DiaryBloc extends Bloc<DiaryEvent, DiaryState> {
         content: event.content,
         moodValue: event.moodValue,
         entryDate: event.entryDate,
+        tags: event.tags,
       );
 
       // Показываем подтверждающее уведомление
@@ -124,6 +127,7 @@ class DiaryBloc extends Bloc<DiaryEvent, DiaryState> {
         id: event.id,
         content: event.content,
         moodValue: event.moodValue,
+        tags: event.tags,
       );
       if (state is DiaryLoaded) add(const LoadDiaryEntries());
     } catch (e) {

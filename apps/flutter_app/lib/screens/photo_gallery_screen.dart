@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -9,6 +8,7 @@ import '../core/theme/app_colors.dart';
 import '../core/repository/memory_photo_repository.dart';
 import '../models/memory_photo.dart';
 import '../core/utils/app_size.dart';
+import '../core/utils/network_error.dart';
 
 class PhotoGalleryScreen extends StatefulWidget {
   PhotoGalleryScreen({super.key});
@@ -49,7 +49,7 @@ class _PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = 'Ошибка загрузки: $e';
+        _error = friendlyError(e, fallback: 'Не удалось загрузить фотографии.');
         _isLoading = false;
       });
     }
@@ -77,7 +77,7 @@ class _PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Ошибка: $e'), backgroundColor: AppColors.destructive),
+          SnackBar(content: Text(friendlyError(e)), backgroundColor: AppColors.destructive),
         );
       }
     }
@@ -99,9 +99,13 @@ class _PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
       // Показать диалог для caption
       final caption = await _showCaptionDialog();
 
+      // Читаем байты из XFile — работает и на мобильных, и на web.
+      final bytes = await image.readAsBytes();
+      if (!mounted) return;
       final repo = context.read<MemoryPhotoRepository>();
       await repo.uploadPhoto(
-        imageFile: File(image.path),
+        bytes: bytes,
+        filename: image.name,
         caption: caption,
         photoDate: DateTime.now(),
       );
@@ -123,7 +127,7 @@ class _PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Ошибка загрузки: $e'),
+            content: Text(friendlyError(e, fallback: 'Не удалось загрузить фото.')),
             backgroundColor: AppColors.destructive,
           ),
         );
@@ -139,7 +143,7 @@ class _PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
         backgroundColor: AppColors.surface1,
         shape: RoundedRectangleBorder(
           borderRadius: AppSize.radius(16),
-          side: BorderSide(color: AppColors.citrusOrange.withOpacity(0.2)),
+          side: BorderSide(color: AppColors.citrusOrange.withValues(alpha: 0.2)),
         ),
         title: Text(
           'Добавить описание',
@@ -182,7 +186,7 @@ class _PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
         backgroundColor: AppColors.surface1,
         shape: RoundedRectangleBorder(
           borderRadius: AppSize.radius(16),
-          side: BorderSide(color: AppColors.destructive.withOpacity(0.3)),
+          side: BorderSide(color: AppColors.destructive.withValues(alpha: 0.3)),
         ),
         title: Text('Удалить момент?', style: TextStyle(color: AppColors.foreground)),
         content: Text(
@@ -204,6 +208,7 @@ class _PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
     );
 
     if (confirmed != true) return;
+    if (!mounted) return;
 
     try {
       final repo = context.read<MemoryPhotoRepository>();
@@ -217,7 +222,7 @@ class _PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Ошибка удаления: $e'), backgroundColor: AppColors.destructive),
+          SnackBar(content: Text(friendlyError(e, fallback: 'Не удалось удалить фото.')), backgroundColor: AppColors.destructive),
         );
       }
     }
@@ -401,12 +406,12 @@ class _PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
                             height: 32,
                             decoration: BoxDecoration(
                               color: _showFavoritesOnly
-                                  ? AppColors.citrusRed.withOpacity(0.2)
+                                  ? AppColors.citrusRed.withValues(alpha: 0.2)
                                   : Colors.transparent,
                               borderRadius: AppSize.radius(10),
                               border: Border.all(
                                 color: _showFavoritesOnly
-                                    ? AppColors.citrusRed.withOpacity(0.5)
+                                    ? AppColors.citrusRed.withValues(alpha: 0.5)
                                     : Colors.transparent,
                               ),
                             ),
@@ -452,10 +457,10 @@ class _PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
                     gradient: LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
-                      colors: [AppColors.citrusRed.withOpacity(0.12), AppColors.citrusOrange.withOpacity(0.08)],
+                      colors: [AppColors.citrusRed.withValues(alpha: 0.12), AppColors.citrusOrange.withValues(alpha: 0.08)],
                     ),
                     borderRadius: AppSize.radius(16),
-                    border: Border.all(color: AppColors.citrusRed.withOpacity(0.2)),
+                    border: Border.all(color: AppColors.citrusRed.withValues(alpha: 0.2)),
                   ),
                   child: Text(
                     'Дофамин\nКаждый счастливый момент заслуживает быть сохранённым.',
@@ -597,7 +602,7 @@ class _PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
                                                         width: 28,
                                                         height: 28,
                                                         decoration: BoxDecoration(
-                                                          color: Colors.black.withOpacity(0.4),
+                                                          color: Colors.black.withValues(alpha: 0.4),
                                                           borderRadius: AppSize.radius(8),
                                                         ),
                                                         child: Icon(

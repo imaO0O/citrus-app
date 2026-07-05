@@ -17,11 +17,6 @@ class EmergencyModal extends StatefulWidget {
 }
 
 class _EmergencyModalState extends State<EmergencyModal> {
-  String curatorPhone = '+7-800-123-45-67';
-  String inputValue = '';
-  bool isEditing = false;
-  final TextEditingController _phoneController = TextEditingController();
-
   // Состояния для техник
   bool _showGroundingExercise = false;
 
@@ -31,20 +26,7 @@ class _EmergencyModalState extends State<EmergencyModal> {
   @override
   void initState() {
     super.initState();
-    _loadCuratorPhone();
     _loadTrustedContacts();
-  }
-
-  Future<void> _loadCuratorPhone() async {
-    final storage = StorageService();
-    final saved = await storage.getString('curator_phone');
-    if (saved != null && saved.isNotEmpty && mounted) {
-      setState(() {
-        curatorPhone = saved;
-        inputValue = saved;
-        _phoneController.text = saved;
-      });
-    }
   }
 
   Future<void> _loadTrustedContacts() async {
@@ -74,22 +56,6 @@ class _EmergencyModalState extends State<EmergencyModal> {
     } catch (e) {
       debugPrint('Error loading trusted contacts: $e');
     }
-  }
-
-  Future<void> _saveCuratorPhone() async {
-    final storage = StorageService();
-    await storage.setString('curator_phone', curatorPhone);
-  }
-
-  void _handleSave() {
-    final trimmed = _phoneController.text.trim();
-    if (trimmed.isEmpty) return;
-    setState(() {
-      curatorPhone = trimmed;
-      inputValue = trimmed;
-      isEditing = false;
-    });
-    _saveCuratorPhone();
   }
 
   Future<void> _makePhoneCall(String phoneNumber) async {
@@ -192,7 +158,6 @@ class _EmergencyModalState extends State<EmergencyModal> {
 
   @override
   void dispose() {
-    _phoneController.dispose();
     super.dispose();
   }
 
@@ -201,7 +166,7 @@ class _EmergencyModalState extends State<EmergencyModal> {
     return GestureDetector(
       onTap: widget.onClose,
       child: Container(
-        color: Colors.black.withOpacity(0.85),
+        color: Colors.black.withValues(alpha: 0.85),
         child: GestureDetector(
           onTap: () {},
           child: SafeArea(
@@ -264,7 +229,7 @@ class _EmergencyModalState extends State<EmergencyModal> {
           ],
         ),
         border: Border(
-          bottom: BorderSide(color: AppColors.destructive.withOpacity(0.15)),
+          bottom: BorderSide(color: AppColors.destructive.withValues(alpha: 0.15)),
         ),
       ),
       child: Row(
@@ -274,9 +239,9 @@ class _EmergencyModalState extends State<EmergencyModal> {
             width: 48,
             height: 48,
             decoration: BoxDecoration(
-              color: AppColors.destructive.withOpacity(0.2),
+              color: AppColors.destructive.withValues(alpha: 0.2),
               borderRadius: AppSize.radius(16),
-              border: Border.all(color: AppColors.destructive.withOpacity(0.3)),
+              border: Border.all(color: AppColors.destructive.withValues(alpha: 0.3)),
             ),
             child: Center(child: Text('\u{1F198}', style: TextStyle(fontSize: AppSize.s(24)))),
           ),
@@ -307,7 +272,7 @@ class _EmergencyModalState extends State<EmergencyModal> {
               width: 32,
               height: 32,
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.07),
+                color: Colors.white.withValues(alpha: 0.07),
                 borderRadius: AppSize.radius(12),
               ),
               child: Icon(Icons.close, color: AppColors.mutedForeground, size: 18),
@@ -322,9 +287,9 @@ class _EmergencyModalState extends State<EmergencyModal> {
     return Container(
       padding: AppSize.padding(16),
       decoration: BoxDecoration(
-        color: AppColors.destructive.withOpacity(0.08),
+        color: AppColors.destructive.withValues(alpha: 0.08),
         borderRadius: AppSize.radius(16),
-        border: Border.all(color: AppColors.destructive.withOpacity(0.2)),
+        border: Border.all(color: AppColors.destructive.withValues(alpha: 0.2)),
       ),
       child: Text(
         '\u0415\u0441\u043B\u0438 \u0442\u044B \u0432 \u043A\u0440\u0438\u0437\u0438\u0441\u043D\u043E\u0439 \u0441\u0438\u0442\u0443\u0430\u0446\u0438\u0438 \u2014 \u043D\u0435\u043C\u0435\u0434\u043B\u0435\u043D\u043D\u043E \u043E\u0431\u0440\u0430\u0442\u0438\u0441\u044C \u0437\u0430 \u043F\u043E\u043C\u043E\u0449\u044C\u044E. \u0422\u044B \u0432\u0430\u0436\u0435\u043D, \u0438 \u0442\u0435\u0431\u0435 \u043F\u043E\u043C\u043E\u0433\u0443\u0442 24/7.',
@@ -358,16 +323,23 @@ class _EmergencyModalState extends State<EmergencyModal> {
           onTap: () => _makePhoneCall('112'),
         ),
         AppSize.gapH(8),
-        _buildContactCard(
-          name: 'Психолог ВУЗа',
-          number: 'Записаться',
-          desc: 'Поддержка студентов',
-          icon: Icons.people,
+        _EditableContactCard(
+          storageKey: 'psychologist_phone',
+          title: 'Психолог ВУЗа',
+          subtitle: 'Психолог вашего вуза',
+          icon: Icons.psychology,
           color: AppColors.citrusPurple,
-          onTap: () => _makePhoneCall('88002000122'), // Заглушка
+          onCall: _makePhoneCall,
         ),
         AppSize.gapH(8),
-        _buildCuratorCard(),
+        _EditableContactCard(
+          storageKey: 'curator_phone',
+          title: 'Куратор учебной группы',
+          subtitle: 'Куратор вашей группы',
+          icon: Icons.school,
+          color: AppColors.citrusGreen,
+          onCall: _makePhoneCall,
+        ),
       ],
     );
   }
@@ -386,9 +358,9 @@ class _EmergencyModalState extends State<EmergencyModal> {
         margin: AppSize.paddingOnly(bottom: 8),
         padding: AppSize.paddingH(16, 14),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.07),
+          color: color.withValues(alpha: 0.07),
           borderRadius: AppSize.radius(16),
-          border: Border.all(color: color.withOpacity(0.15)),
+          border: Border.all(color: color.withValues(alpha: 0.15)),
         ),
         child: Row(
           children: [
@@ -396,7 +368,7 @@ class _EmergencyModalState extends State<EmergencyModal> {
               width: 44,
               height: 44,
               decoration: BoxDecoration(
-                color: color.withOpacity(0.12),
+                color: color.withValues(alpha: 0.12),
                 borderRadius: AppSize.radius(12),
               ),
               child: Icon(icon, color: color, size: 22),
@@ -435,173 +407,13 @@ class _EmergencyModalState extends State<EmergencyModal> {
               width: 32,
               height: 32,
               decoration: BoxDecoration(
-                color: color.withOpacity(0.12),
+                color: color.withValues(alpha: 0.12),
                 borderRadius: AppSize.radius(12),
               ),
               child: Icon(Icons.phone, color: color, size: 16),
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildCuratorCard() {
-    final color = AppColors.citrusGreen;
-    return Container(
-      padding: AppSize.paddingH(16, 14),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.07),
-        borderRadius: AppSize.radius(16),
-        border: Border.all(color: color.withOpacity(0.15)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.12),
-              borderRadius: AppSize.radius(12),
-            ),
-            child: Icon(Icons.school, color: color, size: 22),
-          ),
-          AppSize.gapW(12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Куратор учебной группы',
-                  style: TextStyle(
-                    fontSize: AppSize.s(13),
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.foreground,
-                  ),
-                ),
-                AppSize.gapH(6),
-                if (isEditing)
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: _phoneController,
-                          style: TextStyle(fontSize: AppSize.s(12), color: AppColors.foreground),
-                          inputFormatters: [PhoneInputFormatter()],
-                          decoration: InputDecoration(
-                            hintText: '+7 (___) ___-__-__',
-                            hintStyle: TextStyle(fontSize: AppSize.s(12), color: AppColors.dimForeground),
-                            filled: true,
-                            fillColor: Colors.white.withOpacity(0.07),
-                            border: OutlineInputBorder(
-                              borderRadius: AppSize.radius(12),
-                              borderSide: BorderSide(color: color.withOpacity(0.25)),
-                            ),
-                            contentPadding: AppSize.paddingH(12, 8),
-                            isDense: true,
-                          ),
-                          keyboardType: TextInputType.phone,
-                          onChanged: (val) => inputValue = val,
-                          onSubmitted: (_) => _handleSave(),
-                        ),
-                      ),
-                      AppSize.gapW(8),
-                      GestureDetector(
-                        onTap: _handleSave,
-                        child: Container(
-                          width: 28,
-                          height: 28,
-                          decoration: BoxDecoration(
-                            color: color.withOpacity(0.2),
-                            borderRadius: AppSize.radius(8),
-                            border: Border.all(color: color.withOpacity(0.3)),
-                          ),
-                          child: Icon(Icons.check, size: 16),
-                        ),
-                      ),
-                    ],
-                  )
-                else
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        curatorPhone.isEmpty ? 'Номер не указан' : curatorPhone,
-                        style: TextStyle(
-                          fontSize: AppSize.s(12),
-                          fontWeight: FontWeight.w600,
-                          color: color,
-                        ),
-                      ),
-                      Text(
-                        'Куратор вашей группы',
-                        style: TextStyle(fontSize: AppSize.s(10), color: AppColors.mutedForeground),
-                      ),
-                    ],
-                  ),
-              ],
-            ),
-          ),
-          if (!isEditing)
-            curatorPhone.isNotEmpty
-                ? Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      GestureDetector(
-                        onTap: () => _makePhoneCall(curatorPhone.replaceAll(RegExp(r'[^0-9+]'), '')),
-                        child: Container(
-                          width: 32,
-                          height: 32,
-                          decoration: BoxDecoration(
-                            color: color.withOpacity(0.12),
-                            borderRadius: AppSize.radius(12),
-                          ),
-                          child: Icon(Icons.phone, color: color, size: 16),
-                        ),
-                      ),
-                      AppSize.gapW(6),
-                      GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            inputValue = curatorPhone;
-                            _phoneController.text = curatorPhone;
-                            isEditing = true;
-                          });
-                        },
-                        child: Container(
-                          width: 32,
-                          height: 32,
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.07),
-                            borderRadius: AppSize.radius(12),
-                          ),
-                          child: Icon(Icons.edit, color: AppColors.mutedForeground, size: 14),
-                        ),
-                      ),
-                    ],
-                  )
-                : GestureDetector(
-                    onTap: () {
-                      setState(() => isEditing = true);
-                    },
-                    child: Container(
-                      padding: AppSize.paddingH(12, 6),
-                      decoration: BoxDecoration(
-                        color: color.withOpacity(0.12),
-                        borderRadius: AppSize.radius(12),
-                        border: Border.all(color: color.withOpacity(0.2)),
-                      ),
-                      child: Text(
-                        'Добавить',
-                        style: TextStyle(
-                          fontSize: AppSize.s(11),
-                          fontWeight: FontWeight.w600,
-                          color: color,
-                        ),
-                      ),
-                    ),
-                  ),
-        ],
       ),
     );
   }
@@ -621,7 +433,7 @@ class _EmergencyModalState extends State<EmergencyModal> {
           borderRadius: AppSize.radius(16),
           boxShadow: [
             BoxShadow(
-              color: AppColors.destructive.withOpacity(0.3),
+              color: AppColors.destructive.withValues(alpha: 0.3),
               blurRadius: 12,
               offset: Offset(0, 4),
             ),
@@ -670,9 +482,9 @@ class _EmergencyModalState extends State<EmergencyModal> {
             width: double.infinity,
             padding: AppSize.padding(14),
             decoration: BoxDecoration(
-              color: AppColors.citrusGreen.withOpacity(0.06),
+              color: AppColors.citrusGreen.withValues(alpha: 0.06),
               borderRadius: AppSize.radius(16),
-              border: Border.all(color: AppColors.citrusGreen.withOpacity(0.12)),
+              border: Border.all(color: AppColors.citrusGreen.withValues(alpha: 0.12)),
             ),
             child: Row(
               children: [
@@ -680,7 +492,7 @@ class _EmergencyModalState extends State<EmergencyModal> {
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: AppColors.citrusGreen.withOpacity(0.12),
+                    color: AppColors.citrusGreen.withValues(alpha: 0.12),
                     borderRadius: AppSize.radius(12),
                   ),
                   child: Icon(Icons.favorite, color: AppColors.citrusGreen, size: 22),
@@ -719,9 +531,9 @@ class _EmergencyModalState extends State<EmergencyModal> {
     return Container(
       padding: AppSize.padding(20),
       decoration: BoxDecoration(
-        color: AppColors.citrusGreen.withOpacity(0.06),
+        color: AppColors.citrusGreen.withValues(alpha: 0.06),
         borderRadius: AppSize.radius(20),
-        border: Border.all(color: AppColors.citrusGreen.withOpacity(0.2)),
+        border: Border.all(color: AppColors.citrusGreen.withValues(alpha: 0.2)),
       ),
       child: Column(
         children: [
@@ -742,7 +554,7 @@ class _EmergencyModalState extends State<EmergencyModal> {
                   width: 28,
                   height: 28,
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.07),
+                    color: Colors.white.withValues(alpha: 0.07),
                     borderRadius: AppSize.radius(8),
                   ),
                   child: Icon(Icons.close, size: 16, color: AppColors.mutedForeground),
@@ -812,7 +624,7 @@ class _EmergencyModalState extends State<EmergencyModal> {
           width: 36,
           height: 36,
           decoration: BoxDecoration(
-            color: color.withOpacity(0.12),
+            color: color.withValues(alpha: 0.12),
             borderRadius: AppSize.radius(10),
           ),
           child: Center(
@@ -852,9 +664,9 @@ class _EmergencyModalState extends State<EmergencyModal> {
     return Container(
       padding: AppSize.padding(16),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.03),
+        color: Colors.white.withValues(alpha: 0.03),
         borderRadius: AppSize.radius(16),
-        border: Border.all(color: Colors.white.withOpacity(0.06)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -899,7 +711,7 @@ class _EmergencyModalState extends State<EmergencyModal> {
         width: double.infinity,
         padding: AppSize.paddingH(0, 14),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.07),
+          color: Colors.white.withValues(alpha: 0.07),
           borderRadius: AppSize.radius(16),
         ),
         child: Text(
@@ -911,6 +723,226 @@ class _EmergencyModalState extends State<EmergencyModal> {
             color: AppColors.mutedForeground,
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Карточка контакта с настраиваемым номером (хранится локально на устройстве).
+///
+/// Пока номер не указан — показывает «Добавить» вместо звонка, чтобы не вести
+/// пользователя на чужой/несуществующий номер.
+class _EditableContactCard extends StatefulWidget {
+  final String storageKey;
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final Color color;
+  final Future<void> Function(String phone) onCall;
+
+  const _EditableContactCard({
+    required this.storageKey,
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.color,
+    required this.onCall,
+  });
+
+  @override
+  State<_EditableContactCard> createState() => _EditableContactCardState();
+}
+
+class _EditableContactCardState extends State<_EditableContactCard> {
+  String _phone = '';
+  bool _isEditing = false;
+  final TextEditingController _controller = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    final saved = await StorageService().getString(widget.storageKey);
+    if (saved != null && saved.isNotEmpty && mounted) {
+      setState(() {
+        _phone = saved;
+        _controller.text = saved;
+      });
+    }
+  }
+
+  void _handleSave() {
+    final trimmed = _controller.text.trim();
+    if (trimmed.isEmpty) return;
+    setState(() {
+      _phone = trimmed;
+      _isEditing = false;
+    });
+    StorageService().setString(widget.storageKey, _phone);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final color = widget.color;
+    return Container(
+      padding: AppSize.paddingH(16, 14),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.07),
+        borderRadius: AppSize.radius(16),
+        border: Border.all(color: color.withValues(alpha: 0.15)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.12),
+              borderRadius: AppSize.radius(12),
+            ),
+            child: Icon(widget.icon, color: color, size: 22),
+          ),
+          AppSize.gapW(12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  widget.title,
+                  style: TextStyle(
+                    fontSize: AppSize.s(13),
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.foreground,
+                  ),
+                ),
+                AppSize.gapH(6),
+                if (_isEditing)
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _controller,
+                          style: TextStyle(fontSize: AppSize.s(12), color: AppColors.foreground),
+                          inputFormatters: [PhoneInputFormatter()],
+                          decoration: InputDecoration(
+                            hintText: '+7 (___) ___-__-__',
+                            hintStyle: TextStyle(fontSize: AppSize.s(12), color: AppColors.dimForeground),
+                            filled: true,
+                            fillColor: Colors.white.withValues(alpha: 0.07),
+                            border: OutlineInputBorder(
+                              borderRadius: AppSize.radius(12),
+                              borderSide: BorderSide(color: color.withValues(alpha: 0.25)),
+                            ),
+                            contentPadding: AppSize.paddingH(12, 8),
+                            isDense: true,
+                          ),
+                          keyboardType: TextInputType.phone,
+                          onSubmitted: (_) => _handleSave(),
+                        ),
+                      ),
+                      AppSize.gapW(8),
+                      GestureDetector(
+                        onTap: _handleSave,
+                        child: Container(
+                          width: 28,
+                          height: 28,
+                          decoration: BoxDecoration(
+                            color: color.withValues(alpha: 0.2),
+                            borderRadius: AppSize.radius(8),
+                            border: Border.all(color: color.withValues(alpha: 0.3)),
+                          ),
+                          child: Icon(Icons.check, size: 16),
+                        ),
+                      ),
+                    ],
+                  )
+                else
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _phone.isEmpty ? 'Номер не указан' : _phone,
+                        style: TextStyle(
+                          fontSize: AppSize.s(12),
+                          fontWeight: FontWeight.w600,
+                          color: color,
+                        ),
+                      ),
+                      Text(
+                        widget.subtitle,
+                        style: TextStyle(fontSize: AppSize.s(10), color: AppColors.mutedForeground),
+                      ),
+                    ],
+                  ),
+              ],
+            ),
+          ),
+          if (!_isEditing)
+            _phone.isNotEmpty
+                ? Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      GestureDetector(
+                        onTap: () => widget.onCall(_phone.replaceAll(RegExp(r'[^0-9+]'), '')),
+                        child: Container(
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            color: color.withValues(alpha: 0.12),
+                            borderRadius: AppSize.radius(12),
+                          ),
+                          child: Icon(Icons.phone, color: color, size: 16),
+                        ),
+                      ),
+                      AppSize.gapW(6),
+                      GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _controller.text = _phone;
+                            _isEditing = true;
+                          });
+                        },
+                        child: Container(
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.07),
+                            borderRadius: AppSize.radius(12),
+                          ),
+                          child: Icon(Icons.edit, color: AppColors.mutedForeground, size: 14),
+                        ),
+                      ),
+                    ],
+                  )
+                : GestureDetector(
+                    onTap: () => setState(() => _isEditing = true),
+                    child: Container(
+                      padding: AppSize.paddingH(12, 6),
+                      decoration: BoxDecoration(
+                        color: color.withValues(alpha: 0.12),
+                        borderRadius: AppSize.radius(12),
+                        border: Border.all(color: color.withValues(alpha: 0.2)),
+                      ),
+                      child: Text(
+                        'Добавить',
+                        style: TextStyle(
+                          fontSize: AppSize.s(11),
+                          fontWeight: FontWeight.w600,
+                          color: color,
+                        ),
+                      ),
+                    ),
+                  ),
+        ],
       ),
     );
   }
